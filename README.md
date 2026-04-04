@@ -19,13 +19,13 @@ Working with AI coding assistants can feel chaotic — tasks drift in scope, con
 ### Option 1: Install script
 
 ```bash
-curl -sL https://raw.githubusercontent.com/YOUR_USER/ai-flow/main/install.sh | bash
+curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | bash
 ```
 
 Or clone and install locally:
 
 ```bash
-git clone https://github.com/YOUR_USER/ai-flow.git
+git clone https://github.com/jisaballo/ai-flow.git
 cd ai-flow
 ./install.sh /path/to/your/project
 ```

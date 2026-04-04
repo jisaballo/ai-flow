@@ -11,11 +11,11 @@
 
 ```bash
 # Option A: Clone and install
-git clone https://github.com/YOUR_USER/ai-flow.git /tmp/ai-flow
+git clone https://github.com/jisaballo/ai-flow.git /tmp/ai-flow
 /tmp/ai-flow/install.sh /path/to/your/project
 
 # Option B: One-liner (once published)
-curl -sL https://raw.githubusercontent.com/YOUR_USER/ai-flow/main/install.sh | bash
+curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | bash
 ```
 
 This creates:
