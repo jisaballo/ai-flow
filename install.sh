@@ -2,70 +2,103 @@
 set -e
 
 # ai-flow installer
-# Usage: ./install.sh [target-directory]
+# Usage:
+#   Remote:  curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | bash
+#   Remote with target:  curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | bash -s /path/to/project
+#   Local:   ./install.sh [target-directory]
 
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_URL="https://raw.githubusercontent.com/jisaballo/ai-flow/main"
 TARGET="${1:-.}"
+
+# Resolve absolute path (handle both existing and new directories)
+mkdir -p "$TARGET"
 TARGET="$(cd "$TARGET" && pwd)"
 
-echo "Installing ai-flow into: $TARGET"
+echo ""
+echo "  ai-flow installer"
+echo "  ─────────────────"
+echo "  Target: $TARGET"
 echo ""
 
+# Detect mode: local (cloned repo) or remote (curl)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null || echo ".")" && pwd)"
+if [ -f "$SCRIPT_DIR/template/.ai-flow/protocols/understand.md" ]; then
+  MODE="local"
+else
+  MODE="remote"
+fi
+
+# Helper: fetch a file from local template or remote
+fetch_file() {
+  local rel_path="$1"
+  local dest="$2"
+  if [ "$MODE" = "local" ]; then
+    cp "$SCRIPT_DIR/$rel_path" "$dest"
+  else
+    curl -sfL "$REPO_URL/$rel_path" -o "$dest"
+  fi
+}
+
 # Check if .ai-flow already exists
+UPGRADE=false
 if [ -d "$TARGET/.ai-flow" ]; then
-  echo "Warning: $TARGET/.ai-flow already exists."
-  read -p "Overwrite protocols only (keeps your data)? [y/N] " -n 1 -r
+  echo "  Warning: $TARGET/.ai-flow already exists."
+  read -p "  Overwrite protocols only (keeps your data)? [y/N] " -n 1 -r
   echo
   if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Aborted."
+    echo "  Aborted."
     exit 1
   fi
   UPGRADE=true
-else
-  UPGRADE=false
 fi
 
 # Create directory structure
 mkdir -p "$TARGET/.ai-flow"/{protocols,steering,artifacts,archive,codebase}
 
-# Copy protocols (always — these are the framework core)
-cp "$SCRIPT_DIR/template/.ai-flow/protocols/"*.md "$TARGET/.ai-flow/protocols/"
+# Protocols (always — these are the framework core)
+PROTOCOLS="understand plan execute verify quick-path backlog codebase-mapping"
+for proto in $PROTOCOLS; do
+  fetch_file "template/.ai-flow/protocols/$proto.md" "$TARGET/.ai-flow/protocols/$proto.md"
+done
 echo "  [ok] Protocols installed (7 files)"
 
-# Copy data files only on fresh install
+# Data files only on fresh install
 if [ "$UPGRADE" = false ]; then
-  cp "$SCRIPT_DIR/template/.ai-flow/BACKLOG.md" "$TARGET/.ai-flow/BACKLOG.md"
-  cp "$SCRIPT_DIR/template/.ai-flow/STATE.md" "$TARGET/.ai-flow/STATE.md"
-  cp "$SCRIPT_DIR/template/.ai-flow/decisions-global.md" "$TARGET/.ai-flow/decisions-global.md"
-  cp "$SCRIPT_DIR/template/.ai-flow/product.md" "$TARGET/.ai-flow/product.md"
+  for f in BACKLOG STATE decisions-global product; do
+    fetch_file "template/.ai-flow/$f.md" "$TARGET/.ai-flow/$f.md"
+  done
   echo "  [ok] Data files created (BACKLOG, STATE, decisions, product)"
 fi
 
 # CLAUDE.md — only if it doesn't exist
 if [ ! -f "$TARGET/CLAUDE.md" ]; then
-  cp "$SCRIPT_DIR/template/CLAUDE.md" "$TARGET/CLAUDE.md"
+  fetch_file "template/CLAUDE.md" "$TARGET/CLAUDE.md"
   echo "  [ok] CLAUDE.md created — customize it for your stack"
 else
   echo "  [skip] CLAUDE.md already exists"
 fi
 
-# Global CLAUDE.md hint
+# Global CLAUDE.md
 GLOBAL_CLAUDE="$HOME/.claude/CLAUDE.md"
 if [ ! -f "$GLOBAL_CLAUDE" ]; then
-  echo ""
-  echo "  [!] No global CLAUDE.md found at $GLOBAL_CLAUDE"
-  echo "      Copy global/CLAUDE.md there to enable ai-flow commands:"
-  echo "      mkdir -p ~/.claude && cp $SCRIPT_DIR/global/CLAUDE.md ~/.claude/CLAUDE.md"
+  read -p "  Install global CLAUDE.md to ~/.claude/CLAUDE.md? [Y/n] " -n 1 -r
+  echo
+  if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+    mkdir -p "$HOME/.claude"
+    fetch_file "global/CLAUDE.md" "$GLOBAL_CLAUDE"
+    echo "  [ok] Global CLAUDE.md installed"
+  else
+    echo "  [skip] Global CLAUDE.md — install manually later"
+  fi
 else
-  echo "  [info] Global CLAUDE.md exists at $GLOBAL_CLAUDE"
-  echo "         Merge ai-flow rules from global/CLAUDE.md if needed"
+  echo "  [info] Global CLAUDE.md exists — merge ai-flow rules manually if needed"
 fi
 
 echo ""
-echo "Done! Next steps:"
-echo "  1. Edit $TARGET/CLAUDE.md — fill in your stack, apps, and commands"
-echo "  2. Edit $TARGET/.ai-flow/product.md — describe your product and users"
-echo "  3. Copy global/CLAUDE.md to ~/.claude/CLAUDE.md (or merge)"
-echo "  4. Optionally create steering files in .ai-flow/steering/"
+echo "  Done! Next steps:"
+echo "    1. Edit CLAUDE.md — fill in your stack, apps, and commands"
+echo "    2. Edit .ai-flow/product.md — describe your product and users"
+echo "    3. Optionally create steering files in .ai-flow/steering/"
 echo ""
-echo "Start working: open Claude Code and say 'add to backlog: [your task]'"
+echo "  Start working: open Claude Code and say 'add to backlog: [your task]'"
+echo ""
