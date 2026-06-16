@@ -6,6 +6,17 @@
 - Priorities: `critical`, `high`, `medium`, `low`
 - On completion: archive to `.ai-flow/archive/T-XXX/` with summary.md, remove from BACKLOG.md, reset STATE.md
 
+## BACKLOG.md Size Budget (CRITICAL)
+
+BACKLOG.md is loaded at session start — it must contain **only pending work**. Everything closed lives in `archive/`. Closing a task must make the file SMALLER, never bigger.
+
+**Hard rules:**
+- **Soft cap ~300 lines.** If BACKLOG.md exceeds it, something closed is being duplicated there — move it to `archive/`.
+- **Session-close changelog entries** (`> YYYY-MM-DD — ...`) go to `archive/CHANGELOG.md` (newest first). BACKLOG.md keeps only the **3 most recent** as session continuity; when adding a new one, move the oldest of the 3 out.
+- **Closed epics**: the row moves verbatim to `archive/EPICS.md` (index) — never fatten the row in BACKLOG.md with a close summary; that narrative belongs in `archive/E-XXX-[slug].md`.
+- **Execution Order blocks**: only for epics with pending tasks. On epic close, move the block verbatim to `archive/EXECUTION-ORDERS.md`.
+- **Dependencies table**: only rows where BOTH epics still have pending work.
+
 ## Epics (Lightweight Task Grouping)
 
 Epics group related tasks under a shared goal. They are tracked in a dedicated section of BACKLOG.md — no separate files until archival.
@@ -25,7 +36,8 @@ Epics group related tasks under a shared goal. They are tracked in a dedicated s
 - Status: `backlog`, `active`, `done`
 - Tasks can optionally reference their epic in BACKLOG.md (column or note)
 - Epics are informational grouping — they do NOT change task lifecycle or create hierarchy
-- When all tasks in an epic are done, mark epic as `done`
+- When all tasks in an epic are done, mark epic as `done` and apply the Size Budget moves (row -> `archive/EPICS.md`, Execution Order block -> `archive/EXECUTION-ORDERS.md`)
+- The Epics section in BACKLOG.md lists ONLY epics with pending tasks
 
 **On epic completion**, generate `.ai-flow/archive/E-XXX-[slug].md`:
 ```markdown
@@ -77,14 +89,16 @@ When activating a task, the Understanding phase automatically detects composite 
 1. Generate `archive/T-XXX/summary.md` (see Archive Summary template)
 2. **Delete** `artifacts/T-XXX/` entirely
 3. Remove task from BACKLOG.md (move from Done to nowhere — it's in the archive now)
-4. Reset STATE.md to idle (remove task-specific context)
+4. Add the session-close entry to `archive/CHANGELOG.md` + BACKLOG.md top (max 3 there — rotate the oldest out)
+5. Reset STATE.md to idle (remove task-specific context)
 
 ### After Epic completion
 
 1. Generate `archive/E-XXX-[slug].md` (see Epic archive template)
 2. **Delete** `artifacts/T-XXX/` for ALL tasks in the epic
 3. Remove all epic tasks from BACKLOG.md Done section
-4. Reset STATE.md to idle
+4. Move the epic row to `archive/EPICS.md` + its Execution Order block to `archive/EXECUTION-ORDERS.md` (Size Budget)
+5. Reset STATE.md to idle
 
 ### Invariants (always true)
 
@@ -92,6 +106,7 @@ When activating a task, the Understanding phase automatically detects composite 
 - No root-level files in `artifacts/` (no templates, no loose files)
 - No empty directories anywhere in `.ai-flow/`
 - BACKLOG.md Done section is **transient** — tasks stay there only until archived, not permanently
+- BACKLOG.md stays under ~300 lines and contains only pending work (see Size Budget)
 - STATE.md contains only current task context — no historical summaries
 
 ### Allowed structure
@@ -114,7 +129,10 @@ When activating a task, the Understanding phase automatically detects composite 
 │   └── T-XXX/              # Current task only
 ├── archive/                # Completed work
 │   ├── T-XXX/summary.md
-│   └── E-XXX-slug.md
+│   ├── E-XXX-slug.md
+│   ├── CHANGELOG.md         # Session-close entries (newest first)
+│   ├── EPICS.md             # Closed epics index (rows moved from BACKLOG.md)
+│   └── EXECUTION-ORDERS.md  # Execution Order blocks of closed epics
 ├── steering/               # Domain-specific rules
 │   └── {domain}.md
 └── codebase/               # Analysis files (optional)

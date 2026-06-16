@@ -2,6 +2,8 @@
 
 **CRITICAL:** Verify is NOT just "run tests and confirm they pass". It's a criterion-by-criterion audit against understand.md.
 
+> **Run via the `/verify` skill** (global, `~/.claude/skills/verify/`). It performs the criterion audit below and then invokes the deterministic `verify-review` workflow for the multi-agent review. This protocol is the spec the skill follows. If the skill is not installed, follow the steps here manually.
+
 ## Steps
 
 1. **Re-read** `artifacts/T-XXX/understand.md` — specifically the Verifiable Criteria and Expected Behavior sections
@@ -42,50 +44,40 @@ For Behavioral criteria, evidence must cite a test that exercises the full scena
 
 ## Multi-Agent Review (Post-Audit)
 
-**After the criterion audit (steps 1-4), launch 3 review agents in parallel.** These catch issues outside the scope of the specified criteria.
+**After the criterion audit (steps 1-4), the multi-agent review runs deterministically via the `verify-review` workflow** — invoked by the `/verify` skill (`~/.claude/workflows/verify-review.js`). It catches issues outside the scope of the specified criteria. Do NOT run these auditors ad-hoc or "in your head"; the workflow guarantees they run in parallel with schema-validated output and adversarial refutation.
 
-### Agent 1: Test Coverage Auditor
-```
-Input: The task diff (all changed files) + existing spec files
-Task: Find test coverage gaps:
-- Public methods without test coverage
-- Branches not exercised (if/else, switch cases)
+The workflow runs three auditors in parallel over the task diff, then sends every HIGH/MEDIUM finding to a skeptic agent that tries to refute it (only survivors are reported):
+
+### Auditor 1: Test Coverage
+- Public methods/functions without test coverage
+- Branches not exercised (if/else, switch cases, error paths)
 - Edge cases from understand.md without corresponding tests
 - Regression risk: existing tests that should have been updated but weren't
-Output: List of gaps with priority (critical / nice-to-have)
-```
 
-### Agent 2: Security & Error Handling
-```
-Input: The task diff
-Task: Find security and robustness issues:
+### Auditor 2: Security & Error Handling
 - Inputs without validation (especially user-facing)
-- Async operations without error handling (missing catch, try-catch)
-- Subscriptions without cleanup (memory leak risk)
-- Sensitive data exposed in logs, templates, or state
+- Async operations without error handling
+- Resources acquired but never released (subscriptions, listeners, handles, connections)
+- Sensitive data exposed in logs, responses, or state
 - Missing null/undefined checks on external data
-Output: Findings with severity (high / medium / low)
-```
 
-### Agent 3: Architecture Boundaries
-```
-Input: The task diff + CLAUDE.md import rules + steering file for affected domain
-Task: Find architecture violations:
-- Imports crossing forbidden layer boundaries
-- Services bypassing facade or abstraction layers
-- Models used outside their domain without proper exports
-- Patterns that diverge from established conventions
-- Steering file rules violated (domain-specific patterns)
-Output: Violations with the rule violated and suggested fix
-```
+### Auditor 3: Architecture Boundaries
+- Imports crossing forbidden module/layer boundaries defined by the project
+- Modules reaching into another module's internals instead of its public entry point
+- Code bypassing the project's established access pattern (skipping a defined abstraction layer)
+- Divergences from the project's reference/gold-standard pattern
+- Steering-file rules violated
 
 ### Integration
 
-1. Launch all 3 agents via Agent tool (subagent_type=general-purpose) in parallel
-2. Consolidate findings into verify.md under `## Review Findings`
-3. **HIGH severity findings** -> flag to user (same as partial criteria)
-4. **MEDIUM/LOW findings** -> list in verify.md for awareness, don't block
-5. If no findings across all 3 agents -> add `## Review Findings: None`
+1. The `/verify` skill invokes the workflow with the task diff, changed files, `CLAUDE.md`, and the affected `steering/<area>.md`.
+2. Consolidate the result `{ confirmed, refuted, summary }` into verify.md under `## Review Findings`.
+3. **HIGH confirmed** -> flag to user (same gate as partial criteria); blocks archive.
+4. **MEDIUM/LOW confirmed** -> list in verify.md for awareness, don't block.
+5. **refuted** -> list briefly under "Dismissed (refuted)" to keep the audit trail transparent.
+6. No findings at all -> add `## Review Findings: None`.
+
+If the workflow/skill is not installed, fall back to launching the three auditors above via the Agent tool in parallel.
 
 ### verify.md Template (Updated)
 

@@ -149,7 +149,7 @@ After every successful task commit, **immediately** run the archive checklist (r
 
 ### Always (do without asking)
 - Fix broken imports, null pointers, type mismatches
-- Add error handling, null checks, validation
+- Add error handling, null checks, validation where the flow can reach the failure (not for impossible scenarios — see Simplicity First)
 - Fix missing deps, build config issues
 - Run tests after every code change
 - Auto-fix test if code change was intentional
@@ -172,6 +172,8 @@ After every successful task commit, **immediately** run the archive checklist (r
 ## Working Rules
 
 - **One active task at a time** in STATE.md
+- **Scope & Session Guard** — If a request arrives that is NOT part of the active task's plan, flag it in one line before acting: name whether it looks unrelated or related-but-separable, and ask whether to capture it to BACKLOG.md and keep the session clean, or switch tasks (closing the current one first — archive + prune STATE.md). User decides. Applies to your own drive-by temptations too (incidental refactors, "I noticed X nearby"). Exception: a genuine blocker for the active task is the Replan Gate, not this.
+- **Surgical Changes** — Every changed line must trace directly to the request. Don't "improve" adjacent code, comments, or formatting; don't refactor what isn't broken; match existing style even if you'd do it differently. Clean up only the orphans YOUR change created (now-unused imports/vars/functions) — never pre-existing dead code, just mention it. This is the line/diff-level counterpart to the Scope & Session Guard (which operates at task level).
 - **Understanding phase MANDATORY** before planning — never skip to plan without gathering context
 - **Detect composite tasks** — propose splitting tasks that mix multiple concerns into independent backlog tasks (not subtasks) before planning
 - **Ask contextual questions** — gather all necessary context to produce polished code
@@ -185,7 +187,11 @@ After every successful task commit, **immediately** run the archive checklist (r
 
 ## Core Principles
 
-- **Simplicity First**: Make every change as simple as possible
+- **Simplicity First**: Minimum code that solves the problem, nothing speculative.
+  - No abstractions for single-use code.
+  - No "flexibility" or "configurability" that wasn't requested.
+  - No error handling for scenarios the flow cannot reach.
+  - Self-check: "Would a senior engineer say this is overcomplicated?" If yes, rewrite.
 - **Minimize Impact**: Only touch code relevant to the task
 - **No Shortcuts**: Find root causes, no temporary fixes
 - **Senior-Level Quality**: Thoroughness and professionalism
