@@ -171,6 +171,10 @@ The framework ships optional global tooling under `global/`, installed to `~/.cl
 - [Lifecycle Deep Dive](docs/lifecycle.md) — Detailed explanation of each phase
 - [Customization Guide](docs/customization.md) — Adapting ai-flow to your workflow
 
+## Related
+
+- [ai-flow-skills](https://github.com/jisaballo/ai-flow-skills) — companion pack of stack-specific Claude Code skills (Angular / Nx / Ionic) you can drop into a project alongside ai-flow.
+
 ## Requirements
 
 - [Claude Code](https://claude.ai/code) CLI or IDE extension
