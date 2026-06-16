@@ -1,0 +1,27 @@
+{
+  "PreToolUse": [
+    {
+      "matcher": "Bash",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 $HOME/.claude/hooks/git-safety.py"
+        }
+      ]
+    }
+  ],
+  "Stop": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/check-state-size.sh"
+        },
+        {
+          "type": "command",
+          "command": "python3 $HOME/.claude/hooks/diff-size-guard.py"
+        }
+      ]
+    }
+  ]
+}
