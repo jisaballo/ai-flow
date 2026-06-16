@@ -149,6 +149,22 @@ The project `CLAUDE.md` tells Claude Code about your specific stack. See `templa
 
 The global `~/.claude/CLAUDE.md` contains the ai-flow framework rules (lifecycle, phases, commands) plus your personal preferences. See `global/CLAUDE.md`.
 
+### Global Tooling (skills, workflow, hooks)
+
+The framework ships optional global tooling under `global/`, installed to `~/.claude/` by the installer. It is generic — no project-specific assumptions.
+
+**Phase skills** (`global/skills/` → `~/.claude/skills/`) — slash-command entry points that run a phase by following its protocol:
+
+| Skill | Runs |
+|-------|------|
+| `/understand` | Understand phase — decompose, investigate, write `understand.md` with Verifiable Criteria |
+| `/plan` | Plan + Conform phase — max-3-step `plan.md`, then failing conformance test stubs |
+| `/verify` | Verify phase — criterion audit, then the `verify-review` workflow |
+
+**verify-review workflow** (`global/workflows/verify-review.js` → `~/.claude/workflows/`) — a deterministic multi-agent review invoked by `/verify`: three auditors (coverage / security / architecture) in parallel over the task diff, then adversarial refutation of every HIGH/MEDIUM finding so only genuine issues survive.
+
+**Guardrail hooks** (`global/hooks/` → `~/.claude/hooks/`) — optional Claude Code hooks that enforce the workflow. See [`global/hooks/README.md`](global/hooks/README.md) for what each does and how to register them in `settings.json`. They are safe to install globally (no-op outside an ai-flow project).
+
 ## Documentation
 
 - [Getting Started](docs/getting-started.md) — Step-by-step setup guide

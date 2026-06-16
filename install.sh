@@ -94,6 +94,30 @@ else
   echo "  [info] Global CLAUDE.md exists — merge ai-flow rules manually if needed"
 fi
 
+# Global tooling: phase skills, verify-review workflow, guardrail hooks
+read -p "  Install ai-flow global tooling (phase skills, verify workflow, hooks) to ~/.claude? [Y/n] " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+  mkdir -p "$HOME/.claude"/skills/{understand,plan,verify} "$HOME/.claude/workflows" "$HOME/.claude/hooks"
+
+  for skill in understand plan verify; do
+    fetch_file "global/skills/$skill/SKILL.md" "$HOME/.claude/skills/$skill/SKILL.md"
+  done
+  echo "  [ok] Phase skills installed (/understand, /plan, /verify)"
+
+  fetch_file "global/workflows/verify-review.js" "$HOME/.claude/workflows/verify-review.js"
+  echo "  [ok] verify-review workflow installed"
+
+  for hook in check-state-size.sh diff-size-guard.py git-safety.py; do
+    fetch_file "global/hooks/$hook" "$HOME/.claude/hooks/$hook"
+  done
+  chmod +x "$HOME/.claude/hooks/check-state-size.sh" 2>/dev/null || true
+  echo "  [ok] Hooks installed to ~/.claude/hooks"
+  echo "  [action] Register them: merge global/hooks/settings.hooks.json into the 'hooks' key of ~/.claude/settings.json"
+else
+  echo "  [skip] Global tooling — install manually from global/ later"
+fi
+
 echo ""
 echo "  Done! Next steps:"
 echo "    1. Edit CLAUDE.md — fill in your stack, apps, and commands"

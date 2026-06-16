@@ -37,6 +37,19 @@ If you already have a `~/.claude/CLAUDE.md`, merge the ai-flow sections into it.
 - `## Working Rules`
 - `## Core Principles`
 
+### 3. (Optional) Install the global tooling
+
+The phase skills, verify-review workflow, and guardrail hooks live under `global/`. The installer offers to copy them; to do it manually:
+
+```bash
+mkdir -p ~/.claude/skills ~/.claude/workflows ~/.claude/hooks
+cp -R /tmp/ai-flow/global/skills/* ~/.claude/skills/
+cp /tmp/ai-flow/global/workflows/verify-review.js ~/.claude/workflows/
+cp /tmp/ai-flow/global/hooks/*.sh /tmp/ai-flow/global/hooks/*.py ~/.claude/hooks/
+```
+
+Then register the hooks by merging `global/hooks/settings.hooks.json` into the `hooks` key of `~/.claude/settings.json`. See [`global/hooks/README.md`](../global/hooks/README.md). The skills give you `/understand`, `/plan`, and `/verify`.
+
 ### 3. Customize for your project
 
 **Edit `CLAUDE.md`** in your project root:
