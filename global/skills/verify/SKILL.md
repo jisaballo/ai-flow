@@ -20,12 +20,12 @@ Runs the Verify phase of the ai-flow workflow. Works in any project that has `.a
 5. **Gather the diff** (working tree, uncommitted — ai-flow doesn't commit until validated):
    - `git diff HEAD` → modified tracked files (this is `diffText`)
    - `git ls-files --others --exclude-standard` → untracked files; Read them and append their content to the diff context
-   - Build `changedFiles`, scoped to the project's source directories.
+   - Build `changedFiles`, scoped to the `source_dirs` declared in `.ai-flow/project.yml`. **Fallback:** if `.ai-flow/project.yml` is absent, infer the source directories from CLAUDE.md (legacy behavior).
 
 6. **Invoke the verify-review workflow** (deterministic 3-auditor + adversarial refutation). Call the **Workflow** tool with:
    - `scriptPath`: `~/.claude/workflows/verify-review.js`
    - `args`: `{ taskId, area, understandPath, steeringPath, claudeMdPath, changedFiles, diffText }`
-   Resolve `area` + `steeringPath` from the affected area (`.ai-flow/steering/<area>.md` if present). `claudeMdPath` = the project `CLAUDE.md`. `understandPath` = the active task's `understand.md`.
+   Resolve `area` from the affected unit using `area_kind` in `.ai-flow/project.yml`, and `steeringPath` from that file's `steering` map (`steering[<area>]`, falling back to `.ai-flow/steering/<area>.md` if present). `claudeMdPath` = the project `CLAUDE.md`. `understandPath` = the active task's `understand.md`.
 
 7. **Consolidate** the workflow result `{ confirmed, refuted, summary }`:
    - **HIGH confirmed** → ⚠️ flag to the user; blocks archive (same gate as a partial criterion).

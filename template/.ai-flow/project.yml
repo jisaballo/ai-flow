@@ -1,0 +1,34 @@
+# project.yml — the project layer ai-flow's generic engine interpolates.
+#
+# This file is the SINGLE SOURCE the phase skills read for project-specific
+# values (test command, source dirs, area mapping). CLAUDE.md may also list
+# commands in prose for humans, but project.yml is authoritative — keep them
+# consistent, and when in doubt the skills trust this file.
+#
+# If this file is absent, the skills fall back to inferring values from
+# CLAUDE.md (legacy behavior) — so existing projects keep working.
+
+name: <your project name>
+
+# What a "area" means in this repo — the unit tasks operate on.
+# e.g. app | domain | package | service | module
+area_kind: <app | domain | package | service>
+
+# Top-level source directories. The verify phase scopes changed files to these.
+source_dirs:
+  - src
+
+# Commands the engine interpolates. Use the optional {area} placeholder when the
+# command is scoped to one unit (e.g. an Nx project); omit it for a flat command.
+commands:
+  test: "npm test"            # e.g. "npx nx test {area}"  — used by plan/verify (TDD)
+  lint: "npm run lint"        # e.g. "npx nx lint {area}"
+  build: "npm run build"      # e.g. "npx nx build {area}"
+
+# Map an area to its steering file. The verify phase loads the matching steering
+# file (.ai-flow/steering/<area>.md) for the area a task touches.
+# Leave empty if you have no steering files yet.
+steering: {}
+  # example:
+  # auth: steering/auth.md
+  # payments: steering/payments.md

@@ -58,6 +58,13 @@ Then register the hooks by merging `global/hooks/settings.hooks.json` into the `
 - Document your architecture and import rules
 - Add your build/test/lint commands
 
+**Edit `.ai-flow/project.yml`** (the structured project layer the skills read):
+- Set `area_kind` (what an "area" means: app / domain / package / service)
+- List `source_dirs` (where your source lives)
+- Set `commands.test` / `lint` / `build` (use `{area}` for scoped commands like `npx nx test {area}`)
+- Map each area to its steering file under `steering:`
+- See [Customization → Project layer](customization.md) for the full schema. If absent, skills fall back to inferring from CLAUDE.md.
+
 **Edit `.ai-flow/product.md`**:
 - Describe your product and domain
 - List user roles and their actions

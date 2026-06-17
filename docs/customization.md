@@ -15,6 +15,29 @@ The project `CLAUDE.md` tells Claude Code about your specific tech stack. This i
 - **Commands**: Build, test, lint, deploy commands
 - **Pre-commit**: Hooks that run on git commit
 
+### Project layer — `project.yml` (required)
+
+ai-flow ships a **generic, stack-agnostic core** (protocols, phase skills, hooks). Everything specific to your repo lives in a thin **project layer** so the core never needs editing. The structured part of that layer is `.ai-flow/project.yml` — the single source the phase skills read for the values they interpolate:
+
+```yaml
+name: my-project
+area_kind: package          # what an "area" means here: app | domain | package | service
+source_dirs:                # verify scopes changed files to these
+  - src
+commands:
+  test: "npm test"          # use {area} when the command is scoped, e.g. "npx nx test {area}"
+  lint: "npm run lint"
+  build: "npm run build"
+steering:                   # area -> steering file the verify phase loads
+  auth: steering/auth.md
+```
+
+**Why it exists:** without it, the skills would have to guess your test command from CLAUDE.md prose, so people hardcode their stack into the skills and the framework drifts. `project.yml` makes one generic skill as reliable as a hardcoded one.
+
+**Authority:** `project.yml` is authoritative for commands. CLAUDE.md may list commands in prose for humans — keep them consistent; the skills trust `project.yml`.
+
+**Fallback:** if `project.yml` is absent, the skills infer values from CLAUDE.md (legacy behavior), so older projects keep working.
+
 ### Product Context (recommended)
 
 `.ai-flow/product.md` provides business context that helps Claude make better decisions. Especially important for:

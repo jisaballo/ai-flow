@@ -67,7 +67,8 @@ if [ "$UPGRADE" = false ]; then
   for f in BACKLOG STATE decisions-global product; do
     fetch_file "template/.ai-flow/$f.md" "$TARGET/.ai-flow/$f.md"
   done
-  echo "  [ok] Data files created (BACKLOG, STATE, decisions, product)"
+  fetch_file "template/.ai-flow/project.yml" "$TARGET/.ai-flow/project.yml"
+  echo "  [ok] Data files created (BACKLOG, STATE, decisions, product, project.yml)"
 fi
 
 # CLAUDE.md — only if it doesn't exist

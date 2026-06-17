@@ -17,6 +17,7 @@ Runs the Understand phase of the ai-flow workflow. Works in any project that has
 
 4. **Follow the protocol**:
    - Detect composite tasks → propose splitting into independent backlog tasks before planning.
+   - Read `.ai-flow/project.yml` for `area_kind` (what an "area" means here) and the `steering` map; use it to phrase the affected area and locate steering files. **Fallback:** if `.ai-flow/project.yml` is absent, infer these from CLAUDE.md (legacy behavior).
    - Load steering files for the affected domains (`.ai-flow/steering/<domain>.md`).
    - If >2 domains are affected, launch parallel Explore agents to investigate before asking questions.
    - Ask contextual questions to gather everything needed for polished code.

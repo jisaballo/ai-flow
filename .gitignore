@@ -1,1 +1,5 @@
 .DS_Store
+
+# Live dogfooding workspace — local-only. Leading slash anchors to repo root so the
+# shipped template (template/.ai-flow/) is NOT ignored.
+/.ai-flow/

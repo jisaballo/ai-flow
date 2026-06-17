@@ -34,6 +34,8 @@ Write `artifacts/T-XXX/plan.md` with:
 
 Both are required per step. If no test file exists for a step, Verify should be a build command (at minimum, it compiles).
 
+The test command comes from `commands.test` in `.ai-flow/project.yml` (interpolate the `{area}` placeholder with the area the step touches); if `project.yml` is absent, infer it from CLAUDE.md.
+
 ## Conformance Tests (Post-Plan, Pre-Execute)
 
 **After the plan is approved and before Execute begins**, generate conformance test stubs from the Verifiable Criteria in understand.md.
