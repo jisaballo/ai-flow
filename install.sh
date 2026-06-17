@@ -99,12 +99,12 @@ fi
 read -p "  Install ai-flow global tooling (phase skills, verify workflow, hooks) to ~/.claude? [Y/n] " -n 1 -r
 echo
 if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-  mkdir -p "$HOME/.claude"/skills/{understand,plan,verify} "$HOME/.claude/workflows" "$HOME/.claude/hooks"
+  mkdir -p "$HOME/.claude"/skills/{understand,plan,verify,discover} "$HOME/.claude/workflows" "$HOME/.claude/hooks"
 
-  for skill in understand plan verify; do
+  for skill in understand plan verify discover; do
     fetch_file "global/skills/$skill/SKILL.md" "$HOME/.claude/skills/$skill/SKILL.md"
   done
-  echo "  [ok] Phase skills installed (/understand, /plan, /verify)"
+  echo "  [ok] Skills installed (/understand, /plan, /verify, /discover)"
 
   fetch_file "global/workflows/verify-review.js" "$HOME/.claude/workflows/verify-review.js"
   echo "  [ok] verify-review workflow installed"

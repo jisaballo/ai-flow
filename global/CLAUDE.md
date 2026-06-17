@@ -105,6 +105,7 @@ At task activation, classify the task into an autonomy level. User confirms or a
 - **Understand**: "understand" -> run Understanding phase for active task
 - **More questions**: "more questions" -> gather additional context during Understanding
 - **Map codebase**: "map codebase" -> run lightweight codebase analysis (read codebase-mapping protocol)
+- **Discover project**: "discover" -> derive `.ai-flow/project.yml` for an existing repo (read discover protocol)
 
 ### Commit Protocol
 

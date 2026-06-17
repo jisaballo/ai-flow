@@ -58,7 +58,9 @@ Then register the hooks by merging `global/hooks/settings.hooks.json` into the `
 - Document your architecture and import rules
 - Add your build/test/lint commands
 
-**Edit `.ai-flow/project.yml`** (the structured project layer the skills read):
+**Adopting into an existing project?** Run `discover` and let ai-flow derive `.ai-flow/project.yml` for you — it inspects your `package.json`/`nx.json`/layout, confirms the uncertain values with you, and writes a complete project.yml. Use it instead of hand-editing the fields below.
+
+**Edit `.ai-flow/project.yml`** (the structured project layer the skills read) — or let `discover` fill it:
 - Set `area_kind` (what an "area" means: app / domain / package / service)
 - List `source_dirs` (where your source lives)
 - Set `commands.test` / `lint` / `build` (use `{area}` for scoped commands like `npx nx test {area}`)

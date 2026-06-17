@@ -50,6 +50,14 @@ done
 echo "== C7: docs describe the project layer =="
 grep -rq "project.yml" docs/ && ok "docs mention project.yml" || bad "docs do not mention project.yml"
 
+echo "== C8: discover capability (T-002) =="
+test -f global/skills/discover/SKILL.md && ok "discover skill exists" || bad "global/skills/discover/SKILL.md missing"
+test -f template/.ai-flow/protocols/discover.md && ok "discover protocol exists" || bad "template/.ai-flow/protocols/discover.md missing"
+grep -qi "AskUserQuestion" template/.ai-flow/protocols/discover.md 2>/dev/null && ok "discover protocol confirms uncertain fields" || bad "discover protocol missing AskUserQuestion flow"
+grep -q "discover" install.sh && ok "install.sh wires discover" || bad "install.sh does not wire discover"
+grep -qi "discover" global/CLAUDE.md && ok "global CLAUDE.md surfaces discover" || bad "global CLAUDE.md does not mention discover"
+grep -rq "discover" docs/ && ok "docs mention discover" || bad "docs do not mention discover"
+
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
