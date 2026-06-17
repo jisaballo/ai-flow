@@ -3,11 +3,22 @@ set -e
 
 # ai-flow installer
 # Usage:
-#   Remote:  curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | bash
-#   Remote with target:  curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | bash -s /path/to/project
-#   Local:   ./install.sh [target-directory]
+#   Init (new or existing project; interactive):
+#     curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | bash
+#     curl -sL .../install.sh | bash -s /path/to/project        # back-compat: bare path => init
+#     curl -sL .../install.sh | bash -s init /path/to/project
+#     ./install.sh [init] [target-directory]
+#   Update (re-fetch core + tooling, preserve all project data; unattended):
+#     curl -sL .../install.sh | bash -s update [/path/to/project]
+#     ./install.sh update [target-directory]
 
 REPO_URL="https://raw.githubusercontent.com/jisaballo/ai-flow/main"
+
+# --- Parse subcommand + target (back-compat: if $1 is a path, treat as init target) ---
+CMD="init"
+case "${1:-}" in
+  init|update) CMD="$1"; shift ;;
+esac
 TARGET="${1:-.}"
 
 # Resolve absolute path (handle both existing and new directories)
@@ -15,7 +26,7 @@ mkdir -p "$TARGET"
 TARGET="$(cd "$TARGET" && pwd)"
 
 echo ""
-echo "  ai-flow installer"
+echo "  ai-flow installer ($CMD)"
 echo "  ─────────────────"
 echo "  Target: $TARGET"
 echo ""
@@ -39,69 +50,94 @@ fetch_file() {
   fi
 }
 
-# Check if .ai-flow already exists
-UPGRADE=false
-if [ -d "$TARGET/.ai-flow" ]; then
-  echo "  Warning: $TARGET/.ai-flow already exists."
-  read -p "  Overwrite protocols only (keeps your data)? [y/N] " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "  Aborted."
-    exit 1
-  fi
-  UPGRADE=true
-fi
+PROTOCOLS="understand plan execute verify quick-path backlog codebase-mapping discover"
+SKILLS="understand plan verify discover"
+HOOKS="check-state-size.sh diff-size-guard.py git-safety.py"
 
-# Create directory structure
-mkdir -p "$TARGET/.ai-flow"/{protocols,steering,artifacts,archive,codebase}
+# --- Reusable install units ---
 
-# Protocols (always — these are the framework core)
-PROTOCOLS="understand plan execute verify quick-path backlog codebase-mapping"
-for proto in $PROTOCOLS; do
-  fetch_file "template/.ai-flow/protocols/$proto.md" "$TARGET/.ai-flow/protocols/$proto.md"
-done
-echo "  [ok] Protocols installed (7 files)"
+# Framework core: directory structure + protocols (re-fetched on every init/update)
+install_core() {
+  mkdir -p "$TARGET/.ai-flow"/{protocols,steering,artifacts,archive,codebase}
+  local count=0
+  for proto in $PROTOCOLS; do
+    fetch_file "template/.ai-flow/protocols/$proto.md" "$TARGET/.ai-flow/protocols/$proto.md"
+    count=$((count+1))
+  done
+  echo "  [ok] Protocols installed ($count files)"
+}
 
-# Data files only on fresh install
-if [ "$UPGRADE" = false ]; then
+# Project data: fresh install only — never touched on update
+install_data() {
   for f in BACKLOG STATE decisions-global product; do
     fetch_file "template/.ai-flow/$f.md" "$TARGET/.ai-flow/$f.md"
   done
   fetch_file "template/.ai-flow/project.yml" "$TARGET/.ai-flow/project.yml"
   echo "  [ok] Data files created (BACKLOG, STATE, decisions, product, project.yml)"
-fi
+}
 
-# CLAUDE.md — only if it doesn't exist
-if [ ! -f "$TARGET/CLAUDE.md" ]; then
-  fetch_file "template/CLAUDE.md" "$TARGET/CLAUDE.md"
-  echo "  [ok] CLAUDE.md created — customize it for your stack"
-else
-  echo "  [skip] CLAUDE.md already exists"
-fi
-
-# Global CLAUDE.md
-GLOBAL_CLAUDE="$HOME/.claude/CLAUDE.md"
-if [ ! -f "$GLOBAL_CLAUDE" ]; then
-  read -p "  Install global CLAUDE.md to ~/.claude/CLAUDE.md? [Y/n] " -n 1 -r
-  echo
-  if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-    mkdir -p "$HOME/.claude"
-    fetch_file "global/CLAUDE.md" "$GLOBAL_CLAUDE"
-    echo "  [ok] Global CLAUDE.md installed"
+# Project CLAUDE.md — only if it doesn't exist (never clobbered)
+install_project_claude() {
+  if [ ! -f "$TARGET/CLAUDE.md" ]; then
+    fetch_file "template/CLAUDE.md" "$TARGET/CLAUDE.md"
+    echo "  [ok] CLAUDE.md created — customize it for your stack"
   else
-    echo "  [skip] Global CLAUDE.md — install manually later"
+    echo "  [skip] CLAUDE.md already exists"
   fi
-else
-  echo "  [info] Global CLAUDE.md exists — merge ai-flow rules manually if needed"
-fi
+}
 
-# Global tooling: phase skills, verify-review workflow, guardrail hooks
-read -p "  Install ai-flow global tooling (phase skills, verify workflow, hooks) to ~/.claude? [Y/n] " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Nn]$ ]]; then
-  mkdir -p "$HOME/.claude"/skills/{understand,plan,verify,discover} "$HOME/.claude/workflows" "$HOME/.claude/hooks"
+# Idempotently merge ai-flow hooks into ~/.claude/settings.json (preserves other keys + user hooks)
+merge_hooks() {
+  local settings="$HOME/.claude/settings.json"
+  local src
+  src="$(mktemp)"
+  fetch_file "global/hooks/settings.hooks.json" "$src"
+  if ! command -v python3 >/dev/null 2>&1; then
+    echo "  [action] python3 not found — merge $src into the 'hooks' key of $settings manually"
+    return 0
+  fi
+  python3 - "$settings" "$src" <<'PY'
+import json, os, sys
+settings_path, src_path = sys.argv[1], sys.argv[2]
+try:
+    with open(settings_path) as f:
+        settings = json.load(f)
+except (FileNotFoundError, ValueError):
+    settings = {}
+with open(src_path) as f:
+    incoming = json.load(f)
+hooks = settings.setdefault("hooks", {})
+for event, groups in incoming.items():
+    existing = hooks.setdefault(event, [])
+    seen = {h.get("command") for g in existing for h in g.get("hooks", [])}
+    for g in groups:
+        fresh = [h for h in g.get("hooks", []) if h.get("command") not in seen]
+        if not fresh:
+            continue
+        matcher = g.get("matcher")
+        target = next((eg for eg in existing if eg.get("matcher") == matcher), None)
+        if target is None:
+            ng = {"hooks": fresh}
+            if matcher is not None:
+                ng = {"matcher": matcher, "hooks": fresh}
+            existing.append(ng)
+        else:
+            target.setdefault("hooks", []).extend(fresh)
+        seen.update(h.get("command") for h in fresh)
+os.makedirs(os.path.dirname(settings_path), exist_ok=True)
+with open(settings_path, "w") as f:
+    json.dump(settings, f, indent=2)
+    f.write("\n")
+PY
+  rm -f "$src"
+  echo "  [ok] Hooks registered in $settings"
+}
 
-  for skill in understand plan verify discover; do
+# Global tooling: phase skills, verify-review workflow, guardrail hooks + settings.json merge
+install_tooling() {
+  mkdir -p "$HOME/.claude"/skills "$HOME/.claude/workflows" "$HOME/.claude/hooks"
+  for skill in $SKILLS; do
+    mkdir -p "$HOME/.claude/skills/$skill"
     fetch_file "global/skills/$skill/SKILL.md" "$HOME/.claude/skills/$skill/SKILL.md"
   done
   echo "  [ok] Skills installed (/understand, /plan, /verify, /discover)"
@@ -109,21 +145,79 @@ if [[ ! $REPLY =~ ^[Nn]$ ]]; then
   fetch_file "global/workflows/verify-review.js" "$HOME/.claude/workflows/verify-review.js"
   echo "  [ok] verify-review workflow installed"
 
-  for hook in check-state-size.sh diff-size-guard.py git-safety.py; do
+  for hook in $HOOKS; do
     fetch_file "global/hooks/$hook" "$HOME/.claude/hooks/$hook"
   done
   chmod +x "$HOME/.claude/hooks/check-state-size.sh" 2>/dev/null || true
   echo "  [ok] Hooks installed to ~/.claude/hooks"
-  echo "  [action] Register them: merge global/hooks/settings.hooks.json into the 'hooks' key of ~/.claude/settings.json"
-else
-  echo "  [skip] Global tooling — install manually from global/ later"
-fi
+  merge_hooks
+}
 
-echo ""
-echo "  Done! Next steps:"
-echo "    1. Edit CLAUDE.md — fill in your stack, apps, and commands"
-echo "    2. Edit .ai-flow/product.md — describe your product and users"
-echo "    3. Optionally create steering files in .ai-flow/steering/"
-echo ""
-echo "  Start working: open Claude Code and say 'add to backlog: [your task]'"
-echo ""
+# Global CLAUDE.md — install only if absent (never clobbered)
+install_global_claude() {
+  local global_claude="$HOME/.claude/CLAUDE.md"
+  if [ ! -f "$global_claude" ]; then
+    mkdir -p "$HOME/.claude"
+    fetch_file "global/CLAUDE.md" "$global_claude"
+    echo "  [ok] Global CLAUDE.md installed"
+  else
+    echo "  [info] Global CLAUDE.md exists — merge ai-flow rules manually if needed"
+  fi
+}
+
+# --- Subcommands ---
+
+cmd_init() {
+  local upgrade=false
+  if [ -d "$TARGET/.ai-flow" ] && [ -f "$TARGET/.ai-flow/BACKLOG.md" ]; then
+    echo "  Warning: $TARGET/.ai-flow already exists."
+    read -p "  Refresh protocols only (keeps your data)? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+      echo "  Aborted. (Tip: use './install.sh update $TARGET' to update without prompts.)"
+      exit 1
+    fi
+    upgrade=true
+  fi
+
+  install_core
+  [ "$upgrade" = false ] && install_data
+  install_project_claude
+
+  read -p "  Install/refresh global CLAUDE.md? [Y/n] " -n 1 -r; echo
+  [[ ! $REPLY =~ ^[Nn]$ ]] && install_global_claude || echo "  [skip] Global CLAUDE.md"
+
+  read -p "  Install ai-flow global tooling (skills, verify workflow, hooks)? [Y/n] " -n 1 -r; echo
+  if [[ ! $REPLY =~ ^[Nn]$ ]]; then
+    install_tooling
+  else
+    echo "  [skip] Global tooling — install later with './install.sh update'"
+  fi
+
+  echo ""
+  echo "  Done! Next steps:"
+  echo "    1. Edit CLAUDE.md — fill in your stack, apps, and commands"
+  echo "       (or run 'discover' in Claude Code to derive .ai-flow/project.yml)"
+  echo "    2. Edit .ai-flow/product.md — describe your product and users"
+  echo "    3. Optionally create steering files in .ai-flow/steering/"
+  echo ""
+  echo "  Start working: open Claude Code and say 'add to backlog: [your task]'"
+  echo ""
+}
+
+cmd_update() {
+  if [ ! -d "$TARGET/.ai-flow" ]; then
+    echo "  [warn] $TARGET has no .ai-flow/ — run 'init' first. Proceeding to install the core anyway."
+  fi
+  echo "  Updating ai-flow core + global tooling (project data preserved)..."
+  install_core      # re-fetch protocols (the core)
+  install_tooling   # re-fetch skills/workflow/hooks + re-merge settings.json (unattended)
+  echo ""
+  echo "  [ok] Update complete. Project data, steering, and CLAUDE.md were preserved."
+  echo ""
+}
+
+case "$CMD" in
+  init)   cmd_init ;;
+  update) cmd_update ;;
+esac

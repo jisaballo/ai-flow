@@ -16,7 +16,13 @@ git clone https://github.com/jisaballo/ai-flow.git /tmp/ai-flow
 
 # Option B: One-liner (once published)
 curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | bash
+
+# Update later (any device/dev): re-fetch the core + tooling, keep your data, no prompts
+curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | bash -s update
+./install.sh update /path/to/your/project
 ```
+
+The installer takes two subcommands: `init` (default — new or existing project, interactive) and `update` (unattended — re-fetches protocols, skills, the verify workflow, and hooks, and re-registers the hooks, while preserving all your `.ai-flow/` data, steering, and both CLAUDE.md files). A bare path is treated as `init` for back-compat.
 
 This creates:
 - `.ai-flow/` directory with protocols and empty data files
@@ -48,7 +54,7 @@ cp /tmp/ai-flow/global/workflows/verify-review.js ~/.claude/workflows/
 cp /tmp/ai-flow/global/hooks/*.sh /tmp/ai-flow/global/hooks/*.py ~/.claude/hooks/
 ```
 
-Then register the hooks by merging `global/hooks/settings.hooks.json` into the `hooks` key of `~/.claude/settings.json`. See [`global/hooks/README.md`](../global/hooks/README.md). The skills give you `/understand`, `/plan`, and `/verify`.
+The installer **registers the hooks for you** — it merges `global/hooks/settings.hooks.json` into the `hooks` key of `~/.claude/settings.json` idempotently (python3), preserving your other settings and your own hooks. The manual `cp` above is only needed if you skipped the tooling step or python3 is unavailable. See [`global/hooks/README.md`](../global/hooks/README.md). The skills give you `/understand`, `/plan`, `/verify`, and `/discover`.
 
 ### 3. Customize for your project
 

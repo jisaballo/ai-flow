@@ -12,8 +12,13 @@ Optional Claude Code hooks that enforce the ai-flow guardrails. Copy them to
 
 ## Registering them
 
-Merge `settings.hooks.json` into the `hooks` key of `~/.claude/settings.json`.
-The commands use `$HOME` so they are portable across machines.
+The installer does this for you: `install.sh` (init with tooling, or `update`)
+merges `settings.hooks.json` into the `hooks` key of `~/.claude/settings.json`
+idempotently via python3, preserving your other settings and your own hooks.
+
+To do it by hand (e.g. python3 unavailable), merge `settings.hooks.json` into the
+`hooks` key of `~/.claude/settings.json` yourself. The commands use `$HOME` so they
+are portable across machines.
 
 Hooks are independent — install only the ones you want. They do nothing harmful
 outside an ai-flow project (`check-state-size.sh` is a no-op without `.ai-flow/`).

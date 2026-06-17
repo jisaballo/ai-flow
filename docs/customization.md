@@ -116,10 +116,11 @@ The default commit format is `type(scope): description`. Customize in the Commit
 
 When onboarding team members:
 
-1. They install ai-flow in the shared project (protocols are in `.ai-flow/`)
-2. They copy `global/CLAUDE.md` to their `~/.claude/CLAUDE.md`
-3. They customize the `## Personal Preferences` section
-4. Steering files, product.md, and project CLAUDE.md are shared via git
+1. They run `./install.sh init` in the shared project (protocols land in `.ai-flow/`; the installer also offers the global tooling and registers the hooks)
+2. They customize the `## Personal Preferences` section of their `~/.claude/CLAUDE.md`
+3. Steering files, product.md, `project.yml`, and project CLAUDE.md are shared via git
+
+To pull framework improvements on any device later, run `./install.sh update` (unattended): it re-fetches protocols, skills, the verify workflow, and hooks, and re-registers them, while preserving all project data and both CLAUDE.md files.
 
 **What's shared** (committed to repo):
 - `.ai-flow/protocols/` — the framework rules
