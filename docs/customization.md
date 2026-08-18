@@ -78,8 +78,8 @@ Steering files in `.ai-flow/steering/` contain domain-specific knowledge that pr
 
 ### Protocols
 
-The files in `.ai-flow/protocols/` are the framework core. Modifying them can break the lifecycle flow. If you need different behavior:
-1. Open an issue on the ai-flow repo
+The protocols installed at `~/.claude/ai-flow/protocols/` are the framework core. Never edit the installed copies — a drift-check hook will flag it. If you need different behavior:
+1. Change them in your clone of the ai-flow repo (commit), then run `./install.sh update`
 2. Use steering files for domain-specific rules instead
 3. Use the global CLAUDE.md for workflow preferences
 
@@ -116,14 +116,13 @@ The default commit format is `type(scope): description`. Customize in the Commit
 
 When onboarding team members:
 
-1. They run `./install.sh init` in the shared project (protocols land in `.ai-flow/`; the installer also offers the global tooling and registers the hooks)
+1. They run `./install.sh init` in the shared project (creates the `.ai-flow/` data skeleton; the engine — protocols, skills, workflow, hooks — installs into their `~/.claude`)
 2. They customize the `## Personal Preferences` section of their `~/.claude/CLAUDE.md`
 3. Steering files, product.md, `project.yml`, and project CLAUDE.md are shared via git
 
-To pull framework improvements on any device later, run `./install.sh update` (unattended): it re-fetches protocols, skills, the verify workflow, and hooks, and re-registers them, while preserving all project data and both CLAUDE.md files.
+To pull framework improvements on any device later, run `./install.sh update` (unattended): it refreshes the engine in `~/.claude` — protocols, skills, the verify workflow, hooks, and the ralph runner — and never writes into any project.
 
 **What's shared** (committed to repo):
-- `.ai-flow/protocols/` — the framework rules
 - `.ai-flow/product.md` — product context
 - `.ai-flow/steering/` — domain rules
 - `CLAUDE.md` — project configuration

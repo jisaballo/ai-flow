@@ -19,10 +19,10 @@ curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | b
 
 # Update later (any device/dev): re-fetch the core + tooling, keep your data, no prompts
 curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | bash -s update
-./install.sh update /path/to/your/project
+./install.sh update
 ```
 
-The installer takes two subcommands: `init` (default — new or existing project, interactive) and `update` (unattended — re-fetches protocols, skills, the verify workflow, and hooks, and re-registers the hooks, while preserving all your `.ai-flow/` data, steering, and both CLAUDE.md files). A bare path is treated as `init` for back-compat.
+The installer takes two subcommands: `init` (default — new or existing project, interactive; creates the project's `.ai-flow/` data skeleton and installs the engine) and `update` (unattended — refreshes the engine in `~/.claude`: protocols, skills, the verify workflow, hooks, and the ralph runner; it never writes into a project). A bare path is treated as `init` for back-compat.
 
 This creates:
 - `.ai-flow/` directory with protocols and empty data files

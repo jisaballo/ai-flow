@@ -58,6 +58,12 @@ grep -q "discover" install.sh && ok "install.sh wires discover" || bad "install.
 grep -qi "discover" global/CLAUDE.md && ok "global CLAUDE.md surfaces discover" || bad "global CLAUDE.md does not mention discover"
 grep -rq "discover" docs/ && ok "docs mention discover" || bad "docs do not mention discover"
 
+echo "== C10: drift-check capability =="
+test -f global/hooks/drift-check.sh && ok "drift-check hook exists" || bad "drift-check hook missing"
+grep -q "drift-check" global/hooks/settings.hooks.json && ok "drift-check wired in settings" || bad "drift-check not wired"
+grep -q "source.path" install.sh && ok "install.sh records the clone path" || bad "install.sh does not record source.path"
+grep -q "drift-check" global/hooks/README.md && ok "drift-check documented" || bad "drift-check not in hooks README"
+
 echo "== C9: installer init/update + hooks auto-merge (T-003) =="
 # --- structural ---
 grep -qE '(init|update)\)' install.sh && ok "install.sh has init/update dispatch" || bad "no init/update dispatch"

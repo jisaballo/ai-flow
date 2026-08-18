@@ -105,19 +105,21 @@ your-project/
 │   ├── STATE.md                 # Current session context
 │   ├── decisions-global.md      # Cross-task decisions
 │   ├── product.md               # Product context (users, roles, flows)
-│   ├── protocols/               # Phase-specific protocols (the framework core)
-│   │   ├── understand.md
-│   │   ├── plan.md
-│   │   ├── execute.md
-│   │   ├── verify.md
-│   │   ├── quick-path.md
-│   │   ├── backlog.md
-│   │   └── codebase-mapping.md
 │   ├── steering/                # Domain-specific rules and patterns
 │   ├── artifacts/               # Active task work (understand.md, plan.md)
 │   ├── archive/                 # Completed task summaries
 │   └── codebase/                # Codebase analysis (concerns, testing, drift)
+
+~/.claude/                       # The engine — installed once, shared by every project
+├── ai-flow/
+│   ├── protocols/               # Phase protocols (the framework core)
+│   └── ralph/                   # AFK loop runner + prompts
+├── skills/                      # /understand, /plan, /verify, /discover
+├── workflows/verify-review.js   # 4-auditor verify workflow
+└── hooks/                       # Guardrails (incl. the engine drift-check)
 ```
+
+The project holds only its **data** (tasks, product context, steering); the **engine** lives centrally in `~/.claude` and is versioned in this repo — a drift-check hook nags whenever the two diverge.
 
 ## Customization
 

@@ -92,10 +92,34 @@ pcount=$(ls "$SB/.claude/ai-flow/protocols" 2>/dev/null | wc -l | tr -d ' ')
 [ -d "$SBWD/.ai-flow" ] && bad "update wrote .ai-flow into the project cwd" || ok "update leaves the project untouched"
 test -f "$SB/.claude/ai-flow/ralph/ralph.sh" && ok "ralph runner installed centrally" || bad "ralph runner missing centrally"
 test -f "$SB/.claude/hooks/understand-write-guard.py" && ok "write-guard hook installed" || bad "write-guard hook not installed"
+test -f "$SB/.claude/ai-flow/source.path" && ok "local install records source.path" || bad "source.path not recorded"
 rm -rf "$SB" "$SBWD"
 
 echo "== Engine relocation: no project-local engine refs =="
 grep -rq "\.ai-flow/protocols" global/ && bad "global/ still points at project-local protocols" || ok "global/ points only at the central engine"
+
+
+echo "== Drift-check behaviors (sandboxed, mutation-tested) =="
+DC="$ROOT/global/hooks/drift-check.sh"
+SBC="$(mktemp -d)"; SBH="$(mktemp -d)"
+mkdir -p "$SBC/global/protocols"
+echo "alpha" > "$SBC/global/protocols/a.md"
+git -C "$SBC" init -q && git -C "$SBC" add -A && git -C "$SBC" -c user.email=t@t -c user.name=t commit -qm seed
+mkdir -p "$SBH/.claude/ai-flow/protocols"
+echo "$SBC" > "$SBH/.claude/ai-flow/source.path"
+cp "$SBC/global/protocols/a.md" "$SBH/.claude/ai-flow/protocols/a.md"
+HOME="$SBH" bash "$DC" >/dev/null 2>&1; rc=$?
+[ "$rc" = "0" ] && ok "synced -> exit 0" || bad "synced returned $rc, want 0"
+echo "mutant" >> "$SBH/.claude/ai-flow/protocols/a.md"
+HOME="$SBH" bash "$DC" >/dev/null 2>&1; rc=$?
+[ "$rc" = "2" ] && ok "mutated install -> exit 2 (blocks)" || bad "mutated returned $rc, want 2"
+echo "wip" >> "$SBC/global/protocols/a.md"
+HOME="$SBH" bash "$DC" >/dev/null 2>&1; rc=$?
+[ "$rc" = "0" ] && ok "dirty clone (WIP) -> exit 0 (quiet)" || bad "WIP returned $rc, want 0"
+rm "$SBH/.claude/ai-flow/source.path"
+HOME="$SBH" bash "$DC" >/dev/null 2>&1; rc=$?
+[ "$rc" = "0" ] && ok "no source.path -> exit 0 (remote install)" || bad "no-source returned $rc, want 0"
+rm -rf "$SBC" "$SBH"
 
 echo ""
 echo "protocol-port harness: $PASS ok, $FAIL fail"

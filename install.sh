@@ -53,7 +53,7 @@ fetch_file() {
 
 PROTOCOLS="understand plan execute verify quick-path backlog codebase-mapping discover"
 SKILLS="understand plan verify discover"
-HOOKS="check-state-size.sh diff-size-guard.py git-safety.py understand-write-guard.py"
+HOOKS="check-state-size.sh diff-size-guard.py git-safety.py understand-write-guard.py drift-check.sh"
 RALPH="ralph.sh ralph-prompt.md review-prompt.md"
 
 # --- Reusable install units ---
@@ -61,6 +61,9 @@ RALPH="ralph.sh ralph-prompt.md review-prompt.md"
 # Engine: phase protocols, installed centrally — never into a project
 install_engine() {
   mkdir -p "$HOME/.claude/ai-flow/protocols"
+  if [ "$MODE" = "local" ]; then
+    echo "$SCRIPT_DIR" > "$HOME/.claude/ai-flow/source.path"
+  fi
   local count=0
   for proto in $PROTOCOLS; do
     fetch_file "global/protocols/$proto.md" "$HOME/.claude/ai-flow/protocols/$proto.md"
