@@ -8,9 +8,10 @@ set -e
 #     curl -sL .../install.sh | bash -s /path/to/project        # back-compat: bare path => init
 #     curl -sL .../install.sh | bash -s init /path/to/project
 #     ./install.sh [init] [target-directory]
-#   Update (re-fetch core + tooling, preserve all project data; unattended):
-#     curl -sL .../install.sh | bash -s update [/path/to/project]
-#     ./install.sh update [target-directory]
+#   Update (re-fetch the engine + global tooling into ~/.claude; unattended,
+#   never writes into any project):
+#     curl -sL .../install.sh | bash -s update
+#     ./install.sh update
 
 REPO_URL="https://raw.githubusercontent.com/jisaballo/ai-flow/main"
 
@@ -33,7 +34,7 @@ echo ""
 
 # Detect mode: local (cloned repo) or remote (curl)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null || echo ".")" && pwd)"
-if [ -f "$SCRIPT_DIR/template/.ai-flow/protocols/understand.md" ]; then
+if [ -f "$SCRIPT_DIR/global/protocols/understand.md" ]; then
   MODE="local"
 else
   MODE="remote"
@@ -52,23 +53,25 @@ fetch_file() {
 
 PROTOCOLS="understand plan execute verify quick-path backlog codebase-mapping discover"
 SKILLS="understand plan verify discover"
-HOOKS="check-state-size.sh diff-size-guard.py git-safety.py"
+HOOKS="check-state-size.sh diff-size-guard.py git-safety.py understand-write-guard.py"
+RALPH="ralph.sh ralph-prompt.md review-prompt.md"
 
 # --- Reusable install units ---
 
-# Framework core: directory structure + protocols (re-fetched on every init/update)
-install_core() {
-  mkdir -p "$TARGET/.ai-flow"/{protocols,steering,artifacts,archive,codebase}
+# Engine: phase protocols, installed centrally — never into a project
+install_engine() {
+  mkdir -p "$HOME/.claude/ai-flow/protocols"
   local count=0
   for proto in $PROTOCOLS; do
-    fetch_file "template/.ai-flow/protocols/$proto.md" "$TARGET/.ai-flow/protocols/$proto.md"
+    fetch_file "global/protocols/$proto.md" "$HOME/.claude/ai-flow/protocols/$proto.md"
     count=$((count+1))
   done
-  echo "  [ok] Protocols installed ($count files)"
+  echo "  [ok] Engine protocols installed to ~/.claude/ai-flow/protocols ($count files)"
 }
 
-# Project data: fresh install only — never touched on update
+# Project data: fresh install only — the only thing that lives in the project
 install_data() {
+  mkdir -p "$TARGET/.ai-flow"/{steering,artifacts,archive,codebase}
   for f in BACKLOG STATE decisions-global product; do
     fetch_file "template/.ai-flow/$f.md" "$TARGET/.ai-flow/$f.md"
   done
@@ -150,6 +153,13 @@ install_tooling() {
   done
   chmod +x "$HOME/.claude/hooks/check-state-size.sh" 2>/dev/null || true
   echo "  [ok] Hooks installed to ~/.claude/hooks"
+
+  mkdir -p "$HOME/.claude/ai-flow/ralph"
+  for f in $RALPH; do
+    fetch_file "global/ralph/$f" "$HOME/.claude/ai-flow/ralph/$f"
+  done
+  chmod +x "$HOME/.claude/ai-flow/ralph/ralph.sh" 2>/dev/null || true
+  echo "  [ok] Ralph AFK loop installed to ~/.claude/ai-flow/ralph"
   merge_hooks
 }
 
@@ -168,20 +178,12 @@ install_global_claude() {
 # --- Subcommands ---
 
 cmd_init() {
-  local upgrade=false
   if [ -d "$TARGET/.ai-flow" ] && [ -f "$TARGET/.ai-flow/BACKLOG.md" ]; then
-    echo "  Warning: $TARGET/.ai-flow already exists."
-    read -p "  Refresh protocols only (keeps your data)? [y/N] " -n 1 -r
-    echo
-    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-      echo "  Aborted. (Tip: use './install.sh update $TARGET' to update without prompts.)"
-      exit 1
-    fi
-    upgrade=true
+    echo "  [info] $TARGET/.ai-flow already exists — project data preserved (only the engine + tooling refresh)."
+  else
+    install_data
   fi
-
-  install_core
-  [ "$upgrade" = false ] && install_data
+  install_engine
   install_project_claude
 
   read -p "  Install/refresh global CLAUDE.md? [Y/n] " -n 1 -r; echo
@@ -206,14 +208,11 @@ cmd_init() {
 }
 
 cmd_update() {
-  if [ ! -d "$TARGET/.ai-flow" ]; then
-    echo "  [warn] $TARGET has no .ai-flow/ — run 'init' first. Proceeding to install the core anyway."
-  fi
-  echo "  Updating ai-flow core + global tooling (project data preserved)..."
-  install_core      # re-fetch protocols (the core)
-  install_tooling   # re-fetch skills/workflow/hooks + re-merge settings.json (unattended)
+  echo "  Updating the ai-flow engine + global tooling in ~/.claude (no project is touched)..."
+  install_engine    # re-fetch protocols into ~/.claude/ai-flow
+  install_tooling   # re-fetch skills/workflow/hooks/ralph + re-merge settings.json (unattended)
   echo ""
-  echo "  [ok] Update complete. Project data, steering, and CLAUDE.md were preserved."
+  echo "  [ok] Update complete. Projects hold only their own data — nothing there to touch."
   echo ""
 }
 

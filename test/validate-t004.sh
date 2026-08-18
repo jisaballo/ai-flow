@@ -7,7 +7,7 @@
 set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
-P="template/.ai-flow/protocols"
+P="global/protocols"
 
 PASS=0; FAIL=0
 ok()  { echo "  [ok]   $1"; PASS=$((PASS+1)); }
@@ -81,7 +81,21 @@ echo "== Global side: workflow contract + purity =="
 W="global/workflows/verify-review.js"
 grep -q "Business Contract Auditor" "$W" && ok "workflow: contract auditor" || bad "workflow: missing contract auditor"
 grep -q "planPath" "$W" && ok "workflow: planPath arg" || bad "workflow: missing planPath"
-grep -rqiE "residents|facade|/Users/saballo|npx nx" global/ && bad "global/: origin-project leak" || ok "global/: no origin-project leaks"
+grep -rqiE "residents|gate-manager|zoomin|esp32|/Users/saballo" global/ && bad "global/: origin-project leak" || ok "global/: no origin-project leaks"
+
+
+echo "== Engine relocation: sandbox install =="
+SB="$(mktemp -d)"; SBWD="$(mktemp -d)"
+( cd "$SBWD" && HOME="$SB" bash "$ROOT/install.sh" update >/dev/null 2>&1 )
+pcount=$(ls "$SB/.claude/ai-flow/protocols" 2>/dev/null | wc -l | tr -d ' ')
+[ "$pcount" = "8" ] && ok "update installs 8 protocols centrally" || bad "central protocols: got '$pcount', want 8"
+[ -d "$SBWD/.ai-flow" ] && bad "update wrote .ai-flow into the project cwd" || ok "update leaves the project untouched"
+test -f "$SB/.claude/ai-flow/ralph/ralph.sh" && ok "ralph runner installed centrally" || bad "ralph runner missing centrally"
+test -f "$SB/.claude/hooks/understand-write-guard.py" && ok "write-guard hook installed" || bad "write-guard hook not installed"
+rm -rf "$SB" "$SBWD"
+
+echo "== Engine relocation: no project-local engine refs =="
+grep -rq "\.ai-flow/protocols" global/ && bad "global/ still points at project-local protocols" || ok "global/ points only at the central engine"
 
 echo ""
 echo "protocol-port harness: $PASS ok, $FAIL fail"

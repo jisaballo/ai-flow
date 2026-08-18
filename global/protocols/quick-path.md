@@ -11,7 +11,7 @@
 
 1. **No artifacts folder** — no `artifacts/T-XXX/` created
 2. **Inline plan** in STATE.md (1-2 steps max, not a separate file)
-3. **Execute** with TDD validation — follow Execute Phase Protocol (`.ai-flow/protocols/execute.md`)
+3. **Execute** with TDD validation — follow Execute Phase Protocol (`~/.claude/ai-flow/protocols/execute.md`)
 4. **No formal verify** — rely on test validation
 5. **Commit** with format: `type(scope): quick - description`
 

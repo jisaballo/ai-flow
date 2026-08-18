@@ -19,7 +19,6 @@ All task management lives in `.ai-flow/`. No external todo files.
 | `artifacts/T-XXX/` | Task artifacts organized by task ID (understand.md, plan.md, verify.md) |
 | `archive/T-XXX/` | Completed tasks with all artifacts, decisions, and summary.md |
 | `product.md` | Product context: users, roles, apps, core business flows (read at start of new epics) |
-| `protocols/` | Phase-specific protocols (loaded on demand per phase) |
 | `steering/` | Domain-specific rules, patterns, and pitfalls (loaded per-task based on affected domains) |
 | `codebase/` | Lightweight codebase analysis (concerns, testing patterns, drift detection) |
 
@@ -75,13 +74,13 @@ At task activation, classify the task into an autonomy level. User confirms or a
 
 | Phase | Protocol file |
 |-------|--------------|
-| Understand | `.ai-flow/protocols/understand.md` |
-| Plan + Conform | `.ai-flow/protocols/plan.md` |
-| Execute + Spec Sync | `.ai-flow/protocols/execute.md` |
-| Verify | `.ai-flow/protocols/verify.md` |
-| Quick Path | `.ai-flow/protocols/quick-path.md` |
-| Backlog/Archive/Epics | `.ai-flow/protocols/backlog.md` |
-| Codebase Mapping | `.ai-flow/protocols/codebase-mapping.md` |
+| Understand | `~/.claude/ai-flow/protocols/understand.md` |
+| Plan + Conform | `~/.claude/ai-flow/protocols/plan.md` |
+| Execute + Spec Sync | `~/.claude/ai-flow/protocols/execute.md` |
+| Verify | `~/.claude/ai-flow/protocols/verify.md` |
+| Quick Path | `~/.claude/ai-flow/protocols/quick-path.md` |
+| Backlog/Archive/Epics | `~/.claude/ai-flow/protocols/backlog.md` |
+| Codebase Mapping | `~/.claude/ai-flow/protocols/codebase-mapping.md` |
 
 ### Phase Orchestration
 

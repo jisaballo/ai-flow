@@ -52,8 +52,8 @@ grep -rq "project.yml" docs/ && ok "docs mention project.yml" || bad "docs do no
 
 echo "== C8: discover capability (T-002) =="
 test -f global/skills/discover/SKILL.md && ok "discover skill exists" || bad "global/skills/discover/SKILL.md missing"
-test -f template/.ai-flow/protocols/discover.md && ok "discover protocol exists" || bad "template/.ai-flow/protocols/discover.md missing"
-grep -qi "AskUserQuestion" template/.ai-flow/protocols/discover.md 2>/dev/null && ok "discover protocol confirms uncertain fields" || bad "discover protocol missing AskUserQuestion flow"
+test -f global/protocols/discover.md && ok "discover protocol exists" || bad "global/protocols/discover.md missing"
+grep -qi "AskUserQuestion" global/protocols/discover.md 2>/dev/null && ok "discover protocol confirms uncertain fields" || bad "discover protocol missing AskUserQuestion flow"
 grep -q "discover" install.sh && ok "install.sh wires discover" || bad "install.sh does not wire discover"
 grep -qi "discover" global/CLAUDE.md && ok "global CLAUDE.md surfaces discover" || bad "global CLAUDE.md does not mention discover"
 grep -rq "discover" docs/ && ok "docs mention discover" || bad "docs do not mention discover"
@@ -70,7 +70,7 @@ mkdir -p "$TT/.ai-flow/protocols"
 echo "SENTINEL-KEEP-ME" > "$TT/.ai-flow/BACKLOG.md"
 ( cd "$TW" && HOME="$TH" bash "$ROOT/install.sh" update "$TT" </dev/null >/dev/null 2>&1 ) || true
 grep -q "SENTINEL-KEEP-ME" "$TT/.ai-flow/BACKLOG.md" 2>/dev/null && ok "update preserves project data" || bad "update clobbered/missed project data"
-test -f "$TT/.ai-flow/protocols/discover.md" && ok "update delivers discover.md" || bad "update did not deliver discover.md"
+test -f "$TH/.claude/ai-flow/protocols/discover.md" && ok "update delivers discover.md centrally" || bad "update did not deliver discover.md centrally"
 ( cd "$TW" && HOME="$TH" bash "$ROOT/install.sh" update "$TT" </dev/null >/dev/null 2>&1 ) || true
 SJ="$TH/.claude/settings.json"
 if [ -f "$SJ" ] && command -v python3 >/dev/null 2>&1; then

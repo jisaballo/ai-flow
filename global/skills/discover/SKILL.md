@@ -9,7 +9,7 @@ Derives the **project layer** (`.ai-flow/project.yml`) for an existing codebase,
 
 ## Steps
 
-1. **Read the protocol first**: `.ai-flow/protocols/discover.md`. If it does not exist, this project is not ai-flow — tell the user and stop.
+1. **Read the protocol first**: `~/.claude/ai-flow/protocols/discover.md` (central engine). If the project has no `.ai-flow/` directory, it is not ai-flow — tell the user and stop.
 
 2. **Overwrite guard**: if `.ai-flow/project.yml` already exists with non-placeholder values (real commands/dirs, not the `<...>` template), show it and ask whether to re-derive or keep it. **Never blind-overwrite** a populated project.yml.
 

@@ -9,7 +9,7 @@ Runs the Understand phase of the ai-flow workflow. Works in any project that has
 
 ## Steps
 
-1. **Read the protocol first**: `.ai-flow/protocols/understand.md`. If it does not exist, this project is not ai-flow — tell the user and stop.
+1. **Read the protocol first**: `~/.claude/ai-flow/protocols/understand.md` (central engine). If the project has no `.ai-flow/` directory, it is not ai-flow — tell the user and stop.
 
 2. **Artifact check**: if `.ai-flow/artifacts/T-XXX/understand.md` already exists, show its contents and ask whether to proceed with it or regenerate. **Never blind-overwrite** an existing artifact.
 

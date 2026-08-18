@@ -9,7 +9,7 @@ Runs the Verify phase of the ai-flow workflow. Works in any project that has `.a
 
 ## Steps
 
-1. **Read the protocol**: `.ai-flow/protocols/verify.md` (project-local spec for the criterion audit, status meanings, templates, skip conditions). If it does not exist, this project is not ai-flow — tell the user and stop.
+1. **Read the protocol**: `~/.claude/ai-flow/protocols/verify.md` (central engine — the spec for the criterion audit, status meanings, templates, skip conditions). If the project has no `.ai-flow/` directory, it is not ai-flow — tell the user and stop.
 
 2. **Read the spec**: get the active task `T-XXX` from `.ai-flow/STATE.md`, then read `.ai-flow/artifacts/T-XXX/understand.md` (Verifiable Criteria + Expected Behavior) and the **Criteria Coverage table** in `plan.md` — the audit inherits that criterion→step→stub mapping; don't rebuild it. (Also check `.ai-flow/artifacts/T-XXX/verify.md` first — if it exists, follow the Artifact-Check rule: show it and ask before regenerating.)
 
