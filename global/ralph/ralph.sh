@@ -135,7 +135,7 @@ git checkout "$ORIG_BRANCH"
 notify "Run finished — clean: ${CLEAN}, parked: ${PARKED}."
 echo "AFK run finished — clean: ${CLEAN}, parked: ${PARKED}. Log: ${RUN_LOG}, branch: ${BRANCH}"
 
-# --- Post-run auditor (T-980): read-only reviewer over the afk branch --------
+# --- Post-run auditor: read-only reviewer over the afk branch ----------------
 # No --allowedTools at all: the reviewer prints markdown to stdout and this
 # script writes the file — the auditor physically cannot modify what it reviews.
 REVIEW_LOG=".ai-flow/afk-review-${DATE}.md"
