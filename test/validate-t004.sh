@@ -58,6 +58,31 @@ for f in backlog execute plan quick-path understand verify; do
   grep -q '→' "$P/$f.md" && bad "$f.md: unicode arrow" || ok "$f.md: ASCII arrows"
 done
 
+
+echo "== Global side: hook shipped + wired =="
+test -f global/hooks/understand-write-guard.py && ok "understand-write-guard.py shipped" || bad "understand-write-guard.py missing"
+grep -q "understand-write-guard.py" global/hooks/settings.hooks.json && ok "settings entry present" || bad "settings entry missing"
+grep -q 'Edit|Write' global/hooks/settings.hooks.json && ok "Edit|Write matcher" || bad "Edit|Write matcher missing"
+grep -q "understand-write-guard" global/hooks/README.md && ok "README row" || bad "README row missing"
+
+echo "== Global side: skill flow anchors =="
+G="global/skills"
+grep -q "Business Frame" "$G/understand/SKILL.md" && ok "understand: Business Frame" || bad "understand: missing Business Frame"
+grep -q "Unknowns" "$G/understand/SKILL.md" && ok "understand: Unknowns" || bad "understand: missing Unknowns"
+grep -q "Business Closure" "$G/understand/SKILL.md" && ok "understand: Business Closure" || bad "understand: missing Business Closure"
+grep -q "Contract (layer 1)" "$G/plan/SKILL.md" && ok "plan: pyramid Contract" || bad "plan: missing pyramid Contract"
+grep -q "Decision Register" "$G/plan/SKILL.md" && ok "plan: Decision Register" || bad "plan: missing Decision Register"
+grep -q "Criteria Coverage" "$G/plan/SKILL.md" && ok "plan: Criteria Coverage" || bad "plan: missing Criteria Coverage"
+grep -q "Contract check" "$G/verify/SKILL.md" && ok "verify: Contract check" || bad "verify: missing Contract check"
+grep -q "Reverse audit" "$G/verify/SKILL.md" && ok "verify: Reverse audit" || bad "verify: missing Reverse audit"
+grep -q "4-auditor" "$G/verify/SKILL.md" && ok "verify: 4-auditor" || bad "verify: missing 4-auditor"
+
+echo "== Global side: workflow contract + purity =="
+W="global/workflows/verify-review.js"
+grep -q "Business Contract Auditor" "$W" && ok "workflow: contract auditor" || bad "workflow: missing contract auditor"
+grep -q "planPath" "$W" && ok "workflow: planPath arg" || bad "workflow: missing planPath"
+grep -rqiE "residents|facade|/Users/saballo|npx nx" global/ && bad "global/: origin-project leak" || ok "global/: no origin-project leaks"
+
 echo ""
 echo "protocol-port harness: $PASS ok, $FAIL fail"
 [ "$FAIL" -eq 0 ]

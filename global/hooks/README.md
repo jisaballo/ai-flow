@@ -8,6 +8,7 @@ Optional Claude Code hooks that enforce the ai-flow guardrails. Copy them to
 |------|-------|--------------|
 | `check-state-size.sh` | Stop | ai-flow guardian. Blocks finishing a turn when `STATE.md` still holds closed-task summaries, `BACKLOG.md` exceeds its ~300-line size budget, or it carries more than 3 session-close changelog entries. No-op in any project without an `.ai-flow/`, so it is safe to install globally. |
 | `diff-size-guard.py` | Stop | Nudges when the uncommitted diff exceeds ~150 LOC (the Diff Size Guardrail), so large changes get split or confirmed. |
+| `understand-write-guard.py` | PreToolUse (`Edit\|Write`) | Read-only rail for the Understand phase. While `.ai-flow/STATE.md` marks the phase as UNDERSTAND, blocks Edit/Write to any repo file outside `.ai-flow/` — investigation and Bash stay unrestricted. No-op in any project without an `.ai-flow/`. |
 | `git-safety.py` | PreToolUse (Bash) | Blocks force-push-to-main and staging of likely secrets before the command runs. |
 
 ## Registering them
