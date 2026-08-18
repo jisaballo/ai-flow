@@ -1,7 +1,7 @@
 #!/bin/bash
 # Conformance harness for the protocol port: the template teaches the current
 # field-proven engine, fully generic. Anchors assert each ported feature exists;
-# guards assert no origin-project identifiers leaked and the E-001 layering survived.
+# guards assert no origin-project identifiers leaked and the project.yml layering survived.
 # Dependency-free (grep-based). Exit 0 only when every section is green.
 
 set -u
@@ -42,7 +42,7 @@ has understand.md "Business Closure"
 has understand.md "Investigation Closure"
 has understand.md "understand-write-guard"
 
-echo "== E-001 keepers (guard: must STAY green) =="
+echo "== project.yml layering keepers (guard: must STAY green) =="
 has plan.md "project.yml"
 has plan.md "commands.test"
 grep -qi "not installed" "$P/verify.md" && ok "verify.md: skill-absent fallback" || bad "verify.md: lost skill-absent fallback"
@@ -59,5 +59,5 @@ for f in backlog execute plan quick-path understand verify; do
 done
 
 echo ""
-echo "T-004 harness: $PASS ok, $FAIL fail"
+echo "protocol-port harness: $PASS ok, $FAIL fail"
 [ "$FAIL" -eq 0 ]
