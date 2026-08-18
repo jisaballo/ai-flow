@@ -6,12 +6,15 @@
 
 ## Steps
 
-1. **Re-read** `artifacts/T-XXX/understand.md` — specifically the Verifiable Criteria and Expected Behavior sections
+1. **Re-read** `artifacts/T-XXX/understand.md` (Verifiable Criteria + Expected Behavior) and the **Criteria Coverage table** in plan.md — VERIFY inherits that mapping; do not reconstruct criterion->step from scratch.
 2. **For each criterion**, cite the specific evidence (file:line, test name, or observable behavior) that satisfies it
-3. **Re-run all Verify commands** from each plan.md step (catches cross-step regressions — a later step may have broken an earlier one)
-4. **Write** `artifacts/T-XXX/verify.md` with the audit table
-5. **If any X exists** -> STOP, do not proceed to archive. Fix or flag to user.
-6. **If any warning exists** -> flag to user with what's missing. User decides: proceed to archive or fix first.
+3. **Contract check**: diff the current conformance specs against `artifacts/T-XXX/conformance-baseline/manifest.md`. Every frozen row must still exist with the same `it()` description and assert direction; any divergence must have a matching `## Implementation Decisions` entry in understand.md. Divergence without entry -> ❌.
+4. **Reverse audit (diff->plan)**: every hunk in the task diff must trace to a plan step, a criterion, or an Implementation Decision. Orphan hunks -> record under `Gaps Found` as **scope creep** (this is the audited form of the Surgical Changes rule).
+5. **Provenance grep**: the task diff's **added lines** must carry no task/epic IDs (`git diff <base> | grep -E '^\+.*\b[TE]-[0-9]+'`) in code, comments, or test names — the rule lives in Execute protocol > Code Comments & Provenance. Hits -> ❌ (fix before archive; provenance belongs in the commit message).
+6. **Re-run all Verify commands** from each plan.md step (catches cross-step regressions — a later step may have broken an earlier one)
+7. **Write** `artifacts/T-XXX/verify.md` with the audit table
+8. **If any ❌ exists** -> STOP, do not proceed to archive. Fix or flag to user.
+9. **If any ⚠️ exists** -> flag to user with what's missing. User decides: proceed to archive or fix first.
 
 ## verify.md Template
 
@@ -21,8 +24,8 @@
 ## Criteria Audit
 | # | Criterion (from understand.md) | Status | Evidence |
 |---|-------------------------------|--------|----------|
-| 1 | [criterion text] | Met/Partial/Not met | `file.ts:line` or test name |
-| 2 | [criterion text] | Met/Partial/Not met | `file.ts:line` or test name |
+| 1 | [criterion text] | ✅/⚠️/❌ | `file.ts:line` or test name |
+| 2 | [criterion text] | ✅/⚠️/❌ | `file.ts:line` or test name |
 
 ## Test Results
 - `[verify command 1]` -> PASS/FAIL
@@ -34,9 +37,13 @@
 
 ## Status Meanings
 
-- **Met** — code + test evidence exists
-- **Partially met** — implemented but missing test coverage or edge case
-- **Not met** — not implemented or broken
+- ✅ **Met** — code + test evidence exists
+- ⚠️ **Partially met** — implemented but missing test coverage or edge case
+- ❌ **Not met** — not implemented or broken
+
+## Skills Feedback
+
+As part of the audit, answer two questions: were the skills declared in plan.md actually consulted during Execute? Did any step need a skill that was NOT declared? Record misses under `## Gaps Found` in verify.md. Recurring misses for the same domain are the evidence that justifies a hard rule (a skill hard-wired in CLAUDE.md Action Boundaries) — do not add hard rules without this evidence.
 
 ## Auditing Behavioral Criteria (GIVEN/WHEN/THEN)
 
@@ -44,42 +51,37 @@ For Behavioral criteria, evidence must cite a test that exercises the full scena
 
 ## Multi-Agent Review (Post-Audit)
 
-**After the criterion audit (steps 1-4), the multi-agent review runs deterministically via the `verify-review` workflow** — invoked by the `/verify` skill (`~/.claude/workflows/verify-review.js`). It catches issues outside the scope of the specified criteria. Do NOT run these auditors ad-hoc or "in your head"; the workflow guarantees they run in parallel with schema-validated output and adversarial refutation.
+After the criterion audit (steps 1-4), the multi-agent review runs **deterministically via the `verify-review` workflow** — invoked by the `/verify` skill (script: `~/.claude/workflows/verify-review.js`). Do **not** run these auditors ad-hoc or "in your head"; the workflow guarantees they always run in parallel with schema-validated output and adversarial refutation.
 
-The workflow runs three auditors in parallel over the task diff, then sends every HIGH/MEDIUM finding to a skeptic agent that tries to refute it (only survivors are reported):
+### What it does
 
-### Auditor 1: Test Coverage
-- Public methods/functions without test coverage
-- Branches not exercised (if/else, switch cases, error paths)
-- Edge cases from understand.md without corresponding tests
-- Regression risk: existing tests that should have been updated but weren't
+Runs 4 auditors in parallel over the task diff (working tree, uncommitted):
 
-### Auditor 2: Security & Error Handling
-- Inputs without validation (especially user-facing)
-- Async operations without error handling
-- Resources acquired but never released (subscriptions, listeners, handles, connections)
-- Sensitive data exposed in logs, responses, or state
-- Missing null/undefined checks on external data
+- **Business Contract Auditor** — audits the diff against the user-approved contract (understand.md `Business Frame` + plan.md `Contract` and `Decision Register`), which is the oracle: (a) contract requirements missing or partial; (b) behavior the contract never asked for (business-level scope creep); (c) requirements that look implemented but wrong. Every finding quotes the contract line it violates.
+- **Test Coverage Auditor** — public methods/branches/edge-cases without tests; existing tests that should have been updated but weren't.
+- **Security & Error Handling** — unvalidated (esp. user-facing) input; async without error handling; subscriptions without unsubscribe; sensitive data in logs/templates/state; missing null/undefined checks on external data.
+- **Architecture Boundaries** — forbidden cross-layer imports (direct layer import from outside a domain); services accessing the store instead of the facade; models leaked outside their domain; steering-rule and reference-implementation divergences.
 
-### Auditor 3: Architecture Boundaries
-- Imports crossing forbidden module/layer boundaries defined by the project
-- Modules reaching into another module's internals instead of its public entry point
-- Code bypassing the project's established access pattern (skipping a defined abstraction layer)
-- Divergences from the project's reference/gold-standard pattern
-- Steering-file rules violated
+Then it **adversarially refutes every HIGH and MEDIUM finding**: a skeptic agent reads the code in context and tries to refute it; only findings that survive (confirmed=true) surface. LOW findings are listed without refutation.
 
-### Integration
+### Consolidation into verify.md
 
-1. The `/verify` skill invokes the workflow with the task diff, changed files, `CLAUDE.md`, and the affected `steering/<area>.md`.
-2. Consolidate the result `{ confirmed, refuted, summary }` into verify.md under `## Review Findings`.
-3. **HIGH confirmed** -> flag to user (same gate as partial criteria); blocks archive.
-4. **MEDIUM/LOW confirmed** -> list in verify.md for awareness, don't block.
-5. **refuted** -> list briefly under "Dismissed (refuted)" to keep the audit trail transparent.
-6. No findings at all -> add `## Review Findings: None`.
+- **HIGH confirmed** -> ⚠️ flag to user; blocks archive (same gate as a partial criterion).
+- **MEDIUM / LOW confirmed** -> list under `## Review Findings` for awareness, don't block.
+- **Refuted** -> list briefly under "Dismissed (refuted)" for a transparent audit trail.
+- No findings -> `## Review Findings: None`.
 
-If the workflow/skill is not installed, fall back to launching the three auditors above via the Agent tool in parallel.
+### Presentation to the user
 
-### verify.md Template (Updated)
+What the user reads in chat is **one line per axis**: finding count + the worst finding of that axis. Business Contract findings are phrased in product language (what the product does vs. what the contract says — no file paths). Full detail lives in verify.md and is shown on demand — never pushed.
+
+### When to Skip
+
+- **Quick path** tasks (no formal verify)
+- **Auto level** tasks (rely on test validation only)
+- Pure style/i18n/config changes with no logic
+
+### verify.md Template (with Review Findings)
 
 ```markdown
 # Verify: T-XXX - [Title]
@@ -87,12 +89,15 @@ If the workflow/skill is not installed, fall back to launching the three auditor
 ## Criteria Audit
 | # | Criterion | Status | Evidence |
 |---|-----------|--------|----------|
-| 1 | [text] | Met/Partial/Not met | `file:line` or test name |
+| 1 | [text] | ✅/⚠️/❌ | `file:line` or test name |
 
 ## Test Results
 - `[verify command]` -> PASS/FAIL
 
 ## Review Findings
+### Business Contract
+- [finding (quoting the violated contract line) or "Contract honored"]
+
 ### Test Coverage
 - [finding or "No gaps found"]
 
@@ -102,12 +107,9 @@ If the workflow/skill is not installed, fall back to launching the three auditor
 ### Architecture Boundaries
 - [finding or "No violations found"]
 
+### Dismissed (refuted)
+- [finding + why refuted, or "None"]
+
 ## Gaps Found
 [Consolidated list from audit + review, or "None"]
 ```
-
-### When to Skip Multi-Agent Review
-
-- **Quick path** tasks (no formal verify)
-- **Auto level** tasks (rely on test validation only)
-- Pure style/config changes with no logic
