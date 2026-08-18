@@ -1,6 +1,7 @@
 #!/bin/bash
-# Conformance harness for T-004 (E-002) — port the origin project's 6 protocols, genericized.
-# Generated in the Conform phase from understand.md Verifiable Criteria.
+# Conformance harness for the protocol port: the template teaches the current
+# field-proven engine, fully generic. Anchors assert each ported feature exists;
+# guards assert no origin-project identifiers leaked and the E-001 layering survived.
 # Dependency-free (grep-based). Exit 0 only when every section is green.
 
 set -u
