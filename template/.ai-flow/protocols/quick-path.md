@@ -32,6 +32,7 @@ Quick tasks log to "Quick Tasks" section in STATE.md (not BACKLOG.md):
 - Atomic commits
 - User validation before commit
 - STATE.md updated
+- Code comments stand alone — no task IDs in source (Execute protocol > Code Comments & Provenance)
 
 ## What It Skips
 

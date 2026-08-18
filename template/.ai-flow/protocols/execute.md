@@ -12,7 +12,7 @@ Default for most work. Use when:
 - Orchestrator already has relevant files loaded
 - Debugging or unexpected issues arise
 
-### Agent Delegation (Task tool with lighter model)
+### Agent Delegation (Task tool with a lighter model)
 
 Use when the step is **fully self-contained** and **mechanical**:
 - Rename/refactor across files (find X, replace with Y)
@@ -38,9 +38,19 @@ The agent receives: CLAUDE.md, STATE.md, understand.md, plan.md, execute.md (thi
 | Risk of misunderstanding | Any ambiguity in the step | Zero ambiguity, fully specified |
 | File familiarity | Orchestrator already read the files | Fresh read is fine |
 
+## Skills per Step — Lazy Load
+
+Before executing a step, invoke each skill declared in its plan `Skills:` line, if not already loaded this session. Lazy, per step — do NOT preload every declared skill upfront: irrelevant guidance dilutes the relevant one. If a step turns out to need a skill that was not declared, load it and note the miss for Verify.
+
 ## Steering Files
 
 Before executing, re-read the steering file(s) for the affected domain(s) from `.ai-flow/steering/{domain}.md`. These contain domain-specific rules and pitfalls that act as guardrails during implementation.
+
+## Code Comments & Provenance
+
+Comments must stand alone. A comment states the constraint, evidence, or rationale the code cannot show — in full, in place. Forbidden in committed source (comments, test names, `describe`/`it` descriptions): task/epic IDs (`T-XXX`, `E-XXX`) and paths into `artifacts/` or `.ai-flow/`. If the rationale is too long for a comment, it goes in the commit message body. Line->task provenance is `git blame` -> commit message `(T-XXX)` — never the comment.
+
+Existing committed references stay untouched — a mass cleanup would rewrite the blame that now serves as the line->task index. Verify enforces the rule on new work only (grep over the task diff's added lines).
 
 ## Test-Driven Development (TDD)
 
@@ -53,11 +63,21 @@ For each step:
 2. **Make** code changes
 3. **Run the Verify command from the plan step** — every plan step has a `Verify` field with a copy-pasteable test command
    - If no Verify command in plan (shouldn't happen): run relevant test file
-   - If test file missing: Document in commit (create tests later)
-   - If tests fail: Intentional change? Fix test. Unexpected? Fix code.
+   - If test file missing -> Document in commit (create tests later)
+   - If tests fail -> Intentional change? Fix test. Unexpected? Fix code. (Conformance specs are the exception — see below.)
    - **Bounded Retry**: Max 3 fix attempts for the same test/error. After 3 failures, STOP and escalate to user with: what was tried, what failed, what the likely root cause is. Do not continue iterating blindly.
    - All tests MUST pass before proceeding
 4. **Stage changes** (do NOT commit — follow Commit Protocol from CLAUDE.md. User must validate first.)
+
+### Conformance Contracts Exception
+
+Stubs recorded in `artifacts/T-XXX/conformance-baseline/manifest.md` are **frozen contracts** — "intentional -> fix test" does NOT apply to them. During Execute it is forbidden to:
+
+- delete or rename a contract stub,
+- invert or weaken its assertion,
+- adjust its expected value to match the observed one.
+
+A stub that is **objectively wrong** (bad assumption, impossible setup, criterion itself invalidated) = **Replan Gate**, not a test fix — stop, report, update plan + understand.md, and the manifest with it. In **Auto** level, needing to touch any contract escalates the task to Guided. Non-conformance specs keep the normal fix-test rule.
 
 ## Replan Gate
 
@@ -93,7 +113,7 @@ Report to user before continuing. This prevents silent runaway changes.
      - **[Topic]**: New edge case discovered — [description and how it's handled]
      ```
 3. **If no divergences**: Skip — don't add noise to the artifact
-4. **Update conformance tests** if any criteria changed (add/modify stubs for new edge cases)
+4. **Update conformance tests** if any criteria changed (add/modify stubs for new edge cases). Modifying a **frozen contract** (a row in `conformance-baseline/manifest.md`) is allowed here ONLY with a matching `## Implementation Decisions` entry documenting why — no entry, no contract change. Update the manifest in the same edit.
 
 This keeps understand.md as the accurate source of truth for the Verify phase and preserves context across sessions/compaction.
 
@@ -105,3 +125,5 @@ Follow **Action Boundaries** from CLAUDE.md (Always / Ask First / Never). In sum
 - Auto-fix bugs, imports, deps, type mismatches -> **Always**
 - New services, schema changes, lib swaps, >3 unplanned files -> **Ask First**
 - Skip tests, commit secrets, force push -> **Never**
+
+**New work discovered along the way** (not in the task or plan) -> **Discovery Triage** (see Understanding protocol): blocks this task -> Replan Gate; contradicts the epic's Goal/Non-Goals -> escalate to user; everything else -> one line in BACKLOG.md `## Icebox`, then continue the plan. Never create new T-XXX tasks mid-epic.
