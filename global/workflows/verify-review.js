@@ -1,13 +1,13 @@
 export const meta = {
   name: 'verify-review',
-  description: 'ai-flow verify: 3 parallel auditors (coverage/security/architecture) over the task diff + adversarial refutation of every HIGH/MEDIUM finding',
+  description: 'ai-flow verify: 4 parallel auditors (contract/coverage/security/architecture) over the task diff + adversarial refutation of every HIGH/MEDIUM finding',
   phases: [
-    { title: 'Review', detail: '3 auditors in parallel over the task diff' },
+    { title: 'Review', detail: '4 auditors in parallel over the task diff' },
     { title: 'Refute', detail: 'a skeptic agent tries to refute each HIGH/MEDIUM finding' },
   ],
 }
 
-// args (from the /verify skill): { taskId, area, understandPath, steeringPath, claudeMdPath, changedFiles, diffText }
+// args (from the /verify skill): { taskId, area, understandPath, planPath, steeringPath, claudeMdPath, changedFiles, diffText }
 // The Workflow runtime may deliver `args` as a JSON string; parse it back to an object.
 let a = args || {}
 if (typeof a === 'string') {
@@ -87,6 +87,23 @@ function refutePrompt(f) {
 }
 
 const DIMENSIONS = [
+  {
+    key: 'contract',
+    label: 'Business Contract Auditor',
+    prompt: [
+      ctx,
+      ``,
+      `You are the BUSINESS CONTRACT auditor for an ai-flow verify phase. The oracle is the user-approved contract: read the \`## Business Frame\` section in ${a.understandPath || '(none)'} and the \`## Contract\` + \`## Decision Register\` sections in ${a.planPath || '(none)'}. (Older tasks may lack these sections — then audit against understand.md's Goal / Expected Behavior.)`,
+      ``,
+      `Inspect the diff against the contract. Find:`,
+      `- Contract requirements missing or only partially implemented`,
+      `- Behavior the contract never asked for (business-level scope creep)`,
+      `- Requirements that LOOK implemented but are wrong (the code does something — just not what the contract says)`,
+      `- Code that contradicts a Decision Register entry the user approved`,
+      ``,
+      `Every finding MUST quote the contract/decision line it violates. Write the rationale in product language — what the product does vs. what the contract says — citing file + line only as evidence. Severity: high = a contract line violated or unmet; medium = partial or ambiguous compliance; low = cosmetic drift. Return an empty findings array if the contract is honored.`,
+    ].join('\n'),
+  },
   {
     key: 'coverage',
     label: 'Test Coverage Auditor',

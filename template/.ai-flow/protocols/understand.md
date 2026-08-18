@@ -124,7 +124,7 @@ After decomposition and investigation (or if task is atomic), gather missing con
 1. **Self-contained, in product language**: the question carries its own context — what I found (one line, plain), what is at stake (the business consequence), 2-4 options. If it cannot be phrased so the user understands it without re-asking, the question is not ready: the gap is my investigation or my translation, never the user's reading.
 2. **Business consequence stated**: if I cannot state a question's business consequence, it is mechanics in disguise — I resolve it myself and record it in the plan's Decision Register instead of asking.
 3. **Recommended answer marked**: the user corrects rather than authors.
-4. **No-cost escape**: "Necesito más contexto" is always a valid option. The user choosing it means MY question failed — rephrase simpler. Never pressure toward "the closest option": a guessed answer recorded as a decision is worse than no answer.
+4. **No-cost escape**: "I need more context" is always a valid option. The user choosing it means MY question failed — rephrase simpler. Never pressure toward "the closest option": a guessed answer recorded as a decision is worse than no answer.
 - Use `AskUserQuestion`, 2-4 questions per round, each with 2-4 options; always include "Mas preguntas".
 
 **Interrogation techniques (grill):**
