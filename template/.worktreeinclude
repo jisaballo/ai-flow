@@ -1,0 +1,18 @@
+# Files a linked worktree receives that git would otherwise leave behind.
+#
+# Gitignore syntax. Only untracked-AND-ignored paths are eligible: anything tracked
+# already travels with the checkout, so naming it here would be inert. The transfer is
+# a copy taken once at creation — a snapshot, not a live share.
+#
+# The rule: project DATA travels, the ledger does not. A second working copy reads the
+# project sheet, the product context, the domain rules and the task artifacts it needs
+# to work; the backlog, the session state, the decision log and the archive stay with
+# the primary checkout, which remains their single writer.
+#
+# The engine itself is deliberately absent: protocols, skills, hooks and the runner live
+# in ~/.claude and reach every worktree without being copied.
+.ai-flow/project.yml
+.ai-flow/product.md
+.ai-flow/steering/
+.ai-flow/codebase/
+.ai-flow/artifacts/

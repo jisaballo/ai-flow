@@ -74,6 +74,57 @@ Steering files in `.ai-flow/steering/` contain domain-specific knowledge that pr
 - Database (migration patterns, naming conventions, indexing rules)
 - API design (versioning, error formats, rate limiting)
 
+### Parallel workstreams — `.worktreeinclude` + `worktree.baseRef` (optional)
+
+Two files decide how a second working copy of the project is born. Both are created by
+`./install.sh init` and never overwritten if you already have your own.
+
+**`.worktreeinclude`** (repo root) lists what a linked worktree receives that git would otherwise
+leave behind. It uses gitignore syntax, and only untracked-and-ignored paths are eligible —
+anything tracked already travels with the checkout, so naming it there does nothing. The shipped
+set carries project **data** and deliberately leaves the ledger behind:
+
+```
+.ai-flow/project.yml
+.ai-flow/product.md
+.ai-flow/steering/
+.ai-flow/codebase/
+.ai-flow/artifacts/
+```
+
+**The precondition, stated plainly**: this only takes effect for paths your repository *ignores*.
+If `.ai-flow/` is not in your `.gitignore`, none of these patterns is eligible and a new worktree is
+still born without them. If instead you commit `.ai-flow/`, git carries the **whole** directory into
+every worktree — backlog, state, decision log and archive included — which is the opposite of what
+the pattern file is for. In that layout the single-writer rule for the ledger is held by convention
+rather than by the tool, so decide which way you want it before relying on either. The installer does
+not edit your `.gitignore`; that is your project's call.
+
+Do not broaden the patterns casually. Everything they match is **ignored** content, which is exactly
+where credentials, tokens and local environment files live — a pattern like `.env*` or a bare `*.json`
+would copy those into every worktree the tool creates, including the ones agents open on their own.
+Name the paths you mean.
+
+`BACKLOG.md`, `STATE.md`, `decisions-global.md` and `archive/` are absent on purpose: the primary
+checkout is their single writer, and a second copy that could edit them would race it. The engine
+is absent too — protocols, skills and hooks live in `~/.claude` and reach every worktree without
+being copied.
+
+Two properties worth knowing before you rely on it. The transfer is a **copy taken once**, at
+creation: it goes stale the moment either side changes, so treat it as a snapshot rather than a
+shared folder. And it applies to **every** worktree the tool creates, including the isolated ones
+agents open for themselves — cheap for text files, but not something you opt into per workstream.
+
+**`worktree.baseRef`** (in `.claude/settings.json`) decides which commit a new worktree is cut
+from. The shipped value is `fresh`, which branches from `origin/<default>` — the **published**
+default branch, not your local one. The consequence is worth stating plainly: work you have
+committed but not pushed does not exist for a new worktree. Publishing the default branch is part
+of opening a workstream. The alternative, `head`, branches from your local `HEAD` and carries
+unpushed commits along with whatever else is sitting in that checkout.
+
+Projects installed before these files existed receive them by re-running `./install.sh init`;
+`update` never writes into a project, by design.
+
 ## What NOT to Customize
 
 ### Protocols

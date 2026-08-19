@@ -92,6 +92,27 @@ install_project_claude() {
   fi
 }
 
+# Worktree provisioning: what a linked worktree receives, and which commit it is cut from.
+# Both files are created only when absent — an existing one is the project's own decision.
+install_worktree_entry() {
+  if [ ! -f "$TARGET/.worktreeinclude" ]; then
+    fetch_file "template/.worktreeinclude" "$TARGET/.worktreeinclude"
+    echo "  [ok] .worktreeinclude created — lists the project data a linked worktree should receive"
+    echo "  [note] it only takes effect for paths your repo gitignores; see docs/customization.md"
+  else
+    echo "  [skip] .worktreeinclude already exists"
+  fi
+
+  if [ ! -f "$TARGET/.claude/settings.json" ]; then
+    mkdir -p "$TARGET/.claude"
+    fetch_file "template/.claude/settings.json" "$TARGET/.claude/settings.json"
+    echo "  [ok] .claude/settings.json created — worktree.baseRef set to 'fresh'"
+  else
+    echo "  [skip] .claude/settings.json already exists"
+    echo "  [action] add \"worktree\": { \"baseRef\": \"fresh\" } to $TARGET/.claude/settings.json by hand"
+  fi
+}
+
 # Idempotently merge ai-flow hooks into ~/.claude/settings.json (preserves other keys + user hooks)
 merge_hooks() {
   local settings="$HOME/.claude/settings.json"
@@ -188,6 +209,7 @@ cmd_init() {
   fi
   install_engine
   install_project_claude
+  install_worktree_entry
 
   read -p "  Install/refresh global CLAUDE.md? [Y/n] " -n 1 -r; echo
   [[ ! $REPLY =~ ^[Nn]$ ]] && install_global_claude || echo "  [skip] Global CLAUDE.md"
