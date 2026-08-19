@@ -858,6 +858,183 @@ else
   bad "the live twin routes activation to the backlog protocol (shipped copy is stale)"
 fi
 
+echo "== C14: the audit judges the branch, not the working tree =="
+VP="global/protocols/verify.md"
+VS="global/skills/verify/SKILL.md"
+VW="global/workflows/verify-review.js"
+BRAKE="global/hooks/diff-size-guard.py"
+
+# The one definition every consumer reads: bounded at the next heading, fence-aware.
+TD="$(awk '/^## The Task Diff/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^#+ /){f=0} f' "$VP" | tr '\n' ' ')"
+# The bolded definition SENTENCE, cut at its closing marker. Scoped this tight because 'uncommitted'
+# and 'untracked' both recur in the neighbouring paragraphs, so a section-wide grep stayed green when
+# the sentence itself was inverted to "Uncommitted work is out of scope".
+DEF="$(awk '
+  /^\*\*The task diff is/ { b=$0; sub(/^\*\*/,"",b); if (index(b,"**")) { print substr(b,1,index(b,"**")-1); exit } f=1; next }
+  f { b = b " " $0; if (index(b,"**")) { print substr(b,1,index(b,"**")-1); exit } }
+' "$VP")"
+# A numbered step, flattened: what a step must say is a property of the step, never of where its prose
+# happens to wrap.
+nstep() { awk -v s="^$2\\\\. " -v e="^$(($2 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' "$1" | tr '\n' ' '; }
+# One bullet inside one step. Two bounds, not one: a fact scoped to a whole step passes on a
+# neighbouring bullet's words, and an extractor anchored on the whole file can be retargeted by an
+# edit anywhere else in it.
+sbullet() { # file, step, pattern
+  awk -v s="^$2\\\\. " -v e="^$(($2 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' "$1" \
+    | awk -v p="$3" 'g && (/^[[:space:]]*[-*][[:space:]]/ || /^[0-9]+\./) {exit} $0 ~ p {g=1} g' | tr '\n' ' '
+}
+# Byte offset of a fixed string: for the facts that are an ORDER, which presence greps cannot see.
+off() { printf '%s' "$1" | grep -obF "$2" | head -1 | cut -d: -f1; }
+
+if [ -n "$DEF" ] \
+   && printf '%s' "$DEF" | grep -qiE 'since its base|since the base' \
+   && printf '%s' "$DEF" | grep -qiE 'commits included|including its commits' \
+   && printf '%s' "$DEF" | grep -qi 'uncommitted' \
+   && printf '%s' "$DEF" | grep -qi 'untracked' \
+   && ! grep -qi 'working tree, uncommitted' "$VP"; then
+  ok "the verify protocol defines the task diff (branch since base + uncommitted)"
+else
+  bad "the verify protocol defines the task diff (branch since base + uncommitted)"
+fi
+
+# the degradation rule is part of the definition, not only of the skill that implements it: without
+# this, the protocol paragraph and the templates' fallback wording were deletable with a green suite
+if printf '%s' "$TD" | grep -qi 'no base resolves' && printf '%s' "$TD" | grep -qi 'unavailable'; then
+  ok "the definition carries the no-base degradation rule"
+else
+  bad "the definition carries the no-base degradation rule"
+fi
+
+# the reverse audit and the provenance grep stop naming a scope of their own. Both patterns are
+# required, and the pointer is the marked-up section name matched case-sensitively: a
+# case-insensitive "the task diff" collapses onto the bare mention that is already there today,
+# which made this pair incapable of failing.
+for n in 4 5; do
+  S="$(nstep "$VP" "$n")"
+  if printf '%s' "$S" | grep -qi 'task diff' \
+     && printf '%s' "$S" | grep -q '\*\*The Task Diff\*\*'; then
+    ok "verify protocol step $n points at the task diff definition"
+  else
+    bad "verify protocol step $n points at the task diff definition"
+  fi
+done
+
+S5="$(nstep "$VS" 5)"
+if printf '%s' "$S5" | grep -q 'origin/HEAD' \
+   && printf '%s' "$S5" | grep -q 'rev-parse' \
+   && printf '%s' "$S5" | grep -q 'main' \
+   && printf '%s' "$S5" | grep -q 'master' \
+   && printf '%s' "$S5" | grep -q 'merge-base'; then
+  ok "verify skill resolves the base like the diff brake and diffs from merge-base"
+else
+  bad "verify skill resolves the base like the diff brake and diffs from merge-base"
+fi
+
+# which candidate WINS is the fact; three presence greps are satisfied in any order, so the order is
+# asserted positionally, on the backticked forms so a substring elsewhere cannot stand in
+o1="$(off "$S5" 'origin/HEAD')"; o2="$(off "$S5" '`main`')"; o3="$(off "$S5" '`master`')"
+if [ -n "$o1" ] && [ -n "$o2" ] && [ -n "$o3" ] && [ "$o1" -lt "$o2" ] && [ "$o2" -lt "$o3" ]; then
+  ok "the skill states the base precedence in the brake's order"
+else
+  bad "the skill states the base precedence in the brake's order (offsets: $o1/$o2/$o3)"
+fi
+
+# derived from the source of truth rather than restated beside it: change the hook's candidate list
+# and this harness fails, which is the only thing that makes a knowingly duplicated rule safe
+cands="$(sed -n "s/.*for cand in (\(.*\)):.*/\1/p" "$BRAKE" | tr -d "\"'" | tr ',' ' ')"
+miss=""
+for c in $cands; do printf '%s' "$S5" | grep -q "\`$c\`" || miss="$miss $c"; done
+if [ -n "$cands" ] && [ -z "$miss" ]; then
+  ok "the skill names every base candidate the diff brake actually tries"
+else
+  bad "the skill names every base candidate the diff brake actually tries (missing:$miss)"
+fi
+
+# THE operative command, asserted by shape and not by the word 'merge-base' — which a neighbouring
+# bullet supplies, so the word alone stayed green both when a range operator was appended (dropping
+# the uncommitted half) and when the command was reverted to plain `git diff HEAD`
+MBB="$(sbullet "$VS" 5 'Capture it once')"
+if printf '%s' "$MBB" | grep -qF 'MB="$(git merge-base <base> HEAD)"' \
+   && ! printf '%s' "$MBB" | grep -qE 'merge-base[^`]*\.\.'; then
+  ok "the skill captures the merge-base itself, with no range operator narrowing it"
+else
+  bad "the skill captures the merge-base itself, with no range operator narrowing it"
+fi
+DTB="$(sbullet "$VS" 5 'Otherwise')"
+if printf '%s' "$DTB" | grep -qF 'git diff "$MB"' \
+   && ! printf '%s' "$DTB" | grep -qE 'MB[^`]*\.\.'; then
+  ok "the diff that becomes diffText runs from the captured base to the working tree"
+else
+  bad "the diff that becomes diffText runs from the captured base to the working tree"
+fi
+
+# the copy names its original, so a reader finds the brake instead of two rules that drifted apart
+printf '%s' "$S5" | grep -q 'diff-size-guard' \
+  && ok "the skill's base resolution cites the diff brake it copies" \
+  || bad "the skill's base resolution cites the diff brake it copies"
+
+CF="$(sbullet "$VS" 5 'changedFiles')"
+if printf '%s' "$CF" | grep -qiE 'base-scoped|that same' \
+   && printf '%s' "$CF" | grep -qi 'untracked' \
+   && printf '%s' "$CF" | grep -q 'source_dirs'; then
+  ok "changedFiles derives from the base-scoped diff plus untracked, scoped to source_dirs"
+else
+  bad "changedFiles derives from the base-scoped diff plus untracked, scoped to source_dirs"
+fi
+
+FB="$(sbullet "$VS" 5 'no base')"
+if printf '%s' "$FB" | grep -q 'git diff HEAD' \
+   && printf '%s' "$FB" | grep -qi 'unavailable'; then
+  ok "no resolvable base falls back to the working tree and says so"
+else
+  bad "no resolvable base falls back to the working tree and says so"
+fi
+
+# the count the report must carry has to be measured somewhere, and written somewhere
+printf '%s' "$S5" | grep -q 'rev-list' \
+  && ok "the skill measures the commit count its report has to name" \
+  || bad "the skill measures the commit count its report has to name"
+S8="$(nstep "$VS" 8)"
+if printf '%s' "$S8" | grep -q '\*\*Audited\*\*' && printf '%s' "$S8" | grep -qi 'commit'; then
+  ok "the report writer carries the base and the commit count into verify.md"
+else
+  bad "the report writer carries the base and the commit count into verify.md"
+fi
+
+# the skill's own reverse audit names where its scope comes from: the gather is not what step 4 skips
+RA="$(sbullet "$VS" 3 'Reverse audit')"
+if printf '%s' "$RA" | grep -qi 'task diff' && printf '%s' "$RA" | grep -qiE 'step 5|gather'; then
+  ok "the skill's reverse audit names the step its scope comes from"
+else
+  bad "the skill's reverse audit names the step its scope comes from"
+fi
+
+# both report templates, not only the one the multi-agent review path writes: the reverse audit and
+# the provenance grep consume the task diff even when the review is skipped. Counted, and read off
+# non-comment lines carrying the placeholders themselves — 'base' plus 'commit' were satisfied by a
+# commented-out fallback line ("uncommitted" contains "commit"), so deleting the whole Audited line
+# left the suite green.
+TC="$(awk '
+  /^```/ { if (inf) { if (seen) { total++; if (hb && hc && hf) good++ } seen=0; hb=0; hc=0; hf=0 } inf=1-inf; next }
+  inf {
+    if ($0 ~ /# Verify: T-XXX/) seen=1
+    if ($0 ~ /^[[:space:]]*<!--/) next
+    if ($0 ~ /\[base ref\]/) hb=1
+    if ($0 ~ /commit\(s\)/) hc=1
+    if (tolower($0) ~ /branch scope unavailable/) hf=1
+  }
+  END { print (good+0) "/" (total+0) }
+' "$VP")"
+[ "$TC" = "2/2" ] && ok "both verify.md templates carry the measured base and commit count" \
+                  || bad "both verify.md templates carry the measured base and commit count ($TC)"
+
+DH="$(grep 'DIFF' "$VW" | tr '\n' ' ')"
+if printf '%s' "$DH" | grep -qiE 'branch|since|base' && ! printf '%s' "$DH" | grep -qi 'working tree'; then
+  ok "the auditors' diff header names the branch scope, not the working tree"
+else
+  bad "the auditors' diff header names the branch scope, not the working tree"
+fi
+
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

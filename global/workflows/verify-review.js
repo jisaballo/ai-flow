@@ -24,7 +24,7 @@ const ctx = [
   `Changed files:`,
   (a.changedFiles && a.changedFiles.length ? a.changedFiles.map((f) => `  - ${f}`).join('\n') : '  (none provided)'),
   ``,
-  `--- DIFF (working tree) ---`,
+  `--- DIFF (this branch since its base, plus uncommitted) ---`,
   a.diffText || '(no diff provided)',
   `--- END DIFF ---`,
   ``,
