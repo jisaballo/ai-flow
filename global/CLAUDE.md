@@ -37,7 +37,7 @@ CAPTURE → BACKLOG.md (backlog) → PRIORITIZE (ready) → ACTIVATE (active + S
 6. **CONFORM**: Generate failing test stubs from Verifiable Criteria (see plan protocol)
 7. **EXECUTE**: Implement with TDD validation (make conformance tests pass), spec sync post-execute
 8. **VERIFY**: Audit criteria against understand.md, write verify.md
-9. **ARCHIVE**: Run archive checklist
+9. **ARCHIVE**: Run the closing ceremony (backlog protocol) — the user validates the branch, the coordinator collects the task's artifacts, the merge lands there, the ledger is written (archive checklist), then the front's checkout is dismantled and its roster row removed
 
 ### Execution Paths
 
@@ -120,7 +120,7 @@ At task activation, classify the task into an autonomy level. User confirms or a
 - Each commit must pass tests (TDD validation)
 
 **Post-Commit (mandatory):**
-After every successful task commit, **immediately** run the archive checklist (read backlog protocol) — do NOT move to the next task first. For quick tasks, archive = log to Quick Tasks table in STATE.md (no backlog archive needed).
+After every successful task commit, **immediately** run the closing ceremony (read backlog protocol) — do NOT move to the next task first. For quick tasks the close is the merge plus its row in the Quick Tasks table of STATE.md, written in the coordinator (no backlog archive needed).
 
 **Quick task commit format:** `type(scope): quick - description` (see quick-path protocol).
 

@@ -90,7 +90,7 @@ ceremony that opens a workstream.
 | **Activation** | the coordinator adds the workstream row, with the front's declared areas | created, with branch, phase, step and autonomy — plus any collision acknowledged at the opening (see Opening a Workstream) |
 | **During the phases** | untouched | phase, step, decisions and the resume block kept current |
 | **Pause** | untouched | carries everything needed to resume — it IS the handoff |
-| **Archive** | the coordinator removes the row | deleted with the rest of `artifacts/T-XXX/` |
+| **Archive** | the coordinator removes the row, last | collected into the coordinator first, then deleted with the rest of `artifacts/T-XXX/` |
 | **Quick task** | its row in Quick Tasks Completed, at close | none — a quick task writes no sheet, and states its 1-2 steps in the conversation |
 
 ### Migrating an existing ledger
@@ -216,8 +216,8 @@ When activating a task ("work on T-XXX"), the Understanding phase automatically 
 ## Opening a Workstream
 
 A second front does not begin by creating a checkout — it begins here, and this ceremony ends in a
-verdict. Only the coordinator runs it. It is the symmetric half of the closing checklists below: what
-is decided and seeded here is what gets harvested and removed there.
+verdict. Only the coordinator runs it. It is the symmetric half of `## Closing a Workstream` below: what
+is decided and seeded here is what gets collected and removed there.
 
 With a single front open — the ordinary case — steps 3 to 6 have nothing to do: there is no other
 front to weigh, and the checkout the task is worked in already exists. The ceremony then reduces to
@@ -269,11 +269,67 @@ what activation has always been, plus the declaration in step 2.
    the sheet findable in a checkout that holds several: without it, the front the ceremony just opened
    has no state anything can read.
 
+## Closing a Workstream
+
+A front's work does not reach the coordinator by merging — it reaches it by this ceremony, of which the
+merge is one move. Only the coordinator runs it, and it runs one front at a time. It is the symmetric
+half of `## Opening a Workstream` above: what that ceremony declared, created and seeded is what this
+one validates, collects and takes down.
+
+It runs at **every task close**, not once per front: moves 5 and 6 are its tail and run only when the
+front has no next task, because a worktree holds a workstream — an epic with its serial chain inside —
+and lives across the tasks in it.
+
+With a single front open — the ordinary case — moves 2 and 5 have nothing to do: the task was worked in
+the coordinator, so its papers are already there and there is no second checkout to take down. The
+ceremony then reduces to what closing has always been.
+
+**The order is the protection.** Nothing merges before the coordinator holds the papers, and nothing is
+recorded as done before it is in the trunk — so a ceremony interrupted at any move leaves either work
+still to do or work already safe, never a lie in the record. Nothing enforces the order: the task's own
+sheet is where an interrupted close is written down, and the roster is the queue.
+
+1. **The user validates the branch.** Inside a front commits are free — the branch is disposable by
+   construction — so what the user approves is the branch and not each commit, and nothing merges
+   without it. In the coordinator the per-commit rule of the Commit Protocol is untouched: there is no
+   branch to approve.
+
+2. **The coordinator collects the task's papers.** `artifacts/T-XXX/` is written in the checkout where
+   the task is worked and lives outside version control, so it does not travel with the branch and the
+   merge carries none of it. The coordinator locates the front's checkout in the repository's own
+   worktree listing, matched by the branch on that front's roster row — git is the authority, the row can
+   be stale. If the listing does not name it, stop: the papers may already be gone, and no later move
+   reconstructs them. The collection **replaces** whatever the coordinator holds for that task, and it is
+   the one sanctioned exception to never overwriting a task's papers — the copy from the checkout where
+   the task was worked is the authoritative one, while the coordinator's is a snapshot from the moment
+   the front opened. The coordinator pulls; a linked worktree still never writes here.
+
+3. **The merge lands in the coordinator**, one front at a time. If it cannot complete, the ceremony stops
+   here: the front stays open and the record is not written, because a task recorded as done that is not
+   in the trunk is a lie in the record. The papers are already safe — that is what collecting first
+   bought.
+
+4. **The record is written, and only here.** What this move runs is the single-task archive checklist
+   below, plus the epic-completion checklist when the epic ends with this task. A quick task has no papers
+   to collect and no archive to write: its close is the merge plus its row in the coordinator's Quick
+   Tasks table — a row a linked checkout never writes.
+
+5. **The front's working copy is dismantled** with Claude Code's own worktree tooling — `ExitWorktree`
+   in a session — the counterpart of what created it in step 5 of the opening, and never
+   before move 2: removing the checkout destroys the task's papers, and git cannot restore what it never
+   tracked. Runs only when the front has no next task.
+
+6. **The front's roster row is removed** — the coordinator's last write, and the roster's own proof that
+   the front is closed. Runs only when the front has no next task.
+
 ## Directory Hygiene
 
 **CRITICAL:** `.ai-flow/` must stay clean. Run the appropriate checklist after each lifecycle transition.
 
 ### After ARCHIVE (single task)
+
+This checklist is what move 4 of `## Closing a Workstream` runs, and it runs in the coordinator:
+every step below writes the ledger, and the ledger has one writer.
 
 1. **Steering update**: did the task teach or modify a domain rule? -> edit the rule in the steering file's **body** AND regenerate its `## Nano` line **in the same edit** — an edit that touches only one of the two is incomplete. No new rule learned -> skip.
 2. **product.md write-back**: copy every rule from understand.md's `New business rules minted` into product.md's Business Rules (with T-XXX provenance); update the Glossary if the task sharpened a term. A business rule that stays only in the archived artifact will be re-asked or re-assumed. None minted -> skip.
@@ -281,7 +337,10 @@ what activation has always been, plus the declaration in step 2.
 4. **Delete** `artifacts/T-XXX/` entirely
 5. Remove task from BACKLOG.md (move from Done to nowhere — it's in the archive now)
 6. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
-7. Remove this workstream's row from STATE.md (coordinator only — other open fronts keep theirs; the task's `state.md` went with `artifacts/T-XXX/` in step 4)
+7. Leave the workstream row to move 6 of `## Closing a Workstream`, its sole owner: the row is removed
+   only when the front has no next task, and a front continuing its chain keeps its row with the task
+   field advanced (coordinator only — other open fronts keep theirs). The task's `state.md` went with
+   `artifacts/T-XXX/` in step 4.
 
 ### Business-Miss Rule
 
@@ -295,10 +354,15 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
 
 1. **Icebox batch review**: go through the epic's `## Icebox` entries WITH the user — each is promoted to a real T-XXX task (now it gets an ID and priority) or deleted. The Icebox must hold no entries from closed epics.
 2. Generate `archive/E-XXX-[slug].md` (see Epic archive template) — surviving Icebox promotions go under "What Was NOT Done"
-3. **Delete** `artifacts/T-XXX/` for ALL tasks in the epic
+3. **Verify** that `artifacts/` retains no folder of a task of this epic — deleting is the per-task
+   close's own move (step 4 above), which knows what it archived. If a folder is still there, name it
+   and stop: it belongs either to a task closed without its checklist or to a front that is still
+   open, and a sweep cannot tell those apart.
 4. Remove all epic tasks from BACKLOG.md Done section
 5. Move the epic row to `archive/EPICS.md` + its Execution Order block to `archive/EXECUTION-ORDERS.md` (Size Budget)
-6. Remove the epic's workstream rows from STATE.md (coordinator only — rows of fronts outside the epic stay)
+6. **Verify** the roster holds no row for a front of this epic — move 6 of `## Closing a Workstream` is
+   the only remover, and by now it has run for each of them. A row still there names a front that is
+   still open: name it and stop, rather than removing it here (rows of fronts outside the epic stay).
 
 ### Invariants (always true)
 

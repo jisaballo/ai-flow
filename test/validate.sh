@@ -1035,6 +1035,187 @@ else
   bad "the auditors' diff header names the branch scope, not the working tree"
 fi
 
+echo "== C15: closing a front is a serialised merge ceremony =="
+BLG4="global/protocols/backlog.md"
+
+# The ceremony, bounded at the next section, fence-aware — the opening's own idiom.
+CLO="$(awk '/^## Closing a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG4")"
+# One numbered move, flattened AND whitespace-squeezed. What a move must say is a property of the move,
+# never of where its prose happens to wrap — and joining wrapped lines leaves their indentation behind,
+# so a two-word fact split across a line break reads as 'never    before' and every single-space
+# pattern misses it. Re-wrapping unchanged prose must never change a verdict.
+clomove() { printf '%s\n' "$CLO" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
+# The move's own lead line — its identity. Classifying on the lead rather than on the body is what
+# lets the order assertion see a MOVED move: a body pattern matches wherever its words landed.
+clohead() { printf '%s\n' "$CLO" | grep -E "^$1\. " | head -1; }
+mpair() { # move, pattern A, pattern B, label
+  printf '%s' "$(clomove "$1")" | grep -qiE "$2" && printf '%s' "$(clomove "$1")" | grep -qiE "$3" \
+    && ok "$4" || bad "$4"
+}
+
+if [ -n "$CLO" ]; then
+  # The six moves, each identified by its own lead and read in sequence. The ORDER is the fact this
+  # guards: a collection written after the merge changes the sequence while every presence grep in
+  # this section stays green.
+  seq=""
+  for i in 1 2 3 4 5 6; do
+    case "$(clohead "$i" | tr 'A-Z' 'a-z')" in
+      *valid*)               seq="$seq V" ;;
+      *collect*|*harvest*)   seq="$seq C" ;;
+      *merge*)               seq="$seq M" ;;
+      *record*|*ledger*)     seq="$seq L" ;;
+      *dismantl*|*worktree*) seq="$seq D" ;;
+      *roster*|*row*)        seq="$seq R" ;;
+      *)                     seq="$seq ?" ;;
+    esac
+  done
+  [ "$seq" = " V C M L D R" ] \
+    && ok "the protocol defines the ceremony that closes a front" \
+    || bad "the protocol defines the ceremony that closes a front (moves unnamed or out of order:$seq)"
+
+  # One pattern, not two: 'outside version control' and a bare 'branch' both occur elsewhere in this
+  # move, so an either-or pair passed with the fact itself deleted. The fact is the relation.
+  printf '%s' "$(clomove 2)" \
+    | grep -qiE '(does not|do not|never) (travel|reach)[^.]*branch|branch carries (none|nothing)|merge carries none' \
+    && ok "the papers are collected before the merge, and never travel with the branch" \
+    || bad "the papers are collected before the merge, and never travel with the branch"
+  mpair 2 'worktree list' 'stop' \
+    "an unlocatable front checkout stops the closing"
+  mpair 3 'stays open|remains open|front stays|front remains' 'not written|unwritten|never written' \
+    "a merge that cannot complete leaves the front open and the ledger unwritten"
+
+  M2="$(clomove 2)"
+  if printf '%s' "$M2" | grep -qiE 'sanctioned|only exception|single exception' \
+     && printf '%s' "$M2" | grep -qi 'overwrit' \
+     && printf '%s' "$M2" | grep -qiE 'where the task was worked|worked there|authoritative'; then
+    ok "the collection is the sanctioned exception to never overwriting a task's papers"
+  else
+    bad "the collection is the sanctioned exception to never overwriting a task's papers"
+  fi
+
+  # The condition belongs to BOTH tail moves. Stated once in a preamble it reads as a caveat; carried
+  # by each move it is what the operator reads at the moment of acting.
+  if printf '%s' "$(clomove 5)" | grep -qiE 'no next task|has no next|last task' \
+     && printf '%s' "$(clomove 6)" | grep -qiE 'no next task|has no next|last task'; then
+    ok "a front with a next task keeps its checkout and its roster row"
+  else
+    bad "a front with a next task keeps its checkout and its roster row"
+  fi
+
+  mpair 5 'never before' 'destroy' \
+    "dismantling the checkout before the collection destroys the task's papers"
+  mpair 1 'valid' 'nothing merges|before .*merge|does not merge' \
+    "the user validates the branch before anything merges"
+
+  M4="$(clomove 4)"
+  if printf '%s' "$M4" | grep -qi 'quick' \
+     && printf '%s' "$M4" | grep -qi 'coordinator' \
+     && printf '%s' "$M4" | grep -qiE 'nothing to collect|no papers' \
+     && printf '%s' "$M4" | grep -qi 'archive checklist' \
+     && printf '%s' "$M4" | grep -qiE 'epic[- ]completion|epic close'; then
+    ok "a quick task collects nothing and its row is written in the coordinator"
+  else
+    bad "a quick task collects nothing and its row is written in the coordinator"
+  fi
+
+  # The task's headline claim, and the only thing standing in for the lock this ceremony deliberately
+  # does not have. Scoped to the preamble: the section's text before the first move.
+  CLOI="$(printf '%s\n' "$CLO" | awk '/^1\. /{exit} {print}' | tr '\n' ' ' | tr -s ' ')"
+  printf '%s' "$CLOI" | grep -qi 'only the coordinator runs it' \
+    && printf '%s' "$CLOI" | grep -qiE 'one front at a time|one at a time' \
+    && ok "the ceremony has a single runner and merges one front at a time" \
+    || bad "the ceremony has a single runner and merges one front at a time"
+
+  # The ordinary case must survive: one front open means there is nothing to fetch and no checkout to
+  # take down. Without this the ceremony reads as a six-move ritual for every single archive.
+  printf '%s' "$CLO" | tr '\n' ' ' | tr -s ' ' | grep -qiE 'single front|one front open' \
+    && printf '%s' "$CLO" | tr '\n' ' ' | tr -s ' ' | grep -qiE 'nothing to do|nothing to collect' \
+    && ok "a single open front has nothing to collect and nothing to dismantle" \
+    || bad "a single open front has nothing to collect and nothing to dismantle"
+else
+  bad "the protocol defines the ceremony that closes a front"
+  bad "the papers are collected before the merge, and never travel with the branch (no section)"
+  bad "an unlocatable front checkout stops the closing (no section)"
+  bad "a merge that cannot complete leaves the front open and the ledger unwritten (no section)"
+  bad "the collection is the sanctioned exception to never overwriting a task's papers (no section)"
+  bad "a front with a next task keeps its checkout and its roster row (no section)"
+  bad "dismantling the checkout before the collection destroys the task's papers (no section)"
+  bad "the user validates the branch before anything merges (no section)"
+  bad "a quick task collects nothing and its row is written in the coordinator (no section)"
+  bad "a single open front has nothing to collect and nothing to dismantle (no section)"
+  bad "the ceremony has a single runner and merges one front at a time (no section)"
+fi
+
+# --- the checklists the ceremony invokes ---------------------------------
+# Step 3 of the epic close, flattened. The negative half is the fact: a sweep that returns turns the
+# audit back into a delete, and every positive pattern here would still match.
+EPI3="$(awk '/^### After Epic completion/{f=1;next} (f && /^#+ /){f=0} f' "$BLG4" | awk '/^4\./{f=0} /^3\./{f=1} f' | tr '\n' ' ' | tr -s ' ')"
+if printf '%s' "$EPI3" | grep -qiE 'verify|audit' \
+   && printf '%s' "$EPI3" | grep -qiE 'name it and stop|name it .*stop|stop:' \
+   && ! printf '%s' "$EPI3" | grep -qE '\*\*Delete\*\*' \
+   && ! printf '%s' "$EPI3" | grep -qiE 'for ALL tasks|all tasks in the epic' \
+   && ! printf '%s' "$EPI3" | grep -qiE '(delete|remove|purge|sweep) (them|every|each|all)|in a single sweep'; then
+  ok "epic close audits the task folders and never deletes by lot"
+else
+  bad "epic close audits the task folders and never deletes by lot"
+fi
+
+# The single-task checklist's own preamble — before its numbered steps, so a "coordinator only" that
+# already lives inside step 7 cannot satisfy it.
+ARCP="$(awk '/^### After ARCHIVE \(single task\)/{f=1;next} /^1\./{f=0} (f && /^#+ /){f=0} f' "$BLG4" | tr '\n' ' ' | tr -s ' ')"
+if printf '%s' "$ARCP" | grep -qi 'coordinator' \
+   && printf '%s' "$ARCP" | grep -qiE 'closing ceremony|Closing a Workstream'; then
+  ok "the per-task archive checklist names the coordinator as where it runs"
+else
+  bad "the per-task archive checklist names the coordinator as where it runs"
+fi
+
+# Step 7 of the checklist move 4 delegates to. The ceremony promises the roster row is removed only on
+# the front's last task; the checklist used to order that removal unconditionally, and moves 5-6 were the
+# only text carrying the condition — so the suite stayed green over a contradiction on the contract's
+# central fact. This reads the callee, not just the caller.
+ARC7="$(awk '/^### After ARCHIVE \(single task\)/{f=1;next} (f && /^#+ /){f=0} f' "$BLG4" | awk '/^8\./{f=0} /^7\./{f=1} f' | tr '\n' ' ' | tr -s ' ')"
+EPI6="$(awk '/^### After Epic completion/{f=1;next} (f && /^#+ /){f=0} f' "$BLG4" | awk '/^7\./{f=0} /^6\./{f=1} f' | tr '\n' ' ' | tr -s ' ')"
+if printf '%s' "$ARC7" | grep -qiE 'no next task' \
+   && printf '%s' "$ARC7" | grep -qiE 'move 6|Closing a Workstream' \
+   && ! printf '%s' "$ARC7" | grep -qiE '^7\. (Remove|Delete) ' \
+   && printf '%s' "$EPI6" | grep -qiE 'move 6|only remover|Closing a Workstream' \
+   && ! printf '%s' "$EPI6" | grep -qiE '^6\. (Remove|Delete) '; then
+  ok "both checklists leave the roster row to the ceremony's last move"
+else
+  bad "both checklists leave the roster row to the ceremony's last move"
+fi
+
+# The two halves must name each other, and the heading every extractor above depends on must exist as a
+# heading — a renamed section silently empties $CLO, and an empty $CLO is a different verdict than a wrong one.
+OPN="$(awk '/^## Opening a Workstream/{f=1;next} (/^## /){f=0} f' "$BLG4" | tr '\n' ' ' | tr -s ' ')"
+if grep -qE '^## Closing a Workstream' "$BLG4" && printf '%s' "$OPN" | grep -q 'Closing a Workstream'; then
+  ok "the two halves of the workstream ceremony name each other"
+else
+  bad "the two halves of the workstream ceremony name each other"
+fi
+
+# The lifecycle route, in the repo copy and in the live twin that no drift check covers.
+ARCH_BULLET_RE='\*\*ARCHIVE\*\*.*(closing ceremony|Closing a Workstream)'
+# Two routes, not one: the lifecycle step AND the post-commit rule. Routing only the first leaves the
+# rule the operator actually reads after committing pointing past moves 1-3 of the ceremony.
+POST_ROUTE_RE='immediately\*\* run the closing ceremony'
+manroutes() { grep -qE "$ARCH_BULLET_RE" "$1" && grep -qE "$POST_ROUTE_RE" "$1"; }
+twin3="$HOME/.claude/CLAUDE.md"
+if manroutes global/CLAUDE.md; then
+  ok "the shipped manual routes ARCHIVE to the closing ceremony"
+  if [ -f "$twin3" ]; then
+    manroutes "$twin3" \
+      && ok "the live twin routes ARCHIVE to the closing ceremony" \
+      || bad "the live twin routes ARCHIVE to the closing ceremony (stale — re-run ./install.sh)"
+  else
+    echo "  [skip] live CLAUDE.md twin absent — the shipped one routes ARCHIVE"
+  fi
+else
+  bad "the shipped manual routes ARCHIVE to the closing ceremony"
+  bad "the live twin routes ARCHIVE to the closing ceremony (shipped copy is stale)"
+fi
+
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
