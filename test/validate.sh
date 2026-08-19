@@ -742,6 +742,122 @@ else
   echo "  [skip] branch-resolution checks (python3 unavailable)"
 fi
 
+# --- opening a workstream is a ceremony ----------------------------------
+BLG3="global/protocols/backlog.md"
+# fence-aware, same idiom as the State Files extraction: skeletons quoted inside the section
+# start their lines with "## " and must not be read as the end of it.
+CER="$(awk '/^## Opening a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG3")"
+cerline() { printf '%s' "$CER" | grep -niEm1 "$1" | cut -d: -f1; }
+# One numbered step, flattened to a single line. What a step must SAY is a property of the step,
+# not of where its prose happens to wrap: matching per physical line made re-wrapping unchanged
+# text load-bearing, and scoped a fact to the whole section when it belongs to one move.
+cerstep() { printf '%s\n' "$CER" | awk -v s="^$1\\\\. " -v e="^$(($1 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' | tr '\n' ' '; }
+pair() { # step, pattern A, pattern B, label
+  printf '%s' "$(cerstep "$1")" | grep -qiE "$2" && printf '%s' "$(cerstep "$1")" | grep -qiE "$3" \
+    && ok "$4" || bad "$4"
+}
+
+if [ -n "$CER" ]; then
+  # the seven moves, present AND in the only order that is safe: nothing is created before the
+  # comparison has a verdict, and nothing is pruned before there is a checkout to prune.
+  miss=""
+  n1="$(cerline 'mint')";    [ -n "$n1" ] || miss="$miss mint"
+  n2="$(cerline 'areas')";   [ -n "$n2" ] || miss="$miss areas"
+  n3="$(cerline 'overlap|compare')"; [ -n "$n3" ] || miss="$miss compare"
+  n4="$(cerline 'publish')"; [ -n "$n4" ] || miss="$miss publish"
+  n5="$(cerline 'worktree tooling|create the linked worktree')"; [ -n "$n5" ] || miss="$miss create"
+  n6="$(cerline 'prune')";   [ -n "$n6" ] || miss="$miss prune"
+  n7="$(cerline 'roster row')"; [ -n "$n7" ] || miss="$miss roster-row"
+  if [ -n "$miss" ]; then
+    bad "the protocol defines the ceremony that opens a workstream (steps not found:$miss)"
+  elif [ "$n1" -lt "$n2" ] && [ "$n2" -lt "$n3" ] && [ "$n3" -lt "$n4" ] \
+     && [ "$n4" -lt "$n5" ] && [ "$n5" -lt "$n6" ] && [ "$n6" -lt "$n7" ]; then
+    ok "the protocol defines the ceremony that opens a workstream"
+  else
+    bad "the protocol defines the ceremony that opens a workstream (steps out of order)"
+  fi
+
+  # the ordinary case must survive: one front open means there is nothing to weigh and no
+  # checkout to create. Without this the ceremony reads as a six-step ritual for every activation.
+  printf '%s' "$CER" | tr '\n' ' ' | grep -qiE 'single front|one front open' \
+    && printf '%s' "$CER" | tr '\n' ' ' | grep -qiE 'nothing to do|no other front' \
+    && ok "a single open front has nothing to weigh and nothing to create" \
+    || bad "a single open front has nothing to weigh and nothing to create"
+
+  pair 3 'acknowledg' 'sheet|state\.md' "a collision stops the opening until it is acknowledged in the sheet"
+  pair 3 'cannot compare' 'never|not .*clear'  "a front with no declaration reads as cannot-compare, not as clear"
+  pair 4 'publish' 'stop|before anything is created' "opening stops on an unpublished default branch"
+  pair 5 'never' 'git worktree add' "the ceremony creates the worktree with the native tooling"
+  pair 6 'prune' 'own|owns' "the ceremony prunes the new checkout to the task it owns"
+  pair 6 'BACKLOG|ledger' 'never copied|not copied|stays with|read-only' "the ceremony never copies the ledger into a worktree"
+  pair 6 'copies' 'originals' "the pruning step names what it deletes"
+else
+  bad "the protocol defines the ceremony that opens a workstream"
+  bad "a single open front has nothing to weigh and nothing to create (no section)"
+  bad "a collision stops the opening until it is acknowledged in the sheet (no section)"
+  bad "a front with no declaration reads as cannot-compare, not as clear (no section)"
+  bad "opening stops on an unpublished default branch (no section)"
+  bad "the ceremony creates the worktree with the native tooling (no section)"
+  bad "the ceremony prunes the new checkout to the task it owns (no section)"
+  bad "the ceremony never copies the ledger into a worktree (no section)"
+  bad "the pruning step names what it deletes (no section)"
+fi
+
+# the ceremony lands beside the checklists it mirrors: the engine grows no protocol file.
+# Named set, not a count: a failure has to say which file appeared.
+EXPECTED_PROTOS="backlog.md codebase-mapping.md discover.md execute.md plan.md quick-path.md understand.md verify.md"
+extra=""
+for f in $(ls global/protocols); do
+  case " $EXPECTED_PROTOS " in *" $f "*) ;; *) extra="$extra $f" ;; esac
+done
+[ -z "$extra" ] && ok "the engine gains no new protocol file" \
+                || bad "the engine gains no new protocol file (unexpected:$extra)"
+
+# the column the check reads, in the shipped roster and in the protocol's own skeleton.
+# The migration region is bounded at the next heading: unbounded, it ran to EOF and read the
+# ceremony's own text, which made this assertion incapable of failing.
+ROSTER_RE='^\|[^|]*[Ww]orkstream[^|]*\|[^|]*[Cc]heckout[^|]*\|[^|]*[Bb]ranch[^|]*\|[^|]*[Tt]ask[^|]*\|[^|]*[Ee]pic[^|]*\|[^|]*[Aa]reas[^|]*\|'
+if grep -qE "$ROSTER_RE" "template/.ai-flow/STATE.md" \
+   && grep -qE "$ROSTER_RE" "$BLG3" \
+   && awk '/^### Migrating an existing ledger/{f=1;next} /^#+ /{f=0} f' "$BLG3" | grep -qi 'areas'; then
+  ok "the shipped roster declares each front's areas"
+else
+  bad "the shipped roster declares each front's areas"
+fi
+
+# a linked worktree reaches its epic's frozen boundaries without owning them, and knows what to
+# do when it cannot reach them at all
+UND="global/protocols/understand.md"
+if grep -iE 'Scope Contract' "$UND" | grep -qiE 'worktree list|main checkout|coordinator' \
+   && grep -iE 'Scope Contract' "$UND" | grep -qiE 'read-only'; then
+  ok "a linked worktree reads its epic contract from the coordinator, read-only"
+else
+  bad "a linked worktree reads its epic contract from the coordinator, read-only"
+fi
+awk '/^## Epic-Scoped Understanding/{f=1;next} /^## /{f=0} f' "$UND" | tr '\n' ' ' \
+  | grep -qiE 'cannot be reached|unreadable|cannot read' \
+  && ok "an unreachable contract blocks the Understand instead of vanishing" \
+  || bad "an unreachable contract blocks the Understand instead of vanishing"
+
+# documented and reachable: the phase table routes activation and the lifecycle bullet names the
+# ceremony — in the repo copy and in the live twin, which no drift check covers
+ACT_RE='^\|[[:space:]]*Activate[^|]*\|[^|]*backlog\.md[^|]*\|'
+ACT_BULLET_RE='\*\*ACTIVATE\*\*.*ceremony'
+twin2="$HOME/.claude/CLAUDE.md"
+if grep -qE "$ACT_RE" global/CLAUDE.md && grep -qE "$ACT_BULLET_RE" global/CLAUDE.md; then
+  ok "the global instructions route activation to the backlog protocol"
+  if [ -f "$twin2" ]; then
+    grep -qE "$ACT_RE" "$twin2" && grep -qE "$ACT_BULLET_RE" "$twin2" \
+      && ok "the live twin routes activation to the backlog protocol" \
+      || bad "the live twin routes activation to the backlog protocol (stale — re-run ./install.sh)"
+  else
+    echo "  [skip] live CLAUDE.md twin absent — the shipped one routes activation"
+  fi
+else
+  bad "the global instructions route activation to the backlog protocol"
+  bad "the live twin routes activation to the backlog protocol (shipped copy is stale)"
+fi
+
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

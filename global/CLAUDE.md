@@ -31,7 +31,7 @@ CAPTURE → BACKLOG.md (backlog) → PRIORITIZE (ready) → ACTIVATE (active + S
 **Phases:**
 1. **CAPTURE**: Add task to BACKLOG.md with initial description
 2. **PRIORITIZE**: Set priority (critical/high/medium/low) and status (ready)
-3. **ACTIVATE**: Create `artifacts/T-XXX/state.md`, add the workstream row to STATE.md, mark as active
+3. **ACTIVATE**: Run the opening ceremony (backlog protocol) — mint the ID, declare the front's areas, weigh them against every open front, create the worktree if this is a second front, then create `artifacts/T-XXX/state.md`, add the workstream row to STATE.md, mark as active
 4. **UNDERSTAND**: Decompose if composite, ask contextual questions, write understand.md
 5. **PLAN**: Create execution plan (max 3 steps), write plan.md
 6. **CONFORM**: Generate failing test stubs from Verifiable Criteria (see plan protocol)
@@ -74,6 +74,7 @@ At task activation, classify the task into an autonomy level. User confirms or a
 
 | Phase | Protocol file |
 |-------|--------------|
+| Activate | `~/.claude/ai-flow/protocols/backlog.md` |
 | Understand | `~/.claude/ai-flow/protocols/understand.md` |
 | Plan + Conform | `~/.claude/ai-flow/protocols/plan.md` |
 | Execute + Spec Sync | `~/.claude/ai-flow/protocols/execute.md` |

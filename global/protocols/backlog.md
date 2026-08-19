@@ -17,15 +17,20 @@ One row per open workstream and nothing task-specific. Only the **coordinator** 
 and only at ceremonies — a workstream opens, a task closes and merges. A linked worktree never
 receives it and never edits it.
 
+**Areas** names the parts of the codebase a front declared when it opened, in the project's own
+`area_kind`. It is what the next opening weighs its own declaration against (see Opening a
+Workstream) — front-scoped, decided once, never a running account of what the task turned out to
+touch.
+
 ```markdown
 # Session State
 
 ## Workstreams
 
-| Workstream | Checkout | Branch | Task | Epic | Opened |
-|---|---|---|---|---|---|
-| coordinator | . | main | T-XXX | E-XXX | 2026-08-19 |
-| ws-b | ../proj-wt-b | you/t-yyy-slug | T-YYY | E-XXX | 2026-08-19 |
+| Workstream | Checkout | Branch | Task | Epic | Areas | Opened |
+|---|---|---|---|---|---|---|
+| coordinator | . | main | T-XXX | E-XXX | auth, billing | 2026-08-19 |
+| ws-b | ../proj-wt-b | you/t-yyy-slug | T-YYY | E-XXX | notifications | 2026-08-19 |
 
 > Per-task phase, step, autonomy and decisions live in `artifacts/T-XXX/state.md`.
 > This file is a roster: the coordinator writes it, only at ceremonies.
@@ -82,7 +87,7 @@ ceremony that opens a workstream.
 
 | Moment | Roster (`STATE.md`) | Sheet (`artifacts/T-XXX/state.md`) |
 |---|---|---|
-| **Activation** | the coordinator adds the workstream row | created, with branch, phase, step and autonomy |
+| **Activation** | the coordinator adds the workstream row, with the front's declared areas | created, with branch, phase, step and autonomy — plus any collision acknowledged at the opening (see Opening a Workstream) |
 | **During the phases** | untouched | phase, step, decisions and the resume block kept current |
 | **Pause** | untouched | carries everything needed to resume — it IS the handoff |
 | **Archive** | the coordinator removes the row | deleted with the rest of `artifacts/T-XXX/` |
@@ -94,6 +99,10 @@ A project already running ai-flow has a `STATE.md` full of task context, and `up
 overwrites project data — so the move is manual and takes one edit: replace the current-task block
 with the `## Workstreams` table, move the active task's phase, step, autonomy and decisions into its
 sheet, and keep only the notes that are genuinely cross-task. Nothing else in `.ai-flow/` changes.
+
+A roster that predates the **Areas** column is not broken: a front that declares no areas simply
+reads as *cannot compare* at the next opening, which is exactly the verdict the ceremony defines for
+it. Adding the column costs one edit and turns that verdict into a real comparison.
 
 ## Task Entry Format (business-first)
 
@@ -203,6 +212,62 @@ This provides single-file context recovery without reading multiple artifacts.
 ## Handling Composite Tasks in Backlog
 
 When activating a task ("work on T-XXX"), the Understanding phase automatically detects composite tasks and proposes splitting. See Understanding Phase Protocol > Automatic Task Split for the full protocol.
+
+## Opening a Workstream
+
+A second front does not begin by creating a checkout — it begins here, and this ceremony ends in a
+verdict. Only the coordinator runs it. It is the symmetric half of the closing checklists below: what
+is decided and seeded here is what gets harvested and removed there.
+
+With a single front open — the ordinary case — steps 3 to 6 have nothing to do: there is no other
+front to weigh, and the checkout the task is worked in already exists. The ceremony then reduces to
+what activation has always been, plus the declaration in step 2.
+
+1. **Mint the ID** and write the task's entry. The ledger lives with the coordinator and only the
+   coordinator hands out IDs: the same number issued twice is the one race no later ceremony repairs.
+
+2. **Declare the front's areas** — the parts of the codebase this front expects to touch, named in the
+   project's own `area_kind` (see `project.yml`). The declaration is made before the task is
+   understood, so it is coarse by construction: name the units, never the files. It is recorded on the
+   front's line in the roster, where every later opening reads it.
+
+3. **Weigh the declaration against every open front.** Read the roster and compare this declaration
+   with the one each open front made — the coordinator is a front and is weighed like any other.
+   Exactly one verdict comes out:
+   - **clear** — no open front declared any of these units. Continue.
+   - **collision** — an open front declared one of them. Stop. The opening resumes only once the
+     collision is acknowledged in writing on the task's own sheet, naming the front it meets and why
+     proceeding anyway is acceptable. The acknowledgement is the protection; there is no silent path
+     past it, and no refusal either — two fronts of one epic touching one file is ordinary, and a rule
+     people route around protects nothing.
+   - **cannot compare** — an open front declares nothing, and that is never reported as clear:
+     silence is not an all-clear, it is a front that cannot be weighed. Name it, say the comparison
+     could not be made, and let the acknowledgement above carry the decision.
+
+4. **Check the default branch is published.** A front cut `fresh` starts from the published default
+   branch, so anything committed and unpushed does not exist for it: if the default branch holds
+   commits the remote has not seen, stop and name them before anything is created. Publishing is part
+   of opening a front, not an afterthought.
+
+5. **Create the linked worktree** with Claude Code's own worktree tooling — `EnterWorktree` in a
+   session, `claude -w` from the shell, `isolation: worktree` for an agent — and never a bare
+   `git worktree add`, which honours neither `worktree.baseRef` nor `.worktreeinclude` and so
+   produces a checkout without the project's data. The worktree goes outside the primary's tree; one
+   nested inside it would bind the guardrail hooks to the wrong working copy.
+
+6. **Seed the task's artifacts and prune the rest.** The pattern file carries `artifacts/` wholesale,
+   so the new checkout arrives holding the papers of every open task, and the read-only rail cannot
+   tell which task is its own from a pile: the checkout must hold only the artifacts of the task it
+   owns, so prune every folder this front does not own. What is deleted there are copies — the
+   coordinator keeps the originals. The ledger stays with the coordinator: BACKLOG.md, STATE.md, the
+   decision log and the archive are never copied in. What the front must read there but must not own —
+   its epic's Scope Contract — it reads from the coordinator, read-only (see the Understand protocol).
+
+7. **Write the roster row and the task's sheet.** The row carries workstream, checkout, branch, task,
+   epic, the declared areas and the date. The sheet carries the branch that owns the task, the phase,
+   the step, the autonomy level, and any acknowledgement from step 3. The `branch:` line is what makes
+   the sheet findable in a checkout that holds several: without it, the front the ceremony just opened
+   has no state anything can read.
 
 ## Directory Hygiene
 
