@@ -1379,6 +1379,138 @@ else
   bad "the audit's resolution report rides the line that already says what it read"
 fi
 
+
+echo "== C17: the manual describes the parallel model it implements =="
+MAN="global/CLAUDE.md"
+MANTWIN="${HOME:-}/.claude/CLAUDE.md"   # guarded: the suite runs under set -u and the twin is optional
+C17_SKIPPED=0
+
+# A section body, bounded by the next heading of any depth: a fact belongs to the section that governs
+# it, and a file-wide grep finds the first line that happens to match anywhere in a 200-line manual.
+msect() { awk -v h="$2" '$0 ~ h {f=1;next} (f && /^#+ /){exit} f' "$1"; }
+# One bullet of that section, from its lead to the next bullet, flattened: what a bullet says is a
+# property of the bullet, never of where its prose wraps or of the neighbouring bullet's words.
+mbul() { msect "$1" "$2" | awk -v s="$3" '/^- /{ if(f) exit; f=($0 ~ s) } f' | tr -s ' \n' '  '; }
+# A table row, by the command it names, inside the section that owns the table — same reason msect and
+# mbul exist: a file-wide row grep retargets itself the day any earlier table happens to name the command.
+mrow() { msect "$1" "$3" | grep -m1 -E "^\|[^|]*$2[^|]*\|" | tr -s ' '; }
+
+# One fact, checked identically in both copies. The live twin carries the user's own language and
+# sections, so every fact below is matched by what it says and never by the text around it. The remedy
+# names the hand-merge because nothing distributes this file: the installer writes it only when absent
+# and the drift guard excludes it as user-owned (global/hooks/drift-check.sh).
+manfact() {
+  local fn="$1" what="$2"
+  "$fn" "$MAN" && ok "$what" || bad "$what"
+  # Each copy is judged on itself. A verdict about the twin printed without opening the twin blames a
+  # manual the reader may not own — and on a host without one it turns the documented skip into a failure.
+  if [ -f "$MANTWIN" ]; then
+    "$fn" "$MANTWIN" && ok "the live twin: $what" \
+      || bad "the live twin: $what (port the edit by hand — nothing distributes ~/.claude/CLAUDE.md)"
+  else
+    echo "  [skip] live CLAUDE.md twin absent — the shipped copy carries the fact"
+    C17_SKIPPED=$((C17_SKIPPED+1))
+  fi
+}
+
+# Fact 1 — the limit is per front, and the ceiling is a number a reader can act on. Scoped to the bullet
+# whose bold lead names the limit: the guard bullet below it also says "active task" and would pass a
+# section-wide grep for it. Absence of the qualifier IS the un-edited form, so this dies on a revert.
+mf_limit() {
+  # Bracketed, never backslash-escaped: awk eats \* out of a -v regex, which silently turns the lead
+  # pattern into a malformed quantifier that matches nothing — a stub that fails for the wrong reason.
+  local b; b="$(mbul "$1" '^## Working Rules' '^- [*][*][^*]*[Aa]ctive task')"
+  [ -n "$b" ] || return 1
+  printf '%s' "$b" | grep -qiE 'per workstream|per front'   || return 1
+  # Both numbers: "2 fronts" alone drops the ceiling, and a ceiling alone drops what is normal.
+  printf '%s' "$b" | grep -qiE '\b2\b|\btwo\b'              || return 1
+  printf '%s' "$b" | grep -qiE '\b3\b|\bthree\b'            || return 1
+  # "no longer stated unqualified" is a property of the document, not of this bullet: a second,
+  # unqualified restatement placed anywhere else passes a positive-only check on the first match.
+  awk 'tolower($0) ~ /(one|1) active task/ && tolower($0) !~ /per (workstream|front)/ {f=1} END{exit !f}' "$1" \
+    && return 1
+  return 0
+}
+manfact mf_limit "the manual scopes the active-task limit to a front and names the ceiling"
+
+# Fact 2 — the off-plan guard offers three ways out, and the second one is described as it works today.
+# Each way out is asserted separately: adding the third while dropping one of the other two is a mutation
+# that leaves the word "parallel" in place and must still die.
+mf_guard() {
+  local b; b="$(mbul "$1" '^## Working Rules' 'Scope & Session Guard')"
+  [ -n "$b" ] || return 1
+  printf '%s' "$b" | grep -qiE 'parallel workstream|parallel front'  || return 1
+  printf '%s' "$b" | grep -qi  'BACKLOG.md'                          || return 1
+  printf '%s' "$b" | grep -qiE 'switch task'                         || return 1
+  # The procedure, not just the option: an option with nowhere to go is not a way out.
+  printf '%s' "$b" | grep -qi  'opening ceremony'                    || return 1
+  printf '%s' "$b" | grep -qi  'closing ceremony'                    || return 1
+  # The roster row has exactly one owner — the closing ceremony's last move — so the hand-pruning
+  # this line used to prescribe is gone.
+  printf '%s' "$b" | grep -qi  'prune STATE.md'                      && return 1
+  return 0
+}
+manfact mf_guard "the off-plan guard offers a parallel front as a third way out, and routes the other two to their ceremonies"
+
+# Fact 3a — the commit gate names where it changes and who owns the change, and explains nothing itself.
+# The negative half is the point: this epic has twice paid for one fact living in two documents, so the
+# ceremony's reasoning appearing here is a failure even though every positive phrase is still present.
+mf_commit_gate() {
+  local s x
+  s="$(msect "$1" '^### Commit Protocol' | tr -s ' \n' '  ')"
+  [ -n "$s" ] || return 1
+  # The exception's own statement, not the section around it. Scoped to the section, the citation checks
+  # passed on text that predates the rule: the Post-Commit paragraph already said "run the closing
+  # ceremony (read backlog protocol) ... in the coordinator", so the half of the criterion that demands a
+  # pointer to the owner could not fail, and an exception stated with no pointer at all read green.
+  x="$(msect "$1" '^### Commit Protocol' | grep -m1 -iE 'gate is the branch|not each commit|not per commit')"
+  [ -n "$x" ] || return 1
+  printf '%s' "$x" | grep -qiE 'worktree|front'          || return 1
+  printf '%s' "$x" | grep -qi  'closing ceremony'        || return 1
+  printf '%s' "$x" | grep -qiE 'backlog protocol|move 1' || return 1
+  # The coordinator's rule is untouched, and saying so is what keeps the exception from reading global.
+  printf '%s' "$x" | grep -qi  'coordinator'             || return 1
+  # The owner's explanation stays with the owner — a section-wide check, because a copy of it anywhere
+  # in the block is the drift this guards.
+  printf '%s' "$s" | grep -qi  'disposable by construction' && return 1
+  return 0
+}
+manfact mf_commit_gate "the commit gate names where it changes and cites the ceremony that owns the change"
+
+# Fact 3b — the hard stop carries the same condition as the gate three sections above it. Asserted on its
+# own, which is strictly stronger than "fails when the gate has the exception and the stop does not": the
+# suite that asserts only the caller lets the callee contradict it, which is how one procedure ends
+# up stated two ways in one document.
+mf_commit_stop() {
+  local b; b="$(mbul "$1" '^### Never' 'Commit without user validation')"
+  [ -n "$b" ] || return 1
+  # 'see Commit Protocol' alone is a cross-reference, not a condition: the stop would still read
+  # unconditionally, which is the exact state this criterion exists to catch.
+  printf '%s' "$b" | grep -qiE 'coordinator|in(side)? a front|gate is the branch' || return 1
+}
+manfact mf_commit_stop "the hard stop carries the same condition as the commit gate it repeats"
+
+# Fact 4 — both resume entries resolve the task by the one written ladder, and neither reproduces a rung.
+# A second statement of the rungs is a copy that drifts, which is the whole reason the ladder has one home.
+mf_resume() {
+  local r b both
+  r="$(mrow "$1" 'continue' '^### Phase Orchestration')"
+  b="$(mbul "$1" '^### Session Continuity' 'On start')"
+  [ -n "$r" ] && [ -n "$b" ] || return 1
+  printf '%s' "$r" | grep -qiE 'Resolving the task|ladder'  || return 1
+  printf '%s' "$b" | grep -qiE 'Resolving the task|ladder'  || return 1
+  # Both entries name the owner. A citation without its document is a pointer to nowhere, and the reader
+  # who lands on the table has no route to the rungs — the whole reason the ladder was given one home.
+  printf '%s' "$r" | grep -qi  'backlog protocol'           || return 1
+  printf '%s' "$b" | grep -qi  'backlog protocol'           || return 1
+  both="$r $b"
+  printf '%s' "$both" | grep -qiE 'checked out|lone sheet|exactly one task' && return 1
+  return 0
+}
+manfact mf_resume "both resume entries resolve the task by the written ladder, and restate no rung"
+
+[ "$C17_SKIPPED" -eq 0 ] || echo "  [note] $C17_SKIPPED twin half/halves not evaluated (no live CLAUDE.md twin on this host) — a green run does not prove the two copies agree"
+
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

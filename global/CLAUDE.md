@@ -87,7 +87,7 @@ At task activation, classify the task into an autonomy level. User confirms or a
 
 | Command | Action |
 |---------|--------|
-| `continue` | Resume from the task's `artifacts/T-XXX/state.md` (STATE.md lists the open fronts) |
+| `continue` | Resume the task this checkout owns — resolved by the ladder in the backlog protocol (`Resolving the task`), then read its `artifacts/T-XXX/state.md` |
 | `status` | Show current state |
 | `understand` | Run Understanding phase (read protocol first) |
 | `plan` | Run Plan phase (read protocol first) |
@@ -111,6 +111,8 @@ At task activation, classify the task into an autonomy level. User confirms or a
 
 **CRITICAL: DO NOT commit until user explicitly validates and approves.**
 
+**Inside a linked worktree the gate is the branch, not each commit** — commits are free there and the user's approval sits before the merge, at move 1 of the closing ceremony (backlog protocol), which owns the rule; that ceremony runs when the task closes, never per commit. In the coordinator the gate below applies unchanged.
+
 - Work stays uncommitted during development and iterations
 - Only commit when user explicitly approves
 - If user requests changes, continue iterating without committing
@@ -126,7 +128,7 @@ After every successful task commit, **immediately** run the closing ceremony (re
 
 ### Session Continuity
 
-- **On start**: Read STATE.md for the open fronts, then this workstream's `artifacts/T-XXX/state.md`. If a task is active, also read the protocol for the current phase
+- **On start**: Resolve which task this checkout owns by the ladder in the backlog protocol (`Resolving the task`), then read that task's `artifacts/T-XXX/state.md`; STATE.md is the roster of open fronts. If a task is active, also read the protocol for the current phase
 - **On pause**: Update the task's `artifacts/T-XXX/state.md` with last file, uncommitted changes, context — it is the handoff, and it survives the pause
 - **On compaction**: STATE.md and BACKLOG.md are re-read automatically
 
@@ -163,7 +165,7 @@ After every successful task commit, **immediately** run the closing ceremony (re
 - Architectural decisions (new patterns, state shape)
 
 ### Never (hard stops)
-- Commit without user validation
+- Commit without user validation — in the coordinator; inside a front the gate is the branch (see Commit Protocol)
 - Skip or disable tests
 - Commit secrets, credentials, or .env files
 - Delete user data or drop tables/collections
@@ -172,8 +174,8 @@ After every successful task commit, **immediately** run the closing ceremony (re
 
 ## Working Rules
 
-- **One active task at a time** in STATE.md
-- **Scope & Session Guard** — If a request arrives that is NOT part of the active task's plan, flag it in one line before acting: name whether it looks unrelated or related-but-separable, and ask whether to capture it to BACKLOG.md and keep the session clean, or switch tasks (closing the current one first — archive + prune STATE.md). User decides. Applies to your own drive-by temptations too (incidental refactors, "I noticed X nearby"). Exception: a genuine blocker for the active task is the Replan Gate, not this.
+- **One active task at a time per workstream** — STATE.md's roster holds one row per open front, and each front runs its own single active task; 2 fronts is the working parallelism, 3 the ceiling (measure the real cost before raising it)
+- **Scope & Session Guard** — If a request arrives that is NOT part of the active task's plan, flag it in one line before acting: name whether it looks unrelated or related-but-separable, and ask whether to capture it to BACKLOG.md and keep the session clean, open it as a parallel workstream (the opening ceremony in the backlog protocol, subject to the front ceiling above), or switch tasks (closing the current one first — the closing ceremony). User decides. Applies to your own drive-by temptations too (incidental refactors, "I noticed X nearby"). Exception: a genuine blocker for the active task is the Replan Gate, not this.
 - **Surgical Changes** — Every changed line must trace directly to the request. Don't "improve" adjacent code, comments, or formatting; don't refactor what isn't broken; match existing style even if you'd do it differently. Clean up only the orphans YOUR change created (now-unused imports/vars/functions) — never pre-existing dead code, just mention it. This is the line/diff-level counterpart to the Scope & Session Guard (which operates at task level).
 - **Understanding phase MANDATORY** before planning — never skip to plan without gathering context
 - **Detect composite tasks** — propose splitting tasks that mix multiple concerns into independent backlog tasks (not subtasks) before planning
