@@ -502,6 +502,246 @@ after_tree="$( treecksum "$C12" )"
 [ "$before_tree" = "$after_tree" ] && ok "update still touches no project" \
                                   || bad "update still touches no project (the project tree changed)"
 
+echo "== C13: per-task state sheet + workstream roster =="
+T13="$(mktemp -d)"
+trap 'rm -rf "$T12" "$T13"' EXIT
+TSTATE="template/.ai-flow/STATE.md"
+BLG="global/protocols/backlog.md"
+
+# --- the two shapes, written down ----------------------------------------
+if grep -q '^## Workstreams' "$TSTATE" \
+   && grep -qiE '^\|[^|]*workstream[^|]*\|[^|]*checkout[^|]*\|[^|]*branch[^|]*\|[^|]*task[^|]*\|' "$TSTATE" \
+   && grep -q '^## Quick Tasks Completed' "$TSTATE"; then
+  ok "the shipped session file is a workstream roster"
+else
+  bad "the shipped session file is a workstream roster"
+fi
+if grep -qiE '^[[:space:]]*(phase|step|autonomy|decisions)[[:space:]]*:' "$TSTATE" \
+   || grep -q '^## Current Task' "$TSTATE"; then
+  bad "the roster carries no per-task field"
+else
+  ok "the roster carries no per-task field"
+fi
+
+# fence-aware extraction: the section quotes markdown skeletons whose lines start with "## "
+sec="$(awk '/^## State Files/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG")"
+if [ -n "$sec" ]; then
+  ok "the protocol has a State Files section"
+  miss=""
+  printf '%s' "$sec" | grep -q 'artifacts/T-XXX/state.md'        || miss="$miss sheet-path"
+  printf '%s' "$sec" | grep -q '## Workstreams'                  || miss="$miss roster-skeleton"
+  printf '%s' "$sec" | grep -q 'phase: \*\*'                     || miss="$miss phase-line-form"
+  printf '%s' "$sec" | grep -qE '^[[:space:]]*branch:'           || miss="$miss branch-field"
+  printf '%s' "$sec" | grep -qi 'coordinator'                    || miss="$miss coordinator-writer"
+  printf '%s' "$sec" | grep -qi 'ceremon'                        || miss="$miss ceremony-timing"
+  printf '%s' "$sec" | grep -qi 'migrat'                         || miss="$miss migration-note"
+  [ -z "$miss" ] && ok "the protocol defines both state files and their writers" \
+                 || bad "the protocol defines both state files and their writers (missing:$miss)"
+  printf '%s' "$sec" | grep -qi 'activation' \
+    && ok "the protocol mandates the sheet at activation" \
+    || bad "the protocol mandates the sheet at activation"
+  printf '%s' "$sec" | grep -qi 'paused' \
+    && ok "the protocol states a paused task keeps its sheet" \
+    || bad "the protocol states a paused task keeps its sheet"
+  printf '%s' "$sec" | grep -qi 'quick' \
+    && ok "the protocol states a quick task gets no sheet" \
+    || bad "the protocol states a quick task gets no sheet"
+else
+  bad "the protocol has a State Files section"
+  bad "the protocol defines both state files and their writers (no section)"
+  bad "the protocol mandates the sheet at activation (no section)"
+  bad "the protocol states a paused task keeps its sheet (no section)"
+  bad "the protocol states a quick task gets no sheet (no section)"
+fi
+
+if grep -q 'index of open workstreams' "$BLG" \
+   && ! grep -q 'STATE.md contains only current task context' "$BLG" \
+   && awk '/^### Allowed structure/{f=1} f' "$BLG" | grep -q 'state.md'; then
+  ok "the invariants and the allowed structure name the new shape"
+else
+  bad "the invariants and the allowed structure name the new shape"
+fi
+
+# --- no engine line routes per-task state to the roster ------------------
+QP="global/protocols/quick-path.md"
+if ! grep -q '\*\*Inline plan\*\* in STATE.md' "$QP" \
+   && ! grep -qx '\- STATE.md updated' "$QP" \
+   && grep -qi 'no state' "$QP"; then
+  ok "the quick path writes no state into the ledger"
+else
+  bad "the quick path writes no state into the ledger"
+fi
+
+sweep=""
+grep -q 'Update STATE.md with step progress' global/CLAUDE.md          && sweep="$sweep manual-step-progress"
+grep -q 'While STATE.md marks the current phase' global/protocols/understand.md && sweep="$sweep understand-rail"
+grep -q 'CLAUDE.md, STATE.md, understand.md' global/protocols/execute.md && sweep="$sweep execute-agent-input"
+head -12 global/hooks/understand-write-guard.py | grep -qi 'branch'    || sweep="$sweep hook-docstring"
+grep -qi 'branch' global/hooks/README.md                               || sweep="$sweep hooks-readme"
+[ -z "$sweep" ] && ok "no engine file routes per-task state to the ledger" \
+               || bad "no engine file routes per-task state to the ledger (stale:$sweep)"
+
+twin="$HOME/.claude/CLAUDE.md"
+if grep -q 'artifacts/T-XXX/state.md' global/CLAUDE.md; then
+  if [ -f "$twin" ]; then
+    grep -q 'artifacts/T-XXX/state.md' "$twin" \
+      && ok "both manual twins send step progress to the task sheet" \
+      || bad "both manual twins send step progress to the task sheet (the live twin is stale)"
+  else
+    echo "  [skip] live CLAUDE.md twin absent — the shipped one names the task sheet"
+    ok "the shipped manual sends step progress to the task sheet"
+  fi
+else
+  bad "both manual twins send step progress to the task sheet"
+fi
+
+# --- the rail resolves its own task by branch ----------------------------
+if [ "$PY3" = 1 ]; then
+  ledger() {  # $1 = repo, $2 = phase -> the ledger STATE.md of a project that has not migrated
+    mkdir -p "$1/.ai-flow"
+    printf 'Current phase: **%s**\n' "$2" > "$1/.ai-flow/STATE.md"
+  }
+  sheet() {  # $1 = repo, $2 = task dir, $3 = branch line or "-", $4 = phase
+    mkdir -p "$1/.ai-flow/artifacts/$2"
+    { printf '# Task state\n\n'
+      [ "$3" = "-" ] || printf 'branch: %s\n' "$3"
+      printf 'phase: **%s**\n' "$4"
+    } > "$1/.ai-flow/artifacts/$2/state.md"
+  }
+
+  # the sheet naming this branch wins over a sibling and over the ledger
+  Q1="$T13/q1"; mkproj "$Q1" main
+  ledger "$Q1" EXECUTE
+  sheet "$Q1" mine  main  UNDERSTAND
+  sheet "$Q1" other other EXECUTE
+  out="$(wguard "$Q1" "$Q1/app.txt")"; rc=$?
+  if [ "$rc" = 2 ]; then
+    case "$out" in
+      *"artifacts/mine/state.md"*) ok "the rail reads the sheet that names the current branch" ;;
+      *) bad "the rail reads the sheet that names the current branch (blocked, but named another file)" ;;
+    esac
+  else
+    bad "the rail reads the sheet that names the current branch (exit $rc)"
+  fi
+
+  # a sheet that does not name this branch is ignored, ledger included
+  Q2="$T13/q2"; mkproj "$Q2" main
+  ledger "$Q2" UNDERSTAND
+  sheet "$Q2" mine  main  EXECUTE
+  sheet "$Q2" other other UNDERSTAND
+  out="$(wguard "$Q2" "$Q2/app.txt")"; rc=$?
+  [ "$rc" = 0 ] && ok "a matching sheet wins over a non-matching sibling" \
+                || bad "a matching sheet wins over a non-matching sibling (exit $rc)"
+
+  # a sheet with no branch field never counts as a match: the sheet that names this branch wins,
+  # and omission read as a wildcard would make the pair ambiguous and block here instead
+  Q3="$T13/q3"; mkproj "$Q3" main
+  ledger "$Q3" UNDERSTAND
+  sheet "$Q3" fieldless -    UNDERSTAND
+  sheet "$Q3" mine      main EXECUTE
+  out="$(wguard "$Q3" "$Q3/app.txt")"; rc=$?
+  [ "$rc" = 0 ] && ok "a sheet without a branch field is not a match" \
+                || bad "a sheet without a branch field is not a match (exit $rc)"
+
+  # ...but a lone sheet that names no branch is still this checkout's: a project written before
+  # the field keeps the rail it always had
+  Q3B="$T13/q3b"; mkproj "$Q3B" main
+  ledger "$Q3B" EXECUTE
+  sheet "$Q3B" legacy - UNDERSTAND
+  out="$(wguard "$Q3B" "$Q3B/app.txt")"; rc=$?
+  if [ "$rc" = 2 ]; then
+    case "$out" in
+      *"artifacts/legacy/state.md"*) ok "a lone sheet naming no branch still governs the rail" ;;
+      *) bad "a lone sheet naming no branch still governs the rail (blocked, but named another file)" ;;
+    esac
+  else
+    bad "a lone sheet naming no branch still governs the rail (exit $rc)"
+  fi
+
+  # the lone sheet of ANOTHER workstream never governs this checkout: the coordinator holding the
+  # worktree's task sheet must not be judged by a phase it is not working
+  Q4="$T13/q4"; mkproj "$Q4" main
+  ledger "$Q4" EXECUTE
+  sheet "$Q4" only you/t-b UNDERSTAND
+  out="$(wguard "$Q4" "$Q4/app.txt")"; rc=$?
+  [ "$rc" = 0 ] && ok "a lone sheet naming another branch does not govern this checkout" \
+                || bad "a lone sheet naming another branch does not govern this checkout (exit $rc)"
+
+  Q5="$T13/q5"; mkproj "$Q5" main
+  ledger "$Q5" UNDERSTAND
+  sheet "$Q5" one nope1 EXECUTE
+  sheet "$Q5" two nope2 EXECUTE
+  out="$(wguard "$Q5" "$Q5/app.txt")"; rc=$?
+  if [ "$rc" = 2 ]; then
+    case "$out" in
+      *".ai-flow/STATE.md"*) ok "no branch match and several sheets fall back to the ledger" ;;
+      *) bad "no branch match and several sheets fall back to the ledger (named another file)" ;;
+    esac
+  else
+    bad "no branch match and several sheets fall back to the ledger (exit $rc)"
+  fi
+
+  # a resolved phase past UNDERSTAND lifts the rail
+  Q6="$T13/q6"; mkproj "$Q6" main
+  ledger "$Q6" UNDERSTAND
+  sheet "$Q6" mine main EXECUTE
+  out="$(wguard "$Q6" "$Q6/app.txt")"; rc=$?
+  [ "$rc" = 0 ] && ok "a resolved phase past UNDERSTAND lifts the rail" \
+                || bad "a resolved phase past UNDERSTAND lifts the rail (exit $rc)"
+
+  # a migrated roster carries no phase, so falling back to it leaves the rail off — silence by
+  # design, asserted here rather than assumed
+  Q8="$T13/q8"; mkproj "$Q8" main
+  mkdir -p "$Q8/.ai-flow"
+  cp "$ROOT/template/.ai-flow/STATE.md" "$Q8/.ai-flow/STATE.md"
+  sheet "$Q8" other other UNDERSTAND
+  out="$(wguard "$Q8" "$Q8/app.txt")"; rc=$?
+  [ "$rc" = 0 ] && ok "a migrated roster leaves no phase to read: the rail is off, not misread" \
+                || bad "a migrated roster leaves no phase to read: the rail is off, not misread (exit $rc)"
+
+  # two sheets claiming the same branch is ambiguous: no unique owner, so the question goes to the
+  # ledger — which in an unmigrated project still answers
+  Q9="$T13/q9"; mkproj "$Q9" main
+  ledger "$Q9" UNDERSTAND
+  sheet "$Q9" paused main EXECUTE
+  sheet "$Q9" active main UNDERSTAND
+  out="$(wguard "$Q9" "$Q9/app.txt")"; rc=$?
+  if [ "$rc" = 2 ]; then
+    case "$out" in
+      *".ai-flow/STATE.md"*) ok "two sheets claiming one branch defer to the ledger" ;;
+      *) bad "two sheets claiming one branch defer to the ledger (named another file)" ;;
+    esac
+  else
+    bad "two sheets claiming one branch defer to the ledger (exit $rc)"
+  fi
+
+  # end to end, the shape this task exists for: a linked worktree with no ledger of its own, holding
+  # copies of every task's sheet, is judged by the one naming its branch
+  QP="$T13/qp"; mkproj "$QP" main
+  QW="$T13/qw"; $GIT -C "$QP" worktree add -q -b you/t-b "$QW" >/dev/null 2>&1
+  sheet "$QW" mine  you/t-b UNDERSTAND
+  sheet "$QW" other main    EXECUTE
+  out="$(wguard "$QW" "$QW/app.txt")"; rc=$?
+  if [ "$rc" = 2 ]; then
+    case "$out" in
+      *"artifacts/mine/state.md"*) ok "a worktree with no ledger is judged by the sheet naming its branch" ;;
+      *) bad "a worktree with no ledger is judged by the sheet naming its branch (blocked, but named another file)" ;;
+    esac
+  else
+    bad "a worktree with no ledger is judged by the sheet naming its branch (exit $rc)"
+  fi
+
+  # a detached HEAD has no branch to match: the fallback still answers
+  Q7="$T13/q7"; mkproj "$Q7" main
+  sheet "$Q7" only main UNDERSTAND
+  $GIT -C "$Q7" checkout -q --detach >/dev/null 2>&1
+  out="$(wguard "$Q7" "$Q7/app.txt")"; rc=$?
+  [ "$rc" = 2 ] && ok "a detached HEAD falls back instead of going silent" \
+                || bad "a detached HEAD falls back instead of going silent (exit $rc)"
+else
+  echo "  [skip] branch-resolution checks (python3 unavailable)"
+fi
+
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

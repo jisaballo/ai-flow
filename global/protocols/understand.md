@@ -2,7 +2,7 @@
 
 **CRITICAL:** This phase ensures polished code by gathering all necessary context BEFORE planning.
 
-**Read-only rail (hook, not Plan Mode):** While STATE.md marks the current phase as UNDERSTAND, a PreToolUse hook (`~/.claude/hooks/understand-write-guard.py`) blocks Edit/Write to any repo file outside `.ai-flow/`. If the hook is not installed, honor the rail by discipline — same rule, unenforced. Do NOT use Plan Mode for this phase. Investigation is unrestricted — reads, greps, Explore agents, and running tests/commands to reproduce a failure are all allowed. Writing understand.md needs no special step (it lives under `.ai-flow/`); throwaway repro scripts go to the scratchpad directory, not the repo.
+**Read-only rail (hook, not Plan Mode):** While the task's state sheet (`artifacts/T-XXX/state.md`) marks the current phase as UNDERSTAND, a PreToolUse hook (`~/.claude/hooks/understand-write-guard.py`) blocks Edit/Write to any repo file outside `.ai-flow/`. If the hook is not installed, honor the rail by discipline — same rule, unenforced. Do NOT use Plan Mode for this phase. Investigation is unrestricted — reads, greps, Explore agents, and running tests/commands to reproduce a failure are all allowed. Writing understand.md needs no special step (it lives under `.ai-flow/`); throwaway repro scripts go to the scratchpad directory, not the repo.
 
 ## Product Context
 
@@ -237,4 +237,4 @@ Before proceeding to plan:
    - "No, proceed with the plan (Recommended)"
    - "Yes, I have more questions"
    ```
-3. Only proceed to plan when user confirms clarity (the write-guard hook stops restricting once STATE.md moves the phase past UNDERSTAND)
+3. Only proceed to plan when user confirms clarity (the write-guard hook stops restricting once the task's state sheet moves the phase past UNDERSTAND)

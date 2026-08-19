@@ -2,12 +2,14 @@
 """PreToolUse/Edit|Write guard (global): while the active ai-flow phase is UNDERSTAND,
 blocks Edit/Write to repo files outside .ai-flow/ (investigation is read-only for code).
 Acts in whichever checkout the session runs in — primary or linked worktree — and reads the
-phase from that checkout's own state.
+phase from the task that checkout is working: the per-task state sheet naming its current
+branch, else the single sheet that names no branch, else the ledger.
 Reads the hook JSON on stdin; exit 2 blocks the tool call and feeds the message back to Claude."""
 import sys, json, re, subprocess
 from pathlib import Path
 
 PHASE_RE = re.compile(r'(?i)(fase actual|current phase|phase)\s*:?\s*\*{0,2}\s*UNDERSTAND\b')
+BRANCH_RE = re.compile(r'(?i)^\s*branch\s*:\s*(\S+)\s*$')
 
 
 def git(cwd: Path, *args) -> str:
@@ -35,13 +37,48 @@ def ledger_root(cwd: Path):
     return None
 
 
-def phase_source(root: Path):
-    """A worktree carries the state of its own task only; the ledger STATE.md is the
-    coordinator's. Exactly one per-task state means "this checkout is working that task";
-    zero or several means the phase question belongs to the ledger."""
+def current_branch(cwd: Path) -> str:
+    """The checked-out branch, or '' when there is none to speak of — a detached HEAD answers
+    with the literal 'HEAD', which names no branch and must never match a state sheet."""
+    name = git(cwd, 'rev-parse', '--abbrev-ref', 'HEAD')
+    return '' if name in ('', 'HEAD') else name
+
+
+def sheet_branch(sheet: Path) -> str:
+    """The branch a state sheet declares as its own, or '' when it declares none. A sheet
+    without the line is nobody's: absence is never a match for every branch."""
+    try:
+        for line in sheet.read_text(encoding='utf-8').splitlines():
+            found = BRANCH_RE.match(line)
+            if found:
+                return found.group(1)
+    except Exception:
+        return ''
+    return ''
+
+
+def phase_source(root: Path, cwd: Path):
+    """Which task is this checkout working? Task artifacts travel as a whole, so a working copy
+    can hold several state sheets; the one that declares the branch currently checked out is the
+    task actually being worked here. Failing that, the older rule still answers: exactly one
+    sheet means "this checkout is working that task", and zero or several hand the phase question
+    back to the ledger STATE.md — the coordinator's, and the only state a project that has not
+    migrated yet has."""
     per_task = sorted((root / '.ai-flow' / 'artifacts').glob('*/state.md'))
-    if len(per_task) == 1:
-        return per_task[0]
+    branch = current_branch(cwd)
+    if branch:
+        owned = [sheet for sheet in per_task if sheet_branch(sheet) == branch]
+        if len(owned) == 1:
+            return owned[0]
+        # A sheet that names another branch is another workstream's — reading it would judge this
+        # checkout by a task it is not working, the very inversion this resolution exists to end.
+        # Only a sheet claiming no branch at all can still be ours: that is a project written
+        # before the field existed.
+        unclaimed = [sheet for sheet in per_task if not sheet_branch(sheet)]
+        if len(unclaimed) == 1:
+            return unclaimed[0]
+    elif len(per_task) == 1:
+        return per_task[0]  # no branch to speak of (detached HEAD, no git): the older rule answers
     state = root / '.ai-flow' / 'STATE.md'
     return state if state.exists() else None
 
@@ -58,11 +95,12 @@ def main():
     if not file_path:
         sys.exit(0)
 
-    root = ledger_root(Path(data.get('cwd') or '.'))
+    cwd = Path(data.get('cwd') or '.')
+    root = ledger_root(cwd)
     if root is None:
         sys.exit(0)  # not an ai-flow project
 
-    source = phase_source(root)
+    source = phase_source(root, cwd)
     if source is None:
         sys.exit(0)  # no state to read: no rail to enforce
 

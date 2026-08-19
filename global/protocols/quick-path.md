@@ -9,15 +9,17 @@
 
 ## Flow
 
-1. **No artifacts folder** — no `artifacts/T-XXX/` created
-2. **Inline plan** in STATE.md (1-2 steps max, not a separate file)
+1. **No artifacts folder** — no `artifacts/T-XXX/` created, and no state sheet: a quick task
+   writes no state anywhere while it runs
+2. **Inline plan stated in the conversation** (1-2 steps max, no file)
 3. **Execute** with TDD validation — follow Execute Phase Protocol (`~/.claude/ai-flow/protocols/execute.md`)
 4. **No formal verify** — rely on test validation
 5. **Commit** with format: `type(scope): quick - description`
 
 ## Tracking
 
-Quick tasks log to "Quick Tasks" section in STATE.md (not BACKLOG.md):
+Quick tasks log to the "Quick Tasks Completed" table in STATE.md (not BACKLOG.md) — the closing row
+is the only written trace a quick task leaves:
 
 ```markdown
 ### Quick Tasks Completed
@@ -31,7 +33,7 @@ Quick tasks log to "Quick Tasks" section in STATE.md (not BACKLOG.md):
 - TDD validation (tests must pass)
 - Atomic commits
 - User validation before commit
-- STATE.md updated
+- The closing row in the Quick Tasks table
 - Code comments stand alone — no task IDs in source (Execute protocol > Code Comments & Provenance)
 
 ## What It Skips

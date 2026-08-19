@@ -20,7 +20,7 @@ Use when the step is **fully self-contained** and **mechanical**:
 - Update imports, selectors, or constants
 - Changes fully specified in the plan with zero ambiguity
 
-The agent receives: CLAUDE.md, STATE.md, understand.md, plan.md, execute.md (this protocol), and the specific step to execute.
+The agent receives: CLAUDE.md, the task's state sheet (`artifacts/T-XXX/state.md`), understand.md, plan.md, execute.md (this protocol), and the specific step to execute.
 
 ### How It Works
 

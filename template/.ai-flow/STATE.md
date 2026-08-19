@@ -1,7 +1,17 @@
 # Session State
 
-## Current Task
-None
+## Workstreams
+
+| Workstream | Checkout | Branch | Task | Epic | Opened |
+|---|---|---|---|---|---|
+| coordinator | . | main | — | — | — |
+
+> Per-task phase, step, autonomy and decisions live in `artifacts/T-XXX/state.md`.
+> This file is a roster: the coordinator writes it, only at ceremonies.
+
+## Notes
+
+Cross-workstream context only — nothing that belongs to a single task.
 
 ## Quick Tasks Completed
 

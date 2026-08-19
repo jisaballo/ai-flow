@@ -4,7 +4,96 @@
 
 - Sequential IDs: T-001, T-002, ...
 - Priorities: `critical`, `high`, `medium`, `low`
-- On completion: archive to `.ai-flow/archive/T-XXX/` with summary.md, remove from BACKLOG.md, reset STATE.md
+- On completion: archive to `.ai-flow/archive/T-XXX/` with summary.md, remove from BACKLOG.md, remove this workstream's row from STATE.md
+
+## State Files
+
+Two files carry state and they never overlap. **A task's state belongs to the task**; `STATE.md` is a
+roster of open workstreams.
+
+### `STATE.md` — the roster (coordinator only)
+
+One row per open workstream and nothing task-specific. Only the **coordinator** checkout writes it,
+and only at ceremonies — a workstream opens, a task closes and merges. A linked worktree never
+receives it and never edits it.
+
+```markdown
+# Session State
+
+## Workstreams
+
+| Workstream | Checkout | Branch | Task | Epic | Opened |
+|---|---|---|---|---|---|
+| coordinator | . | main | T-XXX | E-XXX | 2026-08-19 |
+| ws-b | ../proj-wt-b | you/t-yyy-slug | T-YYY | E-XXX | 2026-08-19 |
+
+> Per-task phase, step, autonomy and decisions live in `artifacts/T-XXX/state.md`.
+> This file is a roster: the coordinator writes it, only at ceremonies.
+
+## Notes
+
+Cross-workstream context only — nothing that belongs to a single task.
+
+## Quick Tasks Completed
+
+| Date | Description | Commit |
+|------|-------------|--------|
+```
+
+### `artifacts/T-XXX/state.md` — the task's sheet
+
+Written by whoever works the task, in the checkout where it is worked. It travels with the task's
+artifacts and is never reset, so a paused task keeps its sheet: coming back to it, this file is the
+whole handoff.
+
+```markdown
+# T-XXX — [title]
+
+branch: you/t-xxx-slug
+phase: **EXECUTE**
+step: 2 of 3
+autonomy: Guided
+
+## Decisions
+
+- [decision taken during this task, with the why]
+
+## Resume from here
+
+- last touched: `path/to/file`
+- uncommitted: [what sits in the working tree]
+- next action: [the next thing to do]
+```
+
+**The `phase:` line is machine-read.** The Understand read-only rail parses exactly this form, so the
+phase name stays upper-case between the asterisks (`phase: **UNDERSTAND**`).
+
+**The `branch:` line is how a checkout recognises its own task.** A working copy can hold several
+sheets — artifacts travel as a whole — so the rail reads the sheet whose branch is the one currently
+checked out, and whoever opens a workstream writes that line. A sheet that names *another* branch
+belongs to another workstream and is never read here. With no match, only a sheet that declares no
+branch at all can still be this checkout's — a project that predates the field keeps the behaviour it
+always had. Failing that the rail reads `STATE.md`, where a migrated roster carries no phase, so the
+rail stays silent: by design, because nothing in the checkout claims the branch. Two sheets claiming
+the same branch land there too — keeping a checkout down to the sheets it owns is the job of the
+ceremony that opens a workstream.
+
+### Who writes what, when
+
+| Moment | Roster (`STATE.md`) | Sheet (`artifacts/T-XXX/state.md`) |
+|---|---|---|
+| **Activation** | the coordinator adds the workstream row | created, with branch, phase, step and autonomy |
+| **During the phases** | untouched | phase, step, decisions and the resume block kept current |
+| **Pause** | untouched | carries everything needed to resume — it IS the handoff |
+| **Archive** | the coordinator removes the row | deleted with the rest of `artifacts/T-XXX/` |
+| **Quick task** | its row in Quick Tasks Completed, at close | none — a quick task writes no sheet, and states its 1-2 steps in the conversation |
+
+### Migrating an existing ledger
+
+A project already running ai-flow has a `STATE.md` full of task context, and `update` never
+overwrites project data — so the move is manual and takes one edit: replace the current-task block
+with the `## Workstreams` table, move the active task's phase, step, autonomy and decisions into its
+sheet, and keep only the notes that are genuinely cross-task. Nothing else in `.ai-flow/` changes.
 
 ## Task Entry Format (business-first)
 
@@ -127,7 +216,7 @@ When activating a task ("work on T-XXX"), the Understanding phase automatically 
 4. **Delete** `artifacts/T-XXX/` entirely
 5. Remove task from BACKLOG.md (move from Done to nowhere — it's in the archive now)
 6. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
-7. Reset STATE.md to idle (remove task-specific context)
+7. Remove this workstream's row from STATE.md (coordinator only — other open fronts keep theirs; the task's `state.md` went with `artifacts/T-XXX/` in step 4)
 
 ### Business-Miss Rule
 
@@ -144,7 +233,7 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
 3. **Delete** `artifacts/T-XXX/` for ALL tasks in the epic
 4. Remove all epic tasks from BACKLOG.md Done section
 5. Move the epic row to `archive/EPICS.md` + its Execution Order block to `archive/EXECUTION-ORDERS.md` (Size Budget)
-6. Reset STATE.md to idle
+6. Remove the epic's workstream rows from STATE.md (coordinator only — rows of fronts outside the epic stay)
 
 ### Invariants (always true)
 
@@ -153,7 +242,7 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
 - No empty directories anywhere in `.ai-flow/`
 - BACKLOG.md Done section is **transient** — tasks stay there only until archived, not permanently
 - BACKLOG.md stays under ~300 lines and contains only pending work (see Size Budget)
-- STATE.md contains only current task context — no historical summaries
+- STATE.md is an index of open workstreams — one row per front, no per-task context and no historical summaries (see State Files)
 
 ### Allowed structure
 
@@ -173,8 +262,9 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
 │   ├── backlog.md
 │   ├── codebase-mapping.md
 │   └── discover.md
-├── artifacts/              # ONLY active task folders
-│   └── T-XXX/              # Current task only
+├── artifacts/              # ONLY open task folders
+│   └── T-XXX/              # One folder per open task
+│       └── state.md        # That task's phase, step, autonomy and decisions
 ├── archive/                # Completed work
 │   ├── CHANGELOG.md        # Session-close entries (newest first)
 │   ├── EPICS.md            # Closed epics index (rows moved from BACKLOG.md)

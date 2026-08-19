@@ -14,9 +14,9 @@ All task management lives in `.ai-flow/`. No external todo files.
 | File/Directory | Purpose |
 |----------------|---------|
 | `BACKLOG.md` | All tasks with status and priority (includes Epics section) |
-| `STATE.md` | Current task context, session continuity, current task decisions only |
+| `STATE.md` | Workstream roster: one row per open front — written by the coordinator, only at ceremonies |
 | `decisions-global.md` | Workflow/system decisions (not task-specific) |
-| `artifacts/T-XXX/` | Task artifacts organized by task ID (understand.md, plan.md, verify.md) |
+| `artifacts/T-XXX/` | Task artifacts organized by task ID (state.md, understand.md, plan.md, verify.md) |
 | `archive/T-XXX/` | Completed tasks with all artifacts, decisions, and summary.md |
 | `product.md` | Product context: users, roles, apps, core business flows (read at start of new epics) |
 | `steering/` | Domain-specific rules, patterns, and pitfalls (loaded per-task based on affected domains) |
@@ -31,7 +31,7 @@ CAPTURE → BACKLOG.md (backlog) → PRIORITIZE (ready) → ACTIVATE (active + S
 **Phases:**
 1. **CAPTURE**: Add task to BACKLOG.md with initial description
 2. **PRIORITIZE**: Set priority (critical/high/medium/low) and status (ready)
-3. **ACTIVATE**: Move to STATE.md, mark as active
+3. **ACTIVATE**: Create `artifacts/T-XXX/state.md`, add the workstream row to STATE.md, mark as active
 4. **UNDERSTAND**: Decompose if composite, ask contextual questions, write understand.md
 5. **PLAN**: Create execution plan (max 3 steps), write plan.md
 6. **CONFORM**: Generate failing test stubs from Verifiable Criteria (see plan protocol)
@@ -86,13 +86,13 @@ At task activation, classify the task into an autonomy level. User confirms or a
 
 | Command | Action |
 |---------|--------|
-| `continue` | Resume from STATE.md |
+| `continue` | Resume from the task's `artifacts/T-XXX/state.md` (STATE.md lists the open fronts) |
 | `status` | Show current state |
 | `understand` | Run Understanding phase (read protocol first) |
 | `plan` | Run Plan phase (read protocol first) |
 | `execute` | Run Execute phase (read protocol first) |
 | `verify` | Run Verify phase (read protocol first) |
-| `pause` | Save session state to STATE.md |
+| `pause` | Save session state to the task's `artifacts/T-XXX/state.md` |
 
 ### Quick Commands
 
@@ -125,8 +125,8 @@ After every successful task commit, **immediately** run the archive checklist (r
 
 ### Session Continuity
 
-- **On start**: Read STATE.md. If task is active, also read the protocol for the current phase
-- **On pause**: Update STATE.md with last file, uncommitted changes, context
+- **On start**: Read STATE.md for the open fronts, then this workstream's `artifacts/T-XXX/state.md`. If a task is active, also read the protocol for the current phase
+- **On pause**: Update the task's `artifacts/T-XXX/state.md` with last file, uncommitted changes, context — it is the handoff, and it survives the pause
 - **On compaction**: STATE.md and BACKLOG.md are re-read automatically
 
 ### Artifact Check Before Create (MANDATORY)
@@ -140,10 +140,10 @@ After every successful task commit, **immediately** run the archive checklist (r
 
 ### Context Management
 
-- **On compaction during execution**: Re-read STATE.md + `artifacts/T-XXX/plan.md` + the active phase protocol file before continuing
+- **On compaction during execution**: Re-read `artifacts/T-XXX/state.md` + `artifacts/T-XXX/plan.md` + the active phase protocol file before continuing
 - **Max 3 steps per plan** is also a context budget rule — plans with >3 steps signal the task should be split
 - **>5 files modified in a task**: Prefer executing steps via Task tool agents (fresh context) over inline execution
-- **STATE.md must stay lean**: Only current task context. Move completed task details to archive promptly
+- **STATE.md must stay lean**: Only the workstream roster — per-task context lives in the task's own state sheet. Move completed task details to archive promptly
 
 ## Action Boundaries
 
@@ -177,7 +177,7 @@ After every successful task commit, **immediately** run the archive checklist (r
 - **Understanding phase MANDATORY** before planning — never skip to plan without gathering context
 - **Detect composite tasks** — propose splitting tasks that mix multiple concerns into independent backlog tasks (not subtasks) before planning
 - **Ask contextual questions** — gather all necessary context to produce polished code
-- **Update STATE.md** with step progress during execution
+- **Update the task's state sheet** (`artifacts/T-XXX/state.md`) with step progress during execution
 - **Atomic commits**: `type(scope): description`
 - **Phase gates (Guided)**: understand -> plan (user approves), plan -> conform (automatic), conform -> execute (user approves plan), execute -> spec sync (automatic), execute -> verify (automatic), verify -> archive (user approves)
 - **Phase gates (Auto)**: plan inline -> conform/execute (automatic), verify via tests -> auto-commit -> user validates post-commit

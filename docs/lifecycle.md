@@ -31,7 +31,7 @@ No analysis happens here — just capture. The description can be rough.
 **Purpose**: Load the task as the single focus of the session.
 
 **Input**: A ready task
-**Output**: STATE.md updated with task context, status set to `active`
+**Output**: `artifacts/T-XXX/state.md` created with the task's branch, phase, step and autonomy; one workstream row added to STATE.md; status set to `active`
 
 **Rule**: Only one task can be active at a time. This prevents context dilution.
 
@@ -122,7 +122,7 @@ This phase bridges planning and execution. The tests become the contract.
 1. Generate `archive/T-XXX/summary.md` with key decisions and commits
 2. Delete `artifacts/T-XXX/` (the archive has the summary)
 3. Remove from BACKLOG.md
-4. Reset STATE.md
+4. Remove this workstream's row from STATE.md
 
 ## Execution Paths
 
