@@ -91,7 +91,7 @@ This phase bridges planning and execution. The tests become the contract.
 **Guardrails**:
 - **Bounded Retry**: 3 failures on the same error → stop and escalate
 - **Replan Gate**: If an assumption breaks → stop and revise the plan
-- **Diff Size**: >150 LOC in a single step → pause and evaluate
+- **Diff Size**: >150 LOC uncommitted in a single step, or >400 LOC on the branch since its base → pause and evaluate
 - **Action Boundaries**: Some changes always need user approval
 
 **Post-Execute**: Spec Sync reviews the diff against understand.md and documents any divergences.

@@ -93,11 +93,19 @@ This applies to factual/technical assumptions — not minor implementation detai
 
 ## Diff Size Guardrail
 
-If a single step generates a diff **>150 lines** (excluding test files), pause and evaluate:
+Two ceilings, both excluding test files:
+
+- **Step** — uncommitted work **>150 lines**. The step you are in has grown past one reviewable unit.
+- **Task** — **>400 lines** on this branch since its base (commits included). Committing does not lower
+  this one: it exists because free commits on a branch would otherwise let a task grow without a ceiling.
+
+On either, pause and evaluate:
 - Is this necessary or am I over-engineering?
 - Does the plan need revision?
 
-Report to user before continuing. This prevents silent runaway changes.
+Report to user before continuing. This prevents silent runaway changes. When no base branch can be
+resolved (no remote default, no local `main`/`master`), the task ceiling has nothing to measure against
+and the step ceiling stands alone.
 
 ## Post-Execute: Spec Sync
 

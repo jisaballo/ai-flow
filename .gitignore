@@ -3,3 +3,7 @@
 # Live dogfooding workspace — local-only. Leading slash anchors to repo root so the
 # shipped template (template/.ai-flow/) is NOT ignored.
 /.ai-flow/
+
+# Python bytecode from running the hooks in place
+__pycache__/
+*.pyc

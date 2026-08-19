@@ -64,7 +64,7 @@ At task activation, classify the task into an autonomy level. User confirms or a
 **Auto level constraints:**
 - Still runs conformance tests (if criteria exist) or existing tests
 - Still respects Bounded Retry (3 attempts max)
-- Still respects Diff Size Guardrail (>150 LOC -> pause)
+- Still respects Diff Size Guardrail (>150 LOC uncommitted in a step, or >400 LOC on the branch since its base -> pause)
 - Commit message includes `[auto]` tag: `type(scope): [auto] description`
 - If anything unexpected happens (test failure after 3 retries, >3 files needed, design decision required) -> **escalate to Guided**
 
