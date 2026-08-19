@@ -1,5 +1,9 @@
 # Plan Phase Protocol
 
+**Which task**: the phase runs on the task this checkout owns. Resolve it by the ladder in the backlog
+protocol (`## State Files` → `### Resolving the task`) — stated there and only there — and stop rather
+than choose if it ends without one.
+
 ## The Pyramid Rule (gate semantics)
 
 plan.md is written in three layers, read top-down from simple to complex. The user's reading depth is their control dial — they decide how deep to go before approving.

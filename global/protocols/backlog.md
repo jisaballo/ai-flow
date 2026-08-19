@@ -73,15 +73,39 @@ autonomy: Guided
 **The `phase:` line is machine-read.** The Understand read-only rail parses exactly this form, so the
 phase name stays upper-case between the asterisks (`phase: **UNDERSTAND**`).
 
+### Resolving the task
+
 **The `branch:` line is how a checkout recognises its own task.** A working copy can hold several
-sheets — artifacts travel as a whole — so the rail reads the sheet whose branch is the one currently
-checked out, and whoever opens a workstream writes that line. A sheet that names *another* branch
-belongs to another workstream and is never read here. With no match, only a sheet that declares no
-branch at all can still be this checkout's — a project that predates the field keeps the behaviour it
-always had. Failing that the rail reads `STATE.md`, where a migrated roster carries no phase, so the
-rail stays silent: by design, because nothing in the checkout claims the branch. Two sheets claiming
-the same branch land there too — keeping a checkout down to the sheets it owns is the job of the
-ceremony that opens a workstream.
+sheets — artifacts travel as a whole — so whoever opens a workstream writes that line, and every
+reader that needs to know which task a checkout is on follows the same four rungs, in order.
+
+Two readers follow them. The read-only rail wants a phase, and `phase_source` in
+`~/.claude/hooks/understand-write-guard.py` is the implementation of rungs 1 and 2 — the file that
+wins if the two ever read differently. The phase commands want a task identifier. The ladder is
+written here and nowhere else: a second statement of it is a copy that will drift, and two readers
+disagreeing about which task a checkout is on is the failure the ladder exists to prevent.
+
+The rungs assume a branch is checked out. **With none — a detached HEAD, or no git at all — there is
+nothing to match, and the lone sheet answers whatever branch it declares.** Both readers do this, and
+it is the one case where a sheet naming another branch may still be read: no branch is there to
+contradict it. Two or more sheets and this case falls straight to rung 3.
+
+1. **The sheet whose `branch:` is the branch currently checked out** — exactly one of them. A sheet
+   that names *another* branch belongs to another workstream and is never read here.
+2. **Failing that, the lone sheet that declares no branch.** A project that predates the field keeps
+   the behaviour it always had; absence is never a wildcard, so this rung answers only while that
+   sheet is alone.
+3. **Failing that, `STATE.md` — and only where it names exactly one task.** For the rail that is where
+   a migrated roster carries no phase, so it stays silent by design. For a phase command the file is
+   the task identifier itself, which is what makes the condition load-bearing: a roster holding
+   several open fronts names several tasks, and a pre-migration ledger names the one task it was
+   built around.
+4. **Failing all of it, stop and name what was looked for.** A reader that cannot resolve a task does
+   not choose one — ambiguity resolved by choice is indistinguishable from a correct answer, and for a
+   phase command a wrong answer overwrites another task's papers. The rail has nothing to enforce and
+   says nothing; a phase command says which rungs it tried and stops before writing any artifact. Two
+   sheets claiming the same branch land here too — pruning a checkout down to the sheets it owns is
+   the job of the ceremony that opens a workstream.
 
 ### Who writes what, when
 

@@ -11,11 +11,13 @@ Runs the Understand phase of the ai-flow workflow. Works in any project that has
 
 1. **Read the protocol first**: `~/.claude/ai-flow/protocols/understand.md` (central engine). If the project has no `.ai-flow/` directory, it is not ai-flow — tell the user and stop.
 
-2. **Artifact check**: if `.ai-flow/artifacts/T-XXX/understand.md` already exists, show its contents and ask whether to proceed with it or regenerate. **Never blind-overwrite** an existing artifact.
+2. **Resolve the task**: the task is the one this checkout owns, not the one the session remembers. Follow the ladder in `~/.claude/ai-flow/protocols/backlog.md` (`## State Files` → `### Resolving the task`) — it is written there and only there, so do not reproduce its rungs here. State which task you resolved and the source it read (the task's sheet, or the shared state when that is the rung that answered) before touching anything under `artifacts/`; if the ladder ends without a task, stop and say which rungs you tried.
 
-3. **Read `.ai-flow/product.md` — ALWAYS**, not just for new epics. It is the living domain model (app map, glossary, business rules): the oracle the Business Frame is drafted against.
+3. **Artifact check**: if `.ai-flow/artifacts/T-XXX/understand.md` already exists, show its contents and ask whether to proceed with it or regenerate. **Never blind-overwrite** an existing artifact.
 
-4. **Follow the protocol**:
+4. **Read `.ai-flow/product.md` — ALWAYS**, not just for new epics. It is the living domain model (app map, glossary, business rules): the oracle the Business Frame is drafted against.
+
+5. **Follow the protocol**:
    - **Draft the Business Frame first** (role affected, business rule served, today/after, what is lost, out of scope, observable success) from the task + product.md. Holes in the frame are the FIRST question round — before any technical round.
    - Detect composite tasks → propose splitting into independent backlog tasks before planning.
    - Read `.ai-flow/project.yml` for `area_kind` (what an "area" means here) and the `steering` map; use it to phrase the affected area and locate steering files. **Fallback:** if `.ai-flow/project.yml` is absent, infer these from CLAUDE.md (legacy behavior).
@@ -27,4 +29,4 @@ Runs the Understand phase of the ai-flow workflow. Works in any project that has
    - Close only when BOTH gates hold: **Business Closure** (restate the Business Frame — zero file paths — and the user corrects nothing) and Investigation Closure (per protocol).
    - Write `understand.md` with the Business Frame at the top (product language only) and Verifiable Criteria (Automated + Observable + Behavioral; Automated and Behavioral in EARS format per the protocol's Criteria Format section).
 
-5. Respect the phase gate: Understand → Plan requires user approval (Guided/Supervised).
+6. Respect the phase gate: Understand → Plan requires user approval (Guided/Supervised).

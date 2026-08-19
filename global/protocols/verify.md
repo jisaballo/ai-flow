@@ -6,7 +6,7 @@
 
 ## Steps
 
-1. **Re-read** `artifacts/T-XXX/understand.md` (Verifiable Criteria + Expected Behavior) and the **Criteria Coverage table** in plan.md — VERIFY inherits that mapping; do not reconstruct criterion->step from scratch.
+1. **Resolve the task** by the ladder in the backlog protocol (`## State Files` → `### Resolving the task`) — stated there and only there, and a stop rather than a choice if it ends without one — then **re-read** `artifacts/T-XXX/understand.md` (Verifiable Criteria + Expected Behavior) and the **Criteria Coverage table** in plan.md — VERIFY inherits that mapping; do not reconstruct criterion->step from scratch.
 2. **For each criterion**, cite the specific evidence (file:line, test name, or observable behavior) that satisfies it
 3. **Contract check**: diff the current conformance specs against `artifacts/T-XXX/conformance-baseline/manifest.md`. Every frozen row must still exist with the same `it()` description and assert direction; any divergence must have a matching `## Implementation Decisions` entry in understand.md. Divergence without entry -> ❌.
 4. **Reverse audit (diff->plan)**: every hunk in the task diff (see **The Task Diff** below) must trace to a plan step, a criterion, or an Implementation Decision. Orphan hunks -> record under `Gaps Found` as **scope creep** (this is the audited form of the Surgical Changes rule).
@@ -44,8 +44,9 @@ default branch and no local `main`/`master` still gets a verify; it gets a small
 ```markdown
 # Verify: T-XXX - [Title]
 
-**Audited**: the task diff — base `[base ref]`, `[N]` commit(s) on this branch since it, plus what is
-still uncommitted. If no base resolved: `branch scope unavailable — uncommitted work only`.
+**Audited**: `T-XXX`, resolved from `[the state file the ladder answered with]`. The task diff — base
+`[base ref]`, `[N]` commit(s) on this branch since it, plus what is still uncommitted. If no base
+resolved: `branch scope unavailable — uncommitted work only`.
 
 ## Criteria Audit
 | # | Criterion (from understand.md) | Status | Evidence |
@@ -112,8 +113,9 @@ What the user reads in chat is **one line per axis**: finding count + the worst 
 ```markdown
 # Verify: T-XXX - [Title]
 
-**Audited**: the task diff — base `[base ref]`, `[N]` commit(s) on this branch since it, plus what is
-still uncommitted. If no base resolved: `branch scope unavailable — uncommitted work only`.
+**Audited**: `T-XXX`, resolved from `[the state file the ladder answered with]`. The task diff — base
+`[base ref]`, `[N]` commit(s) on this branch since it, plus what is still uncommitted. If no base
+resolved: `branch scope unavailable — uncommitted work only`.
 
 ## Criteria Audit
 | # | Criterion | Status | Evidence |

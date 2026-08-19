@@ -58,12 +58,15 @@ def sheet_branch(sheet: Path) -> str:
 
 
 def phase_source(root: Path, cwd: Path):
-    """Which task is this checkout working? Task artifacts travel as a whole, so a working copy
-    can hold several state sheets; the one that declares the branch currently checked out is the
-    task actually being worked here. Failing that, the older rule still answers: exactly one
-    sheet means "this checkout is working that task", and zero or several hand the phase question
-    back to the ledger STATE.md — the coordinator's, and the only state a project that has not
-    migrated yet has."""
+    """Which task is this checkout working? The ladder is written down in the backlog protocol,
+    State Files > "Resolving the task", which the phase commands follow too; rungs 1 and 2 are
+    implemented here and this file wins if the two ever read differently.
+
+    Task artifacts travel as a whole, so a working copy can hold several state sheets; the one that
+    declares the branch currently checked out is the task actually being worked here. Failing that,
+    the older rule still answers: exactly one sheet means "this checkout is working that task", and
+    zero or several hand the phase question back to the ledger STATE.md — the coordinator's, and the
+    only state a project that has not migrated yet has."""
     per_task = sorted((root / '.ai-flow' / 'artifacts').glob('*/state.md'))
     branch = current_branch(cwd)
     if branch:

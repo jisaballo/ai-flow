@@ -4,6 +4,10 @@
 
 **Read-only rail (hook, not Plan Mode):** While the task's state sheet (`artifacts/T-XXX/state.md`) marks the current phase as UNDERSTAND, a PreToolUse hook (`~/.claude/hooks/understand-write-guard.py`) blocks Edit/Write to any repo file outside `.ai-flow/`. If the hook is not installed, honor the rail by discipline — same rule, unenforced. Do NOT use Plan Mode for this phase. Investigation is unrestricted — reads, greps, Explore agents, and running tests/commands to reproduce a failure are all allowed. Writing understand.md needs no special step (it lives under `.ai-flow/`); throwaway repro scripts go to the scratchpad directory, not the repo.
 
+**Which task**: the phase runs on the task this checkout owns. Resolve it by the ladder in the backlog
+protocol (`## State Files` → `### Resolving the task`) — stated there and only there — and stop rather
+than choose if it ends without one.
+
 ## Product Context
 
 Read `.ai-flow/product.md` at the start of EVERY Understanding phase — not just for new epics. It is the living domain model (app map, glossary, business rules): the oracle the Business Frame below is drafted against and checked for contradictions.
