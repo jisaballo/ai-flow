@@ -994,7 +994,10 @@ fi
 printf '%s' "$S5" | grep -q 'rev-list' \
   && ok "the skill measures the commit count its report has to name" \
   || bad "the skill measures the commit count its report has to name"
-S8="$(nstep "$VS" 8)"
+# Resolved by content: inserting a step renumbers every step after it, and an assertion that dies to
+# renumbering is testing the numbering. The fact is a property of the WRITE step, wherever it sits.
+N_WRITE="$(grep -nE '^[0-9]+\. \*\*Write\*\* ' "$VS" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/')"
+S8="$([ -n "$N_WRITE" ] && nstep "$VS" "$N_WRITE")"
 if printf '%s' "$S8" | grep -q '\*\*Audited\*\*' && printf '%s' "$S8" | grep -qi 'commit'; then
   ok "the report writer carries the base and the commit count into verify.md"
 else
@@ -1369,7 +1372,8 @@ done
 
 # D2's fold: one fact, one place. The report rides the line that already declares what the audit read.
 VS16="global/skills/verify/SKILL.md"
-s8="$(nstep "$VS16" 8)"
+n8="$(grep -nE '^[0-9]+\. \*\*Write\*\* ' "$VS16" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/')"
+s8="$([ -n "$n8" ] && nstep "$VS16" "$n8")"
 # NOT a bare 'resolved': step 8 already carries "when no base resolved", so the loose form passed on
 # the BASE's resolution and never saw the task's. The line must name the task or the sheet it came from.
 if printf '%s' "$s8" | grep -q 'Audited' \
@@ -1510,6 +1514,365 @@ mf_resume() {
 manfact mf_resume "both resume entries resolve the task by the written ladder, and restate no rung"
 
 [ "$C17_SKIPPED" -eq 0 ] || echo "  [note] $C17_SKIPPED twin half/halves not evaluated (no live CLAUDE.md twin on this host) — a green run does not prove the two copies agree"
+
+echo "== C18: a review leaves the working copy as it found it =="
+VP="global/protocols/verify.md"
+VS="global/skills/verify/SKILL.md"
+VW="global/workflows/verify-review.js"
+PP="global/protocols/plan.md"
+RULE_SECTION="Mutation and the Working Copy"
+
+# The rule's own section, bounded at the next heading and fence-aware — the same shape C14 uses for
+# the task-diff definition, and for the same reason: a file-wide grep finds the citations, not the rule.
+RULE="$(awk '/^## Mutation and the Working Copy/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^#+ /){f=0} f' "$VP" | tr '\n' ' ')"
+
+# Fact 1a — the invariant itself. Asserted on the section, never on the file: every consumer names the
+# section, so a file-wide grep for the citation stays green after the rule itself is deleted.
+if [ -n "$RULE" ] && printf '%s' "$RULE" | grep -qi 'never modifies what it audits'; then
+  ok "the verify protocol states the invariant (an audit never modifies what it audits)"
+else
+  bad "the verify protocol states the invariant (an audit never modifies what it audits)"
+fi
+
+# Fact 1b — the obligation, which is what the invariant is worth. An invariant with no duty attached
+# reads as a preference: the change is taken back, and the run says the copy was left as found.
+if [ -n "$RULE" ] \
+   && printf '%s' "$RULE" | grep -qiE 'taken back|restored|puts? it back|put back' \
+   && printf '%s' "$RULE" | grep -qiE 'left as it was found|byte-exact|byte-identical'; then
+  ok "the rule obliges the change to be taken back and the copy proven as found"
+else
+  bad "the rule obliges the change to be taken back and the copy proven as found"
+fi
+
+# Fact 1c — serialisation. This is the half that answers the race, and it is the half a reader tempted
+# by speed deletes first: parallel provers lose no work and still produce a verdict about a state that
+# never existed.
+if [ -n "$RULE" ] && printf '%s' "$RULE" | grep -qiE 'one actor at a time|one at a time|never in parallel|never beside'; then
+  ok "the rule serialises proving to one actor at a time"
+else
+  bad "the rule serialises proving to one actor at a time"
+fi
+
+# Fact 1d — the failure mode is spoken, not silent. A run that cannot prove the copy clean says so;
+# silence here is indistinguishable from a clean run, which is the defect the whole task exists for.
+if [ -n "$RULE" ] \
+   && printf '%s' "$RULE" | grep -qiE 'says so|declares|reports it' \
+   && printf '%s' "$RULE" | grep -qiE 'rather than (staying )?silent|never silent|not stay silent'; then
+  ok "the rule requires a run that cannot prove it clean to say so"
+else
+  bad "the rule requires a run that cannot prove it clean to say so"
+fi
+
+# The workflow's shared prompt header, bounded by the join that closes it: the four auditors and the
+# refuter all inherit it, so a fact placed here is a fact every worker reads — and a fact asserted on
+# the whole file would pass on the schema, the comments, or a dimension that no longer includes it.
+CTX="$(awk "/^const ctx = \[/{f=1;next} /^\]\.join/{f=0} f" "$VW" | tr '\n' ' ')"
+
+# Fact 2 — the three consumers cite the rule by the section that owns it. A consumer that names no
+# section sends its reader nowhere, which is how a second, drifting copy gets written.
+for pair in "$VS:the verify skill" "$PP:the plan protocol's Conform section"; do
+  f="${pair%%:*}"; what="${pair#*:}"
+  grep -qF "$RULE_SECTION" "$f" && ok "$what cites the rule's section" || bad "$what cites the rule's section"
+done
+# The workflow carries two citations — the shared header and the prover's own prompt — so a file-wide
+# grep stays green after the auditors' half is deleted, which is the half that governs the four agents
+# reading the same working copy. Each is asserted where its reader actually finds it.
+{ [ -n "$CTX" ] && printf '%s' "$CTX" | grep -qF "$RULE_SECTION"; } \
+  && ok "the review workflow cites the rule's section in the header every auditor reads" \
+  || bad "the review workflow cites the rule's section in the header every auditor reads"
+
+# Fact 2b — and none of them restates it. One fact in two documents is the drift this epic has already
+# paid for twice; the invariant sentence is the canary, and it lives in exactly one engine file.
+RULE_HOMES="$(grep -rlie 'never modifies what it audits' global/ 2>/dev/null | wc -l | tr -d ' ')"
+[ "$RULE_HOMES" = "1" ] \
+  && ok "the invariant is stated in exactly one engine file (found in $RULE_HOMES)" \
+  || bad "the invariant is stated in exactly one engine file (found in $RULE_HOMES)"
+
+# Fact 3a — the workers declare themselves read-only. Emergent mutation is what three tasks paid for,
+# and nothing in this file has ever said not to.
+if [ -n "$CTX" ] \
+   && printf '%s' "$CTX" | grep -qiE 'read-only|read only' \
+   && printf '%s' "$CTX" | grep -qiE 'do not (edit|modify|change|write)|never (edit|modify|change|write)'; then
+  ok "the shared review header declares every worker read-only"
+else
+  bad "the shared review header declares every worker read-only"
+fi
+
+# Fact 3b — and every worker actually inherits that header. The declaration is worth exactly as much as
+# its reach: dropping `ctx` from one dimension is a mutation that leaves the sentence in place.
+CTX_USES="$(awk '/^const DIMENSIONS = \[/{f=1;next} /^\]$/{f=0} f' "$VW" | grep -cE '^[[:space:]]+ctx,')"
+[ "$CTX_USES" = "4" ] \
+  && ok "all four auditor prompts inherit the shared header (found $CTX_USES)" \
+  || bad "all four auditor prompts inherit the shared header (found $CTX_USES)"
+awk '/^function refutePrompt/{f=1} f&&/^}/{exit} f' "$VW" | grep -qE '^[[:space:]]+ctx,' \
+  && ok "the refutation prompt inherits the shared header" \
+  || bad "the refutation prompt inherits the shared header"
+
+# Fact 4a — the mutation instinct becomes a structured proposal the worker hands over.
+FSCHEMA="$(awk '/^const FINDINGS_SCHEMA = \{/{f=1} f&&/^\}$/{print;exit} f' "$VW" | tr '\n' ' ')"
+if [ -n "$FSCHEMA" ] && printf '%s' "$FSCHEMA" | grep -q 'proposedMutation'; then
+  ok "the findings schema carries a proposed mutation"
+else
+  bad "the findings schema carries a proposed mutation"
+fi
+
+# Fact 4b — and the header calls it a proposal the worker does not perform. A field alone invites the
+# very act it was meant to replace.
+if [ -n "$CTX" ] && printf '%s' "$CTX" | grep -q 'proposedMutation' \
+   && printf '%s' "$CTX" | grep -qiE 'do not apply|never apply|without applying|do not run it'; then
+  ok "the header describes the proposal as something the worker does not perform"
+else
+  bad "the header describes the proposal as something the worker does not perform"
+fi
+
+# Byte offset of a fixed string: for the facts that are an ORDER, which presence greps cannot see.
+voff() { grep -obF "$2" "$1" | head -1 | cut -d: -f1; }
+
+# Fact 5a — exactly one prover. Two of them is the race again, wearing the new name.
+PROVERS="$(grep -cF "phase: 'Prove'" "$VW")"
+[ "$PROVERS" = "1" ] \
+  && ok "the workflow runs exactly one prover stage (found $PROVERS)" \
+  || bad "the workflow runs exactly one prover stage (found $PROVERS)"
+grep -qE "\{ title: 'Prove'" "$VW" \
+  && ok "the workflow declares the prover phase in its meta" \
+  || bad "the workflow declares the prover phase in its meta"
+
+# Fact 5b — it runs after the refutation, not beside it. Presence cannot see an order, so this is an
+# offset: a prover spawned inside the pipeline would still satisfy every check above.
+O_REF="$(voff "$VW" "phase: 'Refute'")"; O_PRV="$(voff "$VW" "phase: 'Prove'")"
+if [ -n "$O_REF" ] && [ -n "$O_PRV" ] && [ "$O_PRV" -gt "$O_REF" ]; then
+  ok "the prover stage is sequenced after the refutation stage"
+else
+  bad "the prover stage is sequenced after the refutation stage"
+fi
+
+# The prover's own region, from its anchor to the end of the script.
+PROVE="$(awk '/One prover, serialised/{f=1} f' "$VW")"
+
+# The prover reads its own copy of the citation: it is the actor the rule appoints, and the header it
+# does not inherit is the one that would otherwise have told it so.
+# Scoped to the prompt array, never to the region: the comment introducing that region carries the
+# citation too, and a human reading the source is not the reader this fact is about.
+PROMPT="$(awk '/^  const provePrompt = \[/{f=1;next} /^  \]\.join/{f=0} f' "$VW" | tr '\n' ' ')"
+{ [ -n "$PROMPT" ] && printf '%s' "$PROMPT" | grep -qF "$RULE_SECTION"; } \
+  && ok "the prover's prompt cites the rule it works under" \
+  || bad "the prover's prompt cites the rule it works under"
+
+# Fact 5c — nothing in that region fans out. The whole point of moving the proof here is that exactly
+# one worker touches the copy at a time.
+if [ -n "$PROVE" ] && ! printf '%s' "$PROVE" | grep -q 'parallel('; then
+  ok "the prover stage spawns no parallel work"
+else
+  bad "the prover stage spawns no parallel work"
+fi
+
+# Fact 6 — no proposal, no prover. Without the guard every review pays for a worker with nothing to do,
+# and the promise that a clean review costs what it costs today is broken.
+if [ -n "$PROVE" ] && printf '%s' "$PROVE" | grep -qE 'proposedMutation|proposals'; then
+  # Anchored on a conditional over the proposals themselves, at line start. The loose form matched a
+  # ternary inside the prompt text, so removing the guard entirely left the assertion green.
+  G="$(printf '%s' "$PROVE" | grep -nE '^if \(.*proposals' | head -1 | cut -d: -f1)"
+  A="$(printf '%s' "$PROVE" | grep -nF 'agent(' | head -1 | cut -d: -f1)"
+  if [ -n "$G" ] && [ -n "$A" ] && [ "$G" -lt "$A" ]; then
+    ok "the prover is guarded by the presence of a proposal"
+  else
+    bad "the prover is guarded by the presence of a proposal"
+  fi
+else
+  bad "the prover is guarded by the presence of a proposal"
+fi
+
+# A numbered step of the skill, flattened. Not pinned to a literal number: inserting the bracket step
+# renumbers everything after it, and an assertion that dies to renumbering tests the numbering.
+vstep() { awk -v s="^$2\\\\. " -v e="^$(($2 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' "$1" | tr '\n' ' '; }
+N_INV="$(grep -nE '^[0-9]+\. \*\*Invoke the verify-review workflow' "$VS" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/')"
+N_GATH="$(grep -nE '^[0-9]+\. \*\*Gather the task diff' "$VS" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/')"
+
+# Fact 7a — the copy is taken before the review is invoked, and it covers what no diff reaches.
+# Scoped to the bullet that carries the copy, never to the step: the step already collected untracked
+# files for the diff long before this rule existed, so a step-wide grep for 'untracked' stayed green
+# after the copy stopped taking them. The extractor's own anchor is the byte-exact fact — an edit that
+# drops it returns an empty block, which is a red for the right reason.
+S_COPY="$([ -n "$N_GATH" ] && sbullet "$VS" "$N_GATH" 'byte-exact copy')"
+if [ -n "$N_GATH" ]; then
+  if [ -n "$S_COPY" ] \
+     && printf '%s' "$S_COPY" | grep -qF '/untracked/' \
+     && printf '%s' "$S_COPY" | grep -qiE 'outside the repository|mktemp'; then
+    ok "the verify skill takes a byte-exact copy, untracked files included, outside the repository"
+  else
+    bad "the verify skill takes a byte-exact copy, untracked files included, outside the repository"
+  fi
+else
+  bad "the verify skill takes a byte-exact copy, untracked files included, outside the repository"
+fi
+
+# Fact 7b — the comparison happens after the invocation. This is the fact the whole task turns on, so it
+# is an order and not a presence: a compare step written before the invocation proves nothing at all.
+if [ -n "$N_INV" ]; then
+  S_AFTER="$(vstep "$VS" "$((N_INV + 1))")"
+  if printf '%s' "$S_AFTER" | grep -qiE 'compare' \
+     && printf '%s' "$S_AFTER" | grep -qiE 'restore' \
+     && printf '%s' "$S_AFTER" | grep -qiE 'byte-exact|byte-identical|copy taken'; then
+    ok "the step after the invocation compares against the copy and restores from it"
+  else
+    bad "the step after the invocation compares against the copy and restores from it"
+  fi
+else
+  bad "the step after the invocation compares against the copy and restores from it"
+fi
+
+# Fact 7c — the bracketing is a step, not a suggestion. Softening it back to a discipline is the exact
+# regression this task exists to end, and every hedge below leaves the sentence otherwise intact.
+if [ -n "$S_COPY" ] \
+   && ! printf '%s' "$S_COPY" | grep -qiE 'optional|if you remember|when convenient|recommended'; then
+  ok "the copy step is stated as a step, not as a recommendation"
+else
+  bad "the copy step is stated as a step, not as a recommendation"
+fi
+
+# Fact 7d — the writer records the verdict, with both branches. The slot existing in the template and
+# nobody being told to fill it is the same silence this task exists to end: deleting the clause from the
+# write step left the whole suite green.
+N_WR="$(grep -nE '^[0-9]+\. \*\*Write\*\* ' "$VS" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/')"
+S_WR="$([ -n "$N_WR" ] && vstep "$VS" "$N_WR")"
+if printf '%s' "$S_WR" | grep -qiE 'left as found|tree verdict' \
+   && printf '%s' "$S_WR" | grep -qiE 'what differed|restored'; then
+  ok "the write step records the tree verdict, both branches"
+else
+  bad "the write step records the tree verdict, both branches"
+fi
+
+# Fact 7e — the copy is taken in a form that can actually put things back. A plain patch cannot represent
+# a binary change, so a restore from one silently cannot restore it.
+if printf '%s' "$S_COPY" | grep -qF -- '--binary'; then
+  ok "the copy is taken in a form that can restore a binary change"
+else
+  bad "the copy is taken in a form that can restore a binary change"
+fi
+
+# Fact 7f — the comparison fails closed. Reached with no record, the destructive branch would discard the
+# work against nothing; reached with a record it cannot replay, it would erase and then fail to put back.
+if printf '%s' "$S_AFTER" | grep -qiE 'missing|absent' \
+   && printf '%s' "$S_AFTER" | grep -qiE 'not\*{0,2} enter|never enter' \
+   && printf '%s' "$S_AFTER" | grep -qF -- '--check' \
+   && printf '%s' "$S_AFTER" | grep -qiE 'restore \*\*nothing\*\*|restore nothing'; then
+  ok "the comparison fails closed: no record and no replayable record both stop before discarding"
+else
+  bad "the comparison fails closed: no record and no replayable record both stop before discarding"
+fi
+
+# Fact 7g — and it names the command it must never use. The same prohibition the prover carries; one fact
+# stated at both actors is what keeps the two halves of this engine from contradicting each other.
+if printf '%s' "$S_AFTER" | grep -qiE 'never restore with' && printf '%s' "$S_AFTER" | grep -qF 'git checkout -- .'; then
+  ok "the restore names the destructive command it must never use"
+else
+  bad "the restore names the destructive command it must never use"
+fi
+
+# Fact 7h — both halves of the bracketing say they are unconditional. Made conditional on something having
+# been proven, the whole mechanism stops catching the case it was built for: an auditor that broke its
+# read-only contract on a review where nothing was proposed.
+if printf '%s' "$S_AFTER" | grep -qiE 'whether or not|regardless of|even if' \
+   && printf '%s' "$S_AFTER" | grep -qiE 'completed|died|proven'; then
+  ok "the comparison states it runs whether or not anything was proven"
+else
+  bad "the comparison states it runs whether or not anything was proven"
+fi
+if printf '%s' "$S_COPY" | grep -qiE 'every review|including the ones that prove nothing'; then
+  ok "the copy states it is taken on every review"
+else
+  bad "the copy states it is taken on every review"
+fi
+
+# Fact 4c — the field is OPTIONAL. Listed as required, every auditor must invent a mutation for every
+# finding, and a fabricated proposal becomes a real file change in the prover's hands — while a grep for
+# the field's name stays green either way.
+if [ -n "$FSCHEMA" ] && ! printf '%s' "$FSCHEMA" | grep -oE "required: \[[^]]*\]" | grep -q 'proposedMutation'; then
+  ok "the proposed mutation is optional, not required of every finding"
+else
+  bad "the proposed mutation is optional, not required of every finding"
+fi
+
+# Facts 5d-5g — the prover's procedure, asserted on the prompt body. The stage's SHAPE was guarded above
+# (one of it, after the refutation, no fan-out, guarded by a proposal) and not one line of what makes the
+# stage safe: every clause below could be dropped or inverted with the suite green.
+if [ -n "$PROMPT" ] \
+   && printf '%s' "$PROMPT" | grep -qiE 'one at a time' \
+   && printf '%s' "$PROMPT" | grep -qiE 'put the file back|before the next|before you move'; then
+  ok "the prover is ordered to prove one at a time and put each file back before the next"
+else
+  bad "the prover is ordered to prove one at a time and put each file back before the next"
+fi
+
+# The prohibition is the only guard against a restore that deletes the very work under review — and it is
+# the same command the phase's own restore names. One fact, both actors: this is where the two halves of
+# the engine were found contradicting each other.
+if [ -n "$PROMPT" ] && printf '%s' "$PROMPT" | grep -qF 'git checkout -- .' \
+   && printf '%s' "$PROMPT" | grep -qiE 'never restore|would delete|destructive'; then
+  ok "the prover is forbidden the restore that discards the work under review"
+else
+  bad "the prover is forbidden the restore that discards the work under review"
+fi
+
+# A guessed outcome is worse than no outcome: it retires a real finding on an invented proof.
+if [ -n "$PROMPT" ] && printf '%s' "$PROMPT" | grep -q 'unproven' \
+   && printf '%s' "$PROMPT" | grep -qiE 'never guess|do not guess'; then
+  ok "an unrunnable proposal is unproven, never a guessed outcome"
+else
+  bad "an unrunnable proposal is unproven, never a guessed outcome"
+fi
+
+# Containment is the workflow's job, not the prompt's. The proposal's path is free text from an agent, and
+# the prover is the one agent with write access — a path outside the repository would also be invisible to
+# the phase's comparison, which only ever looks inside it.
+if [ -n "$PROVE" ] \
+   && printf '%s' "$PROVE" | grep -qE 'const proposals = .*inScope' \
+   && printf '%s' "$PROVE" | grep -qF "startsWith('/')" \
+   && printf '%s' "$PROVE" | grep -qF "'..'" \
+   && printf '%s' "$PROVE" | grep -q 'changedFiles'; then
+  ok "proposal paths are contained before the prover's prompt is built"
+else
+  bad "proposal paths are contained before the prover's prompt is built"
+fi
+
+# Fact 8 — both report templates carry the verdict, and both branches of it. A slot with only the clean
+# branch is the mutation that makes a dirty run unreportable while every other check stays green.
+TPL_OK=1
+for t in $(grep -n '^\*\*Audited\*\*' "$VP" | cut -d: -f1); do
+  BLK="$(sed -n "${t},$((t + 4))p" "$VP" | tr '\n' ' ')"
+  printf '%s' "$BLK" | grep -qiE 'left as (it was )?found|working copy unchanged' || TPL_OK=0
+  printf '%s' "$BLK" | grep -qiE 'was not|otherwise|restored' || TPL_OK=0
+done
+[ -n "$(grep -c '^\*\*Audited\*\*' "$VP")" ] && [ "$(grep -c '^\*\*Audited\*\*' "$VP")" = "2" ] || TPL_OK=0
+[ "$TPL_OK" = "1" ] \
+  && ok "both report templates carry the tree verdict with both of its branches" \
+  || bad "both report templates carry the tree verdict with both of its branches"
+
+# Fact 9 — a difference reaches the user as a suspect verdict. Restoring quietly is the failure this
+# criterion guards: the copy is clean again, and the audit was written against something else.
+CONS="$(awk '/^### Consolidation into verify.md/{f=1;next} (f && /^#+ /){exit} f' "$VP" | tr '\n' ' ')"
+# From the file, not from the flattened section: the bullet is a run of LINES, and $CONS has had its
+# newlines squeezed out for the section-wide checks above.
+CONS_WC="$(awk '/^### Consolidation into verify.md/{c=1;next} (c && /^#+ /){exit} c' "$VP" \
+  | awk '/^- \*\*The working copy differs/{f=1;print;next} f && /^- /{exit} f' | tr '\n' ' ')"
+if [ -n "$CONS_WC" ] \
+   && printf '%s' "$CONS_WC" | grep -qiE 'restore|record' \
+   && printf '%s' "$CONS_WC" | grep -qiE 'verdict \*\*suspect\*\*|verdict suspect' \
+   && printf '%s' "$CONS_WC" | grep -qiE 'user decides'; then
+  ok "a changed working copy is consolidated as a suspect verdict for the user to decide"
+else
+  bad "a changed working copy is consolidated as a suspect verdict for the user to decide"
+fi
+
+# Fact 10 — the template ships no copy of the rule. It carries project data only; a copy there would be
+# a second home nothing keeps in step.
+# Precondition, or the check is free: with the rule written nowhere, "the template does not carry it"
+# passes on an empty repository and proves nothing.
+if [ "$RULE_HOMES" -ge 1 ] 2>/dev/null && ! grep -rqie 'never modifies what it audits' template/ 2>/dev/null; then
+  ok "the template ships no copy of the rule"
+else
+  bad "the template ships no copy of the rule"
+fi
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"

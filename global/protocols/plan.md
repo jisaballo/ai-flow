@@ -102,7 +102,7 @@ Each step declares a `Skills:` line listing the workspace skills whose domain it
    - Test description maps 1:1 to the criterion text
 3. **For each Behavioral criterion**: Create a failing test that sets up the GIVEN (the EARS state/context), triggers the WHEN, and asserts the THEN (the EARS response)
 4. **Observable criteria** don't generate tests (they're verified by code inspection in Verify phase)
-5. **Run the test suite** — all new stubs MUST fail (red phase of TDD)
+5. **Run the test suite** — all new stubs MUST fail (red phase of TDD). Sizing an assertion by mutating the thing it guards is governed by the verify protocol's `Mutation and the Working Copy`, stated there and only there — do not reproduce its obligations here.
 6. **Freeze the contracts**: write the baseline manifest to `artifacts/T-XXX/conformance-baseline/manifest.md` — one row per stub: spec file, `it()` description, source criterion, assert direction (what must grow/shrink/equal what). A **manifest**, not a copy of the spec files: the stub *body* is free to change during Execute; the manifest rows are the frozen contract (see Execute protocol > Conformance Contracts Exception).
 7. **Proceed to Execute** — the goal is now "make these tests pass"
 

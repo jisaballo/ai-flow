@@ -39,6 +39,30 @@ how many commits it covered, which is what turns an unexplained orphan hunk into
 and says so** — verify.md records that the branch scope was unavailable. A repository with no published
 default branch and no local `main`/`master` still gets a verify; it gets a smaller one, announced.
 
+## Mutation and the Working Copy
+
+**An audit never modifies what it audits.** Reading is the whole of the job: an auditor that edits the
+work it is judging changes what every other auditor is reading at that moment, and the finding it then
+writes describes a state that never existed. That damage leaves nothing behind to find it by — which is
+why the rule is not "restore whatever you broke" but "do not break it".
+
+Proving a fact does sometimes require a change: an assertion is only shown to be hollow by making the
+thing it guards untrue and watching the suite stay green. Where that is so:
+
+- **The proof is made by one actor at a time**, alone, never beside another and never by the parallel
+  auditors. A change worth making is data an auditor hands over — performing it belongs to whoever the
+  procedure appoints for it.
+- **The change is taken back before the run ends**, each one restored before the next is applied, so the
+  working copy never carries two at once.
+- **The run proves the working copy was left as it was found**, byte-exact, against a copy taken before
+  it started. That proof is executed by the phase that invokes the run, never by the actor that mutates:
+  an actor killed mid-change restores nothing, which is precisely how the discipline has failed before.
+- **A run that cannot prove it clean says so**, rather than staying silent. In a report, silence and a
+  clean working copy read identically, and there is no third source to settle which one happened.
+
+The rule binds every actor the lifecycle appoints, not the review's alone: a Conform sweep that mutates
+to size its own assertions is the same act with a different author.
+
 ## verify.md Template
 
 ```markdown
@@ -46,7 +70,8 @@ default branch and no local `main`/`master` still gets a verify; it gets a small
 
 **Audited**: `T-XXX`, resolved from `[the state file the ladder answered with]`. The task diff — base
 `[base ref]`, `[N]` commit(s) on this branch since it, plus what is still uncommitted. If no base
-resolved: `branch scope unavailable — uncommitted work only`.
+resolved: `branch scope unavailable — uncommitted work only`. The working copy was left as found; if it was
+not, what changed and what was restored.
 
 ## Criteria Audit
 | # | Criterion (from understand.md) | Status | Evidence |
@@ -91,12 +116,21 @@ Runs 4 auditors in parallel over the task diff (see **The Task Diff** above):
 
 Then it **adversarially refutes every HIGH and MEDIUM finding**: a skeptic agent reads the code in context and tries to refute it; only findings that survive (confirmed=true) surface. LOW findings are listed without refutation.
 
+Finally, **one prover** — alone, after every auditor and refuter has finished reading, and only when a surviving finding proposed one. The auditors are read-only (see **Mutation and the Working Copy** above): an auditor that suspects an assertion is hollow returns the change that would settle it instead of making it, and this stage is the actor the rule appoints. It applies them one at a time, runs the project's test command, and puts each file back before the next. Proposals naming a path outside the repository or outside the reviewed scope are dropped before the stage runs.
+
 ### Consolidation into verify.md
 
 - **HIGH confirmed** -> ⚠️ flag to user; blocks archive (same gate as a partial criterion).
 - **MEDIUM / LOW confirmed** -> list under `## Review Findings` for awareness, don't block.
 - **Refuted** -> list briefly under "Dismissed (refuted)" for a transparent audit trail.
 - No findings -> `## Review Findings: None`.
+- **A proof came back** -> `died` retires the finding: the assertion does guard its fact. `survived` keeps it, now
+  demonstrated rather than suspected. `unproven` keeps it with the reason the proof could not be run. The prover's
+  own claim to have restored what it touched is its word, never the verdict — the comparison below is.
+- **The working copy differs from the copy taken before the review** -> restore from it, record exactly
+  what differed, and mark the review's verdict **suspect**: it may have been written against a state that
+  no longer exists. The user decides between accepting it and re-running the review — the same gate as a
+  partial criterion. A restored difference is never folded into a clean report.
 
 ### Presentation to the user
 
@@ -115,7 +149,8 @@ What the user reads in chat is **one line per axis**: finding count + the worst 
 
 **Audited**: `T-XXX`, resolved from `[the state file the ladder answered with]`. The task diff — base
 `[base ref]`, `[N]` commit(s) on this branch since it, plus what is still uncommitted. If no base
-resolved: `branch scope unavailable — uncommitted work only`.
+resolved: `branch scope unavailable — uncommitted work only`. The working copy was left as found; if it was
+not, what changed and what was restored.
 
 ## Criteria Audit
 | # | Criterion | Status | Evidence |
@@ -140,6 +175,9 @@ resolved: `branch scope unavailable — uncommitted work only`.
 
 ### Dismissed (refuted)
 - [finding + why refuted, or "None"]
+
+### Proven (mutation)
+- [finding + died/survived/unproven + the evidence, or "Nothing proposed"]
 
 ## Gaps Found
 [Consolidated list from audit + review, or "None"]
