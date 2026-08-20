@@ -73,6 +73,32 @@ autonomy: Guided
 **The `phase:` line is machine-read.** The Understand read-only rail parses exactly this form, so the
 phase name stays upper-case between the asterisks (`phase: **UNDERSTAND**`).
 
+**A checkout holds at most one sheet claiming its branch.** The `branch:` line is a claim, and the
+resolution below reads it as one: two sheets claiming the branch a checkout is on have no unique owner,
+so the reader stops and the work stops with it. The limit is what keeps that from happening, and it is
+kept by an obligation on the writer — **whoever writes a claim releases every other claim in that
+checkout, in the same act**. The writer sits at the claim and nowhere else: that is the moment the
+reader would break, and an obligation placed at any other moment is one that gets forgotten while the
+sheet it protects is already unreadable.
+
+A released claim is not a deleted one. The sheet keeps its papers and keeps the branch it belongs to,
+in a field the rail cannot mistake for a claim:
+
+```markdown
+released-branch: you/t-xxx-slug
+phase: **EXECUTE**
+```
+
+The rail's branch pattern is anchored at the start of the line, so `released-branch:` is not a claim to
+it — it reads the sheet as declaring no branch, which is exactly what a released claim is. **The line is
+renamed, not duplicated**: a sheet carrying both is still a claim, and a half-done release produces the
+ambiguity the limit exists to prevent, with no diagnostic to say so. Resuming the
+task re-claims the branch and releases whatever claimed it meanwhile; a released sheet left alone in a
+checkout is still that checkout's own task, and the resolution below answers with it.
+
+Two tasks open in one checkout is what makes this reachable — a paused task beside the one now being
+worked. That is allowed and unchanged; what the paused one gives up is the claim, never its papers.
+
 ### Resolving the task
 
 **The `branch:` line is how a checkout recognises its own task.** A working copy can hold several
@@ -90,11 +116,15 @@ nothing to match, and the lone sheet answers whatever branch it declares.** Both
 it is the one case where a sheet naming another branch may still be read: no branch is there to
 contradict it. Two or more sheets and this case falls straight to rung 3.
 
-1. **The sheet whose `branch:` is the branch currently checked out** — exactly one of them. A sheet
-   that names *another* branch belongs to another workstream and is never read here.
-2. **Failing that, the lone sheet that declares no branch.** A project that predates the field keeps
-   the behaviour it always had; absence is never a wildcard, so this rung answers only while that
-   sheet is alone.
+1. **The sheet whose `branch:` is the branch currently checked out** — exactly one of them. A claim is
+   a line that begins with `branch:`; `released-branch:` is not one and belongs to rung 2, and this
+   holds for whoever is reading, not only for the rail whose pattern enforces it. A sheet that names
+   *another* branch belongs to another workstream and is never read here.
+2. **Failing that, the lone sheet that declares no branch.** Two kinds of sheet land here: one from a
+   project that predates the field, which keeps the behaviour it always had, and one whose claim was
+   released when the checkout took on another task — a lone released sheet is still that checkout's own
+   task. Absence is never a wildcard, so this rung answers only while that sheet is alone among the
+   sheets declaring no branch.
 3. **Failing that, `STATE.md` — and only where it names exactly one task.** For the rail that is where
    a migrated roster carries no phase, so it stays silent by design. For a phase command the file is
    the task identifier itself, which is what makes the condition load-bearing: a roster holding
@@ -104,8 +134,12 @@ contradict it. Two or more sheets and this case falls straight to rung 3.
    not choose one — ambiguity resolved by choice is indistinguishable from a correct answer, and for a
    phase command a wrong answer overwrites another task's papers. The rail has nothing to enforce and
    says nothing; a phase command says which rungs it tried and stops before writing any artifact. Two
-   sheets claiming the same branch land here too — pruning a checkout down to the sheets it owns is
-   the job of the ceremony that opens a workstream.
+   sheets claiming the same branch land here too, and what keeps them from arriving is stated above,
+   not here: a checkout holds at most one claim, because writing a claim releases every other claim in
+   that checkout. Two ceremonies carry it — the one that opens a workstream prunes the papers a new
+   checkout does not own, and the one that closes a task deletes what it archived from every checkout
+   that holds it. A rung crediting the opening alone reads as though the situation could only be born
+   at creation, and the one that actually produces it is a front taking on its next task.
 
 ### The phase precondition
 
@@ -148,7 +182,7 @@ remembers.
 | **Activation** | the coordinator adds the workstream row, with the front's declared areas | created, with branch, phase, step and autonomy — plus any collision acknowledged at the opening (see Opening a Workstream) |
 | **During the phases** | untouched | the phase command writes the phase when it enters one (see The phase precondition above); step, decisions and the resume block kept current by whoever works the task |
 | **Pause** | untouched | carries everything needed to resume — it IS the handoff |
-| **Archive** | the coordinator removes the row, last | collected into the coordinator first, then deleted with the rest of `artifacts/T-XXX/` |
+| **Archive** | the coordinator removes the row, last | collected into the coordinator first, then deleted with the rest of `artifacts/T-XXX/` — in every checkout that holds it, not only the coordinator's |
 | **Quick task** | its row in Quick Tasks Completed, at close | none — a quick task writes no sheet, and states its 1-2 steps in the conversation |
 
 ### Migrating an existing ledger
@@ -325,7 +359,11 @@ what activation has always been, plus the declaration in step 2.
    epic, the declared areas and the date. The sheet carries the branch that owns the task, the phase,
    the step, the autonomy level, and any acknowledgement from step 3. The `branch:` line is what makes
    the sheet findable in a checkout that holds several: without it, the front the ceremony just opened
-   has no state anything can read.
+   has no state anything can read. Writing it is writing a claim, so this move carries the obligation
+   that comes with one: **release every other claim to that branch in this checkout**, in the same act
+   (see `## State Files`). Ordinarily there is nothing to release — the move before this one pruned the
+   checkout — but a front taking on its next task runs this move over a checkout it has been working,
+   and that is the case the release exists for.
 
 ## Closing a Workstream
 
@@ -403,12 +441,23 @@ sheet is where an interrupted close is written down, and the roster is the queue
 ### After ARCHIVE (single task)
 
 This checklist is what move 4 of `## Closing a Workstream` runs, and it runs in the coordinator:
-every step below writes the ledger, and the ledger has one writer.
+the ledger has one writer, and every step below is that writer at work — except step 4, which also
+reaches into the checkout where the task was worked to delete a copy of what it just archived.
 
 1. **Steering update**: did the task teach or modify a domain rule? -> edit the rule in the steering file's **body** AND regenerate its `## Nano` line **in the same edit** — an edit that touches only one of the two is incomplete. No new rule learned -> skip.
 2. **product.md write-back**: copy every rule from understand.md's `New business rules minted` into product.md's Business Rules (with T-XXX provenance); update the Glossary if the task sharpened a term. A business rule that stays only in the archived artifact will be re-asked or re-assumed. None minted -> skip.
 3. Generate `archive/T-XXX/summary.md` (see Archive Summary template)
-4. **Delete** `artifacts/T-XXX/` entirely
+4. **Delete** `artifacts/T-XXX/` entirely — in **every checkout that holds it**, not only here. A task
+   worked in a linked worktree leaves a copy there, and the ceremony's tail removes that checkout only
+   when the front has no next task: a front continuing its chain keeps the copy, the next task's sheet
+   claims the same branch, and the checkout is left with two claims and no way to say which task it is
+   on. Locate the front's checkout the way move 2 of the closing ceremony locates it — the repository's
+   own worktree listing, matched by the branch on that front's roster row. What makes this safe is that
+   the record is already written: step 3 generated the summary, so what is deleted is a copy of what the
+   archive holds. Which is also why it happens **here and not earlier — never before the collection, and
+   never at collection time**: move 3 can still stop the ceremony, and a front whose merge failed is a
+   front still working that task, with the papers it needs gone and git unable to restore what it never
+   tracked.
 5. Remove task from BACKLOG.md (move from Done to nowhere — it's in the archive now)
 6. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
 7. Leave the workstream row to move 7 of `## Closing a Workstream`, its sole owner: the row is removed
@@ -440,7 +489,9 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
 
 ### Invariants (always true)
 
-- `artifacts/` contains **only** `T-XXX/` folders for **active or in-progress** tasks — never completed ones
+- `artifacts/` contains **only** `T-XXX/` folders for **active or in-progress** tasks — never completed
+  ones, and this holds in **every checkout**, not only the coordinator's. A copy left behind in a front
+  is what puts two claims on one branch (see State Files)
 - No root-level files in `artifacts/` (no templates, no loose files)
 - No empty directories anywhere in `.ai-flow/`
 - BACKLOG.md Done section is **transient** — tasks stay there only until archived, not permanently
