@@ -13,7 +13,11 @@ set -e
 #     curl -sL .../install.sh | bash -s update
 #     ./install.sh update
 
-REPO_URL="https://raw.githubusercontent.com/jisaballo/ai-flow/main"
+# Test seam, deliberately undocumented: the download base and the mode below both resolve from the
+# environment when set, so the download path — and above all its failure path — is reachable without a
+# network. Installing from a fork is not a supported capability, so this stays out of the user docs; the
+# conformance block that exercises a failed download is what keeps these two lines from reading unused.
+REPO_URL="${AI_FLOW_REPO_URL:-https://raw.githubusercontent.com/jisaballo/ai-flow/main}"
 
 # --- Parse subcommand + target (back-compat: if $1 is a path, treat as init target) ---
 CMD="init"
@@ -42,7 +46,9 @@ echo ""
 
 # Detect mode: local (cloned repo) or remote (curl)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}" 2>/dev/null || echo ".")" && pwd)"
-if [ -f "$SCRIPT_DIR/global/protocols/understand.md" ]; then
+if [ -n "${AI_FLOW_MODE:-}" ]; then
+  MODE="$AI_FLOW_MODE"                                   # test seam (see REPO_URL above)
+elif [ -f "$SCRIPT_DIR/global/protocols/understand.md" ]; then
   MODE="local"
 else
   MODE="remote"
@@ -54,9 +60,33 @@ fetch_file() {
   local dest="$2"
   if [ "$MODE" = "local" ]; then
     cp "$SCRIPT_DIR/$rel_path" "$dest"
-  else
-    curl -sfL "$REPO_URL/$rel_path" -o "$dest"
+    return 0
   fi
+  # curl already DETECTS a bad transfer — a failing status with -f, a truncated body with exit 18. What
+  # was missing was a consequence at the destination: writing straight there meant the detection arrived
+  # after the damage, and the installers that never overwrite an existing file (the global manual, and
+  # every project data file) then preserved the broken copy for good.
+  #
+  # The temporary file is created in the DESTINATION's own directory so the move below is a rename inside
+  # one filesystem, which cannot be interrupted half-written. A system temporary file would cross
+  # filesystems, where the move degrades to copy-then-unlink and a partial file can reach the destination
+  # after all — losing exactly the guarantee this code exists to make.
+  local tmp
+  if ! tmp="$(mktemp "$(dirname "$dest")/.aiflow-fetch.XXXXXX" 2>/dev/null)"; then
+    echo "  [FAIL] download failed: $rel_path (no writable temporary file beside $dest)" >&2
+    return 1
+  fi
+  if ! curl -sfL "$REPO_URL/$rel_path" -o "$tmp"; then
+    rm -f "$tmp"
+    echo "  [FAIL] download failed: $rel_path" >&2
+    return 1
+  fi
+  if [ ! -s "$tmp" ]; then
+    rm -f "$tmp"
+    echo "  [FAIL] download failed: $rel_path (empty result)" >&2
+    return 1
+  fi
+  mv "$tmp" "$dest"
 }
 
 PROTOCOLS="understand plan execute verify quick-path backlog codebase-mapping discover"
