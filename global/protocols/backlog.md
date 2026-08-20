@@ -300,11 +300,11 @@ merge is one move. Only the coordinator runs it, and it runs one front at a time
 half of `## Opening a Workstream` above: what that ceremony declared, created and seeded is what this
 one validates, collects and takes down.
 
-It runs at **every task close**, not once per front: moves 5 and 6 are its tail and run only when the
+It runs at **every task close**, not once per front: moves 6 and 7 are its tail and run only when the
 front has no next task, because a worktree holds a workstream — an epic with its serial chain inside —
 and lives across the tasks in it.
 
-With a single front open — the ordinary case — moves 2 and 5 have nothing to do: the task was worked in
+With a single front open — the ordinary case — moves 2 and 6 have nothing to do: the task was worked in
 the coordinator, so its papers are already there and there is no second checkout to take down. The
 ceremony then reduces to what closing has always been.
 
@@ -338,12 +338,28 @@ sheet is where an interrupted close is written down, and the roster is the queue
    to collect and no archive to write: its close is the merge plus its row in the coordinator's Quick
    Tasks table — a row a linked checkout never writes.
 
-5. **The front's working copy is dismantled** with Claude Code's own worktree tooling — `ExitWorktree`
+5. **The work is put into effect.**
+   A task the record calls done still does not exist for the sessions it governs until whatever
+   distributes it has run: committed is not installed, and a close that ends before this is a
+   different lie than the one move 3 prevents. The command is the project's own, read from the
+   project layer (`commands.distribute` in `project.yml`) — this protocol names no project's command. A project
+   that declares none has nothing to distribute, and the move **says so**: in a report, silence and a
+   distribution that never happened read identically. It runs in the coordinator, on the trunk the
+   merge just landed, and nowhere else — run from a front it would repoint what the installed
+   toolchain calls its source at a checkout the next move deletes, and the guard that watches for
+   exactly this divergence goes quiet for good. The run **shows** the distribution took effect, by
+   whatever check the project has; where there is no check it reports the result unproven rather than
+   assuming it. If it cannot be shown to have landed, the ceremony **stops** here with the front's
+   roster row still in place — the record is written by now, so the row is the only thing left saying
+   work remains, which is why this move sits before the tail and not after it. It runs at **every
+   task close**, a quick task's included, and carries none of the condition the two moves below it do.
+
+6. **The front's working copy is dismantled** with Claude Code's own worktree tooling — `ExitWorktree`
    in a session — the counterpart of what created it in step 5 of the opening, and never
    before move 2: removing the checkout destroys the task's papers, and git cannot restore what it never
    tracked. Runs only when the front has no next task.
 
-6. **The front's roster row is removed** — the coordinator's last write, and the roster's own proof that
+7. **The front's roster row is removed** — the coordinator's last write, and the roster's own proof that
    the front is closed. Runs only when the front has no next task.
 
 ## Directory Hygiene
@@ -361,7 +377,7 @@ every step below writes the ledger, and the ledger has one writer.
 4. **Delete** `artifacts/T-XXX/` entirely
 5. Remove task from BACKLOG.md (move from Done to nowhere — it's in the archive now)
 6. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
-7. Leave the workstream row to move 6 of `## Closing a Workstream`, its sole owner: the row is removed
+7. Leave the workstream row to move 7 of `## Closing a Workstream`, its sole owner: the row is removed
    only when the front has no next task, and a front continuing its chain keeps its row with the task
    field advanced (coordinator only — other open fronts keep theirs). The task's `state.md` went with
    `artifacts/T-XXX/` in step 4.
@@ -384,7 +400,7 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
    open, and a sweep cannot tell those apart.
 4. Remove all epic tasks from BACKLOG.md Done section
 5. Move the epic row to `archive/EPICS.md` + its Execution Order block to `archive/EXECUTION-ORDERS.md` (Size Budget)
-6. **Verify** the roster holds no row for a front of this epic — move 6 of `## Closing a Workstream` is
+6. **Verify** the roster holds no row for a front of this epic — move 7 of `## Closing a Workstream` is
    the only remover, and by now it has run for each of them. A row still there names a front that is
    still open: name it and stop, rather than removing it here (rows of fronts outside the epic stay).
 

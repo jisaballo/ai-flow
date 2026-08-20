@@ -37,7 +37,7 @@ CAPTURE → BACKLOG.md (backlog) → PRIORITIZE (ready) → ACTIVATE (active + S
 6. **CONFORM**: Generate failing test stubs from Verifiable Criteria (see plan protocol)
 7. **EXECUTE**: Implement with TDD validation (make conformance tests pass), spec sync post-execute
 8. **VERIFY**: Audit criteria against understand.md, write verify.md
-9. **ARCHIVE**: Run the closing ceremony (backlog protocol) — the user validates the branch, the coordinator collects the task's artifacts, the merge lands there, the ledger is written (archive checklist), then the front's checkout is dismantled and its roster row removed
+9. **ARCHIVE**: Run the closing ceremony (backlog protocol) — the user validates the branch, the coordinator collects the task's artifacts, the merge lands there, the ledger is written (archive checklist), the work is put into effect (the project's distribution command), then the front's checkout is dismantled and its roster row removed
 
 ### Execution Paths
 

@@ -24,6 +24,10 @@ commands:
   test: "npm test"            # e.g. "npx nx test {area}"  — used by plan/verify (TDD)
   lint: "npm run lint"        # e.g. "npx nx lint {area}"
   build: "npm run build"      # e.g. "npx nx build {area}"
+  # distribute: "<command>"   # optional — how this project's work is put into effect once it is in
+  #                           # the trunk: publish, deploy, regenerate, reinstall a toolchain.
+  #                           # Declare it only where merging is not enough for the work to take
+  #                           # effect. Left out, the close's distribution move is a stated no-op.
 
 # Map an area to its steering file. The verify phase loads the matching steering
 # file (.ai-flow/steering/<area>.md) for the area a task touches.

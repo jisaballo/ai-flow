@@ -22,14 +22,22 @@ case "${1:-}" in
 esac
 TARGET="${1:-.}"
 
-# Resolve absolute path (handle both existing and new directories)
-mkdir -p "$TARGET"
-TARGET="$(cd "$TARGET" && pwd)"
+# A project target belongs to init alone. update writes into ~/.claude and never into a project, so
+# resolving one here would create a directory nothing goes on to write and announce it as the
+# destination — a line contradicted by the next one the subcommand prints.
+if [ "$CMD" = "init" ]; then
+  # Resolve absolute path (handle both existing and new directories)
+  mkdir -p "$TARGET"
+  TARGET="$(cd "$TARGET" && pwd)"
+  TARGET_LINE="  Target: $TARGET"
+else
+  TARGET_LINE="  Target: $HOME/.claude (no project is touched)"
+fi
 
 echo ""
 echo "  ai-flow installer ($CMD)"
 echo "  ─────────────────"
-echo "  Target: $TARGET"
+echo "$TARGET_LINE"
 echo ""
 
 # Detect mode: local (cloned repo) or remote (curl)

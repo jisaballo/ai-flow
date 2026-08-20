@@ -28,6 +28,8 @@ commands:
   test: "npm test"          # use {area} when the command is scoped, e.g. "npx nx test {area}"
   lint: "npm run lint"
   build: "npm run build"
+# distribute: "..."         # optional — what puts merged work into effect (publish/deploy/reinstall);
+                            # absent, the close's distribution move is a stated no-op
 steering:                   # area -> steering file the verify phase loads
   auth: steering/auth.md
 ```
@@ -130,7 +132,9 @@ Projects installed before these files existed receive them by re-running `./inst
 ### Protocols
 
 The protocols installed at `~/.claude/ai-flow/protocols/` are the framework core. Never edit the installed copies — a drift-check hook will flag it. If you need different behavior:
-1. Change them in your clone of the ai-flow repo (commit), then run `./install.sh update`
+1. Change them in your clone of the ai-flow repo, as a task like any other — putting the committed
+   change into effect is a move of the close, not a step you have to remember (see `## Closing a
+   Workstream` in the backlog protocol)
 2. Use steering files for domain-specific rules instead
 3. Use the global CLAUDE.md for workflow preferences
 
