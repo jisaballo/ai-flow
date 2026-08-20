@@ -148,6 +148,109 @@ if [ "$PY3" = 1 ]; then
   else
     bad "falls back to the ledger STATE when no per-task state exists (exit $rc)"
   fi
+
+  # --- the declaration, not the shape found anywhere in the document ------
+  # The sheet is a prose document: it carries decisions and a resume block, and a task that discusses
+  # its own phases reproduces the field's syntax as a matter of course. Scanning the whole text reads
+  # the mention and raises the rail over a task nobody is understanding.
+  PDECL="$T11/pdecl"; mkproj "$PDECL" main
+  mkdir -p "$PDECL/.ai-flow/artifacts/prose"
+  printf '# Task state\n\nbranch: main\nphase: **EXECUTE**\n\n## Decisions\n\n- the precondition passed: the sheet declared phase: **UNDERSTAND** at the time\n' \
+    > "$PDECL/.ai-flow/artifacts/prose/state.md"
+  out="$(wguard "$PDECL" "$PDECL/app.txt")"; rc=$?
+  [ "$rc" = 0 ] && ok "prose that mentions the phase field is not the declaration" \
+                || bad "prose that mentions the phase field is not the declaration (exit $rc)"
+
+  # The arm that separates "the first declaration decides" from "any line that starts with the field":
+  # a quoted example at margin zero survives an anchored pattern and would still raise the rail.
+  printf '# Task state\n\nbranch: main\nphase: **EXECUTE**\n\n## Decisions\n\n```\nphase: **UNDERSTAND**\n```\n' \
+    > "$PDECL/.ai-flow/artifacts/prose/state.md"
+  out="$(wguard "$PDECL" "$PDECL/app.txt")"; rc=$?
+  [ "$rc" = 0 ] && ok "a declaration quoted below the first one is not read" \
+                || bad "a declaration quoted below the first one is not read (exit $rc)"
+
+  # The accepted form carries its colon, exactly as the branch field does. Asserted because the
+  # narrowing is silent: without this, the form nothing documents keeps working by accident.
+  printf '# Task state\n\nbranch: main\nphase **UNDERSTAND**\n' > "$PDECL/.ai-flow/artifacts/prose/state.md"
+  out="$(wguard "$PDECL" "$PDECL/app.txt")"; rc=$?
+  [ "$rc" = 0 ] && ok "a phase written without its colon is not a declaration" \
+                || bad "a phase written without its colon is not a declaration (exit $rc)"
+
+  # --- the file judged is the one the session names ------------------------
+  # Every other path in the guard is resolved against the working directory the payload declares; the
+  # written path was resolved against the guard's own. From a foreign directory a relative path lands
+  # outside the project and the write is waved through; from a subdirectory a ledger write is blocked
+  # and the message names a file that does not exist.
+  PREL="$T11/prel"; mkproj "$PREL" main
+  mkdir -p "$PREL/.ai-flow/artifacts/rel" "$PREL/sub" "$T11/foreign"
+  printf 'branch: main\nphase: **UNDERSTAND**\n' > "$PREL/.ai-flow/artifacts/rel/state.md"
+  out="$( cd "$T11/foreign" && wguard "$PREL" "app.txt" )"; rc=$?
+  [ "$rc" = 2 ] && ok "a relative code write is judged against the session's directory" \
+                || bad "a relative code write is judged against the session's directory (exit $rc)"
+  case "$out" in
+    *"'app.txt'"*) ok "the block names the path the session would have written" ;;
+    *) bad "the block names the path the session would have written" ;;
+  esac
+  out="$( cd "$PREL/sub" && wguard "$PREL" ".ai-flow/artifacts/rel/notes.md" )"; rc=$?
+  [ "$rc" = 0 ] && ok "a relative ledger write is allowed from a foreign working directory" \
+                || bad "a relative ledger write is allowed from a foreign working directory (exit $rc)"
+
+  # --- the protective direction of "the first declaration wins" -----------
+  # Three arms above prove the rail LIFTS where it used to block. This one proves it still blocks, and it
+  # is the arm that separates "the first declaration decides" from "the declaration decides if it is the
+  # only one": a reader keyed on uniqueness passes every other assertion in this file, because every
+  # blocking fixture declares exactly one phase — and then goes silent on the ordinary shape of a real
+  # sheet, a task under investigation whose own decisions reproduce the field's syntax. That is this
+  # task's defect inverted, a leak where the original was a false block.
+  printf '# Task state\n\nbranch: main\nphase: **UNDERSTAND**\n\n## Decisions\n\n- the phase: **EXECUTE** line is what the close will write\n\n```\nphase: **EXECUTE**\n```\n' \
+    > "$PDECL/.ai-flow/artifacts/prose/state.md"
+  out="$(wguard "$PDECL" "$PDECL/app.txt")"; rc=$?
+  [ "$rc" = 2 ] && ok "a first declaration of UNDERSTAND still raises the rail past later declarations" \
+                || bad "a first declaration of UNDERSTAND still raises the rail past later declarations (exit $rc)"
+  case "$out" in
+    *"artifacts/prose/state.md"*) ok "the rail names the sheet it read, not the line it matched" ;;
+    *) bad "the rail names the sheet it read, not the line it matched" ;;
+  esac
+
+  # --- what the accepted form does and does not require --------------------
+  # The rule says the label and its colon are load-bearing and the asterisks and case are house style.
+  # Both directions asserted, because both were unpinned: the pattern's tolerance could be narrowed and
+  # the prose's claim widened, each with the suite green.
+  printf '# Task state\n\nbranch: main\nphase: understand\n' > "$PDECL/.ai-flow/artifacts/prose/state.md"
+  out="$(wguard "$PDECL" "$PDECL/app.txt")"; rc=$?
+  [ "$rc" = 2 ] && ok "the case of the phase name is not load-bearing" \
+                || bad "the case of the phase name is not load-bearing (exit $rc)"
+  printf '# Task state\n\nbranch: main\nphase: UNDERSTAND\n' > "$PDECL/.ai-flow/artifacts/prose/state.md"
+  out="$(wguard "$PDECL" "$PDECL/app.txt")"; rc=$?
+  [ "$rc" = 2 ] && ok "the emphasis around the phase name is not load-bearing" \
+                || bad "the emphasis around the phase name is not load-bearing (exit $rc)"
+
+  # The Spanish legacy label sat inside the alternation this task rewrote and no fixture had ever
+  # written it, in this diff or before it — the protocol now advertises it, so it is exercised.
+  PES="$T11/pes"; mkproj "$PES" main
+  mkdir -p "$PES/.ai-flow"
+  printf 'Fase actual: **UNDERSTAND**\n' > "$PES/.ai-flow/STATE.md"
+  out="$(wguard "$PES" "$PES/app.txt")"; rc=$?
+  [ "$rc" = 2 ] && ok "the Spanish legacy label declares a phase like the other two" \
+                || bad "the Spanish legacy label declares a phase like the other two (exit $rc)"
+
+  # A path the guard cannot resolve is not a repo file it can judge. `resolve()` raises on a symlink
+  # loop, which `relative_to`'s ValueError never covered: uncaught, an ordinary write became a traceback
+  # with the rail down. Exit 0 is the answer; exit 1 is the defect.
+  PLOOP="$T11/ploop"; mkproj "$PLOOP" main
+  mkdir -p "$PLOOP/.ai-flow/artifacts/loop"
+  printf 'branch: main\nphase: **UNDERSTAND**\n' > "$PLOOP/.ai-flow/artifacts/loop/state.md"
+  ln -s b "$PLOOP/a" 2>/dev/null; ln -s a "$PLOOP/b" 2>/dev/null
+  out="$(wguard "$PLOOP" "$PLOOP/a/x.py")"; rc=$?
+  if [ "$rc" = 0 ]; then
+    ok "an unresolvable path answers like any file the guard cannot judge"
+  else
+    bad "an unresolvable path answers like any file the guard cannot judge (exit $rc)"
+  fi
+  case "$out" in
+    *Traceback*) bad "the guard spills no traceback on an unresolvable path" ;;
+    *) ok "the guard spills no traceback on an unresolvable path" ;;
+  esac
 else
   echo "  [skip] read-only rail checks (python3 unavailable)"
 fi
@@ -2865,6 +2968,113 @@ if [ -n "$WRT23" ]; then
     || bad "the writers table's archive row scopes the deletion to every checkout"
 else
   bad "the writers table's archive row scopes the deletion to every checkout (no section)"
+fi
+
+echo "== C24: a machine-read field is read where it is declared =="
+RAIL24="global/hooks/understand-write-guard.py"
+BLG24="global/protocols/backlog.md"
+
+# The paragraph that carries the rule, not the subsection around it: a section-wide grep passes on a
+# neighbour's words, and the neighbours here are the claim rules that talk about lines and fields too.
+# Emphasis marks fall wherever the prose needs them, so a phrase asserted raw can be cut in half by a
+# pair of asterisks — the same way the message below is cut by its concatenation boundary. What is
+# asserted is what the rule says, never where its typography lands.
+PH24="$(awk 'BEGIN{RS=""} /machine-read/{print; exit}' "$BLG24" | tr -s ' \n' '  ' | tr -d '*')"
+if [ -n "$PH24" ]; then
+  ok "the section that owns the state-file rules states what is machine-read"
+  miss24=""
+  printf '%s' "$PH24" | grep -qiE 'first line|first such line|first declaration' || miss24="$miss24 first"
+  printf '%s' "$PH24" | grep -qiE 'no other|nowhere else|not read|prose'         || miss24="$miss24 rest-is-prose"
+  printf '%s' "$PH24" | grep -qi  'colon'                                        || miss24="$miss24 colon"
+  printf '%s' "$PH24" | grep -qiE 'roster|STATE.md|never migrated|legacy'        || miss24="$miss24 legacy-label"
+  printf '%s' "$PH24" | grep -qiE 'Fase actual'                                  || miss24="$miss24 spanish-label"
+  # The sentence that authorises this task's accepted loss: without it the narrowing is a silent one
+  # nobody wrote down, which is the accidental silence the standing law forbids. Its four neighbours all
+  # stayed green when it was deleted, which is how it got here.
+  printf '%s' "$PH24" | grep -qiE 'declares no phase|no phase at all'            || miss24="$miss24 no-phase-consequence"
+  # What the form requires versus what it merely prefers. Both directions were unpinned: the pattern's
+  # tolerance could be narrowed and the prose's claim widened, each with the suite green.
+  printf '%s' "$PH24" | grep -qiE 'load-bearing'                                 || miss24="$miss24 load-bearing"
+  printf '%s' "$PH24" | grep -qiE 'house style|not the contract'                  || miss24="$miss24 house-style"
+  [ -z "$miss24" ] && ok "the rule states the declaration is the first such line, with its colon, and that nothing else is read" \
+                   || bad "the rule states the declaration is the first such line, with its colon, and that nothing else is read (missing:$miss24)"
+else
+  bad "the section that owns the state-file rules states what is machine-read"
+  bad "the rule states the declaration is the first such line, with its colon, and that nothing else is read (no paragraph)"
+fi
+
+# The remedy must change the thing the check names. A positive requirement, not a denylist: the message
+# names the command that records the phase — every rewording that still sends the operator to the hand
+# edit fails the second arm, and one that names nothing fails the first.
+# The message is an f-string split across source lines, so the phrase a check looks for is cut by the
+# concatenation boundary: matched raw, every arm below would pass on finding nothing. Normalised to the
+# prose the operator actually reads before anything is asserted about it.
+MSG24="$(sed -n '/^    print($/,/^    )$/p' "$RAIL24" | tr '\n' ' ' | sed 's/f"//g; s/"//g' | tr -s ' ')"
+# The remedy the operator is sent to FIRST is the one the check is about, so it is extracted rather than
+# searched for: from the trigger to the end of that sentence. Bare `plan` was matched before, which is a
+# substring of planning, plan.md and the plan protocol — a message naming no command at all passed.
+REM24="${MSG24#*truly needed}"; REM24="${REM24%%. *}"
+if [ -n "$MSG24" ] && [ -n "$REM24" ]; then
+  if printf '%s' "$REM24" | grep -q 'run the `plan` command' \
+     && printf '%s' "$REM24" | grep -qiE 'records the phase|writes the phase'; then
+    ok "the block message names the command that moves the phase"
+  else
+    bad "the block message names the command that moves the phase"
+  fi
+  # The class, not four phrasings. Scoped to the primary remedy: the wrong-sheet clause below it names a
+  # hand correction on purpose, and a ban over the whole message would forbid the case the user asked for.
+  # A denylist of exact wordings passed a rewrite that routed the operator to a hand edit verbatim.
+  if printf '%s' "$REM24" | grep -qiE 'yourself|manually|by hand|(edit|set|change|update)[^.]{0,20}the phase'; then
+    bad "the primary remedy is a command, not an edit the operator makes"
+  else
+    ok "the primary remedy is a command, not an edit the operator makes"
+  fi
+  # And the case where the sheet itself is wrong: there the command is the wrong action, and a message
+  # that names no route for it sends the operator to do the wrong thing — the defect this epic already
+  # closed once, in a smaller form.
+  if printf '%s' "$MSG24" | grep -qiE 'not the task you are working' \
+     && printf '%s' "$MSG24" | grep -q 'branch:'; then
+    ok "the block message names what to do when the sheet it read is the wrong one"
+  else
+    bad "the block message names what to do when the sheet it read is the wrong one"
+  fi
+else
+  bad "the block message names the command that moves the phase (no message)"
+  bad "the primary remedy is a command, not an edit the operator makes (no message)"
+  bad "the block message names what to do when the sheet it read is the wrong one (no message)"
+fi
+
+# The paragraph that settles which layer wins. It is its own paragraph, so the extractor above cannot
+# reach it, and a rule whose authority is unstated is a rule an editor may read as a description.
+AUTH24="$(awk 'BEGIN{RS=""} /is the authority/{print; exit}' "$BLG24" | tr -s ' \n' '  ' | tr -d '*')"
+if [ -n "$AUTH24" ] \
+   && printf '%s' "$AUTH24" | grep -qiE 'note about the enforcer|the enforcer' \
+   && printf '%s' "$AUTH24" | grep -qiE 'the pattern is the thing to correct|the rule is what'; then
+  ok "the rule is stated as the authority and the pattern as the enforcer's note"
+else
+  bad "the rule is stated as the authority and the pattern as the enforcer's note"
+fi
+
+# The operator-facing catalog row is the layer someone reads when the rail is down and the sheet looks
+# right. It spells out the branch ladder in full; the reading rule was the one thing it did not carry.
+ROW24="$(grep -m1 '^| .understand-write-guard.py.' global/hooks/README.md | tr -d '*`' | tr -s ' ')"
+if [ -n "$ROW24" ] \
+   && printf '%s' "$ROW24" | grep -qiE 'first line|first .{0,12}line' \
+   && printf '%s' "$ROW24" | grep -qiE 'no other line|any other form'; then
+  ok "the guard's catalog row carries the reading rule, not only where the phase is read from"
+else
+  bad "the guard's catalog row carries the reading rule, not only where the phase is read from"
+fi
+
+# The guard's own comment enumerates why a sheet declares no branch, and a released claim is the second
+# reason. The README row already carries it; the comment gave one reason where there are two.
+CMT24="$(awk 'BEGIN{RS=""} /claiming no branch/{print; exit}' "$RAIL24" | tr -s ' \n' '  ')"
+if [ -n "$CMT24" ] \
+   && printf '%s' "$CMT24" | grep -qiE 'before the field|predates the field' \
+   && printf '%s' "$CMT24" | grep -qiE 'released|took on another'; then
+  ok "the guard's comment names both reasons a sheet declares no branch"
+else
+  bad "the guard's comment names both reasons a sheet declares no branch"
 fi
 
 echo ""

@@ -70,8 +70,20 @@ autonomy: Guided
 - next action: [the next thing to do]
 ```
 
-**The `phase:` line is machine-read.** The Understand read-only rail parses exactly this form, so the
-phase name stays upper-case between the asterisks (`phase: **UNDERSTAND**`).
+**The `phase:` line is machine-read, and the declaration is a line — not a shape found anywhere in the
+document.** What is read is the **first** line that declares the field, and two things about that line
+are load-bearing: it begins with the label, and the label is followed by a colon. Write it as
+`phase: **UNDERSTAND**` — the asterisks and the upper-case are the house style, not the contract, and a
+reader that treats them as optional is reading correctly. No other line is read, so the rest of the
+sheet is prose and stays prose: a decision that quotes the field, a resume note that names it, a code
+block that shows the form, none of them declare anything. A sheet whose phase is written in any other
+form declares no phase at all, and a reader that finds none acts as it does on a sheet that has none.
+Two legacy labels are accepted in the same position — `Current phase:` and its Spanish twin
+`Fase actual:` — which is what a project that never migrated declares its phase with in the ledger.
+
+That rule is the authority, and the Understand read-only rail's pattern is a note about the enforcer:
+where the two disagree the rule is what the writers of the sheet and the readers with no parser go by,
+and the pattern is the thing to correct.
 
 **A checkout holds at most one sheet claiming its branch.** The `branch:` line is a claim, and the
 resolution below reads it as one: two sheets claiming the branch a checkout is on have no unique owner,

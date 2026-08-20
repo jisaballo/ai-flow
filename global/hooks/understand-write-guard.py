@@ -8,7 +8,7 @@ Reads the hook JSON on stdin; exit 2 blocks the tool call and feeds the message 
 import sys, json, re, subprocess
 from pathlib import Path
 
-PHASE_RE = re.compile(r'(?i)(fase actual|current phase|phase)\s*:?\s*\*{0,2}\s*UNDERSTAND\b')
+PHASE_RE = re.compile(r'(?i)^\s*(?:fase actual|current phase|phase)\s*:\s*\*{0,2}\s*([A-Za-z]+)')
 BRANCH_RE = re.compile(r'(?i)^\s*branch\s*:\s*(\S+)\s*$')
 
 
@@ -57,6 +57,23 @@ def sheet_branch(sheet: Path) -> str:
     return ''
 
 
+def declared_phase(source: Path) -> str:
+    """The phase a state file declares, or '' when it declares none — read the way the branch above is
+    read: the first line that declares it, and no other. The sheet is a prose document, carrying the
+    task's decisions and its resume block, so a task that discusses its own phases reproduces the field's
+    syntax as a matter of course; scanning the whole text reads that mention and raises the rail over a
+    task nobody is understanding. A later line that declares the field is a quoted example, not the
+    declaration. The accepted form is written down in the backlog protocol, State Files."""
+    try:
+        for line in source.read_text(encoding='utf-8').splitlines():
+            found = PHASE_RE.match(line)
+            if found:
+                return found.group(1).upper()
+    except Exception:
+        return ''
+    return ''
+
+
 def phase_source(root: Path, cwd: Path):
     """Which task is this checkout working? The ladder is written down in the backlog protocol,
     State Files > "Resolving the task", which the phase commands follow too; rungs 1 and 2 are
@@ -75,8 +92,10 @@ def phase_source(root: Path, cwd: Path):
             return owned[0]
         # A sheet that names another branch is another workstream's — reading it would judge this
         # checkout by a task it is not working, the very inversion this resolution exists to end.
-        # Only a sheet claiming no branch at all can still be ours: that is a project written
-        # before the field existed.
+        # Only a sheet claiming no branch at all can still be ours, for either of two reasons: a
+        # project written before the field existed, or a task whose claim was released when this
+        # checkout took on another one — `released-branch:`, which the anchored pattern above cannot
+        # read as a claim.
         unclaimed = [sheet for sheet in per_task if not sheet_branch(sheet)]
         if len(unclaimed) == 1:
             return unclaimed[0]
@@ -107,16 +126,24 @@ def main():
     if source is None:
         sys.exit(0)  # no state to read: no rail to enforce
 
-    try:
-        if not PHASE_RE.search(source.read_text(encoding='utf-8')):
-            sys.exit(0)  # any phase other than UNDERSTAND: no restriction
-    except Exception:
-        sys.exit(0)
+    if declared_phase(source) != 'UNDERSTAND':
+        sys.exit(0)  # any phase other than UNDERSTAND, or none declared: no restriction
 
     try:
-        rel = Path(file_path).resolve().relative_to(root.resolve())
-    except ValueError:
-        sys.exit(0)  # outside the repo (scratchpad, memory, ~/.claude): fine
+        # Against the directory the session declares, the same source the ledger root came from — never
+        # this process's own, which is nothing the payload describes: a relative path resolved there
+        # lands outside the project and the write is waved through, or lands at a sibling of the real
+        # one and the block names a file nobody was writing. An absolute path is unaffected, pathlib
+        # discarding the base for it.
+        rel = Path(cwd, file_path).resolve().relative_to(root.resolve())
+    except (ValueError, OSError, RuntimeError):
+        # Outside the repo (scratchpad, memory, ~/.claude): fine — and the same answer for a path that
+        # cannot be resolved at all. `resolve()` raises on a symlink loop and on an unreadable
+        # component, neither of which `relative_to`'s ValueError covers; joining the session's directory
+        # in front of a relative path made the resolved chain longer and more of it comes from outside
+        # this guard. Unresolvable means "not a repo file I can judge", which is what this branch says,
+        # and a traceback here would take the rail down while spilling on an ordinary write.
+        sys.exit(0)
 
     if rel.parts and rel.parts[0] == '.ai-flow':
         sys.exit(0)  # artifacts, STATE.md, BACKLOG.md: fine
@@ -125,8 +152,9 @@ def main():
         f"BLOCKED: the active ai-flow phase is UNDERSTAND (read-only for code), per "
         f"'{source.relative_to(root)}'. Writing '{rel}' is not allowed until the phase moves "
         f"past Understanding. Artifacts under .ai-flow/ are allowed; throwaway repro scripts go "
-        f"to the scratchpad directory. If this write is truly needed, update the phase in that "
-        f"file first (moving to PLAN/EXECUTE) or ask the user.",
+        f"to the scratchpad directory. If this write is truly needed, run the `plan` command — it "
+        f"records the phase when it enters it. If that sheet is not the task you are working, correct "
+        f"its `phase:`/`branch:` lines (writes under .ai-flow/ are allowed) — or ask the user.",
         file=sys.stderr,
     )
     sys.exit(2)
