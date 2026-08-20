@@ -475,46 +475,122 @@ echo "== C12: worktree provisioning — data in, ledger out =="
 WTI="$ROOT/template/.worktreeinclude"
 T12="$(mktemp -d)"
 trap 'rm -rf "$T12"' EXIT
-if [ -f "$WTI" ]; then
-  # git stands in for the pattern engine the product uses: same gitignore specification,
-  # no package dependency in a harness that is otherwise pure shell and git.
-  # The scratch repo must carry NO .gitignore of its own. core.excludesFile is ADDITIVE, so
-  # evaluating inside a checkout that already ignores .ai-flow/ reports every path under it as
-  # ignored no matter what the pattern file says — the file becomes untestable. Isolation is the check.
-  EV="$T12/eval"; mkdir -p "$EV"; ( cd "$EV" && $GIT init -q . >/dev/null 2>&1 )
-  selects() { ( cd "$EV" && $GIT -c core.excludesFile="$WTI" check-ignore -q --no-index "$1" ); }
 
-  miss=0
-  for f in .ai-flow/project.yml .ai-flow/product.md .ai-flow/steering/payments.md \
-           .ai-flow/codebase/CONCERNS.md .ai-flow/artifacts/current-task/plan.md; do
-    selects "$f" || { miss=$((miss+1)); echo "         not selected: $f"; }
-  done
-  [ "$miss" = 0 ] && ok "worktreeinclude selects the project data" \
-                  || bad "worktreeinclude selects the project data ($miss of 5 missing)"
+# git stands in for the pattern engine the product uses: same gitignore specification, no package
+# dependency in a harness that is otherwise pure shell and git. Anchoring and negation are git's to
+# resolve — a harness that re-implements either gets a different answer than the product does.
+#
+# THREE answers, never two. check-ignore reports a verdict with 0 (this path is selected) and 1 (it is
+# not), and a failure with anything above. Collapsing the failure into "not selected" makes every
+# verdict built on it vacuous: a git that cannot run then reads as "the ledger stays behind", which is
+# the very answer the guard exists to earn rather than assume.
+#
+# The evaluator must be a repository with NO .gitignore of its own. core.excludesFile is ADDITIVE, so
+# evaluating inside a checkout that already ignores .ai-flow/ reports every path under it as ignored no
+# matter what the pattern file says, and the file becomes untestable. Isolation is the check.
+#
+# The caller establishes that the pattern file exists: a missing one is not a probe failure to git,
+# which reads it as an empty set of patterns and answers "not selected" for everything.
+wti_probe() {  # $1 = evaluator repo, $2 = pattern file, $3 = path -> 0 selected, 1 not, 2 unanswerable
+  # The pattern set is asserted readable and non-empty before anything is concluded from it — the same
+  # law the path list below carries, applied to the other input. git does not report an unreadable or
+  # empty pattern file as a failure: it reads it as an empty set of patterns and answers "not selected"
+  # for every path, so "the ledger stays behind" comes back established from a file nobody read.
+  # Existence is not readability, and neither is content.
+  { [ -r "$2" ] && [ -s "$2" ]; } || return 2
+  ( cd "$1" 2>/dev/null || exit 2
+    $GIT -c core.excludesFile="$2" check-ignore -q --no-index "$3" ) >/dev/null 2>&1
+  case $? in 0) return 0 ;; 1) return 1 ;; *) return 2 ;; esac
+}
 
-  leak=0
-  for f in .ai-flow/BACKLOG.md .ai-flow/STATE.md .ai-flow/decisions-global.md \
-           .ai-flow/archive/CHANGELOG.md; do
-    selects "$f" && { leak=$((leak+1)); echo "         ledger would travel: $f"; }
-  done
-  [ "$leak" = 0 ] && ok "worktreeinclude leaves the ledger behind" \
-                  || bad "worktreeinclude leaves the ledger behind ($leak ledger paths selected)"
-
-  # A pattern that names something git already tracks is inert: the product only ever
-  # considers untracked-and-ignored paths as candidates to copy.
-  inert=0
-  while IFS= read -r pat; do
-    case "$pat" in ''|'#'*) continue ;; esac
-    if [ -n "$( cd "$ROOT" && $GIT ls-files -- "$pat" 2>/dev/null )" ]; then
-      inert=$((inert+1)); echo "         names tracked files: $pat"
+# The classification is a function because an assertion can execute a function and cannot execute a
+# shape inlined in a verdict. Grepping the harness for the message a verdict would print proves the
+# message exists, never that any path reaches it — and the arm that counts the probe's third answer is
+# exactly such a path. `want` is which answer the caller expects for these paths: `in` for the project
+# data that must travel, `out` for the ledger that must not.
+wti_classify() {  # $1 = evaluator, $2 = pattern file, $3 = in|out, $4.. = paths
+                  # -> echoes "clean" | "unanswered N" | "wrong N"; diagnostics to stderr
+  local ev="$1" pf="$2" want="$3"; shift 3
+  local wrong=0 un=0 p rc
+  for p in "$@"; do
+    wti_probe "$ev" "$pf" "$p"; rc=$?
+    if [ "$rc" = 2 ]; then
+      un=$((un+1)); echo "         unanswered: $p" >&2
+    elif [ "$want" = in ] && [ "$rc" != 0 ]; then
+      wrong=$((wrong+1)); echo "         not selected: $p" >&2
+    elif [ "$want" = out ] && [ "$rc" = 0 ]; then
+      wrong=$((wrong+1)); echo "         ledger would travel: $p" >&2
     fi
-  done < "$WTI"
-  [ "$inert" = 0 ] && ok "worktreeinclude names only ignored paths" \
-                   || bad "worktreeinclude names only ignored paths ($inert inert patterns)"
+  done
+  if   [ "$un" != 0 ];    then printf 'unanswered %s\n' "$un"
+  elif [ "$wrong" != 0 ]; then printf 'wrong %s\n' "$wrong"
+  else printf 'clean\n'; fi
+}
+
+# Does this pattern file select any path git already tracks? Asked of the PATHS, never of the patterns:
+# a gitignore pattern is not a pathspec, and reading it as one silently changes the question. `/x` is a
+# legal anchored pattern and an illegal pathspec, `!x` names nothing at all — both answer empty, and an
+# empty answer read as a clean verdict is how a real mistake passes. Handing the file to git instead
+# also settles negation without a rule of our own: a negation only ever subtracts from the travel set,
+# so it can never be the reason a tracked path is selected.
+#
+# The path list is asserted non-empty before anything is concluded from it — a guard whose extractor
+# returned nothing otherwise passes every check it makes.
+wti_tracked_leak() {  # $1 = evaluator repo, $2 = pattern file -> 0 a tracked path is selected, 1 none, 2 unanswerable
+  local list
+  list="$( $GIT -C "$ROOT" ls-files 2>/dev/null )" || return 2
+  [ -n "$list" ] || return 2
+  printf '%s\n' "$list" \
+    | ( cd "$1" 2>/dev/null || exit 2
+        $GIT -c core.excludesFile="$2" check-ignore -q --no-index --stdin ) >/dev/null 2>&1
+  case $? in 0) return 0 ;; 1) return 1 ;; *) return 2 ;; esac
+}
+
+if [ -r "$WTI" ] && [ -s "$WTI" ]; then
+  EV="$T12/eval"; mkdir -p "$EV"; ( cd "$EV" && $GIT init -q . >/dev/null 2>&1 )
+
+  # Each verdict acts on the probe's third answer itself rather than leaning on its neighbour going
+  # red at the same time. The classification is executed through wti_classify, so an assertion can
+  # reach the arm that counts that answer instead of grepping for the message it would print.
+  r12="$(wti_classify "$EV" "$WTI" in .ai-flow/project.yml .ai-flow/product.md \
+         .ai-flow/steering/payments.md .ai-flow/codebase/CONCERNS.md \
+         .ai-flow/artifacts/current-task/plan.md)"
+  case "$r12" in
+    clean)       ok  "worktreeinclude selects the project data" ;;
+    unanswered*) bad "worktreeinclude selects the project data (the probe could not answer for ${r12#unanswered } of 5 paths)" ;;
+    *)           bad "worktreeinclude selects the project data (${r12#wrong } of 5 missing)" ;;
+  esac
+
+  r12l="$(wti_classify "$EV" "$WTI" out .ai-flow/BACKLOG.md .ai-flow/STATE.md \
+          .ai-flow/decisions-global.md .ai-flow/archive/CHANGELOG.md)"
+  case "$r12l" in
+    clean)       ok  "worktreeinclude leaves the ledger behind" ;;
+    unanswered*) bad "worktreeinclude leaves the ledger behind (the probe could not answer for ${r12l#unanswered } of 4 paths)" ;;
+    *)           bad "worktreeinclude leaves the ledger behind (${r12l#wrong } ledger paths selected)" ;;
+  esac
+
+  # A pattern that names something git already tracks is inert: the product only ever considers
+  # untracked-and-ignored paths as candidates to copy, so the author's intent silently does nothing.
+  wti_tracked_leak "$EV" "$WTI"
+  case $? in
+    1) ok "worktreeinclude names only ignored paths" ;;
+    0) bad "worktreeinclude names only ignored paths (a versioned path is selected)"
+       # The diagnostic answers the same three ways the verdict does: a path the probe could not
+       # judge is not a path that came back clean, and printing nothing for it would name the
+       # offenders as though the list were complete.
+       $GIT -C "$ROOT" ls-files | while IFS= read -r f; do
+         wti_probe "$EV" "$WTI" "$f"
+         case $? in
+           0) echo "         names a tracked file: $f" ;;
+           2) echo "         unanswered while naming offenders: $f" ;;
+         esac
+       done ;;
+    *) bad "worktreeinclude names only ignored paths (the probe could not answer)" ;;
+  esac
 else
-  bad "worktreeinclude selects the project data (.worktreeinclude missing)"
-  bad "worktreeinclude leaves the ledger behind (.worktreeinclude missing)"
-  bad "worktreeinclude names only ignored paths (.worktreeinclude missing)"
+  bad "worktreeinclude selects the project data (.worktreeinclude missing, unreadable or empty)"
+  bad "worktreeinclude leaves the ledger behind (.worktreeinclude missing, unreadable or empty)"
+  bad "worktreeinclude names only ignored paths (.worktreeinclude missing, unreadable or empty)"
 fi
 
 # The dogfooding root copies and the shipped template copies must not drift: the checks above prove
@@ -684,18 +760,30 @@ grep -qi 'branch' global/hooks/README.md                               || sweep=
 [ -z "$sweep" ] && ok "no engine file routes per-task state to the ledger" \
                || bad "no engine file routes per-task state to the ledger (stale:$sweep)"
 
+# One fact with two halves, and each copy judged on both of them: the manual names the task's own
+# sheet, AND it no longer routes step progress to the roster. The shipped copy gets the negative half
+# from the sweep above. The live twin was getting the positive half alone — so a manual that names the
+# new path while still carrying the old line passed, and the copy that governs real sessions is the one
+# no tool can repair: the installer writes it only when absent and the drift guard excludes it as
+# user-owned (global/hooks/drift-check.sh). Half a fact about that file is the half that matters least.
+manstate() {  # $1 = a manual -> 0 when it routes step progress to the task's own sheet and nowhere else
+  grep -q 'artifacts/T-XXX/state.md' "$1" \
+    && ! grep -q 'Update STATE.md with step progress' "$1"
+}
 twin="$HOME/.claude/CLAUDE.md"
-if grep -q 'artifacts/T-XXX/state.md' global/CLAUDE.md; then
+if manstate global/CLAUDE.md; then
+  ok "the shipped manual sends step progress to the task sheet"
+  # Each copy is judged on itself, and only when it is there to open: a verdict about a manual the
+  # host does not own blames a reader for a file they never had.
   if [ -f "$twin" ]; then
-    grep -q 'artifacts/T-XXX/state.md' "$twin" \
-      && ok "both manual twins send step progress to the task sheet" \
-      || bad "both manual twins send step progress to the task sheet (the live twin is stale — port the edit by hand, nothing distributes ~/.claude/CLAUDE.md)"
+    manstate "$twin" \
+      && ok "the live twin sends step progress to the task sheet" \
+      || bad "the live twin sends step progress to the task sheet (stale — port the edit by hand, nothing distributes ~/.claude/CLAUDE.md)"
   else
     echo "  [skip] live CLAUDE.md twin absent — the shipped one names the task sheet"
-    ok "the shipped manual sends step progress to the task sheet"
   fi
 else
-  bad "both manual twins send step progress to the task sheet"
+  bad "the shipped manual sends step progress to the task sheet"
 fi
 
 # --- the rail resolves its own task by branch ----------------------------
@@ -3076,6 +3164,231 @@ if [ -n "$CMT24" ] \
 else
   bad "the guard's comment names both reasons a sheet declares no branch"
 fi
+
+echo "== C25: a guard tells a failed probe from a clean answer =="
+# Three guards of this harness reported success in the situations they were written to catch. Each
+# assertion below states the fact it establishes; a guard whose probe cannot answer must fail naming
+# the probe, because in a report a clean verdict and an unanswered question read identically.
+T25="$(mktemp -d)"
+trap 'rm -rf "$T12" "$T13" "$T25"' EXIT   # extended, never replaced — see C21's note on the leak
+
+# --- the probe answers three ways ----------------------------------------
+# 0 = the pattern file selects this path, 1 = it does not, 2 = the probe could not answer.
+# check-ignore answers 0 and 1 on a verdict and 128/129 on a fatal error; collapsing the fatal into
+# "not selected" is the defect — a git that cannot run reads as "the ledger stays behind".
+if declare -f wti_probe >/dev/null 2>&1; then
+  mkdir -p "$T25/ev"; ( cd "$T25/ev" && $GIT init -q . )
+  printf '.ai-flow/product.md\n' > "$T25/pat"
+  wti_probe "$T25/ev" "$T25/pat" ".ai-flow/product.md"; a25=$?
+  wti_probe "$T25/ev" "$T25/pat" ".ai-flow/BACKLOG.md"; b25=$?
+  wti_probe "$T25/absent" "$T25/pat" ".ai-flow/product.md"; c25=$?
+  # A pattern file that is present but says nothing is not a verdict either: git reads it as an empty
+  # pattern set and answers "not selected" for every path, so a clean answer would come back
+  # established from a file nobody read.
+  : > "$T25/pat-empty"
+  wti_probe "$T25/ev" "$T25/pat-empty" ".ai-flow/product.md"; d25e=$?
+  [ "$a25" = 0 ] && [ "$b25" = 1 ] && [ "$c25" = 2 ] && [ "$d25e" = 2 ] \
+    && ok "the probe tells selected from not-selected from unanswerable" \
+    || bad "the probe tells selected from not-selected from unanswerable (got $a25/$b25/$c25/$d25e, want 0/1/2/2)"
+else
+  bad "the probe tells selected from not-selected from unanswerable (no three-valued probe exists)"
+fi
+
+# --- both verdicts that read the probe act on the third answer ------------
+# The leak verdict is the guard this task names; the data verdict beside it is what covers the leak
+# today, and a verdict that collapses the third answer misattributes its own failure — it reports
+# "the project data is not selected" when the truth is "git did not answer".
+SELF25="$ROOT/test/validate.sh"
+# Executed, never grepped. The message a verdict would print can be found in the file while nothing
+# reaches it: the arm that counts the probe's third answer is such a path, and deleting it leaves the
+# message in place and the suite green. So the classification runs, and it runs in BOTH directions —
+# every arm asserted by the answer it must give and by the answer it must not.
+if declare -f wti_classify >/dev/null 2>&1; then
+  mkdir -p "$T25/ev3" "$T25/notrepo"; ( cd "$T25/ev3" && $GIT init -q . )
+  printf '.ai-flow/product.md\n' > "$T25/pat3"
+  cls25=""
+  # The classifier's diagnostics name a real offender; a fixture that is MEANT to answer wrong is not
+  # one, so these calls are read for their answer and their stderr is dropped.
+  wti_classify_q() { wti_classify "$@" 2>/dev/null; }
+  add25() { [ "$1" = "$2" ] || cls25="$cls25 [want=$2 got=$1: $3]"; }
+  add25 "$(wti_classify_q "$T25/ev3" "$T25/pat3" out .ai-flow/BACKLOG.md)"  "clean"        "a path no pattern selects is not a leak"
+  add25 "$(wti_classify_q "$T25/ev3" "$T25/pat3" out .ai-flow/product.md)"  "wrong 1"      "a selected ledger path is a leak"
+  add25 "$(wti_classify_q "$T25/ev3" "$T25/pat3" in  .ai-flow/product.md)"  "clean"        "a selected data path is what was wanted"
+  add25 "$(wti_classify_q "$T25/ev3" "$T25/pat3" in  .ai-flow/BACKLOG.md)"  "wrong 1"      "an unselected data path is a miss"
+  add25 "$(wti_classify_q "$T25/notrepo" "$T25/pat3" out .ai-flow/BACKLOG.md)" "unanswered 1" "git fatal inside a real directory is unanswerable"
+  add25 "$(wti_classify_q "$T25/absent"  "$T25/pat3" in  .ai-flow/product.md)" "unanswered 1" "an evaluator that is not there is unanswerable"
+  [ -z "$cls25" ] \
+    && ok "every verdict reading the probe reports an unanswered question instead of a clean one" \
+    || bad "every verdict reading the probe reports an unanswered question instead of a clean one ($cls25 )"
+else
+  bad "every verdict reading the probe reports an unanswered question instead of a clean one (no classifier to execute)"
+fi
+
+# The classification above is executed; where each verdict SENDS it is a second fact, and the two are
+# complements rather than substitutes. Executing the classifier catches the deletion of the arm that
+# counts the third answer; only reading the block catches a verdict that receives that answer and
+# announces success anyway. Each verdict is named, because a count survives the loss of any one.
+BLOCK25="$(awk '/^echo "== C12:/{f=1} f && /^# --- delivery to an adopting project/{exit} f' "$SELF25")"
+route25=""
+for v25 in "selects the project data" "leaves the ledger behind" "names only ignored paths"; do
+  printf '%s\n' "$BLOCK25" \
+    | grep -qE "bad \"worktreeinclude $v25 \(the probe could not answer" \
+    || route25="$route25 [$v25]"
+done
+[ -z "$route25" ] \
+  && ok "every verdict sends an unanswered probe to a failure, not to a pass" \
+  || bad "every verdict sends an unanswered probe to a failure, not to a pass (missing:$route25)"
+
+# --- a pattern is judged under the specification its own file declares ----
+# The file declares gitignore syntax, and git resolves anchoring and negation; reading each pattern
+# as a pathspec does not. An anchored pattern naming a versioned path answers `fatal:` on stderr —
+# which the guard silenced — leaving an empty result that read as a clean verdict. A negation only
+# subtracts from the travel set, so it is correctly never a leak; git decides that, not the harness.
+if declare -f wti_tracked_leak >/dev/null 2>&1; then
+  mkdir -p "$T25/ev2"; ( cd "$T25/ev2" && $GIT init -q . )
+  printf '/install.sh\n' > "$T25/anchored"
+  printf '!install.sh\n' > "$T25/negated"
+  wti_tracked_leak "$T25/ev2" "$T25/anchored"; d25=$?
+  wti_tracked_leak "$T25/ev2" "$T25/negated";  e25=$?
+  wti_tracked_leak "$T25/absent" "$T25/anchored"; g25=$?
+  # The production pattern file is deliberately NOT in this set: C12 owns the verdict about it, and
+  # judging it here would report a real regression in that file as a broken mechanism.
+  [ "$d25" = 0 ] && [ "$e25" = 1 ] && [ "$g25" = 2 ] \
+    && ok "an anchored pattern naming a versioned path is reported and a negation is not" \
+    || bad "an anchored pattern naming a versioned path is reported and a negation is not (got $d25/$e25/$g25, want 0/1/2)"
+else
+  bad "an anchored pattern naming a versioned path is reported and a negation is not (patterns are still read as pathspecs)"
+fi
+
+# --- both copies of the manual are judged on the same pair ----------------
+# The distributed copy is judged on two halves: it names the task's own sheet, and it no longer
+# routes step progress to the roster. The personal copy — the only one no tool can repair — was
+# judged on the first half alone, so a manual holding both wordings passed.
+if declare -f manstate >/dev/null 2>&1; then
+  cp global/CLAUDE.md "$T25/man-current"
+  cp global/CLAUDE.md "$T25/man-stale"
+  printf -- '- Update STATE.md with step progress\n' >> "$T25/man-stale"
+  # A third fixture, and it is what makes the conjunction's FIRST half lethal: the two above both
+  # name the task sheet, so between them they discriminate the negative half only — drop the positive
+  # grep and both still answer as expected. Each half of a pair needs a fixture that dies on it alone.
+  sed 's#artifacts/T-XXX/state.md#artifacts/somewhere-else.md#g' global/CLAUDE.md > "$T25/man-nopath"
+  if manstate "$T25/man-current" && ! manstate "$T25/man-stale" && ! manstate "$T25/man-nopath"; then
+    ok "a manual holding both wordings fails the pair and one holding only the new passes it"
+  else
+    bad "a manual holding both wordings fails the pair and one holding only the new passes it"
+  fi
+else
+  bad "a manual holding both wordings fails the pair (no two-sided predicate exists)"
+fi
+
+# --- with no personal manual, the verdict claims only what it opened ------
+# A verdict about a file the host does not have is a verdict about nothing. The skip stays a skip,
+# and the pair is never reported as established on the strength of one copy.
+TWINBLK25="$(awk '/^manstate\(\)/{f=1} f && /^# --- the rail resolves/{exit} f' "$SELF25")"
+# The branch that runs on a host with no personal manual. It must announce the skip and carry no
+# verdict at all: a verdict there would be a claim about a file nobody opened, and counting it would
+# let a green run read as proof that the two copies agree.
+ELSE25="$(printf '%s\n' "$TWINBLK25" | awk '/^  else$/{f=1;next} f && /^  fi$/{exit} f')"
+if printf '%s\n' "$TWINBLK25" | grep -q 'if \[ -f "$twin" \]' \
+   && printf '%s' "$ELSE25" | grep -q 'skip' \
+   && ! printf '%s' "$ELSE25" | grep -qE 'ok "|bad "'; then
+  ok "with no personal manual the verdict claims the distributed copy only"
+else
+  bad "with no personal manual the verdict claims the distributed copy only"
+fi
+
+echo "== C26: the claim line's form is written where it is read and pinned where it is checked =="
+# The sibling of the phase declaration, and the same defect one field over: the reader was already
+# correct and nothing stopped it being reverted with the suite green. These two fixtures discriminate
+# by construction — each names a different file, and returns a different exit code, under the reading
+# it forbids than under the reading the rule states.
+if [ "$PY3" = 1 ]; then
+  # A later mention is not the declaration. The claiming sheet names another branch and its prose
+  # quotes this one; a whole-file reader resolves that sheet (phase EXECUTE, no block), a
+  # first-line reader falls to the lone unclaimed sheet (phase UNDERSTAND, blocked and named).
+  F26A="$T25/f26a"; mkproj "$F26A" main
+  mkdir -p "$F26A/.ai-flow/artifacts/elsewhere" "$F26A/.ai-flow/artifacts/lone"
+  # The later mention must itself begin with the label, or no reader would match it and the fixture
+  # discriminates nothing: a mention inside a sentence is invisible to a whole-file reader too. A
+  # fenced block showing the form is the shape a real sheet grows — the phase fixtures above use it.
+  { printf '# Task state\n\nbranch: other\nphase: **EXECUTE**\n\n## Decisions\n\n'
+    printf -- '- the claim released here is quoted below, and quoting is not claiming:\n\n'
+    printf '```\nbranch: main\n```\n'
+  } > "$F26A/.ai-flow/artifacts/elsewhere/state.md"
+  printf '# Task state\n\nphase: **UNDERSTAND**\n' > "$F26A/.ai-flow/artifacts/lone/state.md"
+  out="$(wguard "$F26A" "$F26A/app.txt")"; rc=$?
+  if [ "$rc" = 2 ]; then
+    case "$out" in
+      *"artifacts/lone/state.md"*) ok "a later mention of the claim field is not the declaration" ;;
+      *) bad "a later mention of the claim field is not the declaration (blocked, but named another file)" ;;
+    esac
+  else
+    bad "a later mention of the claim field is not the declaration (exit $rc)"
+  fi
+
+  # An annotated value declares no claim. Beside a second unclaimed sheet the strict reading has no
+  # lone one to fall back on, so it reaches the ledger; a first-token reading would claim the branch
+  # and answer with a sheet whose phase raises no rail at all.
+  F26B="$T25/f26b"; mkproj "$F26B" main
+  mkdir -p "$F26B/.ai-flow/artifacts/annotated" "$F26B/.ai-flow/artifacts/second"
+  printf 'Current phase: **UNDERSTAND**\n' > "$F26B/.ai-flow/STATE.md"
+  printf '# Task state\n\nbranch: main (paused)\nphase: **EXECUTE**\n' > "$F26B/.ai-flow/artifacts/annotated/state.md"
+  printf '# Task state\n\nphase: **EXECUTE**\n' > "$F26B/.ai-flow/artifacts/second/state.md"
+  out="$(wguard "$F26B" "$F26B/app.txt")"; rc=$?
+  if [ "$rc" = 2 ]; then
+    case "$out" in
+      *".ai-flow/STATE.md"*) ok "an annotated value declares no claim" ;;
+      *) bad "an annotated value declares no claim (blocked, but named another file)" ;;
+    esac
+  else
+    bad "an annotated value declares no claim (exit $rc)"
+  fi
+  # The colon is declared load-bearing by the prose, so it is load-bearing in the reader too. Same
+  # shape as the fixture above: beside a second unclaimed sheet a colonless line leaves no lone sheet
+  # to fall back on, so the ledger answers; a reader that treated the colon as optional would claim
+  # the branch and answer with a sheet whose phase raises no rail.
+  F26C="$T25/f26c"; mkproj "$F26C" main
+  mkdir -p "$F26C/.ai-flow/artifacts/nocolon" "$F26C/.ai-flow/artifacts/other2"
+  printf 'Current phase: **UNDERSTAND**\n' > "$F26C/.ai-flow/STATE.md"
+  printf '# Task state\n\nbranch main\nphase: **EXECUTE**\n' > "$F26C/.ai-flow/artifacts/nocolon/state.md"
+  printf '# Task state\n\nphase: **EXECUTE**\n' > "$F26C/.ai-flow/artifacts/other2/state.md"
+  out="$(wguard "$F26C" "$F26C/app.txt")"; rc=$?
+  if [ "$rc" = 2 ]; then
+    case "$out" in
+      *".ai-flow/STATE.md"*) ok "a claim written without its colon declares no claim" ;;
+      *) bad "a claim written without its colon declares no claim (blocked, but named another file)" ;;
+    esac
+  else
+    bad "a claim written without its colon declares no claim (exit $rc)"
+  fi
+else
+  echo "  [skip] C26 needs python3 to run the rail"
+fi
+
+# --- the rule states it where a reader with no parser looks ---------------
+# T-020's law: a rule stated as one reader's implementation detail is not stated. The claim block is
+# where a person looks, fourteen lines below the paragraph that does this for the phase field.
+# Normalised before anything is asserted about it: emphasis marks and a wrapped source line both cut
+# the phrase a check looks for, and in both directions — a requirement that is met reports failure, a
+# veto that finds nothing reports success. What is asserted here is content, never typography.
+# Bounded to the paragraph itself, not to the whole section: an extractor spanning its neighbours
+# lets a phrase from an adjacent paragraph satisfy a check about this one. And a phrase from EVERY
+# sentence is pinned — pinning three keywords inside two sentences leaves the rest deletable with the
+# suite green, which is a rule half-stated reported as stated.
+CLAIM26="$(awk '/line is machine-read on the same terms/{f=1} f && /^$/{exit} f' \
+  "$ROOT/global/protocols/backlog.md" | tr -d '*`' | tr -s ' \n' '  ')"
+miss26=""
+[ -n "$CLAIM26" ] || miss26="$miss26 paragraph-absent"
+printf '%s' "$CLAIM26" | grep -qi 'machine-read'                     || miss26="$miss26 machine-read"
+printf '%s' "$CLAIM26" | grep -qiE 'first line that declares'        || miss26="$miss26 first-line"
+printf '%s' "$CLAIM26" | grep -qi 'colon'                            || miss26="$miss26 colon"
+printf '%s' "$CLAIM26" | grep -qiE 'single token|one token'           || miss26="$miss26 single-token"
+printf '%s' "$CLAIM26" | grep -qi 'branch: main (paused)'             || miss26="$miss26 annotated-example"
+printf '%s' "$CLAIM26" | grep -qi 'no other line is read'             || miss26="$miss26 no-other-line"
+printf '%s' "$CLAIM26" | grep -qiE 'any other form declares no branch' || miss26="$miss26 any-other-form"
+[ -z "$miss26" ] \
+  && ok "the claim block states what is load-bearing about the line" \
+  || bad "the claim block states what is load-bearing about the line (missing:$miss26)"
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"

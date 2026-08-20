@@ -93,6 +93,15 @@ checkout, in the same act**. The writer sits at the claim and nowhere else: that
 reader would break, and an obligation placed at any other moment is one that gets forgotten while the
 sheet it protects is already unreadable.
 
+**The `branch:` line is machine-read on the same terms as the phase line above.** What is read is the
+**first** line that declares the field, and two things about that line are load-bearing: it begins with
+the label, and the label is followed by a colon. The value is a **single token** — a branch name and
+nothing else — so `branch: main (paused)` declares no claim at all: a sheet that means to pause renames
+the line rather than annotating it. No other line is read, so a decision that quotes a branch or a code
+block that shows the form claims nothing. A sheet whose claim is written in any other form declares no
+branch, and the resolution below answers for it exactly as it does for a sheet that names none — which
+is silent by construction, so the accepted form is written here rather than left to the pattern.
+
 A released claim is not a deleted one. The sheet keeps its papers and keeps the branch it belongs to,
 in a field the rail cannot mistake for a claim:
 
