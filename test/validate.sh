@@ -2103,8 +2103,10 @@ fi
 # Fact 8 — both report templates carry the verdict, and both branches of it. A slot with only the clean
 # branch is the mutation that makes a dirty run unreportable while every other check stays green.
 TPL_OK=1
+# The paragraph is the boundary, not a fixed line count: a slot that grew by one sentence pushed the
+# verdict out of a five-line window and failed this on where the prose wraps rather than on the fact.
 for t in $(grep -n '^\*\*Audited\*\*' "$VP" | cut -d: -f1); do
-  BLK="$(sed -n "${t},$((t + 4))p" "$VP" | tr '\n' ' ')"
+  BLK="$(awk -v s="$t" 'NR>=s{ if (NR>s && $0 ~ /^[[:space:]]*$/) exit; buf=buf" "$0 } END{print buf}' "$VP")"
   printf '%s' "$BLK" | grep -qiE 'left as (it was )?found|working copy unchanged' || TPL_OK=0
   printf '%s' "$BLK" | grep -qiE 'was not|otherwise|restored' || TPL_OK=0
 done
@@ -3389,6 +3391,168 @@ printf '%s' "$CLAIM26" | grep -qiE 'any other form declares no branch' || miss26
 [ -z "$miss26" ] \
   && ok "the claim block states what is load-bearing about the line" \
   || bad "the claim block states what is load-bearing about the line (missing:$miss26)"
+
+echo "== C27: verifying measures from a published trunk =="
+VP27="global/protocols/verify.md"
+VS27="global/skills/verify/SKILL.md"
+EP27="global/protocols/execute.md"
+
+# Steps resolved by CONTENT, not by number: moving a step renumbers every step after it, and an
+# assertion that dies to renumbering tests the numbering rather than the fact. Same reason as C14's.
+vsn27() { grep -nE "^[0-9]+\. \*\*$1" "$VS27" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/'; }
+NG27="$(vsn27 'Gather the task diff')"
+NA27="$(vsn27 'Criterion audit')"
+
+# The one definition every consumer reads, bounded at the next heading and fence-aware, then stripped
+# of emphasis and rewrapped: an extractor that can pass or fail on where a line wraps or on a pair of
+# asterisks is asserting typography, not content.
+TD27="$(awk '/^## The Task Diff/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^#+ /){f=0} f' "$VP27" \
+        | tr -d '*`' | tr -s ' \n' '  ')"
+
+# A1 — the rule itself, in the section that owns the base. Asserted on a non-empty extractor first:
+# a section that failed to extract satisfies no requirement and would otherwise report as a clean miss.
+m27=""
+[ -n "$TD27" ] || m27="$m27 section-absent"
+printf '%s' "$TD27" | grep -qiE 'published trunk'                  || m27="$m27 published-trunk"
+printf '%s' "$TD27" | grep -qiE 'publishing precedes verifying'    || m27="$m27 rule"
+printf '%s' "$TD27" | grep -qiE 'removes the overlap'              || m27="$m27 remedy"
+[ -z "$m27" ] \
+  && ok "the task-diff definition states that verifying measures from a published trunk" \
+  || bad "the task-diff definition states that verifying measures from a published trunk (missing:$m27)"
+
+# A3 — the behaviour on a trunk that is behind, both halves. A guard that only reads the naming half
+# passes on a rule that names the lag and then refuses to run, which is the outcome the user rejected.
+n27=""
+[ -n "$TD27" ] || n27="$n27 section-absent"
+printf '%s' "$TD27" | grep -qiE 'ahead of its remote'                     || n27="$n27 count"
+printf '%s' "$TD27" | grep -qiE 'publish'                                 || n27="$n27 remedy"
+printf '%s' "$TD27" | grep -qiE 'continues|never refuses|does not refuse' || n27="$n27 continues"
+[ -z "$n27" ] \
+  && ok "a lagging trunk is named with its count and its remedy, and the audit continues" \
+  || bad "a lagging trunk is named with its count and its remedy, and the audit continues (missing:$n27)"
+
+# A4 — the silence AND what triggers it. A bare 'no lag' substring is satisfied by a silence attached
+# to any condition at all: the review rewrote the trigger to its opposite — collapsing "no lag is
+# possible here" into "measured, found nothing", the distinction the manifest calls load-bearing — and
+# this stayed green. The sentence carrying the silence is extracted and the triggers read inside it.
+S4_27="$(printf '%s' "$TD27" | grep -o 'no lag[^.]*\.' | head -1)"
+q27=""
+[ -n "$S4_27" ] || q27="$q27 sentence-absent"
+printf '%s' "$S4_27" | grep -qi 'trunk is current'  || q27="$q27 trunk-current"
+printf '%s' "$S4_27" | grep -qi 'no remote'         || q27="$q27 no-remote"
+printf '%s' "$S4_27" | grep -qi 'no local branch'   || q27="$q27 no-local-branch"
+printf '%s' "$S4_27" | grep -qi 'no base resolved'  || q27="$q27 no-base"
+[ -z "$q27" ] \
+  && ok "the silences name what triggers each of them" \
+  || bad "the silences name what triggers each of them (missing:$q27)"
+
+# A2 — the measurement lives where the base is already resolved, and is therefore made before anything
+# is judged. Two facts: the command is there, and the gather step precedes the audit step. The order is
+# over step INDEXES, which a renumbering-without-moving cannot fake.
+G27="$([ -n "$NG27" ] && nstep "$VS27" "$NG27")"
+o27=""
+[ -n "$G27" ] || o27="$o27 step-absent"
+# The range is what discriminates. The step already runs rev-list and already names
+# refs/remotes/origin (that is how the base is resolved), so presence greps for either would be
+# satisfied by the text as it stands today and would report a lag nobody computes.
+printf '%s' "$G27" | grep -qE 'refs/remotes/origin/[^ ]*\.\.refs/heads/' || o27="$o27 lag-range"
+printf '%s' "$G27" | grep -qF 'rev-list'                                  || o27="$o27 rev-list"
+{ [ -n "$NG27" ] && [ -n "$NA27" ] && [ "$NG27" -lt "$NA27" ]; } || o27="$o27 order"
+# The commands are half the step; what to do with the number is the other half, and the review deleted
+# every branch of it with all six assertions still green. Each outcome is required by name.
+printf '%s' "$G27" | grep -qF 'rev-parse --verify'                        || o27="$o27 ref-check"
+printf '%s' "$G27" | grep -qiE 'continues|never refuses'                  || o27="$o27 continue-branch"
+printf '%s' "$G27" | grep -qi 'no lag line'                               || o27="$o27 silence-branch"
+printf '%s' "$G27" | grep -qi 'branch under audit'                        || o27="$o27 own-work-branch"
+[ -z "$o27" ] \
+  && ok "the skill determines the trunk's lag where it resolves the base" \
+  || bad "the skill determines the trunk's lag where it resolves the base (missing:$o27)"
+
+# A6 — counted, not merely present: a template check that finds its fact once cannot tell one template
+# carrying it from two. Read off non-comment lines, the shape C14 arrived at after a commented-out
+# fallback line satisfied the same check.
+TL27="$(awk '
+  /^```/ {
+    if (inf) {
+      if (seen) { gsub(/[[:space:]]+/, " ", s); total++; if (tolower(s) ~ /ahead of its remote/) good++ }
+      seen=0; s=""
+    }
+    inf=1-inf; next
+  }
+  inf {
+    if ($0 ~ /# Verify: T-XXX/) seen=1
+    if ($0 ~ /^[[:space:]]*<!--/) next
+    s = s " " $0
+  }
+  END { print (good+0) "/" (total+0) }
+' "$VP27")"
+[ "$TL27" = "2/2" ] \
+  && ok "both verify.md templates record the trunk's lag beside the base" \
+  || bad "both verify.md templates record the trunk's lag beside the base ($TL27)"
+
+# A5 — the sentence the branch-scoped task diff falsified, repaired. Positive requirement first,
+# because what bounds a statement is the form it must carry; the one negative is aimed at the exact
+# claim that went false, not at a list of wordings that might.
+PR27="$(awk '/^## Code Comments & Provenance/{f=1;next} /^## /{f=0} f' "$EP27" | tr -d '*`' | tr -s ' \n' '  ')"
+p27=""
+[ -n "$PR27" ] || p27="$p27 section-absent"
+printf '%s' "$PR27" | grep -qiE 'task diff'                     || p27="$p27 scope"
+printf '%s' "$PR27" | grep -qiE 'publish'                       || p27="$p27 publishing"
+printf '%s' "$PR27" | grep -qiE 'until it is published|unpublished' || p27="$p27 condition"
+printf '%s' "$PR27" | grep -qiE 'on new work only'              && p27="$p27 stale-claim"
+[ -z "$p27" ] \
+  && ok "the provenance rule states the reach the grep actually has" \
+  || bad "the provenance rule states the reach the grep actually has (missing:$p27)"
+
+
+# A7 — the ordinary run, which the contract singles out as the one that must not change. Counted over
+# both templates for the same reason A6 is: one template carrying the escape and the other silent is
+# the half-fix, and a slot enumerating only the branch where the notice fires prints "0 commit(s)
+# ahead — publish them" on every clean run.
+TC27="$(awk '
+  /^```/ {
+    if (inf) {
+      if (seen) { gsub(/[[:space:]]+/, " ", s); total++; if (tolower(s) ~ /trunk is current/) good++ }
+      seen=0; s=""
+    }
+    inf=1-inf; next
+  }
+  inf {
+    if ($0 ~ /# Verify: T-XXX/) seen=1
+    if ($0 ~ /^[[:space:]]*<!--/) next
+    s = s " " $0
+  }
+  END { print (good+0) "/" (total+0) }
+' "$VP27")"
+[ "$TC27" = "2/2" ] \
+  && ok "both templates write no lag line where the trunk is current" \
+  || bad "both templates write no lag line where the trunk is current ($TC27)"
+
+# A8 — the report writer's own enumeration of what the Audited line carries. It was repaired because
+# this change falsified it, and a repair nothing asserts is revertible with the suite green.
+NW27="$(vsn27 'Write')"
+W27="$([ -n "$NW27" ] && nstep "$VS27" "$NW27")"
+w27=""
+[ -n "$W27" ] || w27="$w27 step-absent"
+printf '%s' "$W27" | grep -qi 'ahead of its remote' || w27="$w27 lag"
+printf '%s' "$W27" | grep -qi 'no lag line'         || w27="$w27 silence"
+printf '%s' "$W27" | grep -qi 'trunk is current'    || w27="$w27 trunk-current"
+[ -z "$w27" ] \
+  && ok "the report writer enumerates the lag and its silences" \
+  || bad "the report writer enumerates the lag and its silences (missing:$w27)"
+
+# A9 — the two cases where the remedy would harm rather than help: the branch under audit IS the trunk,
+# so publishing pushes work the audit is judging and empties the next run's scope; and a diverged trunk,
+# where the push is refused outright. A remedy that cannot succeed is the defect this task exists to fix.
+r27=""
+[ -n "$TD27" ] || r27="$r27 section-absent"
+printf '%s' "$TD27" | grep -qi 'branch under audit'        || r27="$r27 own-trunk-case"
+printf '%s' "$TD27" | grep -qi 'never the task'            || r27="$r27 ownership-limit"
+printf '%s' "$TD27" | grep -qi 'diverged'                  || r27="$r27 diverged"
+[ -z "$r27" ] \
+  && ok "the remedy excludes the task's own commits and a diverged trunk" \
+  || bad "the remedy excludes the task's own commits and a diverged trunk (missing:$r27)"
+
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"

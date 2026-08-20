@@ -50,7 +50,7 @@ Before executing, re-read the steering file(s) for the affected domain(s) from `
 
 Comments must stand alone. A comment states the constraint, evidence, or rationale the code cannot show — in full, in place. Forbidden in committed source (comments, test names, `describe`/`it` descriptions): task/epic IDs (`T-XXX`, `E-XXX`) and paths into `artifacts/` or `.ai-flow/`. If the rationale is too long for a comment, it goes in the commit message body. Line->task provenance is `git blame` -> commit message `(T-XXX)` — never the comment.
 
-Existing committed references stay untouched — a mass cleanup would rewrite the blame that now serves as the line->task index. Verify enforces the rule on new work only (grep over the task diff's added lines).
+Existing committed references stay untouched — a mass cleanup would rewrite the blame that now serves as the line->task index. Verify enforces the rule over the added lines of the task diff, whose reach is defined once in Verify protocol > The Task Diff and named nowhere else. What matters to the author: that reach is the diff's, not the task's — a trunk's unpublished commits are inside it until publishing drops them below the base — which is why the audit names the trunk's lag before it judges anything.
 
 ## Test-Driven Development (TDD)
 

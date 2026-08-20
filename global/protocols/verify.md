@@ -35,6 +35,33 @@ in neither and are collected separately.
 alongside the current task's work. That overlap is reported, never silent: verify.md records the base and
 how many commits it covered, which is what turns an unexplained orphan hunk into a traceable one.
 
+**Verifying measures from a published trunk — publishing precedes verifying**, the way it already
+precedes opening a front. Where the local default branch holds commits the remote has not seen, the
+audit says how many it is ahead of its remote and that publishing them removes the overlap, and then
+continues: it never refuses to run, because a clean task halted by a condition outside itself is the
+very defect this rule exists to remove, relocated. The lag is determined where the base is resolved, so
+it is in hand before any criterion is judged, and it is recorded as its own fact beside the base — how
+far the branch has come since the base and how far the trunk is from its remote are different numbers,
+and one standing for both is a report nobody can act on. What the audit *accepts* does not change: the
+checks below keep exactly the reach they have, and an identifier a previous task committed is still
+reported. What the operator gains is the one remedy that can change the subject — publish, and measure
+again.
+
+**Three cases get no lag line at all**, and each is a silence rather than a zero: the trunk is current,
+where the run reads exactly as it read before this rule existed, because a notice that fires on every
+run is how a check stops being read; no remote trunk resolves — no remote, or no local branch of that
+name — where silence means no lag is possible, not that one was measured and found to be nothing; and
+no base resolved, where the branch scope is already declared unavailable and a lag has no subject.
+
+**The remedy names only commits the task does not own.** Where the branch under audit *is* the trunk —
+the ordinary shape of a coordinator — the unpublished commits are the task diff, and some of them may
+be steps this task committed: publishing those would push work the audit is judging past the gate that
+validates it, and would leave the next run measuring from the task's own tip, auditing nothing. So the
+report says which case it is and the call stays with the operator; what the remedy names is earlier
+work, never the task's own. **And where the trunk has diverged** — the remote moved too — the count is
+one side of two and the push would be refused: the report says diverged, and that reconciling with the
+remote comes before publishing.
+
 **IF no base resolves, or `merge-base` comes back empty, THEN the audit narrows to what is uncommitted
 and says so** — verify.md records that the branch scope was unavailable. A repository with no published
 default branch and no local `main`/`master` still gets a verify; it gets a smaller one, announced.
@@ -70,7 +97,10 @@ to size its own assertions is the same act with a different author.
 
 **Audited**: `T-XXX`, resolved from `[the state file the ladder answered with]`. The task diff — base
 `[base ref]`, `[N]` commit(s) on this branch since it, plus what is still uncommitted. If no base
-resolved: `branch scope unavailable — uncommitted work only`. The working copy was left as found; if it was
+resolved: `branch scope unavailable — uncommitted work only`. Where the trunk is behind: `[M]`
+commit(s) ahead of its remote, and publishing what is not this task's own removes the overlap; where
+the trunk is current, where no remote trunk resolved, or where no base resolved, no lag line is
+written. The working copy was left as found; if it was
 not, what changed and what was restored. If the audit ran out of phase on the operator's word, that it
 did and that the sheet's position was not moved.
 
@@ -150,7 +180,10 @@ What the user reads in chat is **one line per axis**: finding count + the worst 
 
 **Audited**: `T-XXX`, resolved from `[the state file the ladder answered with]`. The task diff — base
 `[base ref]`, `[N]` commit(s) on this branch since it, plus what is still uncommitted. If no base
-resolved: `branch scope unavailable — uncommitted work only`. The working copy was left as found; if it was
+resolved: `branch scope unavailable — uncommitted work only`. Where the trunk is behind: `[M]`
+commit(s) ahead of its remote, and publishing what is not this task's own removes the overlap; where
+the trunk is current, where no remote trunk resolved, or where no base resolved, no lag line is
+written. The working copy was left as found; if it was
 not, what changed and what was restored. If the audit ran out of phase on the operator's word, that it
 did and that the sheet's position was not moved.
 
