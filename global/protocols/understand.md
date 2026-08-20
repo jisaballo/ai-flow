@@ -6,7 +6,9 @@
 
 **Which task**: the phase runs on the task this checkout owns. Resolve it by the ladder in the backlog
 protocol (`## State Files` → `### Resolving the task`) — stated there and only there — and stop rather
-than choose if it ends without one.
+than choose if it ends without one. Then test the phase precondition (same document, `### The phase precondition`) — stated there
+and only there too, so this document names no accepted position and no leg of its own. A manual
+run performs the check; the command is a convenience over this procedure, never its only carrier.
 
 ## Product Context
 
@@ -243,4 +245,4 @@ Before proceeding to plan:
    - "No, proceed with the plan (Recommended)"
    - "Yes, I have more questions"
    ```
-3. Only proceed to plan when user confirms clarity (the write-guard hook stops restricting once the task's state sheet moves the phase past UNDERSTAND)
+3. Only proceed to plan when user confirms clarity (the write-guard hook stops restricting once the `plan` command writes its own phase to the task's state sheet — see the backlog protocol's `### The phase precondition`)

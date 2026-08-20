@@ -6,7 +6,7 @@
 
 ## Steps
 
-1. **Resolve the task** by the ladder in the backlog protocol (`## State Files` → `### Resolving the task`) — stated there and only there, and a stop rather than a choice if it ends without one — then **re-read** `artifacts/T-XXX/understand.md` (Verifiable Criteria + Expected Behavior) and the **Criteria Coverage table** in plan.md — VERIFY inherits that mapping; do not reconstruct criterion->step from scratch.
+1. **Resolve the task** by the ladder in the backlog protocol (`## State Files` → `### Resolving the task`) — stated there and only there, and a stop rather than a choice if it ends without one — then test the **phase precondition** (same document, `### The phase precondition`), stated there and only there too, so this document names no accepted position and no leg of its own: a run that reaches this file because the command is not installed performs the check itself, which is also what makes the out-of-phase clause in the templates below reachable. Then **re-read** `artifacts/T-XXX/understand.md` (Verifiable Criteria + Expected Behavior) and the **Criteria Coverage table** in plan.md — VERIFY inherits that mapping; do not reconstruct criterion->step from scratch.
 2. **For each criterion**, cite the specific evidence (file:line, test name, or observable behavior) that satisfies it
 3. **Contract check**: diff the current conformance specs against `artifacts/T-XXX/conformance-baseline/manifest.md`. Every frozen row must still exist with the same `it()` description and assert direction; any divergence must have a matching `## Implementation Decisions` entry in understand.md. Divergence without entry -> ❌.
 4. **Reverse audit (diff->plan)**: every hunk in the task diff (see **The Task Diff** below) must trace to a plan step, a criterion, or an Implementation Decision. Orphan hunks -> record under `Gaps Found` as **scope creep** (this is the audited form of the Surgical Changes rule).
@@ -71,7 +71,8 @@ to size its own assertions is the same act with a different author.
 **Audited**: `T-XXX`, resolved from `[the state file the ladder answered with]`. The task diff — base
 `[base ref]`, `[N]` commit(s) on this branch since it, plus what is still uncommitted. If no base
 resolved: `branch scope unavailable — uncommitted work only`. The working copy was left as found; if it was
-not, what changed and what was restored.
+not, what changed and what was restored. If the audit ran out of phase on the operator's word, that it
+did and that the sheet's position was not moved.
 
 ## Criteria Audit
 | # | Criterion (from understand.md) | Status | Evidence |
@@ -150,7 +151,8 @@ What the user reads in chat is **one line per axis**: finding count + the worst 
 **Audited**: `T-XXX`, resolved from `[the state file the ladder answered with]`. The task diff — base
 `[base ref]`, `[N]` commit(s) on this branch since it, plus what is still uncommitted. If no base
 resolved: `branch scope unavailable — uncommitted work only`. The working copy was left as found; if it was
-not, what changed and what was restored.
+not, what changed and what was restored. If the audit ran out of phase on the operator's word, that it
+did and that the sheet's position was not moved.
 
 ## Criteria Audit
 | # | Criterion | Status | Evidence |

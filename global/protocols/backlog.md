@@ -107,12 +107,46 @@ contradict it. Two or more sheets and this case falls straight to rung 3.
    sheets claiming the same branch land here too — pruning a checkout down to the sheets it owns is
    the job of the ceremony that opens a workstream.
 
+### The phase precondition
+
+The ladder above answers *which task*. This answers *whether this phase may run on it*, and it is
+stated here for the same reason the ladder is: three commands each holding their own copy of the
+accepted positions is three copies that drift, and a command that accepts what another refuses is
+worse than no check at all.
+
+A phase command tests two things — after it has resolved its task, and before it does any of the
+phase's work. Both are read from the task's own sheet and its papers, never from what the session
+remembers.
+
+- **Accepted positions.** `understand` runs on any position not later than its own: open below on
+  purpose, because what the opening ceremony writes as a task's first position is undefined, and a
+  precondition depending on it would refuse the ordinary path. `plan` runs on UNDERSTAND or PLAN.
+  `verify` runs on EXECUTE or VERIFY.
+- **The material leg.** A phase that consumes what an earlier one produced checks it is there: `plan`
+  needs `understand.md`; `verify` needs `plan.md` and the Criteria Coverage table inside it, which is
+  the mapping the audit inherits instead of rebuilding. `understand` consumes no artifact and so has
+  no material leg — said out loud, because a silence is not a check that happened.
+- **On disagreement.** Either leg failing is reported before anything is written: the phase the sheet
+  declares, the phase that was asked for, and the material that is missing, named as a file. Then the
+  command waits. No artifact is written until the operator answers. A warning printed and walked past
+  is the defect with a note attached, and the operator has nothing to judge the answer with unless
+  the report carries all three.
+- **A confirmed run.** The operator may say go, and then the command runs — but the `phase:` line is
+  left unchanged, and the run says in its report that it went out of phase. An audit authorised over a
+  half-understood task does not make the task audited: stamping the position would erase the one fact
+  that made the warning possible, and would leave a rail raised over a phase nobody is working.
+- **A clean pass.** Both legs holding, the command writes its own phase to the sheet before starting
+  the work. That write is what makes this precondition mean anything: a field a mechanism refuses on
+  must have a writer, or the first forgotten edit blocks correct work and teaches everyone to route
+  around the rule. `plan` additionally advances the sheet to EXECUTE when Conform closes, because the
+  phase after it has no command of its own and nothing else would ever record it.
+
 ### Who writes what, when
 
 | Moment | Roster (`STATE.md`) | Sheet (`artifacts/T-XXX/state.md`) |
 |---|---|---|
 | **Activation** | the coordinator adds the workstream row, with the front's declared areas | created, with branch, phase, step and autonomy — plus any collision acknowledged at the opening (see Opening a Workstream) |
-| **During the phases** | untouched | phase, step, decisions and the resume block kept current |
+| **During the phases** | untouched | the phase command writes the phase when it enters one (see The phase precondition above); step, decisions and the resume block kept current by whoever works the task |
 | **Pause** | untouched | carries everything needed to resume — it IS the handoff |
 | **Archive** | the coordinator removes the row, last | collected into the coordinator first, then deleted with the rest of `artifacts/T-XXX/` |
 | **Quick task** | its row in Quick Tasks Completed, at close | none — a quick task writes no sheet, and states its 1-2 steps in the conversation |

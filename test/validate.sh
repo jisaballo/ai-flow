@@ -864,6 +864,14 @@ VS="global/skills/verify/SKILL.md"
 VW="global/workflows/verify-review.js"
 BRAKE="global/hooks/diff-size-guard.py"
 
+# The two steps this block reaches into, resolved by CONTENT. Moving a step renumbers every step after
+# it, and an assertion that dies to renumbering is testing the numbering, not the fact: what each check
+# below asserts is a property of the step that carries it, wherever that step sits. Same shape as the
+# WRITE-step resolution further down, and the reason it exists.
+vsn() { grep -nE "^[0-9]+\. \*\*$1" "$VS" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/'; }
+NG14="$(vsn 'Gather the task diff')"
+NA14="$(vsn 'Criterion audit')"
+
 # The one definition every consumer reads: bounded at the next heading, fence-aware.
 TD="$(awk '/^## The Task Diff/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^#+ /){f=0} f' "$VP" | tr '\n' ' ')"
 # The bolded definition SENTENCE, cut at its closing marker. Scoped this tight because 'uncommitted'
@@ -919,7 +927,7 @@ for n in 4 5; do
   fi
 done
 
-S5="$(nstep "$VS" 5)"
+S5="$([ -n "$NG14" ] && nstep "$VS" "$NG14")"
 if printf '%s' "$S5" | grep -q 'origin/HEAD' \
    && printf '%s' "$S5" | grep -q 'rev-parse' \
    && printf '%s' "$S5" | grep -q 'main' \
@@ -953,14 +961,14 @@ fi
 # THE operative command, asserted by shape and not by the word 'merge-base' — which a neighbouring
 # bullet supplies, so the word alone stayed green both when a range operator was appended (dropping
 # the uncommitted half) and when the command was reverted to plain `git diff HEAD`
-MBB="$(sbullet "$VS" 5 'Capture it once')"
+MBB="$([ -n "$NG14" ] && sbullet "$VS" "$NG14" 'Capture it once')"
 if printf '%s' "$MBB" | grep -qF 'MB="$(git merge-base <base> HEAD)"' \
    && ! printf '%s' "$MBB" | grep -qE 'merge-base[^`]*\.\.'; then
   ok "the skill captures the merge-base itself, with no range operator narrowing it"
 else
   bad "the skill captures the merge-base itself, with no range operator narrowing it"
 fi
-DTB="$(sbullet "$VS" 5 'Otherwise')"
+DTB="$([ -n "$NG14" ] && sbullet "$VS" "$NG14" 'Otherwise')"
 if printf '%s' "$DTB" | grep -qF 'git diff "$MB"' \
    && ! printf '%s' "$DTB" | grep -qE 'MB[^`]*\.\.'; then
   ok "the diff that becomes diffText runs from the captured base to the working tree"
@@ -973,7 +981,7 @@ printf '%s' "$S5" | grep -q 'diff-size-guard' \
   && ok "the skill's base resolution cites the diff brake it copies" \
   || bad "the skill's base resolution cites the diff brake it copies"
 
-CF="$(sbullet "$VS" 5 'changedFiles')"
+CF="$([ -n "$NG14" ] && sbullet "$VS" "$NG14" 'changedFiles')"
 if printf '%s' "$CF" | grep -qiE 'base-scoped|that same' \
    && printf '%s' "$CF" | grep -qi 'untracked' \
    && printf '%s' "$CF" | grep -q 'source_dirs'; then
@@ -982,7 +990,7 @@ else
   bad "changedFiles derives from the base-scoped diff plus untracked, scoped to source_dirs"
 fi
 
-FB="$(sbullet "$VS" 5 'no base')"
+FB="$([ -n "$NG14" ] && sbullet "$VS" "$NG14" 'no base')"
 if printf '%s' "$FB" | grep -q 'git diff HEAD' \
    && printf '%s' "$FB" | grep -qi 'unavailable'; then
   ok "no resolvable base falls back to the working tree and says so"
@@ -1004,12 +1012,17 @@ else
   bad "the report writer carries the base and the commit count into verify.md"
 fi
 
-# the skill's own reverse audit names where its scope comes from: the gather is not what step 4 skips
-RA="$(sbullet "$VS" 3 'Reverse audit')"
-if printf '%s' "$RA" | grep -qi 'task diff' && printf '%s' "$RA" | grep -qiE 'step 5|gather'; then
-  ok "the skill's reverse audit names the step its scope comes from"
+# The skill's own reverse audit names where its scope comes from — and that step has already run.
+# This assertion used to demand the opposite: it required the bullet to point FORWARD at the gather,
+# so it was green precisely because the consumer read a diff nobody had gathered yet. Kept as an order
+# over step INDEXES, which is a different mutation from the byte-offset order asserted later: a step
+# renumbered without being moved kills one and not the other.
+RA="$([ -n "$NA14" ] && sbullet "$VS" "$NA14" 'Reverse audit')"
+if printf '%s' "$RA" | grep -qi 'task diff' \
+   && [ -n "$NG14" ] && [ -n "$NA14" ] && [ "$NG14" -lt "$NA14" ]; then
+  ok "the skill's reverse audit reads a task diff an earlier step already gathered"
 else
-  bad "the skill's reverse audit names the step its scope comes from"
+  bad "the skill's reverse audit reads a task diff an earlier step already gathered"
 fi
 
 # both report templates, not only the one the multi-agent review path writes: the reverse audit and
@@ -1693,15 +1706,16 @@ fi
 # renumbers everything after it, and an assertion that dies to renumbering tests the numbering.
 vstep() { awk -v s="^$2\\\\. " -v e="^$(($2 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' "$1" | tr '\n' ' '; }
 N_INV="$(grep -nE '^[0-9]+\. \*\*Invoke the verify-review workflow' "$VS" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/')"
-N_GATH="$(grep -nE '^[0-9]+\. \*\*Gather the task diff' "$VS" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/')"
+N_COPY="$(grep -nE '^[0-9]+\. \*\*Take the byte-exact copy' "$VS" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/')"
 
 # Fact 7a — the copy is taken before the review is invoked, and it covers what no diff reaches.
-# Scoped to the bullet that carries the copy, never to the step: the step already collected untracked
-# files for the diff long before this rule existed, so a step-wide grep for 'untracked' stayed green
-# after the copy stopped taking them. The extractor's own anchor is the byte-exact fact — an edit that
-# drops it returns an empty block, which is a red for the right reason.
-S_COPY="$([ -n "$N_GATH" ] && sbullet "$VS" "$N_GATH" 'byte-exact copy')"
-if [ -n "$N_GATH" ]; then
+# Resolved as its own step. It used to be a bullet of the gather, and was scoped to the bullet for a
+# reason that no longer exists: the gather collected untracked files for the diff in that same step, so
+# a step-wide grep for 'untracked' stayed green after the copy stopped taking them. The gather is a
+# different step now and the copy step contains nothing but the copy, so the step IS the tight scope —
+# and the `/untracked/` anchor below is the copy's own destination directory, never the git command.
+S_COPY="$([ -n "$N_COPY" ] && vstep "$VS" "$N_COPY")"
+if [ -n "$N_COPY" ]; then
   if [ -n "$S_COPY" ] \
      && printf '%s' "$S_COPY" | grep -qF '/untracked/' \
      && printf '%s' "$S_COPY" | grep -qiE 'outside the repository|mktemp'; then
@@ -2262,6 +2276,404 @@ trap 'rm -rf "$T12" "$T13"' EXIT   # handed back to the section that owned it
 { [ ! -d "$TH21" ] && [ ! -d "$TW21" ] && [ -d "$T12" ]; } \
   && ok "the sandbox is torn down and the live cleanup trap survives this block" \
   || bad "the sandbox is torn down and the live cleanup trap survives this block"
+fi
+
+echo "== C22: a phase refuses to run on a task that is not in that phase =="
+PB22="global/protocols/backlog.md"
+US22="global/skills/understand/SKILL.md"
+PS22="global/skills/plan/SKILL.md"
+VS22="global/skills/verify/SKILL.md"
+VP22="global/protocols/verify.md"
+HARNESS22="test/validate.sh"
+PRECOND22="The phase precondition"
+C22_SKILLS="understand plan verify"
+
+# The rule's own block, bounded at the next heading of any depth and fence-aware — the shape C14 and
+# C18 use for the task-diff definition and the mutation rule, and for the same reason: a file-wide grep
+# finds the citations, never the rule itself.
+PBLK22="$(awk -v h="^### $PRECOND22" '$0 ~ h {f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^#+ /){f=0} f' "$PB22")"
+# One bolded clause of that block, from its lead to the next lead, flattened. Five facts share this
+# block: a block-wide grep would let any one of them stand in for any other, which is the failure this
+# harness has now caught eight times.
+pclause22() { printf '%s\n' "$PBLK22" | awk -v s="$1" '/^- \*\*/{ if(g) exit; g=($0 ~ s) } g' | tr '\n' ' '; }
+# Byte offset of a fixed string: for the facts that are an ORDER, which presence greps cannot see.
+# Defined here rather than reused from C14 so this block stands on its own.
+poff22() { printf '%s' "$1" | grep -obF "$2" | head -1 | cut -d: -f1; }
+
+# --- the rule has exactly one home -----------------------------------------
+# A5a. Counted, not merely found: the whole anti-drift design is that a second statement cannot exist.
+# Anchored at line start: a citation names the heading inline ("see `### The phase precondition`"),
+# which is how every other cross-reference in the engine is written, so an unanchored count reads each
+# of the three citers as a fourth home. A real second home carries the heading itself, at line start.
+HOMES22="$(grep -rl "^### $PRECOND22" global/ 2>/dev/null | wc -l | tr -d ' ')"
+# The shipped template and the docs are the other two places a rule gets copied into, and a copy there
+# is as much a second home as one in global/ — the count above would never see it.
+ELSEWHERE22="$(grep -rl "^### $PRECOND22" template/ docs/ 2>/dev/null | wc -l | tr -d ' ')"
+if [ "$HOMES22" -eq 1 ] && [ "$ELSEWHERE22" -eq 0 ] && [ -n "$PBLK22" ]; then
+  ok "the phase precondition is stated in exactly one document"
+else
+  bad "the phase precondition is stated in exactly one document (global/: $HOMES22, elsewhere: $ELSEWHERE22)"
+fi
+
+# --- the accepted position of each command --------------------------------
+ACC22="$(pclause22 'Accepted position')"
+if [ -n "$ACC22" ] && printf '%s' "$ACC22" | grep -qiE 'not later than|no later than'; then
+  ok "the accepted positions leave understand open below"
+else
+  bad "the accepted positions leave understand open below"
+fi
+if [ -n "$ACC22" ] && printf '%s' "$ACC22" | grep -q 'UNDERSTAND or PLAN'; then
+  ok "the accepted positions name plan's own two"
+else
+  bad "the accepted positions name plan's own two"
+fi
+if [ -n "$ACC22" ] && printf '%s' "$ACC22" | grep -q 'EXECUTE or VERIFY'; then
+  ok "the accepted positions name verify's own two"
+else
+  bad "the accepted positions name verify's own two"
+fi
+
+# --- the material leg -----------------------------------------------------
+MAT22="$(pclause22 'material')"
+if [ -n "$MAT22" ] && printf '%s' "$MAT22" | grep -q 'understand.md'; then
+  ok "the material leg names what plan feeds on"
+else
+  bad "the material leg names what plan feeds on"
+fi
+# NOT a bare 'plan.md': the clause names both artifacts, so the loose form passed on the other leg's
+# word. What verify needs is the table, and a plan without one is the hollow audit's own case.
+if [ -n "$MAT22" ] && printf '%s' "$MAT22" | grep -qi 'Criteria Coverage'; then
+  ok "the material leg names the table verify inherits, not merely the file"
+else
+  bad "the material leg names the table verify inherits, not merely the file"
+fi
+if [ -n "$MAT22" ] && printf '%s' "$MAT22" | grep -qiE 'understand [^.]*none|no material|none of its own'; then
+  ok "the material leg says understand has none"
+else
+  bad "the material leg says understand has none"
+fi
+
+# --- what a disagreement produces ----------------------------------------
+DIS22="$(pclause22 'disagree')"
+if [ -n "$DIS22" ] && printf '%s' "$DIS22" | grep -qiE 'declares|declared'; then
+  ok "a disagreement names the phase the sheet declares"
+else
+  bad "a disagreement names the phase the sheet declares"
+fi
+if [ -n "$DIS22" ] && printf '%s' "$DIS22" | grep -qiE 'asked for|requested|was asked'; then
+  ok "a disagreement names the phase that was asked for"
+else
+  bad "a disagreement names the phase that was asked for"
+fi
+if [ -n "$DIS22" ] && printf '%s' "$DIS22" | grep -qiE 'missing|absent|cannot find'; then
+  ok "a disagreement names the material that is missing"
+else
+  bad "a disagreement names the material that is missing"
+fi
+# B1. The stop is the half that costs something: a warning printed and then walked past is the defect
+# with a note attached, which is what the user's own counter-case bought this requirement for.
+if [ -n "$DIS22" ] && printf '%s' "$DIS22" | grep -qiE 'no artifact|nothing is written|before .*artifact' \
+   && printf '%s' "$DIS22" | grep -qiE 'confirm|the operator'; then
+  ok "a disagreement writes no artifact until the operator answers"
+else
+  bad "a disagreement writes no artifact until the operator answers"
+fi
+
+# --- what a confirmed run does and does not do ---------------------------
+CONF22="$(pclause22 'confirmed')"
+# A2 and B2 are two facts, not one: the sheet holding still is the state, and the report saying so is
+# the record. A mutant that keeps the sheet and stays silent about it kills only the second.
+if [ -n "$CONF22" ] && printf '%s' "$CONF22" | grep -qiE 'unchanged|untouched|not moved|does not move'; then
+  ok "a confirmed out-of-phase run leaves the position line where it is"
+else
+  bad "a confirmed out-of-phase run leaves the position line where it is"
+fi
+if [ -n "$CONF22" ] && printf '%s' "$CONF22" | grep -qi 'out of phase' \
+   && printf '%s' "$CONF22" | grep -qiE 'report|says'; then
+  ok "a confirmed out-of-phase run says so in its report"
+else
+  bad "a confirmed out-of-phase run says so in its report"
+fi
+
+# --- what a clean pass does ---------------------------------------------
+CLEAN22="$(pclause22 'clean pass')"
+if [ -n "$CLEAN22" ] && printf '%s' "$CLEAN22" | grep -qiE 'writes its own phase|records its own phase'; then
+  ok "a clean pass has the command record its own phase"
+else
+  bad "a clean pass has the command record its own phase"
+fi
+# The "before" is the half that carries the weight: written at exit instead of at entry, the read-only
+# rail engages after the work it exists to restrain, and the understand protocol's line now depends on
+# it. A presence grep for the verb cannot see position, and this block already owns the order idiom.
+if [ -n "$CLEAN22" ] && printf '%s' "$CLEAN22" | grep -qiE '(own phase|sheet)[^.]*before'; then
+  ok "the phase is recorded before the phase's work, not after it"
+else
+  bad "the phase is recorded before the phase's work, not after it"
+fi
+# The handover, and its reason. Without the reason the clause reads as a preference and the next editor
+# deletes it: the phase after plan has no command of its own, so nothing else can write it.
+if [ -n "$CLEAN22" ] && printf '%s' "$CLEAN22" | grep -q 'EXECUTE' \
+   && printf '%s' "$CLEAN22" | grep -qiE 'no command|has no command of its own'; then
+  ok "the handover to EXECUTE carries the reason it exists"
+else
+  bad "the handover to EXECUTE carries the reason it exists"
+fi
+
+# --- the three commands obey it, and restate none of it ------------------
+for s in $C22_SKILLS; do
+  f="global/skills/$s/SKILL.md"
+  if [ ! -f "$f" ]; then
+    bad "$s cites the phase precondition (file missing: $f)"
+    bad "$s does not restate the accepted positions (file missing)"
+    bad "$s records its own phase once both legs pass (file missing)"
+    continue
+  fi
+  c="$(cat "$f")"
+
+  # Citing means naming the block AND the document that holds it — the phrase alone could be a heading
+  # of the skill's own.
+  if printf '%s' "$c" | grep -q "$PRECOND22" && printf '%s' "$c" | grep -q 'backlog.md'; then
+    ok "$s cites the phase precondition's owner"
+  else
+    bad "$s cites the phase precondition's owner"
+  fi
+
+  # The anti-drift assertion, the same one the ladder already earned: a skill may name its own phase,
+  # never re-spell the accepted SETS, because a second statement of those is the copy that drifts.
+  if printf '%s' "$c" | grep -q 'UNDERSTAND or PLAN' \
+     || printf '%s' "$c" | grep -q 'EXECUTE or VERIFY' \
+     || printf '%s' "$c" | grep -qiE 'not later than|no later than'; then
+    bad "$s does not restate the accepted positions"
+  else
+    ok "$s does not restate the accepted positions"
+  fi
+
+  # A3b — the write, per command. The rule having a writer is the whole reason the check can refuse on
+  # this field at all; a rule stating it while no command does it is an alarm with no owner.
+  # NOT a loose 'writes .*phase': the read-only rail's own sentence ("blocks code writes while the
+  # phase is UNDERSTAND") satisfied that, so the assertion was green on a neighbour's word before a
+  # line of the fix existed. The possessive is the fact — it is the command's OWN phase it records.
+  if printf '%s' "$c" | grep -qiE 'writes? its own phase|records? its own phase'; then
+    ok "$s records its own phase once both legs pass"
+  else
+    bad "$s records its own phase once both legs pass"
+  fi
+
+  # The skill's step 2 carries THREE obligations and only the write was asserted, so the stop and the
+  # no-move could each be deleted from any one command with the suite green. Scoped to step 2, because
+  # the operative instruction the command reads at runtime is this one — the protocol states the rule,
+  # the command performs it.
+  s2="$(vstep "$f" 2)"
+  if [ -n "$s2" ] && printf '%s' "$s2" | grep -qiE 'disagreement' \
+     && printf '%s' "$s2" | grep -qiE 'report and wait|reports? and waits?'; then
+    ok "$s stops and waits on a disagreement"
+  else
+    bad "$s stops and waits on a disagreement"
+  fi
+  if [ -n "$s2" ] && printf '%s' "$s2" | grep -qiE 'without moving the line|without moving the phase'; then
+    ok "$s runs an authorised override without moving the line"
+  else
+    bad "$s runs an authorised override without moving the line"
+  fi
+  # F2's per-command half: the write is at entry, not at exit.
+  if [ -n "$s2" ] && printf '%s' "$s2" | grep -qiE '(own phase|sheet)[^.;]*before'; then
+    ok "$s records the phase before doing the phase's work"
+  else
+    bad "$s records the phase before doing the phase's work"
+  fi
+done
+
+# --- F1b: the rule must reach the layer that is the documented manual fallback -------------
+# The sibling ladder is cited in BOTH layers — each protocol head and each command. This one was cited
+# only in the commands, so a run that reaches the protocol because the command is not installed
+# performed no check at all, and verify.md's own report template demanded a fact its procedure could not
+# produce. Same discipline: cite, restate nothing.
+for pr in understand plan verify; do
+  pf="global/protocols/$pr.md"
+  if [ ! -f "$pf" ]; then
+    bad "the $pr protocol cites the phase precondition (file missing)"
+    bad "the $pr protocol does not restate the accepted positions (file missing)"
+    continue
+  fi
+  pc="$(cat "$pf")"
+  if printf '%s' "$pc" | grep -q "$PRECOND22"; then
+    ok "the $pr protocol cites the phase precondition"
+  else
+    bad "the $pr protocol cites the phase precondition"
+  fi
+  if printf '%s' "$pc" | grep -q 'UNDERSTAND or PLAN' \
+     || printf '%s' "$pc" | grep -q 'EXECUTE or VERIFY' \
+     || printf '%s' "$pc" | grep -qiE 'not later than|no later than'; then
+    bad "the $pr protocol does not restate the accepted positions"
+  else
+    ok "the $pr protocol does not restate the accepted positions"
+  fi
+done
+
+# F10 — the rewritten line names its mover. A passive sentence with no owner is what this task found;
+# leaving the repair unasserted lets it revert to passive with the suite green.
+if grep -qE 'write-guard hook stops restricting once the `plan` command writes' "global/protocols/understand.md"; then
+  ok "the read-only rail's release names the command that performs it"
+else
+  bad "the read-only rail's release names the command that performs it"
+fi
+
+# A4b — the handover lands in the command that performs it, not only in the rule that describes it.
+# Scoped to the step that performs it: two file-wide greps for 'EXECUTE' and an advance verb are
+# satisfied by any two unrelated lines, which is the shape of a guard that reports on nothing.
+# Reuses `vstep` rather than carrying a third copy of the same extractor: the copy written here escaped
+# its step boundary with two backslashes where the other two use four, so its `\.` reached awk as a bare
+# dot and the boundary matched any character. It happened to work; it was one edit from not.
+N_CONF22="$(grep -nE '^[0-9]+\. \*\*Conform\*\*' "$PS22" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/')"
+CONFS22="$([ -n "$N_CONF22" ] && vstep "$PS22" "$N_CONF22")"
+if [ -n "$CONFS22" ] && printf '%s' "$CONFS22" | grep -q 'EXECUTE' \
+   && printf '%s' "$CONFS22" | grep -qiE 'hands? over|advances?'; then
+  ok "the plan command carries the handover to EXECUTE, in the step that closes"
+else
+  bad "the plan command carries the handover to EXECUTE, in the step that closes"
+fi
+
+# O4 — declared, never claimed. understand's phase leg cannot fail from below and it has no material
+# leg at all; saying so is what stops a later reader from reading its silence as coverage.
+if grep -qiE 'no material|nothing to require|none of its own' "$US22"; then
+  ok "understand declares it has no material leg"
+else
+  bad "understand declares it has no material leg"
+fi
+if grep -qiE 'cannot fail from below|nothing earlier|no earlier phase' "$US22"; then
+  ok "understand declares its phase leg cannot fail from below"
+else
+  bad "understand declares its phase leg cannot fail from below"
+fi
+
+# --- the gather runs before anything judges what it gathers --------------
+C_VS22="$(cat "$VS22")"
+O_GATH22="$(poff22 "$C_VS22" 'Gather the task diff')"
+O_AUD22="$(poff22 "$C_VS22" 'Criterion audit')"
+O_COPY22="$(poff22 "$C_VS22" 'byte-exact copy')"
+O_REV22="$(poff22 "$C_VS22" 'Invoke the verify-review workflow')"
+
+# A7. The defect itself, stated as an order: the consumer sat ahead of the gather, so what it judged was
+# whatever the session happened to hold. Presence greps cannot see this, which is why the harness kept
+# it green while asserting the consumer pointed FORWARD at a step that had not run.
+if [ -n "$O_GATH22" ] && [ -n "$O_AUD22" ] && [ "$O_GATH22" -lt "$O_AUD22" ]; then
+  ok "the gather runs before the criterion audit that reads it"
+else
+  bad "the gather runs before the criterion audit that reads it"
+fi
+# A7b — and the consumer stops pointing forward. The old assertion demanded exactly this forward
+# reference, so leaving it in place would keep the defect green under a new name.
+RA22="$(printf '%s\n' "$C_VS22" | awk '/Reverse audit/{f=1} f{print; if(/^[[:space:]]*$/) exit}' | tr '\n' ' ')"
+if [ -n "$RA22" ] && ! printf '%s' "$RA22" | grep -qiE 'as step [0-9]+ gathers|which is not part of what step'; then
+  ok "the reverse audit no longer points forward at an ungathered diff"
+else
+  bad "the reverse audit no longer points forward at an ungathered diff"
+fi
+
+# A8. The copy brackets the REVIEW, not the audit. Moved up with the gather it would span the audit's
+# own command re-runs, and a file a test creates would then be restored away — work destroyed to fix a
+# report.
+if [ -n "$O_AUD22" ] && [ -n "$O_COPY22" ] && [ "$O_AUD22" -lt "$O_COPY22" ]; then
+  ok "the byte-exact copy is taken after the criterion audit's command re-runs"
+else
+  bad "the byte-exact copy is taken after the criterion audit's command re-runs"
+fi
+if [ -n "$O_COPY22" ] && [ -n "$O_REV22" ] && [ "$O_COPY22" -lt "$O_REV22" ]; then
+  ok "the byte-exact copy is taken before the review is invoked"
+else
+  bad "the byte-exact copy is taken before the review is invoked"
+fi
+
+# O2 — every step reference inside the command resolves to a step that exists. Counted first: an
+# extractor that finds no references passes every check it makes.
+REFS22="$(printf '%s\n' "$C_VS22" | grep -oE 'step [0-9]+' | grep -oE '[0-9]+' | sort -u)"
+NREFS22="$(printf '%s\n' "$REFS22" | grep -c '[0-9]' || true)"
+DANGLING22=""
+for n in $REFS22; do
+  printf '%s\n' "$C_VS22" | grep -qE "^$n\. " || DANGLING22="$DANGLING22 $n"
+done
+if [ "$NREFS22" -ge 3 ] && [ -z "$DANGLING22" ]; then
+  ok "every step reference inside the verify command resolves to a step that exists"
+else
+  bad "every step reference inside the verify command resolves to a step that exists (dangling:$DANGLING22)"
+fi
+
+# O2's SECOND conjunct — the criterion says a reference resolves to a step that exists *and carries the
+# fact cited*. Only the first was implemented. With eleven steps almost every wrong number is still an
+# existing one, and pointing at the wrong-but-existing step is exactly how a renumbering fails.
+vsn22() { grep -nE "^[0-9]+\. \*\*$1" "$VS22" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/'; }
+J_GATH22="$(vsn22 'Gather the task diff')"
+J_COPY22="$(vsn22 'Take the byte-exact copy')"
+J_CMP22="$(vsn22 'Compare the working copy')"
+J_WR22="$(vsn22 'Write')"
+JOINS22=0
+JBAD22=""
+join22() { # phrase-anchored pattern, expected index, label
+  local got
+  got="$(printf '%s\n' "$C_VS22" | grep -oE "$1" | grep -oE '[0-9]+' | head -1)"
+  if [ -n "$got" ]; then
+    JOINS22=$((JOINS22 + 1))
+    [ "$got" = "$2" ] || JBAD22="$JBAD22 $3(cites=$got,is=$2)"
+  else
+    JBAD22="$JBAD22 $3(phrase-absent)"
+  fi
+}
+join22 'step [0-9]+ writes both into the report'  "$J_WR22"   'gather-to-write'
+join22 'task diff step [0-9]+ gathered'           "$J_GATH22" 'audit-to-gather'
+join22 'path step [0-9]+ can recompute'           "$J_CMP22"  'copy-to-compare'
+join22 'record step [0-9]+ compares against'      "$J_CMP22"  'copy-to-compare-2'
+join22 'copy taken in step [0-9]+'                "$J_COPY22" 'compare-to-copy'
+join22 'step [0-9]+.s comparison'                 "$J_CMP22"  'consolidate-to-compare'
+join22 'what step [0-9]+ noted'                   "$J_GATH22" 'write-to-gather'
+join22 'tree verdict from step [0-9]+'            "$J_CMP22"  'write-to-compare'
+# Counted against the class: a guard whose phrases all stop matching asserts nothing about the numbers.
+if [ "$JOINS22" -eq 8 ] && [ -z "$JBAD22" ]; then
+  ok "every step reference cites the step that carries the fact"
+else
+  bad "every step reference cites the step that carries the fact ($JOINS22/8 phrases;$JBAD22)"
+fi
+
+# The spec's own edge case: with the gather ahead of the audit, the skip decision governs only the
+# review. The four offsets asserted above all survive moving the skip decision ABOVE the gather, which
+# puts the gather straight back inside what a skipped review appears to skip — the exact confusion the
+# old forward-reference parenthetical existed to paper over.
+O_SKIP22="$(poff22 "$C_VS22" 'Decide whether to skip')"
+if [ -n "$O_GATH22" ] && [ -n "$O_SKIP22" ] && [ "$O_GATH22" -lt "$O_SKIP22" ]; then
+  ok "the gather sits outside what a skipped review skips"
+else
+  bad "the gather sits outside what a skipped review skips"
+fi
+
+# O3 — positive form, not a denylist: what bounds these extractors is that they resolve the step by
+# content. Counted against the class so a guard whose extractor finds nothing cannot pass.
+# `vstep` is in the class too: it is the extractor this change actually re-scoped onto the copy step, so
+# a guard naming only the other two misses the one call site the change created. The reach of a rule is
+# measured against the call sites that exist, never against the ones that existed when it was written.
+INV22="$(grep -oE '(nstep|sbullet|vstep) "\$VS[0-9]*"' "$HARNESS22" | wc -l | tr -d ' ')"
+LIT22="$(grep -oE '(nstep|sbullet|vstep) "\$VS[0-9]*" [0-9]' "$HARNESS22" | wc -l | tr -d ' ')"
+if [ "$INV22" -ge 6 ] && [ "$LIT22" -eq 0 ]; then
+  ok "no assertion reaches a step of the verify command by a hardcoded number"
+else
+  bad "no assertion reaches a step of the verify command by a hardcoded number ($LIT22 of $INV22 literal)"
+fi
+
+# O5 — both report templates, counted. One template carrying the note and the other silent is the
+# same half-fix the twin-manual verdicts were: the reader opens whichever one their path reaches.
+AUDP22="$(awk '/^\*\*Audited\*\*/{f=1;buf=""} f{buf=buf" "$0} (f && /^[[:space:]]*$/){print buf; f=0} END{if(f) print buf}' "$VP22")"
+AUDT22="$(printf '%s\n' "$AUDP22" | grep -c 'Audited' || true)"
+AUDW22="$(printf '%s\n' "$AUDP22" | grep -ci 'out of phase' || true)"
+if [ "$AUDT22" -eq 2 ] && [ "$AUDW22" -eq 2 ]; then
+  ok "both report templates carry the out-of-phase note"
+else
+  bad "both report templates carry the out-of-phase note ($AUDW22 of $AUDT22)"
+fi
+
+# The writers table names who writes the phase field — the field a mechanism now refuses on, which is
+# exactly the kind of datum that keeps firing while nothing is obliged to act on it.
+if grep -nE '^\| \*\*During the phases\*\*' "$PB22" | head -1 | grep -qiE 'command|written by'; then
+  ok "the writers table names the phase field's writer"
+else
+  bad "the writers table names the phase field's writer"
 fi
 
 echo ""
