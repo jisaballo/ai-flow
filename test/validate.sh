@@ -3824,10 +3824,11 @@ if [ -n "$M5_25" ]; then
   # The floor half only. `default` was welded to it in one phrase, and the weld was the defect: read as
   # a default, the native path came first and the question of which tool manages the project was never
   # formed. The claim that the project's tool is the default is asserted where it now lives, in the
-  # block below, and the phrase that welded the two is forbidden as a class there. `the floor` needs no
-  # anchoring word the way `default` did — nothing else in the move says floor, so it cannot be
-  # answered by a neighbouring sentence.
-  printf '%s' "$M5_25" | grep -qiE 'the floor'                              || c25b="$c25b native-is-the-floor"
+  # block below, and the phrase that welded the two is forbidden as a class there. Anchored to its
+  # SUBJECT for the same reason `default` was: the move now says elsewhere that the ceremony "falls
+  # back to the floor", so a bare `the floor` is answered by that sentence and survives the removal of
+  # the claim it exists to pin — proven by mutation, which is how this wording was arrived at.
+  printf '%s' "$M5_25" | grep -qiE 'native path[^.]{0,200}is \*{0,2}the floor' || c25b="$c25b native-is-the-floor"
   printf '%s' "$M5_25" | grep -qiE 'no particular|any tool|whatever tool|any front.end' || c25b="$c25b tool-agnostic"
   [ -z "$c25b" ] \
     && ok "the creation move requires no particular front-end and names the native path as the floor" \
