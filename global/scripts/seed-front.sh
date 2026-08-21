@@ -113,14 +113,55 @@ git -C "$PRIMARY" ls-files -z --others --ignored --exclude-standard > "$CAND" \
 eligible=0
 evaluate "$CAND" "$SEL" && eligible=1
 
+# The papers of the seeded-for task are the one thing this run replaces, and the caller naming that
+# task is what authorises it. It is the closing collection's exception read from the other side: there
+# the copy from the checkout where the task was WORKED is the authoritative one and the coordinator's
+# is a snapshot nobody should have edited; here the front has worked nothing yet, so the authority is
+# the coordinator's. Without it the papers a checkout is born holding win forever — the sheet a front
+# is given is written after the checkout exists, and nothing could ever bring it in.
+#
+# Matched with the separator, so a task id that is a PREFIX of another cannot claim its folder.
+PAPERS=".ai-flow/artifacts/$TASK/"
+PENDING="$EV/pending"
+: > "$PENDING"
 copied=0
+replaced=0
+live=""
 while IFS= read -r -d '' rel; do
   [ -f "$PRIMARY/$rel" ] || continue
+  case "$rel" in
+    "$PAPERS"*)
+      # Held back whether or not the front holds it, because the verdict below is about the FOLDER: a
+      # front that is working the task keeps all of its papers, and mixing the coordinator's copy of
+      # one paper into a folder the front is writing is the half-and-half state no reader can reason
+      # about. Which copy is authoritative is decided by which was written last — nothing is parsed,
+      # so it holds for every paper and not only for the sheet.
+      #
+      # A TIE counts as not-the-front's-work, and that is the case this exists for: the front-end that
+      # copies at creation preserves the primary's own dates, so a snapshot arrives the same age as
+      # its origin and never reads as older.
+      if [ -e "$DEST/$rel" ] && [ "$DEST/$rel" -nt "$PRIMARY/$rel" ]; then live="$live $rel"; fi
+      printf '%s\0' "$rel" >> "$PENDING"
+      continue ;;
+  esac
   [ -e "$DEST/$rel" ] && continue
   mkdir -p "$DEST/$(dirname "$rel")"
-  cp "$PRIMARY/$rel" "$DEST/$rel"
+  # Preserving the timestamp, because the age of a copy is now evidence something reads. A copy that
+  # stamps itself with the present makes this run's own work look like the front's, and the NEXT run
+  # would refuse a checkout that had done nothing.
+  cp -p "$PRIMARY/$rel" "$DEST/$rel"
   copied=$((copied+1))
 done < "$SEL"
+
+# All of them or none: one paper written after the coordinator's marks the whole folder as work in
+# progress, and the refusal that says so is taken at the tail, after the prune.
+if [ -z "$live" ]; then
+  while IFS= read -r -d '' rel; do
+    mkdir -p "$DEST/$(dirname "$rel")"
+    if [ -e "$DEST/$rel" ]; then replaced=$((replaced+1)); else copied=$((copied+1)); fi
+    cp -p "$PRIMARY/$rel" "$DEST/$rel"
+  done < "$PENDING"
+fi
 
 # An empty selection is not one situation but two, and only one of them is a defect. Both layouts are
 # documented: where the data directory is IGNORED the patterns select it and the copy above carries it;
@@ -162,6 +203,14 @@ if [ "$declared" = 0 ]; then
   die "the pattern file at $PATTERNS matches nothing in $PRIMARY — neither an ignored path nor a tracked one, so $DEST was seeded with no project data. Either the data directory is not in your .gitignore (only untracked-and-ignored paths are eligible) or the patterns are stale."
 fi
 
-say "seeded $DEST for $TASK — $copied file(s) copied, $pruned foreign task folder(s) pruned"
+# Refused here for the same reason the one above is: the prune has to have happened whatever this run
+# decides about the papers. What it reports is that the run could not tell a snapshot from live work
+# and therefore chose neither — and it names the one act that settles it, because the operator is the
+# only one who knows which of the two copies they meant.
+if [ -n "$live" ]; then
+  die "the papers of $TASK in $DEST were written after the coordinator's in $PRIMARY, so this front is working that task and its copy is the authoritative one — nothing of $TASK was replaced.$live. To take the coordinator's copy instead, delete $DEST/.ai-flow/artifacts/$TASK and run this again."
+fi
+
+say "seeded $DEST for $TASK — $copied file(s) copied, $replaced paper(s) replaced, $pruned foreign task folder(s) pruned"
 [ -n "$*" ] && say "kept as declared: $*"
 exit 0

@@ -3885,6 +3885,30 @@ printf '%s' "$(o25 6)" | grep -q 'seed-front.sh' \
   && ok "the seed-and-prune move names the mechanism the engine ships" \
   || bad "the seed-and-prune move names the mechanism the engine ships"
 
+# The move's copy contract, which is no longer unconditional. Two legs, and the negative one is the
+# load-bearing half: the exception can be stated in a sentence appended below the promise it
+# contradicts, and a reader — or an agent running the ceremony — then meets both. What must be gone is
+# the CLAIM that nothing the checkout holds is ever replaced, in any wording.
+x25=""
+# Anchored to what the exception SAYS and not to the words that name it: the move already called the
+# task "the one it is seeded for" before this change, so a looser pattern is answered by the sentence
+# that was there all along and pins nothing.
+printf '%s' "$(o25 6)" | grep -qiE 'replaced from|replaces? (them|the front)|come from the (coordinator|primary)' \
+  || x25="$x25 no-exception"
+printf '%s' "$(o25 6)" | grep -qiE 'stops|refus'                  || x25="$x25 no-stop-on-live-work"
+printf '%s' "$(o25 6)" | grep -qiE 'never overwrites a file the checkout already holds' \
+  && x25="$x25 unconditional-promise-still-there"
+[ -z "$x25" ] \
+  && ok "the seed-and-prune move states the exception and its guard" \
+  || bad "the seed-and-prune move states the exception and its guard ($x25)"
+
+# Where the sheet is written is what decides whether it reaches the front at all: the seeding move ran
+# before it existed, so a sheet written anywhere else never arrives. Asserted on move 7, which is the
+# move that writes it.
+printf '%s' "$(o25 7)" | grep -qiE "in the front's (own )?checkout|where the task is worked|in that checkout" \
+  && ok "the opening writes the task's sheet where the task is worked" \
+  || bad "the opening writes the task's sheet where the task is worked"
+
 # --- the operator's document ---------------------------------------------
 DOC25="docs/customization.md"
 d25=""
@@ -3906,6 +3930,13 @@ printf '%s' "$PRE25" | grep -qiE 'refus'               || d25="$d25 the-refusal"
 # A passage carrying the refusal alone tells the reader who commits their data directory that their
 # layout is the broken one.
 printf '%s' "$PRE25" | grep -qiE 'seeds successfully|still seeds' || d25="$d25 the-committed-layout"
+# The exception the mechanism now carries, in the document that promises the operator the opposite.
+# Both halves: the passage that lists the conditions and the paragraph that describes the step each
+# said "never overwrites", and a reader who meets only the surviving one is told the wrong contract.
+grep -qiE 'papers of the task it is seeded for|papers of the task you name' "$DOC25" 2>/dev/null \
+  || d25="$d25 the-exception"
+grep -qiE 'never overwrites (a file that is already there|what is already there)' "$DOC25" 2>/dev/null \
+  && d25="$d25 unconditional-promise-still-there"
 [ -z "$d25" ] \
   && ok "the operator's document carries the conditions and the seeding step" \
   || bad "the operator's document carries the conditions and the seeding step (missing:$d25)"
@@ -4242,6 +4273,129 @@ else
   [ -z "$c25i" ] \
     && ok "a project that commits its project data still seeds successfully" \
     || bad "a project that commits its project data still seeds successfully ($c25i)"
+
+  # 14) THE REPLACEMENT. The papers of the task the front is seeded for come from the primary, because
+  #     the caller naming that task is the one thing that asserts authority over it — the mirror of the
+  #     closing collection, where the checkout the task was WORKED in holds the authoritative copy and
+  #     the record-keeper's is a snapshot nobody should have edited. Here the front has worked nothing
+  #     yet, so the authority sits on the other side.
+  #
+  #     Two ages, because the incident produces both. A create-time snapshot carries the primary's OWN
+  #     dates — measured against the native tooling, which preserves them exactly — so it TIES with its
+  #     origin and never reads as older: a guard that replaced only what is strictly older would leave
+  #     the stale sheet exactly where it is. The second paper is the ordinary repair, where the
+  #     coordinator wrote after the checkout was created.
+  P25K="$T25/k"; mk25 "$P25K"
+  mkdir -p "$P25K/.ai-flow/artifacts/own"
+  printf 'current sheet\n'         > "$P25K/.ai-flow/artifacts/own/state.md"
+  printf 'current understanding\n' > "$P25K/.ai-flow/artifacts/own/understand.md"
+  $G25 -C "$P25K" worktree add -q -b you/t-k "$T25/k-front" >/dev/null 2>&1
+  mkdir -p "$T25/k-front/.ai-flow/artifacts/own"
+  printf 'stale sheet\n' > "$T25/k-front/.ai-flow/artifacts/own/state.md"
+  touch -r "$P25K/.ai-flow/artifacts/own/state.md" "$T25/k-front/.ai-flow/artifacts/own/state.md"
+  printf 'stale understanding\n' > "$T25/k-front/.ai-flow/artifacts/own/understand.md"
+  touch -t 202001010000 "$T25/k-front/.ai-flow/artifacts/own/understand.md"
+  # A paper only the front holds. The replacement copies FROM the primary, so nothing in it can delete
+  # this file — and that is the property being pinned: a mechanism written as a mirror of the primary
+  # would take the front's own work with it and pass every other leg here.
+  printf 'the front wrote this\n' > "$T25/k-front/.ai-flow/artifacts/own/plan.md"
+  # A task whose name EXTENDS the seeded one, declared so the prune spares it. Its paper is older than
+  # the coordinator's, so a folder match written without the separator would replace it — and the
+  # keep-list's promise, which is the half of the contract this change does not touch, would be gone.
+  mkdir -p "$P25K/.ai-flow/artifacts/own-two" "$T25/k-front/.ai-flow/artifacts/own-two"
+  printf 'coordinator own-two\n' > "$P25K/.ai-flow/artifacts/own-two/state.md"
+  printf 'front own-two\n'       > "$T25/k-front/.ai-flow/artifacts/own-two/state.md"
+  touch -t 202001010000 "$T25/k-front/.ai-flow/artifacts/own-two/state.md"
+  out25k="$( cd "$P25K" && "$SEED_ABS" "$T25/k-front" own own-two 2>&1 )"; rck=$?
+  v25=""
+  [ "$rck" = 0 ] || v25="$v25 refused(${out25k#seed-front: })"
+  grep -q 'current sheet' "$T25/k-front/.ai-flow/artifacts/own/state.md" 2>/dev/null \
+    || v25="$v25 tie-not-replaced"
+  grep -q 'current understanding' "$T25/k-front/.ai-flow/artifacts/own/understand.md" 2>/dev/null \
+    || v25="$v25 older-copy-not-replaced"
+  grep -q 'front own-two' "$T25/k-front/.ai-flow/artifacts/own-two/state.md" 2>/dev/null \
+    || v25="$v25 a-task-whose-name-extends-the-seeded-one-was-replaced"
+  [ -z "$v25" ] \
+    && ok "the seeder replaces the seeded-for task's papers from the primary" \
+    || bad "the seeder replaces the seeded-for task's papers from the primary ($v25)"
+
+  # 15) The same fixture answers the other half: what the primary does not have, the replacement cannot
+  #     remove. Asserted apart from the legs above because it fails in the opposite direction — it is
+  #     green today and must stay green, and what it exists to catch is a replacement implemented as a
+  #     mirror of the primary's folder.
+  grep -q 'the front wrote this' "$T25/k-front/.ai-flow/artifacts/own/plan.md" 2>/dev/null \
+    && ok "the replacement never deletes a paper only the front holds" \
+    || bad "the replacement never deletes a paper only the front holds"
+
+  # 16) THE HAZARD. A re-run against a front that has been WORKING the task it is seeded for: there the
+  #     front's copy is the authoritative one by the very logic that authorises the replacement, and
+  #     replacing destroys the only account of work in progress. The evidence is which copy was written
+  #     last — no paper is parsed, so it holds for every paper and not only for the sheet.
+  #
+  #     Four legs. The papers stay; BOTH of them stay, including the one that is older than the
+  #     coordinator's, because a folder half from the coordinator and half from the front is a state no
+  #     reader can reason about; the run refuses instead of reporting a success it did not achieve; and
+  #     it refuses AFTER the prune, like the pattern-file refusal above and for the same reason — a
+  #     front-end may have filled the checkout at creation, and stopping earlier leaves foreign papers
+  #     behind on the way out.
+  P25L="$T25/l"; mk25 "$P25L"
+  mkdir -p "$P25L/.ai-flow/artifacts/own"
+  printf 'coordinator snapshot\n'      > "$P25L/.ai-flow/artifacts/own/state.md"
+  printf 'coordinator understanding\n' > "$P25L/.ai-flow/artifacts/own/understand.md"
+  $G25 -C "$P25L" worktree add -q -b you/t-l "$T25/l-front" >/dev/null 2>&1
+  mkdir -p "$T25/l-front/.ai-flow/artifacts/own" "$T25/l-front/.ai-flow/artifacts/foreign-one"
+  printf 'x\n' > "$T25/l-front/.ai-flow/artifacts/foreign-one/state.md"   # left by a creation-time copy
+  printf 'live work\n' > "$T25/l-front/.ai-flow/artifacts/own/state.md"
+  touch -t 203001010000 "$T25/l-front/.ai-flow/artifacts/own/state.md"
+  printf 'front understanding\n' > "$T25/l-front/.ai-flow/artifacts/own/understand.md"
+  touch -t 202001010000 "$T25/l-front/.ai-flow/artifacts/own/understand.md"
+  out25l="$( cd "$P25L" && "$SEED_ABS" "$T25/l-front" own 2>&1 )"; rcl=$?
+  w25=""
+  grep -q 'live work' "$T25/l-front/.ai-flow/artifacts/own/state.md" 2>/dev/null \
+    || w25="$w25 live-paper-replaced"
+  grep -q 'front understanding' "$T25/l-front/.ai-flow/artifacts/own/understand.md" 2>/dev/null \
+    || w25="$w25 replaced-half-the-folder"
+  [ "$rcl" != 0 ] || w25="$w25 exit-0"
+  [ -e "$T25/l-front/.ai-flow/artifacts/foreign-one" ] && w25="$w25 refused-before-the-prune"
+  [ -z "$w25" ] \
+    && ok "the seeder leaves the papers of a task the front is working" \
+    || bad "the seeder leaves the papers of a task the front is working ($w25)"
+
+  # 17) The refusal is read from the DIAGNOSTIC, because the operator acts on the sentence and this one
+  #     asks them to choose: it must name the task whose papers it would not touch, both checkouts —
+  #     the two copies it could not choose between — and the act that forces the refresh, which is the
+  #     only way past it.
+  y25=""
+  case "$out25l" in *own*)        ;; *) y25="$y25 does-not-name-the-task" ;; esac
+  case "$out25l" in *"$T25/l-front"*) ;; *) y25="$y25 does-not-name-the-front" ;; esac
+  case "$out25l" in *"$P25L"*)    ;; *) y25="$y25 does-not-name-the-primary" ;; esac
+  case "$out25l" in *delete*|*remove*) ;; *) y25="$y25 does-not-name-the-way-past-it" ;; esac
+  [ -z "$y25" ] \
+    && ok "the seeder refuses rather than choose between two live copies, and its sentence says so" \
+    || bad "the seeder refuses rather than choose between two live copies, and its sentence says so ($y25 said:${out25l#seed-front: })"
+
+  # 18) THE AGE OF A COPY. The guard above decides on which copy was written last, so a copy that stamps
+  #     itself with the present destroys the evidence it will be read by: the seeder's own work would
+  #     make an untouched front look newer than the coordinator, and the NEXT run would refuse a front
+  #     that had done nothing. Both halves are asserted — the stamp on an ordinary copy and on a
+  #     replaced paper — and then the consequence itself: two runs in a row over an unworked front.
+  P25M="$T25/m"; mk25 "$P25M"
+  mkdir -p "$P25M/.ai-flow/artifacts/own"
+  printf 'sheet\n' > "$P25M/.ai-flow/artifacts/own/state.md"
+  touch -t 202001010000 "$P25M/.ai-flow/artifacts/own/state.md" "$P25M/.ai-flow/project.yml"
+  $G25 -C "$P25M" worktree add -q -b you/t-m "$T25/m-front" >/dev/null 2>&1
+  ( cd "$P25M" && "$SEED_ABS" "$T25/m-front" own ) >/dev/null 2>&1; rcm=$?
+  out25m="$( cd "$P25M" && "$SEED_ABS" "$T25/m-front" own 2>&1 )"; rcm2=$?
+  a25=""
+  [ "$rcm" = 0 ] || a25="$a25 first-run-refused"
+  [ "$T25/m-front/.ai-flow/project.yml" -nt "$P25M/.ai-flow/project.yml" ] \
+    && a25="$a25 ordinary-copy-stamped-with-the-present"
+  [ "$T25/m-front/.ai-flow/artifacts/own/state.md" -nt "$P25M/.ai-flow/artifacts/own/state.md" ] \
+    && a25="$a25 replaced-paper-stamped-with-the-present"
+  [ "$rcm2" = 0 ] || a25="$a25 second-run-refused(${out25m#seed-front: })"
+  [ -z "$a25" ] \
+    && ok "a copy carries the age of what it copied, so a second run is not mistaken for work" \
+    || bad "a copy carries the age of what it copied, so a second run is not mistaken for work ($a25)"
   rm -rf "$T25"
 fi
 
