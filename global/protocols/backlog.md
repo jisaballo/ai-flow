@@ -450,8 +450,11 @@ what activation has always been, plus the declaration in step 2.
    one exception: **the papers of the task it is seeded for are replaced from the coordinator's**. That
    is the collection's sanctioned exception (`## Closing a Workstream`) read from the other side — the
    authoritative copy is the one from the checkout where the task was worked, and a front that has not
-   worked it yet has none. Without it the sheet move 7 writes could never reach a checkout born holding
-   an older one, since a front-end that copies at creation takes its snapshot before that sheet exists.
+   worked it yet has none. What it repairs is a checkout born holding papers that have since
+   moved on: what created it took a snapshot, and the coordinator writes to those papers both before
+   that moment and after it. It is not how move 7's sheet reaches the front — that move writes the
+   sheet there — and this move runs before it, so at an ordinary opening the replacement carries what
+   the coordinator holds at that moment and nothing later.
    Where those papers were written *after* the coordinator's, the front is already working that task and
    its copy is the authoritative one: the move replaces none of them and **stops**, naming both copies,
    because no mechanism can choose there and choosing wrong destroys the only account of work in

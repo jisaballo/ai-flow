@@ -3937,6 +3937,12 @@ grep -qiE 'papers of the task it is seeded for|papers of the task you name' "$DO
   || d25="$d25 the-exception"
 grep -qiE 'never overwrites (a file that is already there|what is already there)' "$DOC25" 2>/dev/null \
   && d25="$d25 unconditional-promise-still-there"
+# Anchored to the CONDITIONS LIST, not to the file. The exception is stated twice in this document and a
+# file-wide grep is answered by either — so the passage an operator walks per tool, deciding what their
+# front-end leaves them to do by hand, can point at an exception it never states and still pass.
+COND25="$(awk '/^2\. \*\*Data\*\*/{f=1} f&&/^$/{exit} f' "$DOC25" 2>/dev/null)"
+printf '%s' "$COND25" | grep -qiE 'seeded for|task you name' || d25="$d25 the-exception-in-the-conditions-list"
+printf '%s' "$COND25" | grep -qiE 'refus'                    || d25="$d25 the-refusal-in-the-conditions-list"
 [ -z "$d25" ] \
   && ok "the operator's document carries the conditions and the seeding step" \
   || bad "the operator's document carries the conditions and the seeding step (missing:$d25)"
@@ -4130,7 +4136,10 @@ else
   #
   # The two enumeration refusals are deliberately NOT here: reaching them needs a git that fails on one
   # subcommand while succeeding at the others, and the second is unreachable behind the first — the
-  # tracked listing is a strict subset of the work the ignored listing already completed.
+  # tracked listing is a strict subset of the work the ignored listing already completed. The refusal over a front that is working the task it is seeded
+  # for is not here either, for the opposite reason: it needs a fixture with two divergent copies of the
+  # same papers, so it is read where that fixture is built, diagnostic and all, and this roll-call would
+  # only restate it. An inventory that omits without saying so is what stops being an inventory.
   P25J="$T25/j"; mk25 "$P25J"
   rm -f "$P25J/.worktreeinclude"; mkdir -p "$P25J/.worktreeinclude"
   $G25 -C "$P25J" worktree add -q -b you/t-j "$T25/j-front" >/dev/null 2>&1
@@ -4295,10 +4304,6 @@ else
   touch -r "$P25K/.ai-flow/artifacts/own/state.md" "$T25/k-front/.ai-flow/artifacts/own/state.md"
   printf 'stale understanding\n' > "$T25/k-front/.ai-flow/artifacts/own/understand.md"
   touch -t 202001010000 "$T25/k-front/.ai-flow/artifacts/own/understand.md"
-  # A paper only the front holds. The replacement copies FROM the primary, so nothing in it can delete
-  # this file — and that is the property being pinned: a mechanism written as a mirror of the primary
-  # would take the front's own work with it and pass every other leg here.
-  printf 'the front wrote this\n' > "$T25/k-front/.ai-flow/artifacts/own/plan.md"
   # A task whose name EXTENDS the seeded one, declared so the prune spares it. Its paper is older than
   # the coordinator's, so a folder match written without the separator would replace it — and the
   # keep-list's promise, which is the half of the contract this change does not touch, would be gone.
@@ -4315,17 +4320,13 @@ else
     || v25="$v25 older-copy-not-replaced"
   grep -q 'front own-two' "$T25/k-front/.ai-flow/artifacts/own-two/state.md" 2>/dev/null \
     || v25="$v25 a-task-whose-name-extends-the-seeded-one-was-replaced"
+  # The account the run gives of itself. Two papers of the seeded-for task are replaced here and nothing
+  # else is, so the number is a fact about this fixture and not a restatement of the code: a mechanism
+  # that counted a replacement as a copy, or counted both, says something else.
+  case "$out25k" in *"2 paper(s) replaced"*) ;; *) v25="$v25 miscounted(${out25k#seed-front: })" ;; esac
   [ -z "$v25" ] \
     && ok "the seeder replaces the seeded-for task's papers from the primary" \
     || bad "the seeder replaces the seeded-for task's papers from the primary ($v25)"
-
-  # 15) The same fixture answers the other half: what the primary does not have, the replacement cannot
-  #     remove. Asserted apart from the legs above because it fails in the opposite direction — it is
-  #     green today and must stay green, and what it exists to catch is a replacement implemented as a
-  #     mirror of the primary's folder.
-  grep -q 'the front wrote this' "$T25/k-front/.ai-flow/artifacts/own/plan.md" 2>/dev/null \
-    && ok "the replacement never deletes a paper only the front holds" \
-    || bad "the replacement never deletes a paper only the front holds"
 
   # 16) THE HAZARD. A re-run against a front that has been WORKING the task it is seeded for: there the
   #     front's copy is the authoritative one by the very logic that authorises the replacement, and
@@ -4342,21 +4343,28 @@ else
   mkdir -p "$P25L/.ai-flow/artifacts/own"
   printf 'coordinator snapshot\n'      > "$P25L/.ai-flow/artifacts/own/state.md"
   printf 'coordinator understanding\n' > "$P25L/.ai-flow/artifacts/own/understand.md"
-  $G25 -C "$P25L" worktree add -q -b you/t-l "$T25/l-front" >/dev/null 2>&1
-  mkdir -p "$T25/l-front/.ai-flow/artifacts/own" "$T25/l-front/.ai-flow/artifacts/foreign-one"
-  printf 'x\n' > "$T25/l-front/.ai-flow/artifacts/foreign-one/state.md"   # left by a creation-time copy
-  printf 'live work\n' > "$T25/l-front/.ai-flow/artifacts/own/state.md"
-  touch -t 203001010000 "$T25/l-front/.ai-flow/artifacts/own/state.md"
-  printf 'front understanding\n' > "$T25/l-front/.ai-flow/artifacts/own/understand.md"
-  touch -t 202001010000 "$T25/l-front/.ai-flow/artifacts/own/understand.md"
-  out25l="$( cd "$P25L" && "$SEED_ABS" "$T25/l-front" own 2>&1 )"; rcl=$?
+  # Named so the primary's path is NOT a substring of the front's: at `$T25/l-front` the leg below that
+  # reads the diagnostic for the primary matches the FRONT's path instead and can never fail — proven by
+  # deleting the primary from the sentence and watching all four legs stay green.
+  $G25 -C "$P25L" worktree add -q -b you/t-l "$T25/front-l" >/dev/null 2>&1
+  mkdir -p "$T25/front-l/.ai-flow/artifacts/own" "$T25/front-l/.ai-flow/artifacts/foreign-one"
+  printf 'x\n' > "$T25/front-l/.ai-flow/artifacts/foreign-one/state.md"   # left by a creation-time copy
+  printf 'live work\n' > "$T25/front-l/.ai-flow/artifacts/own/state.md"
+  touch -t 203001010000 "$T25/front-l/.ai-flow/artifacts/own/state.md"
+  printf 'front understanding\n' > "$T25/front-l/.ai-flow/artifacts/own/understand.md"
+  touch -t 202001010000 "$T25/front-l/.ai-flow/artifacts/own/understand.md"
+  out25l="$( cd "$P25L" && "$SEED_ABS" "$T25/front-l" own 2>&1 )"; rcl=$?
   w25=""
-  grep -q 'live work' "$T25/l-front/.ai-flow/artifacts/own/state.md" 2>/dev/null \
+  grep -q 'live work' "$T25/front-l/.ai-flow/artifacts/own/state.md" 2>/dev/null \
     || w25="$w25 live-paper-replaced"
-  grep -q 'front understanding' "$T25/l-front/.ai-flow/artifacts/own/understand.md" 2>/dev/null \
+  grep -q 'front understanding' "$T25/front-l/.ai-flow/artifacts/own/understand.md" 2>/dev/null \
     || w25="$w25 replaced-half-the-folder"
   [ "$rcl" != 0 ] || w25="$w25 exit-0"
-  [ -e "$T25/l-front/.ai-flow/artifacts/foreign-one" ] && w25="$w25 refused-before-the-prune"
+  [ -e "$T25/front-l/.ai-flow/artifacts/foreign-one" ] && w25="$w25 refused-before-the-prune"
+  # ...and the copy happened too. Only the prune is pinned above, so a refusal taken before the copy loop
+  # rather than before the prune would leave the front with no project data at all and stay green — and
+  # "completes everything non-destructive" is the whole of what this refusal costs.
+  [ -f "$T25/front-l/.ai-flow/project.yml" ] || w25="$w25 refused-before-the-copy"
   [ -z "$w25" ] \
     && ok "the seeder leaves the papers of a task the front is working" \
     || bad "the seeder leaves the papers of a task the front is working ($w25)"
@@ -4367,9 +4375,16 @@ else
   #     only way past it.
   y25=""
   case "$out25l" in *own*)        ;; *) y25="$y25 does-not-name-the-task" ;; esac
-  case "$out25l" in *"$T25/l-front"*) ;; *) y25="$y25 does-not-name-the-front" ;; esac
+  case "$out25l" in *"$T25/front-l"*) ;; *) y25="$y25 does-not-name-the-front" ;; esac
   case "$out25l" in *"$P25L"*)    ;; *) y25="$y25 does-not-name-the-primary" ;; esac
   case "$out25l" in *delete*|*remove*) ;; *) y25="$y25 does-not-name-the-way-past-it" ;; esac
+  # The paper that diverged, by path. Without this leg the whole list can be dropped from the sentence and
+  # every other leg stays green — `own` alone is already matched twice over by the opening clause and by
+  # the path in the remedy. The second half is what makes it a real reading of the list: the paper that is
+  # OLDER than the coordinator's is untouched but not diverged, and naming it would send the operator to
+  # look at a file that agrees with theirs.
+  case "$out25l" in *"artifacts/own/state.md"*) ;; *) y25="$y25 does-not-name-the-diverged-paper" ;; esac
+  case "$out25l" in *"artifacts/own/understand.md"*) y25="$y25 names-an-undiverged-paper" ;; esac
   [ -z "$y25" ] \
     && ok "the seeder refuses rather than choose between two live copies, and its sentence says so" \
     || bad "the seeder refuses rather than choose between two live copies, and its sentence says so ($y25 said:${out25l#seed-front: })"
@@ -4388,6 +4403,11 @@ else
   out25m="$( cd "$P25M" && "$SEED_ABS" "$T25/m-front" own 2>&1 )"; rcm2=$?
   a25=""
   [ "$rcm" = 0 ] || a25="$a25 first-run-refused"
+  # The premise, asserted rather than assumed, which is this block's own convention: `-nt` answers false for
+  # a destination that does not exist, so both negative legs below are satisfied by a run that copied
+  # nothing at all — and the folder itself is no evidence, since the prune creates it either way.
+  [ -f "$T25/m-front/.ai-flow/project.yml" ] || a25="$a25 nothing-copied"
+  [ -f "$T25/m-front/.ai-flow/artifacts/own/state.md" ] || a25="$a25 paper-never-arrived"
   [ "$T25/m-front/.ai-flow/project.yml" -nt "$P25M/.ai-flow/project.yml" ] \
     && a25="$a25 ordinary-copy-stamped-with-the-present"
   [ "$T25/m-front/.ai-flow/artifacts/own/state.md" -nt "$P25M/.ai-flow/artifacts/own/state.md" ] \
@@ -4396,6 +4416,63 @@ else
   [ -z "$a25" ] \
     && ok "a copy carries the age of what it copied, so a second run is not mistaken for work" \
     || bad "a copy carries the age of what it copied, so a second run is not mistaken for work ($a25)"
+
+  # 19) THE OTHER EVIDENCE. The age test can only ever be taken over papers the COORDINATOR ALSO HAS —
+  #     the candidate list is the primary's — so a paper the front wrote and the coordinator never held
+  #     reaches it never. It is the strongest evidence there is: a create-time copy is a subset of what
+  #     the primary held, so a file here the primary lacks was written in this checkout (or deleted in
+  #     the other), and both are reasons to keep hands off. The fixture is built so the age rule says
+  #     REPLACE and only this rule can stop it: the front's sheet is an untouched snapshot and the
+  #     coordinator's is newer, exactly the ordinary repair — with one paper of the front's own beside it.
+  #     Without this the folder is left half coordinator and half front, and the run reports success.
+  P25N="$T25/n"; mk25 "$P25N"
+  mkdir -p "$P25N/.ai-flow/artifacts/own"
+  printf 'coordinator sheet, rewritten later\n' > "$P25N/.ai-flow/artifacts/own/state.md"
+  $G25 -C "$P25N" worktree add -q -b you/t-n2 "$T25/front-n" >/dev/null 2>&1
+  mkdir -p "$T25/front-n/.ai-flow/artifacts/own"
+  printf 'the snapshot sheet\n' > "$T25/front-n/.ai-flow/artifacts/own/state.md"
+  touch -t 202001010000 "$T25/front-n/.ai-flow/artifacts/own/state.md"
+  printf 'the front wrote this\n' > "$T25/front-n/.ai-flow/artifacts/own/plan.md"
+  out25n="$( cd "$P25N" && "$SEED_ABS" "$T25/front-n" own 2>&1 )"; rcn=$?
+  q25=""
+  [ "$rcn" != 0 ] || q25="$q25 exit-0"
+  grep -q 'the snapshot sheet' "$T25/front-n/.ai-flow/artifacts/own/state.md" 2>/dev/null \
+    || q25="$q25 replaced-anyway"
+  case "$out25n" in *"artifacts/own/plan.md"*) ;; *) q25="$q25 does-not-name-the-paper-it-found" ;; esac
+  [ -z "$q25" ] \
+    && ok "a paper the coordinator never wrote is evidence the front worked the task" \
+    || bad "a paper the coordinator never wrote is evidence the front worked the task ($q25 said:${out25n#seed-front: })"
+
+  # 20) The other half of the same fixture: what the primary does not have, this run cannot remove. It
+  #     fails in the opposite direction from everything above — green from the start and it must stay
+  #     green — and what it exists to catch is a replacement written as a MIRROR of the primary's folder,
+  #     which would take the front's own work with it and satisfy every other leg here.
+  grep -q 'the front wrote this' "$T25/front-n/.ai-flow/artifacts/own/plan.md" 2>/dev/null \
+    && ok "the replacement never deletes a paper only the front holds" \
+    || bad "the replacement never deletes a paper only the front holds"
+
+  # 21) CONTAINMENT. Nothing this mechanism does may write outside the checkout it was given. Until the
+  #     exception above there was no way it could — an existing destination path was skipped, never
+  #     written — and `cp` onto a symlink writes into the LINK'S TARGET, which is as easily a path in
+  #     another checkout as one in this one. The fixture is the replacement's ordinary case, with the
+  #     destination paper replaced by a link pointing out of the front.
+  P25O="$T25/o"; mk25 "$P25O"
+  mkdir -p "$P25O/.ai-flow/artifacts/own"
+  printf 'coordinator sheet\n' > "$P25O/.ai-flow/artifacts/own/state.md"
+  $G25 -C "$P25O" worktree add -q -b you/t-o "$T25/front-o" >/dev/null 2>&1
+  mkdir -p "$T25/front-o/.ai-flow/artifacts/own"
+  printf 'a file outside both checkouts\n' > "$T25/outside.txt"
+  touch -t 202001010000 "$T25/outside.txt"
+  ln -s "$T25/outside.txt" "$T25/front-o/.ai-flow/artifacts/own/state.md"
+  ( cd "$P25O" && "$SEED_ABS" "$T25/front-o" own ) >/dev/null 2>&1
+  s25=""
+  grep -q 'a file outside both checkouts' "$T25/outside.txt" 2>/dev/null || s25="$s25 wrote-outside-the-checkout"
+  [ -L "$T25/front-o/.ai-flow/artifacts/own/state.md" ] && s25="$s25 link-still-in-place"
+  grep -q 'coordinator sheet' "$T25/front-o/.ai-flow/artifacts/own/state.md" 2>/dev/null \
+    || s25="$s25 paper-not-replaced"
+  [ -z "$s25" ] \
+    && ok "the replacement replaces the entry, it never writes through a link out of the checkout" \
+    || bad "the replacement replaces the entry, it never writes through a link out of the checkout ($s25)"
   rm -rf "$T25"
 fi
 

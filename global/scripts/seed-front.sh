@@ -117,8 +117,8 @@ evaluate "$CAND" "$SEL" && eligible=1
 # task is what authorises it. It is the closing collection's exception read from the other side: there
 # the copy from the checkout where the task was WORKED is the authoritative one and the coordinator's
 # is a snapshot nobody should have edited; here the front has worked nothing yet, so the authority is
-# the coordinator's. Without it the papers a checkout is born holding win forever — the sheet a front
-# is given is written after the checkout exists, and nothing could ever bring it in.
+# the coordinator's. Without it the papers a checkout is born holding win forever: what created it took
+# a snapshot, and nothing the coordinator has written to those papers since could ever reach it.
 #
 # Matched with the separator, so a task id that is a PREFIX of another cannot claim its folder.
 PAPERS=".ai-flow/artifacts/$TASK/"
@@ -127,6 +127,7 @@ PENDING="$EV/pending"
 copied=0
 replaced=0
 live=""
+only=""
 while IFS= read -r -d '' rel; do
   [ -f "$PRIMARY/$rel" ] || continue
   case "$rel" in
@@ -153,12 +154,30 @@ while IFS= read -r -d '' rel; do
   copied=$((copied+1))
 done < "$SEL"
 
-# All of them or none: one paper written after the coordinator's marks the whole folder as work in
-# progress, and the refusal that says so is taken at the tail, after the prune.
-if [ -z "$live" ]; then
+# The age test above can only ever be taken over papers the COORDINATOR ALSO HAS — the candidate list is
+# the primary's. A paper the front wrote and the coordinator never held therefore never reaches it, and it
+# is the strongest evidence there is: a create-time snapshot is a subset of what the primary held, so a
+# file here that the primary lacks was either written in this checkout or deleted in the other. Both are
+# reasons to keep hands off. Without this the folder can be left half coordinator and half front — one
+# paper replaced, the front's own beside it — and reported as a success.
+if [ -d "$DEST/$PAPERS" ]; then
+  while IFS= read -r f; do
+    rel="${f#"$DEST/"}"
+    [ -e "$PRIMARY/$rel" ] || only="$only $rel"
+  done < <(find "$DEST/$PAPERS" \( -type f -o -type l \))
+fi
+
+# All of them or none: one paper of either kind marks the whole folder as work in progress, and the
+# refusal that says so is taken at the tail, after the prune.
+if [ -z "$live$only" ]; then
   while IFS= read -r -d '' rel; do
     mkdir -p "$DEST/$(dirname "$rel")"
     if [ -e "$DEST/$rel" ]; then replaced=$((replaced+1)); else copied=$((copied+1)); fi
+    # Removed rather than written over: `cp` onto a symlink writes the coordinator's bytes into the
+    # LINK'S TARGET, which is a path outside this checkout as easily as inside it. Nothing this script
+    # does may leave $DEST, and until the exception above there was no way it could — the skip below
+    # meant an existing destination path was never written at all.
+    rm -f "$DEST/$rel"
     cp -p "$PRIMARY/$rel" "$DEST/$rel"
   done < "$PENDING"
 fi
@@ -207,8 +226,11 @@ fi
 # decides about the papers. What it reports is that the run could not tell a snapshot from live work
 # and therefore chose neither — and it names the one act that settles it, because the operator is the
 # only one who knows which of the two copies they meant.
-if [ -n "$live" ]; then
-  die "the papers of $TASK in $DEST were written after the coordinator's in $PRIMARY, so this front is working that task and its copy is the authoritative one. Nothing of $TASK was replaced; what diverged:$live. To take the coordinator's copy instead, delete $DEST/.ai-flow/artifacts/$TASK and run this again."
+if [ -n "$live$only" ]; then
+  cause=""
+  [ -z "$live" ] || cause="$cause Written after the coordinator's:$live."
+  [ -z "$only" ] || cause="$cause Never written by the coordinator:$only."
+  die "the papers of $TASK in $DEST are this front's own work, so its copy is the authoritative one and not the coordinator's in $PRIMARY.$cause Nothing of $TASK was replaced. To take the coordinator's copy instead, delete $DEST/.ai-flow/artifacts/$TASK and run this again."
 fi
 
 say "seeded $DEST for $TASK — $copied file(s) copied, $replaced paper(s) replaced, $pruned foreign task folder(s) pruned"

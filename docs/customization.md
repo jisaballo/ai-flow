@@ -162,7 +162,9 @@ arrived.
 2. **Data** — the checkout holds what `.worktreeinclude` declares travels, and **only the papers** of
    the task it owns. The native path brings the first half without help; whether another tool does is
    per-tool and per-version, so look before you seed and take it on by hand only for what is missing —
-   the seeding mechanism below leaves alone whatever is already there, with the one exception below.
+   the seeding mechanism below leaves alone whatever is already there, except the papers of the task it
+   is seeded for: those it replaces from your copy, and where they look like the front's own work it
+   replaces nothing and **refuses** (both below).
    The pruning half is run on every path regardless: a copy taken at creation is a snapshot, and it can
    arrive holding papers of tasks this front does not own — and, being a snapshot, it can also arrive
    holding a version of the papers that has since moved on.
