@@ -140,8 +140,10 @@ trusting the tool that produced it.
 4. **Ownership** — whatever created the checkout removes it. A tool that keeps its own registry of
    worktrees is left pointing at one something else deleted.
 
-Claude Code's own tooling — `EnterWorktree`, `claude -w`, an agent's `isolation: worktree` — meets 1
-and 2 on its own and is the default. It creates the worktree **inside** `.claude/worktrees/`, so with
+Claude Code's own tooling — `EnterWorktree`, `claude -w`, an agent's `isolation: worktree` — is the
+default: it meets condition 1, and it brings the data of condition 2 without help. It does not finish
+condition 2 on its own — it copies the papers of *every* open task, so the pruning step below is run on
+this path too. It creates the worktree **inside** `.claude/worktrees/`, so with
 it condition 3 is your ignore rules' job: add `/.claude/worktrees/` to your `.gitignore` (this
 repository does). Left out, that checkout is untracked content inside your project, and the review's
 own before/after comparison then runs over a second working copy something else is writing.
@@ -153,11 +155,11 @@ nothing of `.worktreeinclude` — the engine ships the mechanism that satisfies 
 ~/.claude/ai-flow/scripts/seed-front.sh <checkout> <T-XXX>
 ```
 
-It reads your pattern file, copies what that selects, and removes the other tasks' papers the copy
-brought along. It never overwrites or deletes what the checkout already holds, so running it again when
-that front takes on its next task cannot walk over work in progress. Run it from anywhere in the
-repository: it resolves your primary checkout from git's own worktree listing, not from wherever it was
-invoked.
+It reads your pattern file, copies what that selects, and removes the papers of every task except the
+ones you name. Name more than one when the front is working more than one — `seed-front.sh <checkout>
+<T-XXX> [T-YYY ...]` — because that list is what stops a re-run from deleting a paused task's papers; it
+never overwrites a file that is already there. Run it from anywhere in the repository: it resolves your
+primary checkout from git's own worktree listing, not from wherever it was invoked.
 
 ## What NOT to Customize
 
@@ -207,7 +209,7 @@ When onboarding team members:
 2. They customize the `## Personal Preferences` section of their `~/.claude/CLAUDE.md`
 3. Steering files, product.md, `project.yml`, and project CLAUDE.md are shared via git
 
-To pull framework improvements on any device later, run `./install.sh update` (unattended): it refreshes the engine in `~/.claude` — protocols, skills, the verify workflow, hooks, and the ralph runner — and never writes into any project.
+To pull framework improvements on any device later, run `./install.sh update` (unattended): it refreshes the engine in `~/.claude` — protocols, skills, the verify workflow, hooks, the ceremony scripts, and the ralph runner — and never writes into any project.
 
 **What's shared** (committed to repo):
 - `.ai-flow/product.md` — product context

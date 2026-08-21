@@ -3819,8 +3819,10 @@ if [ -n "$M5_25" ]; then
   # The positive form is what bounds this, never a list of tool names to forbid: naming the one brand
   # that caused the defect leaves every other brand free to be prescribed next.
   c25b=""
-  printf '%s' "$M5_25" | grep -qiE 'floor'                                  || c25b="$c25b floor"
-  printf '%s' "$M5_25" | grep -qiE 'default'                                || c25b="$c25b default"
+  # One phrase, not two loose words: `default` alone is satisfied by the base condition's own
+  # "published default branch", so the half of the criterion that requires the native path to be named
+  # the default was unable to fail.
+  printf '%s' "$M5_25" | grep -qiE 'default and the floor'                  || c25b="$c25b default-and-floor"
   printf '%s' "$M5_25" | grep -qiE 'no particular|any tool|whatever tool|any front.end' || c25b="$c25b tool-agnostic"
   [ -z "$c25b" ] \
     && ok "the creation move requires no particular front-end and names the native path as the floor" \
@@ -3853,6 +3855,12 @@ else
   bad "the dismantling move states the native tool's session limit (move not found)"
 fi
 
+# The condition move 7 now waits on. Its sibling in move 6 is asserted above; a correction nothing
+# asserts can be reverted with the suite green, and this one was added by the same change.
+printf '%s' "$(c25 7)" | grep -qiE 'worktree list' \
+  && ok "the roster row waits on the repository's worktree listing" \
+  || bad "the roster row waits on the repository's worktree listing"
+
 # --- the retired rationale, guarded as a class ---------------------------
 # Written against the text that will exist, not against the sentence being deleted: what must never
 # come back is the CLAIM that nesting misbinds the guards, in any wording. The engine's own guards
@@ -3862,6 +3870,14 @@ r25="$(grep -rniE 'nest(ed|ing)' global docs template 2>/dev/null \
 [ "$r25" = "0" ] \
   && ok "no document claims a nested checkout misbinds the guardrail hooks" \
   || bad "no document claims a nested checkout misbinds the guardrail hooks ($r25 line(s))"
+
+# --- the ceremony points at the shipped mechanism ------------------------
+# The operator's guide naming it is not the same fact: this is the sentence an agent running the
+# ceremony reads, and it is the only thing that tells a non-native front-end how to meet the data
+# condition.
+printf '%s' "$(o25 6)" | grep -q 'seed-front.sh' \
+  && ok "the seed-and-prune move names the mechanism the engine ships" \
+  || bad "the seed-and-prune move names the mechanism the engine ships"
 
 # --- the operator's document ---------------------------------------------
 DOC25="docs/customization.md"
@@ -3915,6 +3931,10 @@ else
     mkdir -p "$1/.ai-flow/steering" "$1/.ai-flow/codebase" \
              "$1/.ai-flow/artifacts/foreign-one" "$1/.ai-flow/artifacts/foreign-two"
     printf 'name: fixture\n' > "$1/.ai-flow/project.yml"
+    # A file BELOW a directory pattern. Without one, every seedable path is top-level and a mechanism
+    # that flattens `.ai-flow/steering/` into `.ai-flow/` passes untouched — which is the defect the
+    # shipped mechanism was written to replace.
+    printf 'rule\n'          > "$1/.ai-flow/steering/auth.md"
     printf '# product\n'     > "$1/.ai-flow/product.md"
     printf '# backlog\n'     > "$1/.ai-flow/BACKLOG.md"
     printf '# state\n'       > "$1/.ai-flow/STATE.md"
@@ -3986,7 +4006,7 @@ else
   mkdir -p "$T25/d-front/.ai-flow/artifacts/paused"
   printf 'live work\n' > "$T25/d-front/.ai-flow/artifacts/paused/state.md"
   printf 'name: edited-in-the-front\n' > "$T25/d-front/.ai-flow/project.yml"
-  ( cd "$P25D" && "$SEED_ABS" "$T25/d-front" own ) >/dev/null 2>&1
+  ( cd "$P25D" && "$SEED_ABS" "$T25/d-front" own paused ) >/dev/null 2>&1
   k25=""
   [ -f "$T25/d-front/.ai-flow/artifacts/paused/state.md" ] || k25="$k25 paused-task-pruned"
   grep -q 'live work' "$T25/d-front/.ai-flow/artifacts/paused/state.md" 2>/dev/null || k25="$k25 paused-task-overwritten"
@@ -3995,6 +4015,68 @@ else
   [ -z "$k25" ] \
     && ok "the seeder keeps the papers the front already holds" \
     || bad "the seeder keeps the papers the front already holds ($k25)"
+
+  # 6) a file BELOW a directory pattern arrives at its own path. The mechanism this replaced copied
+  #    `.ai-flow/steering/` with a trailing slash, which lands the CONTENTS one level up: the flattened
+  #    path is asserted absent, or the check passes on a mechanism that flattens and copies twice.
+  f25=""
+  [ -f "$T25/a-front/.ai-flow/steering/auth.md" ] || f25="$f25 nested-file-missing"
+  [ -e "$T25/a-front/.ai-flow/auth.md" ]          && f25="$f25 flattened-into-the-parent"
+  [ -z "$f25" ] \
+    && ok "a file below a directory pattern arrives at its own path" \
+    || bad "a file below a directory pattern arrives at its own path ($f25)"
+
+  # 7) THE NATIVE PATH. There the front-end copies the artifacts directory wholesale at creation, so the
+  #    checkout already holds every open task's papers before this runs — and the prune is the only thing
+  #    that makes the data condition true. A keep-list inferred from what is already present cannot prune
+  #    anything here, which is why the tasks that stay are declared instead.
+  P25E="$T25/e"; mk25 "$P25E"
+  $G25 -C "$P25E" worktree add -q -b you/t-800 "$T25/e-front" >/dev/null 2>&1
+  mkdir -p "$T25/e-front/.ai-flow"
+  cp -R "$P25E/.ai-flow/artifacts" "$T25/e-front/.ai-flow/artifacts"   # what the native tooling leaves
+  ( cd "$P25E" && "$SEED_ABS" "$T25/e-front" own ) >/dev/null 2>&1
+  n25=""
+  [ -e "$T25/e-front/.ai-flow/artifacts/foreign-one" ] && n25="$n25 foreign-one-kept"
+  [ -e "$T25/e-front/.ai-flow/artifacts/foreign-two" ] && n25="$n25 foreign-two-kept"
+  [ -d "$T25/e-front/.ai-flow/artifacts/own" ]         || n25="$n25 own-folder-missing"
+  [ -z "$n25" ] \
+    && ok "the seeder prunes papers a creation-time copy left behind" \
+    || bad "the seeder prunes papers a creation-time copy left behind ($n25)"
+
+  # 8) TWO fronts. Every fixture above registers exactly one, which makes the destination the last entry
+  #    of the worktree listing — the one case a membership test written as a pipeline ending in a loop
+  #    gets right. Two open fronts is this project's own stated parallelism, so the front that is NOT
+  #    last is the case that matters.
+  P25F="$T25/f"; mk25 "$P25F"
+  $G25 -C "$P25F" worktree add -q -b you/t-900 "$T25/f-first"  >/dev/null 2>&1
+  $G25 -C "$P25F" worktree add -q -b you/t-901 "$T25/f-second" >/dev/null 2>&1
+  out25f="$( cd "$P25F" && "$SEED_ABS" "$T25/f-first" own 2>&1 )"; rcf=$?
+  if [ "$rcf" = 0 ] && [ -f "$T25/f-first/.ai-flow/project.yml" ]; then
+    ok "the seeder seeds a front that is not the last entry of the worktree listing"
+  else
+    bad "the seeder seeds a front that is not the last entry of the worktree listing (exit $rcf: ${out25f#seed-front: })"
+  fi
+
+  # 9) every refusal explains itself. Each is read from the DIAGNOSTIC, not from the exit status alone:
+  #    a script that refused for the wrong reason exits 1 just as correctly as one that refused for the
+  #    right one, and the operator acts on the sentence.
+  r25s=""
+  chk25() {  # $1 = expected fragment, $2.. = arguments
+    local want="$1"; shift
+    local out rc=0
+    out="$( cd "$P25F" && "$SEED_ABS" "$@" 2>&1 )" || rc=$?
+    [ "$rc" != 0 ] || { r25s="$r25s [$want:exit-0]"; return; }
+    case "$out" in *"$want"*) ;; *) r25s="$r25s [$want:said(${out#seed-front: })]" ;; esac
+  }
+  chk25 "usage"
+  chk25 "not a directory"                "$T25/absent-path"        own
+  chk25 "not a checkout of any"          "$T25"                    own
+  chk25 "already holds the project"      "$P25F"                   own
+  chk25 "not a registered worktree"      "$P25F/.git"              own
+  chk25 "not a usable task id"           "$T25/f-second"           "../escape"
+  [ -z "$r25s" ] \
+    && ok "every refusal of the seeder names its own reason" \
+    || bad "every refusal of the seeder names its own reason ($r25s)"
   rm -rf "$T25"
 fi
 
@@ -4006,7 +4088,11 @@ if ! T25D="$(mktemp -d 2>/dev/null)" || [ ! -d "$T25D" ]; then
   bad "the seeder is distributed by the installer and mapped by the drift guard (no sandbox: mktemp -d failed)"
 else
   i25=""
-  grep -q 'seed-front.sh' install.sh || i25="$i25 installer-does-not-name-it"
+  # Executed, because a bare grep of the installer is satisfied by the manifest variable alone: deleting
+  # the copy loop leaves the name in the file and ships the mechanism uninstalled.
+  IH25="$T25D/home-install"; IT25="$T25D/target"; mkdir -p "$IH25" "$IT25"
+  ( cd "$T25D" && HOME="$IH25" bash "$ROOT/install.sh" update "$IT25" </dev/null >/dev/null 2>&1 ) || true
+  [ -x "$IH25/.claude/ai-flow/scripts/seed-front.sh" ] || i25="$i25 installer-does-not-deliver-it"
   G25D="git -c user.email=t@t.t -c user.name=t -c commit.gpgsign=false"
   CL25="$T25D/clone"; mkdir -p "$CL25/global/scripts"
   $G25D init -q "$CL25"

@@ -380,7 +380,8 @@ what activation has always been, plus the declaration in step 2.
 
    The native path — `EnterWorktree` in a session, `claude -w` from the shell, `isolation: worktree` for
    an agent — is the **default and the floor**: it honours `worktree.baseRef` and `.worktreeinclude`, so
-   base and data hold without help, and it is the yardstick the rest are measured against. It creates
+   base holds without help and the data arrives without help — the prune is still move 6's, on every path
+   — and it is the yardstick the rest are measured against. It creates
    the checkout inside `.claude/worktrees/`, so there visibility is precisely what the project's ignore
    rules must cover — one line the ceremony **names and does not write**, because a project's ignore
    rules are the project's own. **No particular front-end is required**: any tool serves where the four
@@ -395,9 +396,12 @@ what activation has always been, plus the declaration in step 2.
    `~/.claude/ai-flow/scripts/seed-front.sh <checkout> <T-XXX>` — which is what satisfies the data
    condition for a front-end that does not: it selects by the project's own pattern file, copies what
    that selects, and prunes what this front does not own. On the native path the copy has already
-   happened and running it is what prunes. It never overwrites what the checkout already holds and never
-   prunes what was there before it ran: a front taking on its next task runs this move over papers that
-   are live work, and the coordinator's copy of those is a snapshot from when the front opened. The ledger stays with the coordinator: BACKLOG.md, STATE.md, the
+   happened and running it is what prunes. It never overwrites a file the checkout already holds, and the
+   papers that stay are the ones **named on the command line** — the task it is seeded for, plus any
+   further task this front is also working, paused or not. Naming them is the point: a front taking on its
+   next task runs this move over papers that are live work, and inferring which those are from what is
+   already present cannot tell them from the ones a creation-time copy dropped there a moment earlier —
+   which on the native path is all of them, so nothing would ever be pruned. The ledger stays with the coordinator: BACKLOG.md, STATE.md, the
    decision log and the archive are never copied in. What the front must read there but must not own —
    its epic's Scope Contract — it reads from the coordinator, read-only (see the Understand protocol).
 

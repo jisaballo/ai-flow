@@ -113,7 +113,8 @@ your-project/
 ~/.claude/                       # The engine — installed once, shared by every project
 ├── ai-flow/
 │   ├── protocols/               # Phase protocols (the framework core)
-│   └── ralph/                   # AFK loop runner + prompts
+│   ├── ralph/                   # AFK loop runner + prompts
+│   └── scripts/                 # ceremony mechanisms (front seeding)
 ├── skills/                      # /understand, /plan, /verify, /discover
 ├── workflows/verify-review.js   # 4-auditor verify workflow
 └── hooks/                       # Guardrails (incl. the engine drift-check)
