@@ -446,7 +446,16 @@ what activation has always been, plus the declaration in step 2.
    `~/.claude/ai-flow/scripts/seed-front.sh <checkout> <T-XXX>` — which is what satisfies the data
    condition for a front-end that does not: it selects by the project's own pattern file, copies what
    that selects, and prunes what this front does not own. On the native path the copy has already
-   happened and running it is what prunes. It never overwrites a file the checkout already holds, and the
+   happened and running it is what prunes. It leaves alone every file the checkout already holds, with
+   one exception: **the papers of the task it is seeded for are replaced from the coordinator's**. That
+   is the collection's sanctioned exception (`## Closing a Workstream`) read from the other side — the
+   authoritative copy is the one from the checkout where the task was worked, and a front that has not
+   worked it yet has none. Without it the sheet move 7 writes could never reach a checkout born holding
+   an older one, since a front-end that copies at creation takes its snapshot before that sheet exists.
+   Where those papers were written *after* the coordinator's, the front is already working that task and
+   its copy is the authoritative one: the move replaces none of them and **stops**, naming both copies,
+   because no mechanism can choose there and choosing wrong destroys the only account of work in
+   progress. The
    papers that stay are the ones **named on the command line** — the task it is seeded for, plus any
    further task this front is also working, paused or not. Naming them is the point: a front taking on its
    next task runs this move over papers that are live work, and inferring which those are from what is
@@ -458,7 +467,11 @@ what activation has always been, plus the declaration in step 2.
 7. **Write the roster row and the task's sheet.** The row carries workstream, checkout, branch, task,
    epic, the declared areas, **what created the checkout** — the tool identified in move 5, which is
    what the dismantling move reads — and the date. The sheet carries the branch that owns the task, the phase,
-   the step, the autonomy level, and any acknowledgement from step 3. The `branch:` line is what makes
+   the step, the autonomy level, and any acknowledgement from step 3. The row is the coordinator's; the
+   sheet is written **in the checkout where the task is worked** — the coordinator's when the task stays
+   there, the front's when this ceremony created one — which is the rule the sheet already lives by
+   (`## State Files`). It is written there rather than copied across afterwards because the seeding move
+   ran before this one: a sheet written only in the coordinator is one the front has no way to receive. The `branch:` line is what makes
    the sheet findable in a checkout that holds several: without it, the front the ceremony just opened
    has no state anything can read. Writing it is writing a claim, so this move carries the obligation
    that comes with one: **release every other claim to that branch in this checkout**, in the same act

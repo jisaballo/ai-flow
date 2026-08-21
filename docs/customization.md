@@ -162,9 +162,10 @@ arrived.
 2. **Data** — the checkout holds what `.worktreeinclude` declares travels, and **only the papers** of
    the task it owns. The native path brings the first half without help; whether another tool does is
    per-tool and per-version, so look before you seed and take it on by hand only for what is missing —
-   the seeding mechanism below never overwrites what is already there. The pruning half is run on every
-   path regardless: a copy taken at creation is a snapshot, and it can arrive holding papers of tasks
-   this front does not own.
+   the seeding mechanism below leaves alone whatever is already there, with the one exception below.
+   The pruning half is run on every path regardless: a copy taken at creation is a snapshot, and it can
+   arrive holding papers of tasks this front does not own — and, being a snapshot, it can also arrive
+   holding a version of the papers that has since moved on.
 3. **Visibility** — the coordinator's audit cannot see the checkout. Outside your project folder that
    holds by itself; inside it, only where your ignore rules cover the path. This one is **per-tool** —
    which of the two cases you are in depends on where your tool puts the checkout.
@@ -190,8 +191,21 @@ nothing of `.worktreeinclude` — the engine ships the mechanism that satisfies 
 
 It reads your pattern file, copies what that selects, and removes the papers of every task except the
 ones you name. Name more than one when the front is working more than one — `seed-front.sh <checkout>
-<T-XXX> [T-YYY ...]` — because that list is what stops a re-run from deleting a paused task's papers; it
-never overwrites a file that is already there. Run it from anywhere in the repository: it resolves your
+<T-XXX> [T-YYY ...]` — because that list is what stops a re-run from deleting a paused task's papers,
+and those extra ones are never overwritten either.
+
+One thing it does replace: **the papers of the task it is seeded for**, the first id you give it. A copy
+taken when the checkout was created is a snapshot, and the sheet that says which task the checkout is on
+is written *after* that — so without the replacement a front born holding an older version of those
+papers keeps it forever, and the reader that looks for its task there answers with a dead branch or, worse,
+with the wrong phase. It is the same exception the closing collection has, read from the other side: the
+authoritative copy is the one from the checkout where the task was worked, and a front that has not
+worked it yet holds none.
+
+Which is why it stops where it cannot tell. If any of those papers in the checkout was written **after**
+your own copy of it, that front is working the task and its copy is the authoritative one: nothing of
+that task is replaced and the run **refuses**, naming both copies. To take your copy instead, delete the
+front's folder for that task and run it again. Run it from anywhere in the repository: it resolves your
 primary checkout from git's own worktree listing, not from wherever it was invoked. Where your pattern
 file matches nothing in the repository at all — neither an ignored path nor a tracked one — it strips the
 papers and then **refuses**, rather than reporting a success it did not achieve; that is the precondition
