@@ -208,7 +208,7 @@ fi
 # and therefore chose neither — and it names the one act that settles it, because the operator is the
 # only one who knows which of the two copies they meant.
 if [ -n "$live" ]; then
-  die "the papers of $TASK in $DEST were written after the coordinator's in $PRIMARY, so this front is working that task and its copy is the authoritative one — nothing of $TASK was replaced.$live. To take the coordinator's copy instead, delete $DEST/.ai-flow/artifacts/$TASK and run this again."
+  die "the papers of $TASK in $DEST were written after the coordinator's in $PRIMARY, so this front is working that task and its copy is the authoritative one. Nothing of $TASK was replaced; what diverged:$live. To take the coordinator's copy instead, delete $DEST/.ai-flow/artifacts/$TASK and run this again."
 fi
 
 say "seeded $DEST for $TASK — $copied file(s) copied, $replaced paper(s) replaced, $pruned foreign task folder(s) pruned"
