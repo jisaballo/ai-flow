@@ -100,9 +100,12 @@ set carries project **data** and deliberately leaves the ledger behind:
 
 **The precondition, stated plainly**: this only takes effect for paths your repository *ignores*.
 If `.ai-flow/` is not in your `.gitignore`, none of these patterns is eligible and a new worktree is
-still born without them. If instead you commit `.ai-flow/`, git carries the **whole** directory into
-every worktree — backlog, state, decision log and archive included — which is the opposite of what
-the pattern file is for. In that layout the single-writer rule for the ledger is held by convention
+still born without them — and the seeding step below **refuses** rather than reporting a success it
+did not achieve, naming this and stale patterns as the two things to go and check. If instead you
+commit `.ai-flow/`, git carries the **whole** directory into every worktree — backlog, state, decision
+log and archive included — which is the opposite of what the pattern file is for. That layout still
+seeds successfully: git has already carried the data, so selecting nothing to copy is the right answer
+there and the step only has the papers to strip. In that layout the single-writer rule for the ledger is held by convention
 rather than by the tool, so decide which way you want it before relying on either. The installer does
 not edit your `.gitignore`; that is your project's call.
 
