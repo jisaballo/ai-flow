@@ -122,6 +122,25 @@ while IFS= read -r -d '' rel; do
   copied=$((copied+1))
 done < "$SEL"
 
+# An empty selection is not one situation but two, and only one of them is a defect. Both layouts are
+# documented: where the data directory is IGNORED the patterns select it and the copy above carries it;
+# where it is COMMITTED git already carried the whole directory into the checkout, so selecting nothing
+# among the ignored paths is the correct answer there and the prune below is the only work left. What
+# remains is the documented precondition FAILING — a data directory neither ignored nor tracked, or a
+# pattern file whose paths have gone stale — and there the front is born with no project data at all
+# while the run reports success.
+#
+# So the question is not whether the selection is empty; it is whether the pattern file matches anything
+# in this repository AT ALL, and the tracked paths are the second half of it. Asked only when the first
+# half came back empty: the ordinary layout never pays for it, and it costs one evaluation rather than
+# one per file — which is what makes asking it affordable at all.
+declared=$eligible
+if [ "$eligible" = 0 ]; then
+  git -C "$PRIMARY" ls-files -z > "$EV/tracked" \
+    || die "cannot enumerate the tracked paths of $PRIMARY"
+  evaluate "$EV/tracked" "$EV/tracked-selected" && declared=1
+fi
+
 # The pattern file names the whole artifacts directory, so the checkout holds the papers of every open
 # task — copied by the front-end at creation on the native path, or by the loop above on any other. The
 # front owns what was declared: everything else goes, wherever it came from.
@@ -134,6 +153,14 @@ while IFS= read -r dir; do
   pruned=$((pruned+1))
 done < <(find "$DEST/.ai-flow/artifacts" -mindepth 1 -maxdepth 1 -type d)
 mkdir -p "$DEST/.ai-flow/artifacts/$TASK"
+
+# Refused AFTER the prune, deliberately. The prune is what makes the data condition true on every path —
+# a front-end that copied papers in at creation left them here whatever the patterns select — so stopping
+# before it would leave foreign papers behind on the way out. What the status reports is that the data
+# condition was not satisfied, and the sentence names which of the two causes to go and look at.
+if [ "$declared" = 0 ]; then
+  die "the pattern file at $PATTERNS matches nothing in $PRIMARY — neither an ignored path nor a tracked one, so $DEST was seeded with no project data. Either the data directory is not in your .gitignore (only untracked-and-ignored paths are eligible) or the patterns are stale."
+fi
 
 say "seeded $DEST for $TASK — $copied file(s) copied, $pruned foreign task folder(s) pruned"
 [ -n "$*" ] && say "kept as declared: $*"

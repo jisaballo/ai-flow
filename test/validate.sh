@@ -4155,12 +4155,20 @@ else
   P25H="$T25/h"; mk25 "$P25H"
   : > "$P25H/.gitignore"                       # the data directory is no longer ignored...
   $G25 -C "$P25H" rm -r -q --cached .ai-flow >/dev/null 2>&1   # ...and not tracked either
-  $G25 -C "$P25H" add -A >/dev/null 2>&1; $G25 -C "$P25H" commit -q -m untrack
+  # `add -A` would put it straight back: once the directory stops being ignored, "everything" includes
+  # it, and the fixture would quietly become the COMMITTED layout — which is the case below, not this
+  # one. Only the emptied ignore file is staged.
+  $G25 -C "$P25H" add .gitignore >/dev/null 2>&1; $G25 -C "$P25H" commit -q -m untrack
   $G25 -C "$P25H" worktree add -q -b you/t-h "$T25/h-front" >/dev/null 2>&1
   mkdir -p "$T25/h-front/.ai-flow/artifacts/foreign-one"       # what a front-end left at creation
   printf 'a\n' > "$T25/h-front/.ai-flow/artifacts/foreign-one/state.md"
   out25h="$( cd "$P25H" && "$SEED_ABS" "$T25/h-front" own 2>&1 )"; rch=$?
   z25=""
+  # The premise, asserted rather than assumed. A fixture that drifted into one of the other two layouts
+  # would make this verdict a statement about a case nobody meant to test — which is how it drifted once
+  # already, when staging "everything" put the directory back under version control.
+  git -C "$P25H" check-ignore -q .ai-flow/project.yml 2>/dev/null && z25="$z25 fixture-still-ignored"
+  git -C "$P25H" ls-files --error-unmatch .ai-flow/project.yml >/dev/null 2>&1 && z25="$z25 fixture-still-tracked"
   [ "$rch" != 0 ] || z25="$z25 exit-0"
   case "$out25h" in *gitignore*)  ;; *) z25="$z25 does-not-name-the-eligibility-cause" ;; esac
   case "$out25h" in *stale*)      ;; *) z25="$z25 does-not-name-the-stale-patterns-cause" ;; esac
