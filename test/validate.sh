@@ -1031,7 +1031,6 @@ if [ -n "$CER" ]; then
   pair 3 'acknowledg' 'sheet|state\.md' "a collision stops the opening until it is acknowledged in the sheet"
   pair 3 'cannot compare' 'never|not .*clear'  "a front with no declaration reads as cannot-compare, not as clear"
   pair 4 'publish' 'stop|before anything is created' "opening stops on an unpublished default branch"
-  pair 5 'never' 'git worktree add' "the ceremony creates the worktree with the native tooling"
   pair 6 'prune' 'own|owns' "the ceremony prunes the new checkout to the task it owns"
   pair 6 'BACKLOG|ledger' 'never copied|not copied|stays with|read-only' "the ceremony never copies the ledger into a worktree"
   pair 6 'copies' 'originals' "the pruning step names what it deletes"
@@ -1041,7 +1040,6 @@ else
   bad "a collision stops the opening until it is acknowledged in the sheet (no section)"
   bad "a front with no declaration reads as cannot-compare, not as clear (no section)"
   bad "opening stops on an unpublished default branch (no section)"
-  bad "the ceremony creates the worktree with the native tooling (no section)"
   bad "the ceremony prunes the new checkout to the task it owns (no section)"
   bad "the ceremony never copies the ledger into a worktree (no section)"
   bad "the pruning step names what it deletes (no section)"
@@ -3785,6 +3783,248 @@ p2="$(grep -rniE 'residents|gate-manager|zoomin|esp32|/Users/[a-z]' global/ 2>/d
 [ "$p2" = "0" ] \
   && ok "the shipped engine carries no private project name and no author home path" \
   || bad "the shipped engine carries no private project name and no author home path ($p2 line(s))"
+
+echo "== C28: opening a front is satisfying conditions, not using a brand =="
+BLG25="global/protocols/backlog.md"
+SEED25="global/scripts/seed-front.sh"
+
+# Fence-aware section cut, then one numbered move flattened AND whitespace-squeezed. Joining wrapped
+# lines leaves their indentation behind, so a two-word fact split across a break reads with a run of
+# spaces in it and every single-space pattern misses it. Classifying on the move number rather than on
+# a body pattern is what lets these assertions see a move that MOVED.
+OPN25="$(awk '/^## Opening a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG25")"
+CLO25="$(awk '/^## Closing a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG25")"
+o25() { printf '%s\n' "$OPN25" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
+c25() { printf '%s\n' "$CLO25" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
+
+# --- the creation move states conditions, not a brand ---------------------
+M5_25="$(o25 5)"
+if [ -n "$M5_25" ]; then
+  # WHEN the creation move is read, THEN each of the four conditions is stated as a condition on the
+  # checkout. Named individually so a failure says WHICH one is missing: a single verdict over four
+  # facts cannot be acted on.
+  c25a=""
+  printf '%s' "$M5_25" | grep -qiE 'published default branch|published base'          || c25a="$c25a base"
+  # Both halves, because the retired prohibition already contained the words "the project's data" —
+  # an assertion satisfied by the sentence it exists to replace passes for a reason unrelated to the
+  # condition it names.
+  { printf '%s' "$M5_25" | grep -qiE 'declares travels|the project declares' \
+    && printf '%s' "$M5_25" | grep -qiE 'only the papers|papers it owns'; }   || c25a="$c25a data"
+  printf '%s' "$M5_25" | grep -qiE 'audit'                                            || c25a="$c25a visibility"
+  printf '%s' "$M5_25" | grep -qiE 'whatever created (it|the checkout)'                || c25a="$c25a ownership"
+  [ -z "$c25a" ] \
+    && ok "the creation move states the four conditions a checkout must satisfy" \
+    || bad "the creation move states the four conditions a checkout must satisfy (not stated:$c25a)"
+
+  # The positive form is what bounds this, never a list of tool names to forbid: naming the one brand
+  # that caused the defect leaves every other brand free to be prescribed next.
+  c25b=""
+  printf '%s' "$M5_25" | grep -qiE 'floor'                                  || c25b="$c25b floor"
+  printf '%s' "$M5_25" | grep -qiE 'default'                                || c25b="$c25b default"
+  printf '%s' "$M5_25" | grep -qiE 'no particular|any tool|whatever tool|any front.end' || c25b="$c25b tool-agnostic"
+  [ -z "$c25b" ] \
+    && ok "the creation move requires no particular front-end and names the native path as the floor" \
+    || bad "the creation move requires no particular front-end and names the native path as the floor (missing:$c25b)"
+
+  # A condition with no remedy sends the operator to a stop they cannot clear.
+  printf '%s' "$M5_25" | grep -qiE 'nested|inside the primary' \
+    && printf '%s' "$M5_25" | grep -qiE 'ignore' \
+    && ok "the visibility condition names the remedy for a nested checkout" \
+    || bad "the visibility condition names the remedy for a nested checkout"
+else
+  bad "the creation move states the four conditions a checkout must satisfy (move not found)"
+  bad "the creation move requires no particular front-end and names the native path as the floor (move not found)"
+  bad "the visibility condition names the remedy for a nested checkout (move not found)"
+fi
+
+# --- the dismantling move ------------------------------------------------
+M6C_25="$(c25 6)"
+if [ -n "$M6C_25" ]; then
+  printf '%s' "$M6C_25" | grep -qiE 'whatever created (it|the checkout)' \
+    && printf '%s' "$M6C_25" | grep -qiE 'worktree list' \
+    && ok "the dismantling move requires removal by whatever created the checkout" \
+    || bad "the dismantling move requires removal by whatever created the checkout"
+
+  printf '%s' "$M6C_25" | grep -qiE 'this session|same session|session that created' \
+    && ok "the dismantling move states the native tool's session limit" \
+    || bad "the dismantling move states the native tool's session limit"
+else
+  bad "the dismantling move requires removal by whatever created the checkout (move not found)"
+  bad "the dismantling move states the native tool's session limit (move not found)"
+fi
+
+# --- the retired rationale, guarded as a class ---------------------------
+# Written against the text that will exist, not against the sentence being deleted: what must never
+# come back is the CLAIM that nesting misbinds the guards, in any wording. The engine's own guards
+# handle nesting on purpose, and one of them says so in its docstring.
+r25="$(grep -rniE 'nest(ed|ing)' global docs template 2>/dev/null \
+       | grep -iE 'guardrail|guard rail|bind' | grep -viE 'understand-write-guard\.py' | wc -l | tr -d ' ')"
+[ "$r25" = "0" ] \
+  && ok "no document claims a nested checkout misbinds the guardrail hooks" \
+  || bad "no document claims a nested checkout misbinds the guardrail hooks ($r25 line(s))"
+
+# --- the operator's document ---------------------------------------------
+DOC25="docs/customization.md"
+d25=""
+grep -qiE 'published default branch|published base' "$DOC25" 2>/dev/null || d25="$d25 base"
+grep -qiE 'only the papers|papers it owns|own papers'  "$DOC25" 2>/dev/null || d25="$d25 data"
+grep -qiE 'audit'                                      "$DOC25" 2>/dev/null || d25="$d25 visibility"
+grep -qiE 'whatever created (it|the checkout)'          "$DOC25" 2>/dev/null || d25="$d25 ownership"
+grep -q  'seed-front.sh'                               "$DOC25" 2>/dev/null || d25="$d25 seeding-step"
+[ -z "$d25" ] \
+  && ok "the operator's document carries the conditions and the seeding step" \
+  || bad "the operator's document carries the conditions and the seeding step (missing:$d25)"
+
+# --- the engine satisfies its own visibility condition -------------------
+# Asked of git, never of the file: the question is whether the path is ignored, and git is what
+# answers that — a grep for the line would pass on a commented-out pattern and fail on a broader one
+# that already covers it.
+if git -C "$ROOT" check-ignore -q ".claude/worktrees/probe/app.txt" 2>/dev/null; then
+  ok "the engine's own checkout satisfies the visibility condition"
+else
+  bad "the engine's own checkout satisfies the visibility condition (.claude/worktrees/ is not ignored here)"
+fi
+
+# --- the seeding mechanism, executed ------------------------------------
+# Every assertion below runs the shipped script against a fixture repository. Grepping the script for
+# the message a refusal would print proves the message exists, never that anything reaches it.
+if [ ! -x "$SEED25" ]; then
+  bad "the seeder leaves the ledger behind from a project that ignores its own data directory (no executable $SEED25)"
+  bad "the seeder leaves only the papers of the task it seeds (no executable $SEED25)"
+  bad "the seeder reads the project data from the primary, not from the checkout it runs in (no executable $SEED25)"
+  bad "the seeder refuses an unusable pattern file and copies nothing (no executable $SEED25)"
+elif ! T25="$(mktemp -d 2>/dev/null)" || [ ! -d "$T25" ]; then
+  # A sandbox that silently failed to exist degenerates every verdict below into "nothing went wrong".
+  bad "the seeder leaves the ledger behind from a project that ignores its own data directory (no sandbox: mktemp -d failed)"
+  bad "the seeder leaves only the papers of the task it seeds (no sandbox: mktemp -d failed)"
+  bad "the seeder reads the project data from the primary, not from the checkout it runs in (no sandbox: mktemp -d failed)"
+  bad "the seeder refuses an unusable pattern file and copies nothing (no sandbox: mktemp -d failed)"
+else
+  G25="git -c user.email=t@t.t -c user.name=t -c commit.gpgsign=false"
+  SEED_ABS="$ROOT/$SEED25"
+
+  # A primary in the layout the product documents: the data directory is IGNORED, which is the
+  # precondition the pattern file needs — and the reason the pattern file must be evaluated somewhere
+  # its own project's ignore rules cannot answer for it.
+  mk25() {  # $1 = root dir -> a primary with data, a ledger, two foreign task folders, and a front
+    mkdir -p "$1"
+    $G25 init -q "$1"
+    printf '/.ai-flow/\n' > "$1/.gitignore"
+    printf 'x\n' > "$1/app.txt"
+    cp "$ROOT/template/.worktreeinclude" "$1/.worktreeinclude"
+    mkdir -p "$1/.ai-flow/steering" "$1/.ai-flow/codebase" \
+             "$1/.ai-flow/artifacts/foreign-one" "$1/.ai-flow/artifacts/foreign-two"
+    printf 'name: fixture\n' > "$1/.ai-flow/project.yml"
+    printf '# product\n'     > "$1/.ai-flow/product.md"
+    printf '# backlog\n'     > "$1/.ai-flow/BACKLOG.md"
+    printf '# state\n'       > "$1/.ai-flow/STATE.md"
+    printf 'a\n' > "$1/.ai-flow/artifacts/foreign-one/state.md"
+    printf 'b\n' > "$1/.ai-flow/artifacts/foreign-two/state.md"
+    $G25 -C "$1" add -A >/dev/null 2>&1
+    $G25 -C "$1" commit -q -m init
+  }
+
+  # 1) the ledger stays behind, from a project that ignores the very directory the patterns describe
+  P25A="$T25/a"; mk25 "$P25A"
+  $G25 -C "$P25A" worktree add -q -b you/t-300 "$T25/a-front" >/dev/null 2>&1
+  ( cd "$P25A" && "$SEED_ABS" "$T25/a-front" own ) >/dev/null 2>&1
+  l25=""
+  [ -f "$T25/a-front/.ai-flow/project.yml" ] || l25="$l25 project.yml-missing"
+  [ -f "$T25/a-front/.ai-flow/product.md" ]  || l25="$l25 product.md-missing"
+  [ -e "$T25/a-front/.ai-flow/BACKLOG.md" ]  && l25="$l25 BACKLOG-leaked"
+  [ -e "$T25/a-front/.ai-flow/STATE.md" ]    && l25="$l25 STATE-leaked"
+  [ -z "$l25" ] \
+    && ok "the seeder leaves the ledger behind from a project that ignores its own data directory" \
+    || bad "the seeder leaves the ledger behind from a project that ignores its own data directory ($l25)"
+
+  # 2) the front owns one task: the copy carried every open task's papers, and the prune is what
+  #    leaves one. The fixture holds papers the front does NOT own, or nothing is being pruned.
+  p25=""
+  [ -d "$T25/a-front/.ai-flow/artifacts/own" ] || p25="$p25 own-folder-missing"
+  [ -e "$T25/a-front/.ai-flow/artifacts/foreign-one" ] && p25="$p25 foreign-one-kept"
+  [ -e "$T25/a-front/.ai-flow/artifacts/foreign-two" ] && p25="$p25 foreign-two-kept"
+  [ -z "$p25" ] \
+    && ok "the seeder leaves only the papers of the task it seeds" \
+    || bad "the seeder leaves only the papers of the task it seeds ($p25)"
+
+  # 3) run from inside the front, the source is the PRIMARY. The checkout it runs in has no data at
+  #    all, so reading the toplevel of the current directory copies from an empty hand.
+  P25B="$T25/b"; mk25 "$P25B"
+  $G25 -C "$P25B" worktree add -q -b you/t-400 "$T25/b-front" >/dev/null 2>&1
+  ( cd "$T25/b-front" && "$SEED_ABS" . own ) >/dev/null 2>&1
+  if [ -f "$T25/b-front/.ai-flow/project.yml" ] && [ ! -e "$T25/b-front/.ai-flow/STATE.md" ]; then
+    ok "the seeder reads the project data from the primary, not from the checkout it runs in"
+  else
+    bad "the seeder reads the project data from the primary, not from the checkout it runs in"
+  fi
+
+  # 4) an unusable pattern set is a refusal, not an empty selection. git reads an unreadable or empty
+  #    pattern file as an empty set of patterns and answers "not selected" for everything — so a
+  #    mechanism that concludes from it seeds nothing and reports success.
+  P25C="$T25/c"; mk25 "$P25C"
+  : > "$P25C/.worktreeinclude"
+  $G25 -C "$P25C" worktree add -q -b you/t-500 "$T25/c-front" >/dev/null 2>&1
+  ( cd "$P25C" && "$SEED_ABS" "$T25/c-front" own ) >/dev/null 2>&1; rc25=$?
+  if [ "$rc25" != 0 ] && [ ! -e "$T25/c-front/.ai-flow" ]; then
+    ok "the seeder refuses an unusable pattern file and copies nothing"
+  else
+    bad "the seeder refuses an unusable pattern file and copies nothing (exit $rc25)"
+  fi
+
+  # 5) papers the front already holds are its own work, not a copy. A front taking on its next task
+  #    runs this move over a checkout it has been working, and the coordinator's copy of those papers
+  #    is a snapshot from when the front opened: overwriting them, or pruning them as foreign, would
+  #    destroy the only account of work in progress. Distinct content, so the check sees a REPLACED
+  #    file and not merely a present one.
+  P25D="$T25/d"; mk25 "$P25D"
+  # The coordinator holds ITS OWN copy of the paused task's papers — a snapshot frozen when the front
+  # opened. Without it here, nothing in the transfer could overwrite the front's version and the
+  # overwrite leg below would pass on a mechanism that clobbers.
+  mkdir -p "$P25D/.ai-flow/artifacts/paused"
+  printf 'stale snapshot\n' > "$P25D/.ai-flow/artifacts/paused/state.md"
+  $G25 -C "$P25D" worktree add -q -b you/t-700 "$T25/d-front" >/dev/null 2>&1
+  mkdir -p "$T25/d-front/.ai-flow/artifacts/paused"
+  printf 'live work\n' > "$T25/d-front/.ai-flow/artifacts/paused/state.md"
+  printf 'name: edited-in-the-front\n' > "$T25/d-front/.ai-flow/project.yml"
+  ( cd "$P25D" && "$SEED_ABS" "$T25/d-front" own ) >/dev/null 2>&1
+  k25=""
+  [ -f "$T25/d-front/.ai-flow/artifacts/paused/state.md" ] || k25="$k25 paused-task-pruned"
+  grep -q 'live work' "$T25/d-front/.ai-flow/artifacts/paused/state.md" 2>/dev/null || k25="$k25 paused-task-overwritten"
+  grep -q 'edited-in-the-front' "$T25/d-front/.ai-flow/project.yml" 2>/dev/null || k25="$k25 existing-file-overwritten"
+  [ -d "$T25/d-front/.ai-flow/artifacts/own" ] || k25="$k25 own-folder-missing"
+  [ -z "$k25" ] \
+    && ok "the seeder keeps the papers the front already holds" \
+    || bad "the seeder keeps the papers the front already holds ($k25)"
+  rm -rf "$T25"
+fi
+
+# --- the mechanism is distributed, and the drift guard can see it --------
+# Executed, not grepped: the drift guard maps an engine path to its installed location by prefix and
+# returns "" for anything it does not recognise — a silent skip. What proves the mapping exists is the
+# guard REPORTING the installed copy missing, which it cannot do for a path it skips.
+if ! T25D="$(mktemp -d 2>/dev/null)" || [ ! -d "$T25D" ]; then
+  bad "the seeder is distributed by the installer and mapped by the drift guard (no sandbox: mktemp -d failed)"
+else
+  i25=""
+  grep -q 'seed-front.sh' install.sh || i25="$i25 installer-does-not-name-it"
+  G25D="git -c user.email=t@t.t -c user.name=t -c commit.gpgsign=false"
+  CL25="$T25D/clone"; mkdir -p "$CL25/global/scripts"
+  $G25D init -q "$CL25"
+  printf '#!/bin/bash\necho seeded\n' > "$CL25/global/scripts/seed-front.sh"
+  $G25D -C "$CL25" add -A >/dev/null 2>&1
+  $G25D -C "$CL25" commit -q -m engine
+  mkdir -p "$T25D/home/.claude/ai-flow"
+  printf '%s\n' "$CL25" > "$T25D/home/.claude/ai-flow/source.path"
+  out25="$( cd "$T25D" && HOME="$T25D/home" bash "$ROOT/global/hooks/drift-check.sh" 2>&1 )"
+  case "$out25" in
+    *"scripts/seed-front.sh"*) ;;
+    *) i25="$i25 drift-guard-skips-the-prefix" ;;
+  esac
+  [ -z "$i25" ] \
+    && ok "the seeder is distributed by the installer and mapped by the drift guard" \
+    || bad "the seeder is distributed by the installer and mapped by the drift guard ($i25)"
+  rm -rf "$T25D"
+fi
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"

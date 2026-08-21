@@ -362,17 +362,42 @@ what activation has always been, plus the declaration in step 2.
    commits the remote has not seen, stop and name them before anything is created. Publishing is part
    of opening a front, not an afterthought.
 
-5. **Create the linked worktree** with Claude Code's own worktree tooling — `EnterWorktree` in a
-   session, `claude -w` from the shell, `isolation: worktree` for an agent — and never a bare
-   `git worktree add`, which honours neither `worktree.baseRef` nor `.worktreeinclude` and so
-   produces a checkout without the project's data. The worktree goes outside the primary's tree; one
-   nested inside it would bind the guardrail hooks to the wrong working copy.
+5. **Create the linked worktree.** What a front needs is not a particular tool but a checkout that
+   satisfies four conditions, each of them read from the repository rather than taken on trust:
+
+   - **base** — the branch starts from the **published default branch**, which is what step 4 above
+     checks: work committed and unpushed does not exist for a front cut from it.
+   - **data** — the checkout holds what the project's pattern file declares travels, and **only the
+     papers** of the task it owns. Move 6 below is what makes that true.
+   - **visibility** — the checkout is not visible to the coordinator's own **audit**. Outside the
+     primary's tree that holds by construction; a checkout nested inside it holds only where the
+     project's ignore rules cover that path. Left uncovered, a nested front is untracked content in the
+     coordinator: the audit copies the whole of it into its snapshot and then requires the tree to be
+     byte-exact against a working copy another session is writing.
+   - **ownership** — whatever created the checkout is what removes it, which is what the closing
+     ceremony's dismantling move spends. A tool keeping a registry of its own is left pointing at a
+     checkout something else deleted.
+
+   The native path — `EnterWorktree` in a session, `claude -w` from the shell, `isolation: worktree` for
+   an agent — is the **default and the floor**: it honours `worktree.baseRef` and `.worktreeinclude`, so
+   base and data hold without help, and it is the yardstick the rest are measured against. It creates
+   the checkout inside `.claude/worktrees/`, so there visibility is precisely what the project's ignore
+   rules must cover — one line the ceremony **names and does not write**, because a project's ignore
+   rules are the project's own. **No particular front-end is required**: any tool serves where the four
+   conditions hold, and one that satisfies only some of them is completed by the move below. What is
+   never acceptable is a checkout nobody checked.
 
 6. **Seed the task's artifacts and prune the rest.** The pattern file carries `artifacts/` wholesale,
    so the new checkout arrives holding the papers of every open task, and the read-only rail cannot
    tell which task is its own from a pile: the checkout must hold only the artifacts of the task it
    owns, so prune every folder this front does not own. What is deleted there are copies — the
-   coordinator keeps the originals. The ledger stays with the coordinator: BACKLOG.md, STATE.md, the
+   coordinator keeps the originals. The engine ships the mechanism —
+   `~/.claude/ai-flow/scripts/seed-front.sh <checkout> <T-XXX>` — which is what satisfies the data
+   condition for a front-end that does not: it selects by the project's own pattern file, copies what
+   that selects, and prunes what this front does not own. On the native path the copy has already
+   happened and running it is what prunes. It never overwrites what the checkout already holds and never
+   prunes what was there before it ran: a front taking on its next task runs this move over papers that
+   are live work, and the coordinator's copy of those is a snapshot from when the front opened. The ledger stays with the coordinator: BACKLOG.md, STATE.md, the
    decision log and the archive are never copied in. What the front must read there but must not own —
    its epic's Scope Contract — it reads from the coordinator, read-only (see the Understand protocol).
 
@@ -449,13 +474,18 @@ sheet is where an interrupted close is written down, and the roster is the queue
    work remains, which is why this move sits before the tail and not after it. It runs at **every
    task close**, a quick task's included, and carries none of the condition the two moves below it do.
 
-6. **The front's working copy is dismantled** with Claude Code's own worktree tooling — `ExitWorktree`
-   in a session — the counterpart of what created it in step 5 of the opening, and never
-   before move 2: removing the checkout destroys the task's papers, and git cannot restore what it never
-   tracked. Runs only when the front has no next task.
+6. **The front's working copy is dismantled by whatever created it** — the counterpart of the ownership
+   condition in step 5 of the opening. Claude Code's `ExitWorktree` removes only what `EnterWorktree`
+   created **in this session** and is a declared no-op for anything else, so it takes down a front opened
+   in this session and nothing more: a front lives across the tasks in it, and one opened earlier — or by
+   another front-end — is removed by that tool's own means, or by `git worktree remove`. What says the
+   move happened is the repository's own answer, not the tool's: the checkout no longer appears in
+   `git worktree list`. Never before move 2: removing the checkout destroys the task's papers, and git
+   cannot restore what it never tracked. Runs only when the front has no next task.
 
 7. **The front's roster row is removed** — the coordinator's last write, and the roster's own proof that
-   the front is closed. Runs only when the front has no next task.
+   the front is closed. Not while `git worktree list` still names that front's checkout: the row is then
+   the only thing left saying work remains. Runs only when the front has no next task.
 
 ## Directory Hygiene
 

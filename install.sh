@@ -93,6 +93,7 @@ PROTOCOLS="understand plan execute verify quick-path backlog codebase-mapping di
 SKILLS="understand plan verify discover"
 HOOKS="check-state-size.sh diff-size-guard.py git-safety.py understand-write-guard.py drift-check.sh"
 RALPH="ralph.sh ralph-prompt.md review-prompt.md"
+SCRIPTS="seed-front.sh"
 
 # --- Reusable install units ---
 
@@ -222,6 +223,13 @@ install_tooling() {
   done
   chmod +x "$HOME/.claude/ai-flow/ralph/ralph.sh" 2>/dev/null || true
   echo "  [ok] Ralph AFK loop installed to ~/.claude/ai-flow/ralph"
+
+  mkdir -p "$HOME/.claude/ai-flow/scripts"
+  for f in $SCRIPTS; do
+    fetch_file "global/scripts/$f" "$HOME/.claude/ai-flow/scripts/$f"
+    chmod +x "$HOME/.claude/ai-flow/scripts/$f" 2>/dev/null || true
+  done
+  echo "  [ok] Ceremony scripts installed to ~/.claude/ai-flow/scripts"
   merge_hooks
 }
 

@@ -54,6 +54,7 @@ installed_path() {
     global/workflows/*) echo "$HOME/.claude/workflows/${1#global/workflows/}" ;;
     global/hooks/*)     echo "$HOME/.claude/hooks/${1#global/hooks/}" ;;
     global/ralph/*)     echo "$HOME/.claude/ai-flow/ralph/${1#global/ralph/}" ;;
+    global/scripts/*)   echo "$HOME/.claude/ai-flow/scripts/${1#global/scripts/}" ;;
     *) echo "" ;;
   esac
 }
