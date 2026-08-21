@@ -30,6 +30,9 @@ commands:
   build: "npm run build"
 # distribute: "..."         # optional — what puts merged work into effect (publish/deploy/reinstall);
                             # absent, the close's distribution move is a stated no-op
+# front_tool: "<tool>"      # optional — the tool this project is managed in; the opening ceremony
+                            # identifies it before it creates a front. Absent, the native worktree
+                            # path is used and the ceremony says so
 steering:                   # area -> steering file the verify phase loads
   auth: steering/auth.md
 ```
@@ -127,6 +130,17 @@ unpushed commits along with whatever else is sitting in that checkout.
 Projects installed before these files existed receive them by re-running `./install.sh init`;
 `update` never writes into a project, by design.
 
+**Start by identifying the tool this project is managed in.** That is the opening ceremony's first act,
+and `front_tool` above is where the answer lives. The tool you declare is the default — preferred
+wherever it can satisfy the conditions below, with whatever it does not bring completed by hand.
+Declare nothing and the ceremony uses Claude Code's own worktree path and tells you that is what it
+did, rather than leaving you to assume it.
+
+The reason the order matters: the four conditions are all facts your repository can answer, and the
+surface *you* work in is not one of them. A checkout can satisfy every condition on the list and still
+be a front you never see — which is why the tool comes first and the conditions are checked on the
+result.
+
 **Any tool may create the worktree.** ai-flow requires no particular front-end: what it requires is a
 checkout satisfying four conditions, and the opening ceremony checks them on the result rather than
 trusting the tool that produced it.
@@ -141,7 +155,8 @@ trusting the tool that produced it.
    worktrees is left pointing at one something else deleted.
 
 Claude Code's own tooling — `EnterWorktree`, `claude -w`, an agent's `isolation: worktree` — is the
-default: it meets condition 1, and it brings the data of condition 2 without help. It does not finish
+**floor**: what the ceremony falls back to and the yardstick the rest are measured against, not the
+first choice. It meets condition 1, and it brings the data of condition 2 without help. It does not finish
 condition 2 on its own — it copies the papers of *every* open task, so the pruning step below is run on
 this path too. It creates the worktree **inside** `.claude/worktrees/`, so with
 it condition 3 is your ignore rules' job: add `/.claude/worktrees/` to your `.gitignore` (this

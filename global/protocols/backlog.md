@@ -362,8 +362,21 @@ what activation has always been, plus the declaration in step 2.
    commits the remote has not seen, stop and name them before anything is created. Publishing is part
    of opening a front, not an afterthought.
 
-5. **Create the linked worktree.** What a front needs is not a particular tool but a checkout that
-   satisfies four conditions, each of them read from the repository rather than taken on trust:
+5. **Create the linked worktree.** It opens with a question asked before anything is created: **what
+   tool is this project managed in?** The answer is read from the project layer (`front_tool` in
+   `project.yml`), and identifying it is this move's first act rather than a preference applied
+   afterwards. The reason is the shape of everything below: the conditions are facts the repository can
+   answer, and the surface a person works in is not one of them — so a checkout can satisfy every one of
+   them and still be a front its operator never sees.
+
+   The tool the project declares is the default. It is preferred wherever it can satisfy the conditions,
+   and what it does not bring is **completed** rather than traded away. Where the project **declares
+   none**, the ceremony uses the native path and **says** it is doing so because nothing was declared: a
+   silence and a declaration read identically in a report, and this is the one that used to be assumed
+   for free.
+
+   What a front needs, whatever produced it, is not a particular brand but a checkout that satisfies
+   four conditions, each of them read from the repository rather than taken on trust:
 
    - **base** — the branch starts from the **published default branch**, which is what step 4 above
      checks: work committed and unpushed does not exist for a front cut from it.
@@ -379,9 +392,10 @@ what activation has always been, plus the declaration in step 2.
      checkout something else deleted.
 
    The native path — `EnterWorktree` in a session, `claude -w` from the shell, `isolation: worktree` for
-   an agent — is the **default and the floor**: it honours `worktree.baseRef` and `.worktreeinclude`, so
-   base holds without help and the data arrives without help — the prune is still move 6's, on every path
-   — and it is the yardstick the rest are measured against. It creates
+   an agent — is **the floor**: the yardstick the rest are measured against and what the ceremony falls
+   back to, never the first choice and never a requirement. It honours `worktree.baseRef` and
+   `.worktreeinclude`, so base holds without help and the data arrives without help — the prune is still
+   move 6's, on every path. It creates
    the checkout inside `.claude/worktrees/`, so there visibility is precisely what the project's ignore
    rules must cover — one line the ceremony **names and does not write**, because a project's ignore
    rules are the project's own. **No particular front-end is required**: any tool serves where the four

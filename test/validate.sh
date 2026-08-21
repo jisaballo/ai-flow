@@ -3807,8 +3807,10 @@ if [ -n "$M5_25" ]; then
   printf '%s' "$M5_25" | grep -qiE 'published default branch|published base'          || c25a="$c25a base"
   # Both halves, because the retired prohibition already contained the words "the project's data" —
   # an assertion satisfied by the sentence it exists to replace passes for a reason unrelated to the
-  # condition it names.
-  { printf '%s' "$M5_25" | grep -qiE 'declares travels|the project declares' \
+  # condition it names. `the project declares` was dropped from the first half for that same reason
+  # once the move gained a preamble about the tool the project declares: a phrase loose enough to be
+  # answered by a neighbouring sentence stops being an assertion about this condition at all.
+  { printf '%s' "$M5_25" | grep -qiE 'declares travels' \
     && printf '%s' "$M5_25" | grep -qiE 'only the papers|papers it owns'; }   || c25a="$c25a data"
   printf '%s' "$M5_25" | grep -qiE 'audit'                                            || c25a="$c25a visibility"
   printf '%s' "$M5_25" | grep -qiE 'whatever created (it|the checkout)'                || c25a="$c25a ownership"
@@ -3819,10 +3821,13 @@ if [ -n "$M5_25" ]; then
   # The positive form is what bounds this, never a list of tool names to forbid: naming the one brand
   # that caused the defect leaves every other brand free to be prescribed next.
   c25b=""
-  # One phrase, not two loose words: `default` alone is satisfied by the base condition's own
-  # "published default branch", so the half of the criterion that requires the native path to be named
-  # the default was unable to fail.
-  printf '%s' "$M5_25" | grep -qiE 'default and the floor'                  || c25b="$c25b default-and-floor"
+  # The floor half only. `default` was welded to it in one phrase, and the weld was the defect: read as
+  # a default, the native path came first and the question of which tool manages the project was never
+  # formed. The claim that the project's tool is the default is asserted where it now lives, in the
+  # block below, and the phrase that welded the two is forbidden as a class there. `the floor` needs no
+  # anchoring word the way `default` did — nothing else in the move says floor, so it cannot be
+  # answered by a neighbouring sentence.
+  printf '%s' "$M5_25" | grep -qiE 'the floor'                              || c25b="$c25b native-is-the-floor"
   printf '%s' "$M5_25" | grep -qiE 'no particular|any tool|whatever tool|any front.end' || c25b="$c25b tool-agnostic"
   [ -z "$c25b" ] \
     && ok "the creation move requires no particular front-end and names the native path as the floor" \
@@ -4110,6 +4115,194 @@ else
     && ok "the seeder is distributed by the installer and mapped by the drift guard" \
     || bad "the seeder is distributed by the installer and mapped by the drift guard ($i25)"
   rm -rf "$T25D"
+fi
+
+echo "== C29: opening a front starts from the surface the operator works in =="
+BLG31="global/protocols/backlog.md"
+PY31="template/.ai-flow/project.yml"
+TST31="template/.ai-flow/STATE.md"
+DOC31="docs/customization.md"
+
+# Same extractor as the block above, and for the same reasons: fence-aware section cut, one numbered
+# move flattened and whitespace-squeezed, classified on the move NUMBER so a move that moved is still
+# seen. Defined here rather than borrowed, so this block survives being reordered.
+OPN31="$(awk '/^## Opening a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG31")"
+CLO31="$(awk '/^## Closing a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG31")"
+o31() { printf '%s\n' "$OPN31" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
+c31() { printf '%s\n' "$CLO31" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
+
+M5_31="$(o31 5)"
+# The move's PREAMBLE — everything ahead of the first condition. The identification has to be the move's
+# first act, and a sentence about it buried after the four conditions is a different claim: it would read
+# as something to do once the checkout exists, which is exactly the order that produced the incident.
+HEAD31="$(printf '%s' "$M5_31" | sed 's/ - \*\*base\*\*.*//')"
+
+if [ -n "$M5_31" ]; then
+  # A1 — the first act.
+  a1=""
+  printf '%s' "$HEAD31" | grep -qiE 'identif'                            || a1="$a1 no-identification"
+  printf '%s' "$HEAD31" | grep -qiE 'front_tool|the project (declares|is managed in)' || a1="$a1 nothing-to-read-it-from"
+  [ -z "$a1" ] \
+    && ok "the creation move identifies the project's tool before it creates anything" \
+    || bad "the creation move identifies the project's tool before it creates anything (missing:$a1)"
+
+  # A2a — the half of the split claim that says WHICH path comes first. Written as an ordered
+  # co-occurrence inside one sentence rather than as a fixed phrase: what must hold is that the SUBJECT
+  # of "the default" is the project's tool, and a bare word match is answered by any neighbouring
+  # sentence that happens to carry it — including the base condition's own "published default branch".
+  printf '%s' "$M5_31" | grep -qiE "(the (project'?s )?(declared )?tool|the tool the project (declares|is managed in))[^.]{0,120}is the default" \
+    && ok "the creation move names the project's tool as the default" \
+    || bad "the creation move names the project's tool as the default"
+
+  # A2b — the weld itself, as a class and across every layer that could restate it. The floor half stays
+  # asserted in the block above; what must never come back is the two claims sharing one predicate,
+  # because that is the reading that stopped the question from being formed.
+  w31="$(grep -rniE 'default and the floor' global docs template 2>/dev/null | wc -l | tr -d ' ')"
+  [ "$w31" = "0" ] \
+    && ok "no document welds the default and the floor into one claim" \
+    || bad "no document welds the default and the floor into one claim ($w31 line(s))"
+
+  # A5 — the undeclared case. A silence and a declaration read identically in a report, so the move has
+  # to say it is falling back rather than simply doing it.
+  a5=""
+  printf '%s' "$M5_31" | grep -qiE 'declares (no|none|nothing)|no tool is declared|undeclared' || a5="$a5 case-not-named"
+  printf '%s' "$M5_31" | grep -qiE '(declares (no|none|nothing)|undeclared)[^.]{0,200}(say|states|named|names)' || a5="$a5 not-stated"
+  [ -z "$a5" ] \
+    && ok "an undeclared front tool is a stated fallback, not a silent default" \
+    || bad "an undeclared front tool is a stated fallback, not a silent default (missing:$a5)"
+
+  # A3 — the asymmetry, per condition. Four facets, named individually: a single verdict over four facts
+  # cannot be acted on, and this is the list an operator reads to know what they are paying for.
+  a3=""
+  printf '%s' "$M5_31" | grep -qiE 'without help'                          || a3="$a3 native-gets-free"
+  printf '%s' "$M5_31" | grep -qiE 'by hand'                               || a3="$a3 taken-on-by-hand"
+  printf '%s' "$M5_31" | grep -qiE 'every path|on any path|whatever created it does' || a3="$a3 ownership-universal"
+  printf '%s' "$M5_31" | grep -qiE 'per.tool|tool by tool|depends on the tool' || a3="$a3 visibility-per-tool"
+  [ -z "$a3" ] \
+    && ok "the creation move says which conditions a non-native tool takes on by hand" \
+    || bad "the creation move says which conditions a non-native tool takes on by hand (missing:$a3)"
+
+  # A4 — the acknowledgement. The consequence the four conditions cannot express is the operator's own
+  # view of the front, and an obligation with no written trace is the visibility condition's own defect
+  # repeated: nothing reads it, nothing acts on it.
+  a4=""
+  printf '%s' "$M5_31" | grep -qiE 'fall(s|ing)? back|falls back'          || a4="$a4 fallback-not-named"
+  printf '%s' "$M5_31" | grep -qiE 'acknowledg'                            || a4="$a4 no-acknowledgement"
+  printf '%s' "$M5_31" | grep -qiE "task'?s (own )?sheet"                  || a4="$a4 no-home-for-it"
+  [ -z "$a4" ] \
+    && ok "falling back to the native path is acknowledged in writing on the task's sheet" \
+    || bad "falling back to the native path is acknowledged in writing on the task's sheet (missing:$a4)"
+
+  # A6 — the JOIN, not each half. The move names a key, the template documents one and the guide shows
+  # one; nothing compared them, and that is the hole a rename walks through. The key is READ from the
+  # protocol and looked for everywhere it must also appear.
+  KEY31="$(printf '%s' "$M5_31" | grep -oE '`[a-z_]+` in `project\.yml`' | head -1 | tr -d '`' | awk '{print $1}')"
+  if [ -n "$KEY31" ]; then
+    ok "the creation move names the key it reads ($KEY31)"
+    # As a KEY, never as a word: the guide and the template both discuss tools in prose, so a bare word
+    # match is answered by a neighbouring sentence.
+    keyed31() { printf '%s' "$1" | grep -qE "(^|[[:space:]#])${KEY31}:"; }
+    if keyed31 "$(cat "$PY31")" \
+       && grep -B2 -A2 -E "(^|[[:space:]#])${KEY31}:" "$PY31" | grep -qi 'optional' \
+       && ! grep -qE "^[[:space:]]*${KEY31}:" "$PY31"; then
+      ok "the shipped template documents the same key as optional and declares none"
+    else
+      bad "the shipped template documents the same key as optional and declares none"
+    fi
+    keyed31 "$(awk '/^```yaml/{f=1;next} /^```/{f=0} f' "$DOC31")" \
+      && ok "the schema the docs show carries the same key" \
+      || bad "the schema the docs show carries the same key"
+  else
+    bad "the creation move names the key it reads"
+    bad "the shipped template documents the same key as optional and declares none (no key named)"
+    bad "the schema the docs show carries the same key (no key named)"
+  fi
+
+  # O1's machine half — the operator's guide is a second home for the same rules and can go stale.
+  d31=""
+  grep -qiE 'identif'  "$DOC31" 2>/dev/null || d31="$d31 first-step"
+  grep -qiE 'by hand'  "$DOC31" 2>/dev/null || d31="$d31 asymmetry"
+  grep -qiE 'acknowledg' "$DOC31" 2>/dev/null || d31="$d31 acknowledgement"
+  [ -z "$d31" ] \
+    && ok "the operator's document carries the first step, the asymmetry and the acknowledgement" \
+    || bad "the operator's document carries the first step, the asymmetry and the acknowledgement (missing:$d31)"
+else
+  for m in \
+    "the creation move identifies the project's tool before it creates anything" \
+    "the creation move names the project's tool as the default" \
+    "an undeclared front tool is a stated fallback, not a silent default" \
+    "the creation move says which conditions a non-native tool takes on by hand" \
+    "falling back to the native path is acknowledged in writing on the task's sheet" \
+    "the creation move names the key it reads" \
+    "the shipped template documents the same key as optional and declares none" \
+    "the schema the docs show carries the same key" \
+    "the operator's document carries the first step, the asymmetry and the acknowledgement"; do
+    bad "$m (creation move not found)"
+  done
+  bad "no document welds the default and the floor into one claim (creation move not found)"
+fi
+
+# --- what created the front, recorded and read ---------------------------
+# The roster is the front-scoped paper — the same reason the declared areas live there — and it is still
+# present when the dismantling move runs, because the row is removed after it and not before.
+r31=""
+grep -qiE '^\|[^|]*workstream[^|]*\|.*\|[^|]*tool[^|]*\|' "$TST31" 2>/dev/null || r31="$r31 template-column"
+printf '%s\n' "$(awk '/^## State Files/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG31")" \
+  | grep -qiE '^\|[^|]*workstream[^|]*\|.*\|[^|]*tool[^|]*\|' || r31="$r31 protocol-column"
+printf '%s' "$(o31 7)" | grep -qiE 'tool|what created' || r31="$r31 no-writer"
+[ -z "$r31" ] \
+  && ok "the roster records what created each front, on both sides and with a writer" \
+  || bad "the roster records what created each front, on both sides and with a writer (missing:$r31)"
+
+# A row that predates the column is not broken, and the clause that says so is what keeps a migration
+# from reading as a defect — the shape the Areas column already established.
+grep -qiE 'predates the \*\*tool\*\* column|predates the tool column' "$BLG31" \
+  && ok "a roster that predates the tool column is not broken" \
+  || bad "a roster that predates the tool column is not broken"
+
+# A8 — the reader. Ownership had no reader at all: the move said "whatever created it" and nothing
+# recorded what that was.
+printf '%s' "$(c31 6)" | grep -qiE 'roster' \
+  && ok "the dismantling move reads the creator from the roster row" \
+  || bad "the dismantling move reads the creator from the roster row"
+
+# B3 (regression) — the ordinary opening must not get heavier. The preamble says which moves have
+# nothing to do with one front open; the creation move has to stay inside that set, or a project with a
+# single front is now told to identify a tool for a checkout nobody is creating.
+PRE31="$(printf '%s\n' "$OPN31" | awk '/^1\. /{exit} {print}' | tr '\n' ' ' | tr -s ' ')"
+# The set is a RANGE in the prose ("steps 3 to 6"), so the membership test reads the range rather than
+# hunting for a literal digit: asking for '5' in the characters of "3 to 6" answers no on a sentence
+# that says yes, and the check would then demand a change to a preamble that is already correct.
+covers31() {  # 0 when the preamble's "nothing to do" set contains move 5
+  printf '%s' "$1" | grep -qiE 'nothing to do' || return 1
+  printf '%s' "$1" | awk '
+    { n = 0
+      while (match($0, /[0-9]+ (to|-|through) [0-9]+/)) {
+        s = substr($0, RSTART, RLENGTH); $0 = substr($0, RSTART + RLENGTH)
+        split(s, p, /[^0-9]+/); if (p[1] <= 5 && 5 <= p[2]) n = 1
+      }
+      exit n ? 0 : 1 }'
+}
+if covers31 "$PRE31"; then
+  ok "the single-front reduction still covers the creation move"
+else
+  bad "the single-front reduction still covers the creation move"
+fi
+
+# --- the installer names the ignore line the native path needs -----------
+# Executed, not grepped: a message found in the source proves the message exists, never that anything
+# reaches it. The prompts are answered rather than closed, for the reason the block above records.
+if ! T31="$(mktemp -d 2>/dev/null)" || [ ! -d "$T31" ]; then
+  bad "install names the ignore line the native worktree path needs (no sandbox: mktemp -d failed)"
+else
+  H31="$T31/home"; A31="$T31/adopt"; mkdir -p "$H31" "$A31"
+  ( cd "$T31" && printf 'n\nn\n' | HOME="$H31" bash "$ROOT/install.sh" init "$A31" ) > "$T31/init.out" 2>&1 || true
+  if grep -q '\.claude/worktrees/' "$T31/init.out"; then
+    ok "install names the ignore line the native worktree path needs"
+  else
+    bad "install names the ignore line the native worktree path needs"
+  fi
+  rm -rf "$T31"
 fi
 
 echo ""
