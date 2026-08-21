@@ -80,27 +80,47 @@ EV="$(mktemp -d 2>/dev/null)" || die "no writable temporary directory for the pa
 trap 'rm -rf "$EV"' EXIT
 git init -q "$EV"
 
-selected() {  # $1 = path relative to the primary -> 0 selected, 1 not, dies on an unanswerable probe
+# ONE evaluation for the whole candidate list, not one per candidate. `check-ignore --stdin` reads the
+# paths and prints back exactly the ones the pattern file selects: the same evaluator answering the same
+# question about the same paths, so WHAT is selected is unchanged — what changes is that the cost stops
+# scaling with the size of the primary. A fork per candidate is what put a monorepo's dependency
+# directory in the critical path of every opening, at ~16ms each, with the prune unreached behind it.
+#
+# Two files rather than one pipeline, for the reason the worktree listing above is read into a variable:
+# a pipeline reports the wrong status here. `check-ignore` exits 1 when it selects NOTHING, which is an
+# ordinary answer and not a failure, and under `pipefail` that 1 would sink the whole run.
+CAND="$EV/candidates"
+SEL="$EV/selected"
+
+evaluate() {  # $1 = NUL-delimited paths to ask about, $2 = where the selection goes -> 0 if non-empty
   local rc=0
-  ( cd "$EV" && git -c core.excludesFile="$PATTERNS" check-ignore -q --no-index -- "$1" ) || rc=$?
+  ( cd "$EV" && git -c core.excludesFile="$PATTERNS" check-ignore -z --stdin --no-index < "$1" ) > "$2" \
+    || rc=$?
   case "$rc" in
-    0|1) return "$rc" ;;
-    *)   die "the pattern file could not be evaluated for $1 (git exited $rc)" ;;
+    0|1) ;;   # 0 = something selected, 1 = nothing selected; both are answers, not failures
+    *)   die "the pattern file at $PATTERNS could not be evaluated (git check-ignore exited $rc)" ;;
   esac
+  [ -s "$2" ]
 }
 
 # Candidates are the primary's untracked-and-ignored paths, which is the eligibility rule the product
 # states: anything tracked already travels with the checkout. git enumerates them as FILES, so no
-# pattern naming a directory can collapse it into its parent.
+# pattern naming a directory can collapse it into its parent. Its status is checked, which a process
+# substitution could not do: there, a listing that failed to run was indistinguishable from a primary
+# with nothing to seed.
+git -C "$PRIMARY" ls-files -z --others --ignored --exclude-standard > "$CAND" \
+  || die "cannot enumerate the untracked-and-ignored paths of $PRIMARY"
+eligible=0
+evaluate "$CAND" "$SEL" && eligible=1
+
 copied=0
 while IFS= read -r -d '' rel; do
-  selected "$rel" || continue
   [ -f "$PRIMARY/$rel" ] || continue
   [ -e "$DEST/$rel" ] && continue
   mkdir -p "$DEST/$(dirname "$rel")"
   cp "$PRIMARY/$rel" "$DEST/$rel"
   copied=$((copied+1))
-done < <(git -C "$PRIMARY" ls-files -z --others --ignored --exclude-standard)
+done < "$SEL"
 
 # The pattern file names the whole artifacts directory, so the checkout holds the papers of every open
 # task — copied by the front-end at creation on the native path, or by the loop above on any other. The

@@ -3893,6 +3893,15 @@ grep -qiE 'only the papers|papers it owns|own papers'  "$DOC25" 2>/dev/null || d
 grep -qiE 'audit'                                      "$DOC25" 2>/dev/null || d25="$d25 visibility"
 grep -qiE 'whatever created (it|the checkout)'          "$DOC25" 2>/dev/null || d25="$d25 ownership"
 grep -q  'seed-front.sh'                               "$DOC25" 2>/dev/null || d25="$d25 seeding-step"
+# The step now REFUSES where nothing is declared to travel, and this passage is where the operator meets
+# that precondition. Left as it was, the document says a working copy in that layout is simply born
+# without the data — which reads as "carry on" against a mechanism that stops.
+#
+# Anchored to the PASSAGE, not to the file. A bare grep for the word passes on the fallback paragraph
+# further down, which stops the opening for an unrelated reason — an assertion a neighbouring sentence
+# can answer is not an assertion about this precondition at all.
+PRE25="$(awk '/The precondition, stated plainly/{f=1} f&&/^$/{exit} f' "$DOC25" 2>/dev/null)"
+printf '%s' "$PRE25" | grep -qiE 'refus'               || d25="$d25 the-refusal"
 [ -z "$d25" ] \
   && ok "the operator's document carries the conditions and the seeding step" \
   || bad "the operator's document carries the conditions and the seeding step (missing:$d25)"
@@ -4083,6 +4092,100 @@ else
   [ -z "$r25s" ] \
     && ok "every refusal of the seeder names its own reason" \
     || bad "every refusal of the seeder names its own reason ($r25s)"
+
+  # 10) THE COST. A fork per candidate put a monorepo's dependency directory in the critical path of
+  #     every opening — ~16ms each, measured, with the prune sitting unreached behind it. What is
+  #     asserted is the INVARIANT and not a duration: the pattern file is evaluated a number of times
+  #     that does not GROW with the size of the primary. A wall-clock threshold would assert the same
+  #     thing flakily, and on a fast enough machine would pass on the mechanism this replaced.
+  #
+  #     Counted by putting a git on PATH that logs its arguments and execs the real one. The counts are
+  #     both reported on failure, because "24 and 44" is the diagnosis and "not constant" is not.
+  REAL25="$(command -v git)"
+  mkdir -p "$T25/bin"
+  { printf '#!/bin/bash\n'
+    printf 'printf "%%s\\n" "$*" >> "$GITLOG"\n'
+    printf 'exec %s "$@"\n' "$REAL25"; } > "$T25/bin/git"
+  chmod +x "$T25/bin/git"
+
+  # $1 = how many extra ignored files the primary holds -> echoes the number of pattern evaluations
+  forks25() {
+    local n="$1" r="$T25/n$1" i=0
+    mk25 "$r"
+    while [ "$i" -lt "$n" ]; do printf 'y\n' > "$r/.ai-flow/pad$i.tmp"; i=$((i+1)); done
+    $G25 -C "$r" worktree add -q -b "you/t-n$1" "$T25/n$1-front" >/dev/null 2>&1
+    GITLOG="$T25/log$1"; : > "$GITLOG"
+    ( cd "$r" && GITLOG="$GITLOG" PATH="$T25/bin:$PATH" "$SEED_ABS" "$T25/n$1-front" own ) >/dev/null 2>&1
+    grep -c 'check-ignore' "$GITLOG" 2>/dev/null || echo 0
+  }
+  e25a="$(forks25 20)"
+  e25b="$(forks25 60)"
+  # Equality IS the criterion: a count that does not grow with the candidate list is what makes the
+  # opening's cost independent of the repository. A ceiling on the number would be a second, weaker
+  # claim — and one a per-candidate mechanism could satisfy on a small enough fixture.
+  if [ "$e25a" = "$e25b" ]; then
+    ok "the seeder evaluates the pattern file a number of times that does not grow with the primary"
+  else
+    bad "the seeder evaluates the pattern file a number of times that does not grow with the primary ($e25a evaluation(s) at 20 padding files, $e25b at 60)"
+  fi
+
+  # 11) SELECTION IS UNCHANGED, on the pattern form the fixture above cannot reach. Every pattern in the
+  #     shipped file is anchored, so a mechanism that only ever looked at leading path segments would
+  #     pass all of it. An unanchored pattern matches at ANY depth, and it is the case a prefix-derived
+  #     pre-filter gets wrong — asserted here so choosing that design has to break something.
+  P25G="$T25/g"; mk25 "$P25G"
+  printf 'local.env\n' >> "$P25G/.worktreeinclude"
+  mkdir -p "$P25G/.ai-flow/deep/deeper"
+  printf 'secret\n' > "$P25G/.ai-flow/deep/deeper/local.env"
+  printf 'not-me\n' > "$P25G/.ai-flow/deep/deeper/other.txt"
+  $G25 -C "$P25G" worktree add -q -b you/t-g "$T25/g-front" >/dev/null 2>&1
+  ( cd "$P25G" && "$SEED_ABS" "$T25/g-front" own ) >/dev/null 2>&1
+  u25=""
+  [ -f "$T25/g-front/.ai-flow/deep/deeper/local.env" ] || u25="$u25 unanchored-match-missed"
+  [ -e "$T25/g-front/.ai-flow/deep/deeper/other.txt" ] && u25="$u25 unselected-path-copied"
+  [ -z "$u25" ] \
+    && ok "an unanchored pattern reaches the paths it matches at any depth" \
+    || bad "an unanchored pattern reaches the paths it matches at any depth ($u25)"
+
+  # 12) A pattern file that matches NOTHING is the documented precondition failing: the data directory
+  #     is neither ignored nor tracked, so nothing is eligible and the front is born with no project
+  #     data — while the run reports success. Three legs, because the refusal is only right if all three
+  #     hold: it refuses, it names both causes the operator must choose between, and it refuses AFTER the
+  #     prune, since a front-end may have filled the checkout at creation whatever the patterns select.
+  P25H="$T25/h"; mk25 "$P25H"
+  : > "$P25H/.gitignore"                       # the data directory is no longer ignored...
+  $G25 -C "$P25H" rm -r -q --cached .ai-flow >/dev/null 2>&1   # ...and not tracked either
+  $G25 -C "$P25H" add -A >/dev/null 2>&1; $G25 -C "$P25H" commit -q -m untrack
+  $G25 -C "$P25H" worktree add -q -b you/t-h "$T25/h-front" >/dev/null 2>&1
+  mkdir -p "$T25/h-front/.ai-flow/artifacts/foreign-one"       # what a front-end left at creation
+  printf 'a\n' > "$T25/h-front/.ai-flow/artifacts/foreign-one/state.md"
+  out25h="$( cd "$P25H" && "$SEED_ABS" "$T25/h-front" own 2>&1 )"; rch=$?
+  z25=""
+  [ "$rch" != 0 ] || z25="$z25 exit-0"
+  case "$out25h" in *gitignore*)  ;; *) z25="$z25 does-not-name-the-eligibility-cause" ;; esac
+  case "$out25h" in *stale*)      ;; *) z25="$z25 does-not-name-the-stale-patterns-cause" ;; esac
+  [ -e "$T25/h-front/.ai-flow/artifacts/foreign-one" ] && z25="$z25 refused-before-the-prune"
+  [ -z "$z25" ] \
+    && ok "a pattern file that matches nothing anywhere is a refusal that names both causes, taken after the prune" \
+    || bad "a pattern file that matches nothing anywhere is a refusal that names both causes, taken after the prune ($z25)"
+
+  # 13) THE OTHER empty selection, and the reason the refusal above needs two legs. A project that COMMITS
+  #     its project data has nothing eligible by construction — git carried the whole directory in — so
+  #     selecting nothing among the ignored paths is the correct answer there and the prune is the only
+  #     work left. The documents describe this layout; a refusal keyed on the ignored paths alone breaks
+  #     it, which is what this assertion exists to catch.
+  P25I="$T25/i"; mk25 "$P25I"
+  : > "$P25I/.gitignore"
+  $G25 -C "$P25I" add -A >/dev/null 2>&1; $G25 -C "$P25I" commit -q -m "commit the data directory"
+  $G25 -C "$P25I" worktree add -q -b you/t-i "$T25/i-front" >/dev/null 2>&1
+  out25i="$( cd "$P25I" && "$SEED_ABS" "$T25/i-front" own 2>&1 )"; rci=$?
+  c25i=""
+  [ "$rci" = 0 ] || c25i="$c25i refused(${out25i#seed-front: })"
+  [ -f "$T25/i-front/.ai-flow/project.yml" ] || c25i="$c25i data-missing"
+  [ -e "$T25/i-front/.ai-flow/artifacts/foreign-one" ] && c25i="$c25i foreign-one-kept"
+  [ -z "$c25i" ] \
+    && ok "a project that commits its project data still seeds successfully" \
+    || bad "a project that commits its project data still seeds successfully ($c25i)"
   rm -rf "$T25"
 fi
 
