@@ -192,7 +192,10 @@ It reads your pattern file, copies what that selects, and removes the papers of 
 ones you name. Name more than one when the front is working more than one — `seed-front.sh <checkout>
 <T-XXX> [T-YYY ...]` — because that list is what stops a re-run from deleting a paused task's papers; it
 never overwrites a file that is already there. Run it from anywhere in the repository: it resolves your
-primary checkout from git's own worktree listing, not from wherever it was invoked.
+primary checkout from git's own worktree listing, not from wherever it was invoked. Where your pattern
+file matches nothing in the repository at all — neither an ignored path nor a tracked one — it strips the
+papers and then **refuses**, rather than reporting a success it did not achieve; that is the precondition
+above, and the refusal names it.
 
 When the tool you declared cannot satisfy a condition and nothing completes it, the ceremony falls back
 to the floor — and that costs you something the four conditions cannot express: your own view of the

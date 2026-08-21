@@ -3902,6 +3902,10 @@ grep -q  'seed-front.sh'                               "$DOC25" 2>/dev/null || d
 # can answer is not an assertion about this precondition at all.
 PRE25="$(awk '/The precondition, stated plainly/{f=1} f&&/^$/{exit} f' "$DOC25" 2>/dev/null)"
 printf '%s' "$PRE25" | grep -qiE 'refus'               || d25="$d25 the-refusal"
+# Both branches, because the mechanism now distinguishes two empty selections and only one is a defect.
+# A passage carrying the refusal alone tells the reader who commits their data directory that their
+# layout is the broken one.
+printf '%s' "$PRE25" | grep -qiE 'seeds successfully|still seeds' || d25="$d25 the-committed-layout"
 [ -z "$d25" ] \
   && ok "the operator's document carries the conditions and the seeding step" \
   || bad "the operator's document carries the conditions and the seeding step (missing:$d25)"
@@ -4089,6 +4093,22 @@ else
   chk25 "already holds the project"      "$P25F"                   own
   chk25 "not a registered worktree"      "$P25F/.git"              own
   chk25 "not a usable task id"           "$T25/f-second"           "../escape"
+  # The refusal this task added to the evaluator, in the roll-call that claims to cover every one of
+  # them. A directory passes the readability guard above — it is readable and it has a size — and then
+  # git cannot use it as an exclude file, which is the unanswerable probe the evaluator dies on.
+  #
+  # The two enumeration refusals are deliberately NOT here: reaching them needs a git that fails on one
+  # subcommand while succeeding at the others, and the second is unreachable behind the first — the
+  # tracked listing is a strict subset of the work the ignored listing already completed.
+  P25J="$T25/j"; mk25 "$P25J"
+  rm -f "$P25J/.worktreeinclude"; mkdir -p "$P25J/.worktreeinclude"
+  $G25 -C "$P25J" worktree add -q -b you/t-j "$T25/j-front" >/dev/null 2>&1
+  out25j="$( cd "$P25J" && "$SEED_ABS" "$T25/j-front" own 2>&1 )"; rcj=$?
+  [ "$rcj" != 0 ] || r25s="$r25s [could-not-be-evaluated:exit-0]"
+  case "$out25j" in
+    *"could not be evaluated"*) ;;
+    *) r25s="$r25s [could-not-be-evaluated:said(${out25j#seed-front: })]" ;;
+  esac
   [ -z "$r25s" ] \
     && ok "every refusal of the seeder names its own reason" \
     || bad "every refusal of the seeder names its own reason ($r25s)"
@@ -4108,26 +4128,43 @@ else
     printf 'exec %s "$@"\n' "$REAL25"; } > "$T25/bin/git"
   chmod +x "$T25/bin/git"
 
-  # $1 = how many extra ignored files the primary holds -> echoes the number of pattern evaluations
+  # $1 = how many extra ignored files the primary holds -> echoes the number of pattern evaluations,
+  # or a non-numeric marker naming which premise failed. The premise is asserted rather than assumed
+  # because equality alone is satisfied by ABSENCE just as well as by constancy: a seeder that dies
+  # before it ever evaluates logs nothing at either fixture size, and "nothing == nothing" reads as a
+  # cost that does not grow. Proven, not supposed — a mutation that made `evaluate` return without
+  # calling git turned six other cases in this block red and left this one printing ok.
   forks25() {
-    local n="$1" r="$T25/n$1" i=0
+    local n="$1" r="$T25/n$1" i=0 rc=0 c
     mk25 "$r"
     while [ "$i" -lt "$n" ]; do printf 'y\n' > "$r/.ai-flow/pad$i.tmp"; i=$((i+1)); done
     $G25 -C "$r" worktree add -q -b "you/t-n$1" "$T25/n$1-front" >/dev/null 2>&1
     GITLOG="$T25/log$1"; : > "$GITLOG"
-    ( cd "$r" && GITLOG="$GITLOG" PATH="$T25/bin:$PATH" "$SEED_ABS" "$T25/n$1-front" own ) >/dev/null 2>&1
-    grep -c 'check-ignore' "$GITLOG" 2>/dev/null || echo 0
+    ( cd "$r" && GITLOG="$GITLOG" PATH="$T25/bin:$PATH" "$SEED_ABS" "$T25/n$1-front" own ) \
+      >/dev/null 2>&1 || rc=$?
+    [ "$rc" = 0 ] || { printf 'seeder-exited-%s' "$rc"; return; }
+    [ -f "$T25/n$1-front/.ai-flow/project.yml" ] || { printf 'seeded-no-data'; return; }
+    # `grep -c` prints 0 AND exits 1 when it counts nothing, so a `|| echo 0` fallback appends a SECOND
+    # zero and the value becomes the two-line string "0\n0" — equal to itself at every fixture size.
+    # That is exactly how this assertion was hollow; the count must be one value or none.
+    c="$(grep -c 'check-ignore' "$GITLOG" 2>/dev/null || true)"
+    printf '%s' "${c:-0}"
   }
   e25a="$(forks25 20)"
   e25b="$(forks25 60)"
-  # Equality IS the criterion: a count that does not grow with the candidate list is what makes the
-  # opening's cost independent of the repository. A ceiling on the number would be a second, weaker
-  # claim — and one a per-candidate mechanism could satisfy on a small enough fixture.
-  if [ "$e25a" = "$e25b" ]; then
-    ok "the seeder evaluates the pattern file a number of times that does not grow with the primary"
-  else
-    bad "the seeder evaluates the pattern file a number of times that does not grow with the primary ($e25a evaluation(s) at 20 padding files, $e25b at 60)"
-  fi
+  # Three distinct verdicts, because "not constant" and "never happened" are different diagnoses and an
+  # operator acts on the sentence. Equality is the criterion itself — a count that does not grow with the
+  # candidate list is what makes the opening's cost independent of the repository — but it only means
+  # that once the count is known to be a real count.
+  g25=""
+  case "$e25a$e25b" in
+    *[!0-9]*) g25=" premise-failed(20:$e25a, 60:$e25b)" ;;
+    *) [ "$e25a" -ge 1 ] || g25=" never-evaluated"
+       [ -n "$g25" ] || [ "$e25a" = "$e25b" ] || g25=" grew($e25a at 20 padding files, $e25b at 60)" ;;
+  esac
+  [ -z "$g25" ] \
+    && ok "the seeder evaluates the pattern file a number of times that does not grow with the primary" \
+    || bad "the seeder evaluates the pattern file a number of times that does not grow with the primary ($g25)"
 
   # 11) SELECTION IS UNCHANGED, on the pattern form the fixture above cannot reach. Every pattern in the
   #     shipped file is anchored, so a mechanism that only ever looked at leading path segments would
@@ -4196,6 +4233,10 @@ else
   out25i="$( cd "$P25I" && "$SEED_ABS" "$T25/i-front" own 2>&1 )"; rci=$?
   c25i=""
   [ "$rci" = 0 ] || c25i="$c25i refused(${out25i#seed-front: })"
+  # "having copied nothing" is the other half of the criterion, and it is the half that says WHY this
+  # layout is not the broken one: git already carried the data, so there is nothing left to copy. A
+  # verdict that only checked the data is present would also pass on a mechanism that copied it again.
+  case "$out25i" in *"0 file(s) copied"*) ;; *) c25i="$c25i copied-something(${out25i#seed-front: })" ;; esac
   [ -f "$T25/i-front/.ai-flow/project.yml" ] || c25i="$c25i data-missing"
   [ -e "$T25/i-front/.ai-flow/artifacts/foreign-one" ] && c25i="$c25i foreign-one-kept"
   [ -z "$c25i" ] \
