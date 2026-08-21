@@ -4135,14 +4135,21 @@ else
   #     pre-filter gets wrong — asserted here so choosing that design has to break something.
   P25G="$T25/g"; mk25 "$P25G"
   printf 'local.env\n' >> "$P25G/.worktreeinclude"
-  mkdir -p "$P25G/.ai-flow/deep/deeper"
-  printf 'secret\n' > "$P25G/.ai-flow/deep/deeper/local.env"
-  printf 'not-me\n' > "$P25G/.ai-flow/deep/deeper/other.txt"
+  # OUTSIDE every directory the anchored patterns name, which is the whole point: an unanchored pattern
+  # matches at any depth ANYWHERE, so a mechanism that enumerated only under the directories the patterns
+  # name would never see this path. Placed under `.ai-flow/` instead, the assertion passes on exactly that
+  # mechanism and guards nothing — which is what it did until a mutation was aimed at it.
+  printf '/vendor/\n' >> "$P25G/.gitignore"
+  mkdir -p "$P25G/vendor/deep/deeper"
+  printf 'secret\n' > "$P25G/vendor/deep/deeper/local.env"
+  printf 'not-me\n' > "$P25G/vendor/deep/deeper/other.txt"
+  $G25 -C "$P25G" add .gitignore >/dev/null 2>&1
+  $G25 -C "$P25G" commit -q -m "ignore vendor"
   $G25 -C "$P25G" worktree add -q -b you/t-g "$T25/g-front" >/dev/null 2>&1
   ( cd "$P25G" && "$SEED_ABS" "$T25/g-front" own ) >/dev/null 2>&1
   u25=""
-  [ -f "$T25/g-front/.ai-flow/deep/deeper/local.env" ] || u25="$u25 unanchored-match-missed"
-  [ -e "$T25/g-front/.ai-flow/deep/deeper/other.txt" ] && u25="$u25 unselected-path-copied"
+  [ -f "$T25/g-front/vendor/deep/deeper/local.env" ] || u25="$u25 unanchored-match-missed"
+  [ -e "$T25/g-front/vendor/deep/deeper/other.txt" ] && u25="$u25 unselected-path-copied"
   [ -z "$u25" ] \
     && ok "an unanchored pattern reaches the paths it matches at any depth" \
     || bad "an unanchored pattern reaches the paths it matches at any depth ($u25)"
