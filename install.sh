@@ -150,6 +150,13 @@ install_worktree_entry() {
     echo "  [skip] .claude/settings.json already exists"
     echo "  [action] add \"worktree\": { \"baseRef\": \"fresh\" } to $TARGET/.claude/settings.json by hand"
   fi
+
+  # What this function provisions is the native worktree path, and that path puts the checkout inside
+  # the project. Uncovered by the project's ignore rules it is untracked content in the primary, which
+  # the audit then copies into its snapshot and requires byte-exact against a working copy another
+  # session is writing. The line is the project's own to write, so this states it and does not.
+  echo "  [note] add /.claude/worktrees/ to your .gitignore — the native worktree path creates checkouts"
+  echo "         there, and an unignored one becomes untracked content the coordinator's audit reads"
 }
 
 # Idempotently merge ai-flow hooks into ~/.claude/settings.json (preserves other keys + user hooks)

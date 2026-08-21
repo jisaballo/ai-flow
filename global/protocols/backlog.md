@@ -22,15 +22,20 @@ receives it and never edits it.
 Workstream) — front-scoped, decided once, never a running account of what the task turned out to
 touch.
 
+**Tool** names what created that front's checkout. Front-scoped and decided once, like Areas, and read
+by the closing ceremony's dismantling move: the ownership condition says the checkout is removed by
+whatever created it, and this column is the only thing that says what that was. The coordinator's own
+row has nothing to name — nothing created it.
+
 ```markdown
 # Session State
 
 ## Workstreams
 
-| Workstream | Checkout | Branch | Task | Epic | Areas | Opened |
-|---|---|---|---|---|---|---|
-| coordinator | . | main | T-XXX | E-XXX | auth, billing | 2026-08-19 |
-| ws-b | ../proj-wt-b | you/t-yyy-slug | T-YYY | E-XXX | notifications | 2026-08-19 |
+| Workstream | Checkout | Branch | Task | Epic | Areas | Tool | Opened |
+|---|---|---|---|---|---|---|---|
+| coordinator | . | main | T-XXX | E-XXX | auth, billing | — | 2026-08-19 |
+| ws-b | ../proj-wt-b | you/t-yyy-slug | T-YYY | E-XXX | notifications | orca | 2026-08-19 |
 
 > Per-task phase, step, autonomy and decisions live in `artifacts/T-XXX/state.md`.
 > This file is a roster: the coordinator writes it, only at ceremonies.
@@ -212,6 +217,10 @@ A project already running ai-flow has a `STATE.md` full of task context, and `up
 overwrites project data — so the move is manual and takes one edit: replace the current-task block
 with the `## Workstreams` table, move the active task's phase, step, autonomy and decisions into its
 sheet, and keep only the notes that are genuinely cross-task. Nothing else in `.ai-flow/` changes.
+
+A roster that predates the **Tool** column is not broken either: a front that names no tool reads as one
+whose creator is unknown, and the dismantling move falls back to `git worktree remove` — the removal git
+itself can always perform. Naming it is what lets the move reach for the tool's own means instead.
 
 A roster that predates the **Areas** column is not broken: a front that declares no areas simply
 reads as *cannot compare* at the next opening, which is exactly the verdict the ceremony defines for
@@ -437,7 +446,8 @@ what activation has always been, plus the declaration in step 2.
    its epic's Scope Contract — it reads from the coordinator, read-only (see the Understand protocol).
 
 7. **Write the roster row and the task's sheet.** The row carries workstream, checkout, branch, task,
-   epic, the declared areas and the date. The sheet carries the branch that owns the task, the phase,
+   epic, the declared areas, **what created the checkout** — the tool identified in move 5, which is
+   what the dismantling move reads — and the date. The sheet carries the branch that owns the task, the phase,
    the step, the autonomy level, and any acknowledgement from step 3. The `branch:` line is what makes
    the sheet findable in a checkout that holds several: without it, the front the ceremony just opened
    has no state anything can read. Writing it is writing a claim, so this move carries the obligation
@@ -510,10 +520,12 @@ sheet is where an interrupted close is written down, and the roster is the queue
    task close**, a quick task's included, and carries none of the condition the two moves below it do.
 
 6. **The front's working copy is dismantled by whatever created it** — the counterpart of the ownership
-   condition in step 5 of the opening. Claude Code's `ExitWorktree` removes only what `EnterWorktree`
+   condition in step 5 of the opening, and what created it is read from that front's **roster row**,
+   where move 7 of the opening wrote it. Claude Code's `ExitWorktree` removes only what `EnterWorktree`
    created **in this session** and is a declared no-op for anything else, so it takes down a front opened
    in this session and nothing more: a front lives across the tasks in it, and one opened earlier — or by
-   another front-end — is removed by that tool's own means, or by `git worktree remove`. What says the
+   another front-end — is removed by that tool's own means, or by `git worktree remove`, which is also
+   what a row naming no tool leaves the move with. What says the
    move happened is the repository's own answer, not the tool's: the checkout no longer appears in
    `git worktree list`. Never before move 2: removing the checkout destroys the task's papers, and git
    cannot restore what it never tracked. Runs only when the front has no next task.
