@@ -7,3 +7,8 @@
 # Python bytecode from running the hooks in place
 __pycache__/
 *.pyc
+
+# Worktrees the native tooling creates land here, inside the repository. Ignoring the path is what
+# keeps a front invisible to the coordinator's audit — the visibility condition of the opening
+# ceremony. Left tracked, a front would be untracked content the review copies and then compares.
+/.claude/worktrees/

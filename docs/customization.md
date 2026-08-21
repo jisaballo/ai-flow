@@ -127,6 +127,38 @@ unpushed commits along with whatever else is sitting in that checkout.
 Projects installed before these files existed receive them by re-running `./install.sh init`;
 `update` never writes into a project, by design.
 
+**Any tool may create the worktree.** ai-flow requires no particular front-end: what it requires is a
+checkout satisfying four conditions, and the opening ceremony checks them on the result rather than
+trusting the tool that produced it.
+
+1. **Base** — the branch starts from the **published default branch**, which is what `worktree.baseRef`
+   above governs on the native path.
+2. **Data** — the checkout holds what `.worktreeinclude` declares travels, and **only the papers** of
+   the task it owns.
+3. **Visibility** — the coordinator's audit cannot see the checkout. Outside your project folder that
+   holds by itself; inside it, only where your ignore rules cover the path.
+4. **Ownership** — whatever created the checkout removes it. A tool that keeps its own registry of
+   worktrees is left pointing at one something else deleted.
+
+Claude Code's own tooling — `EnterWorktree`, `claude -w`, an agent's `isolation: worktree` — meets 1
+and 2 on its own and is the default. It creates the worktree **inside** `.claude/worktrees/`, so with
+it condition 3 is your ignore rules' job: add `/.claude/worktrees/` to your `.gitignore` (this
+repository does). Left out, that checkout is untracked content inside your project, and the review's
+own before/after comparison then runs over a second working copy something else is writing.
+
+For a front-end that carries no project data — a plain `git worktree add`, or any tool that knows
+nothing of `.worktreeinclude` — the engine ships the mechanism that satisfies condition 2:
+
+```
+~/.claude/ai-flow/scripts/seed-front.sh <checkout> <T-XXX>
+```
+
+It reads your pattern file, copies what that selects, and removes the other tasks' papers the copy
+brought along. It never overwrites or deletes what the checkout already holds, so running it again when
+that front takes on its next task cannot walk over work in progress. Run it from anywhere in the
+repository: it resolves your primary checkout from git's own worktree listing, not from wherever it was
+invoked.
+
 ## What NOT to Customize
 
 ### Protocols
