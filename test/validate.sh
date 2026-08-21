@@ -4133,14 +4133,32 @@ o31() { printf '%s\n' "$OPN31" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. 
 c31() { printf '%s\n' "$CLO31" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
 
 M5_31="$(o31 5)"
+M5RAW31="$(printf '%s\n' "$OPN31" | awk '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==5')"
 # The move's PREAMBLE — everything ahead of the first condition. The identification has to be the move's
 # first act, and a sentence about it buried after the four conditions is a different claim: it would read
 # as something to do once the checkout exists, which is exactly the order that produced the incident.
 HEAD31="$(printf '%s' "$M5_31" | sed 's/ - \*\*base\*\*.*//')"
 
+# One condition bullet, by its own label. Every facet of the asymmetry is asserted INSIDE the bullet it
+# belongs to: read over the whole move, `by hand` is answered by the sentence introducing the list and
+# `every path` by the data bullet and the floor paragraph, so three of the four attributions could be
+# deleted with the guard green. A facet a neighbouring sentence can satisfy reports the list as present
+# while it is missing — the discipline this block already applies to the docs side.
+b31() {  # $1 = condition label -> that bullet's text, flattened
+  printf '%s\n' "$M5RAW31" | awk -v lab="- **$1**" '
+    !f && index($0, lab) { f = 1; print; next }
+    f && ($0 ~ /^[[:space:]]*$/ || $0 ~ /^   - \*\*/) { exit }
+    f { print }' | tr '\n' ' ' | tr -s ' '
+}
+
 if [ -n "$M5_31" ]; then
-  # A1 — the first act.
+  # A1 — the first act. The truncation is asserted before anything is concluded from it: `sed` reports
+  # nothing when its pattern is absent, so a relabelled or reordered first condition would leave HEAD31
+  # equal to the whole move and quietly turn this from an assertion about ORDER into one about presence —
+  # satisfied by a sentence sitting after the conditions, which is the order that produced the incident.
   a1=""
+  [ "$HEAD31" != "$M5_31" ] || a1="$a1 preamble-boundary-not-found"
+  printf '%s' "$HEAD31" | grep -qE '\*\*(base|data|visibility|ownership)\*\*' && a1="$a1 preamble-cut-too-late"
   printf '%s' "$HEAD31" | grep -qiE 'identif'                            || a1="$a1 no-identification"
   printf '%s' "$HEAD31" | grep -qiE 'front_tool|the project (declares|is managed in)' || a1="$a1 nothing-to-read-it-from"
   [ -z "$a1" ] \
@@ -4172,13 +4190,26 @@ if [ -n "$M5_31" ]; then
     && ok "an undeclared front tool is a stated fallback, not a silent default" \
     || bad "an undeclared front tool is a stated fallback, not a silent default (missing:$a5)"
 
-  # A3 — the asymmetry, per condition. Four facets, named individually: a single verdict over four facts
-  # cannot be acted on, and this is the list an operator reads to know what they are paying for.
+  # A3 — the asymmetry, asserted inside each condition it attributes. Facets named individually: a single
+  # verdict over four facts cannot be acted on, and this is the list an operator reads to know what they
+  # are paying for. An empty cut is its own failure, never a silently satisfied facet.
   a3=""
-  printf '%s' "$M5_31" | grep -qiE 'without help'                          || a3="$a3 native-gets-free"
-  printf '%s' "$M5_31" | grep -qiE 'by hand'                               || a3="$a3 taken-on-by-hand"
-  printf '%s' "$M5_31" | grep -qiE 'every path|on any path|whatever created it does' || a3="$a3 ownership-universal"
-  printf '%s' "$M5_31" | grep -qiE 'per.tool|tool by tool|depends on the tool' || a3="$a3 visibility-per-tool"
+  for cond31 in base data visibility ownership; do
+    [ -n "$(b31 "$cond31")" ] || a3="$a3 no-$cond31-bullet"
+  done
+  printf '%s' "$(b31 base)"       | grep -qiE 'worktree\.baseRef'            || a3="$a3 base-native-mechanism"
+  printf '%s' "$(b31 base)"       | grep -qiE 'by hand'                      || a3="$a3 base-by-hand"
+  printf '%s' "$(b31 data)"       | grep -qiE 'worktreeinclude'              || a3="$a3 data-native-mechanism"
+  printf '%s' "$(b31 data)"       | grep -qiE 'by hand'                      || a3="$a3 data-by-hand"
+  printf '%s' "$(b31 visibility)" | grep -qiE 'per.tool|tool by tool|depends on the tool' || a3="$a3 visibility-per-tool"
+  printf '%s' "$(b31 ownership)"  | grep -qiE 'every path|on any path'       || a3="$a3 ownership-universal"
+  printf '%s' "$M5_31"            | grep -qiE 'without help'                 || a3="$a3 native-gets-free"
+  # The attribution rule itself, added because a field measurement falsified the absolute this list used
+  # to state: a tool whose help never mentions the pattern file was found transferring exactly what it
+  # selects. What a tool brings is a fact about the checkout, not about the documentation — and a
+  # correction needs a guard as much as a feature does, or it is revertible with the suite green.
+  printf '%s' "$M5_31" | grep -qiE 'read from the checkout' || a3="$a3 attribution-read-from-the-checkout"
+  printf '%s' "$(b31 data)" | grep -qiE 'per.tool and per.version|per.version' || a3="$a3 data-not-absolute"
   [ -z "$a3" ] \
     && ok "the creation move says which conditions a non-native tool takes on by hand" \
     || bad "the creation move says which conditions a non-native tool takes on by hand (missing:$a3)"
@@ -4186,10 +4217,15 @@ if [ -n "$M5_31" ]; then
   # A4 — the acknowledgement. The consequence the four conditions cannot express is the operator's own
   # view of the front, and an obligation with no written trace is the visibility condition's own defect
   # repeated: nothing reads it, nothing acts on it.
+  # The gate is the half that matters, and the three facets below could all be met by a note written
+  # after the checkout exists. What the criterion says is that the opening does not continue until the
+  # line is on the sheet, so the halt and the resumption are pinned too — the wording move 3 already
+  # uses for the collision this one is modelled on.
   a4=""
   printf '%s' "$M5_31" | grep -qiE 'fall(s|ing)? back|falls back'          || a4="$a4 fallback-not-named"
   printf '%s' "$M5_31" | grep -qiE 'acknowledg'                            || a4="$a4 no-acknowledgement"
   printf '%s' "$M5_31" | grep -qiE "task'?s (own )?sheet"                  || a4="$a4 no-home-for-it"
+  printf '%s' "$M5_31" | grep -qiE 'resumes only once|does not continue until|only once that is' || a4="$a4 not-a-gate"
   [ -z "$a4" ] \
     && ok "falling back to the native path is acknowledged in writing on the task's sheet" \
     || bad "falling back to the native path is acknowledged in writing on the task's sheet (missing:$a4)"
@@ -4220,16 +4256,30 @@ if [ -n "$M5_31" ]; then
   fi
 
   # O1's machine half — the operator's guide is a second home for the same rules and can go stale.
-  # The asymmetry facet asks for all three of the list's own words, not for `by hand` alone: that one
-  # phrase is answered by the paragraph about preferring the declared tool, which sits above the list
-  # and says nothing about which condition costs what. A facet a neighbouring sentence can satisfy
-  # reports the list as present while it is missing.
+  # Scoped to the section it is about, then to each item inside it — a file-wide grep over the guide is
+  # answered from anywhere, and this same task added a schema comment a hundred lines above that carries
+  # `identif` and would answer for the paragraph the facet exists to pin. The reference pattern for a
+  # second-home check in this suite cuts the region first (the distribution join does exactly that with
+  # the guide's fenced block), and the asymmetry facets are asserted per numbered item for the reason
+  # the protocol side is: `by hand` is answered by the paragraph above the list and `every path` by the
+  # data item, so the base and ownership attributions were pinned by nothing.
+  SEC31="$(awk '/^### Parallel workstreams/{f=1} (f && /^## /){f=0} f' "$DOC31")"
+  i31() {  # $1 = list item number -> that numbered item's text, flattened
+    printf '%s\n' "$SEC31" | awk -v n="$1" '
+      $0 ~ "^"n"\\. \\*\\*" { f = 1; print; next }
+      f && ($0 ~ /^[0-9]+\. \*\*/ || $0 ~ /^[[:space:]]*$/) { exit }
+      f { print }' | tr '\n' ' ' | tr -s ' '
+  }
   d31=""
-  grep -qiE 'identif'  "$DOC31" 2>/dev/null || d31="$d31 first-step"
-  { grep -qiE 'by hand' "$DOC31" 2>/dev/null \
-    && grep -qiE 'per.tool' "$DOC31" 2>/dev/null \
-    && grep -qiE 'every path' "$DOC31" 2>/dev/null; } || d31="$d31 asymmetry"
-  grep -qiE 'acknowledg' "$DOC31" 2>/dev/null || d31="$d31 acknowledgement"
+  [ -n "$SEC31" ] || d31="$d31 section-not-found"
+  for n31 in 1 2 3 4; do [ -n "$(i31 "$n31")" ] || d31="$d31 no-item-$n31"; done
+  printf '%s' "$SEC31" | grep -qiE 'identif[^.]{0,120}tool this project is managed in' || d31="$d31 first-step"
+  printf '%s' "$(i31 1)" | grep -qiE 'by hand'    || d31="$d31 base-by-hand"
+  printf '%s' "$(i31 2)" | grep -qiE 'by hand'    || d31="$d31 data-by-hand"
+  printf '%s' "$(i31 3)" | grep -qiE 'per.tool'   || d31="$d31 visibility-per-tool"
+  printf '%s' "$(i31 4)" | grep -qiE 'every path' || d31="$d31 ownership-universal"
+  printf '%s' "$SEC31" | grep -qiE 'acknowledg'   || d31="$d31 acknowledgement"
+  printf '%s' "$SEC31" | grep -qiE 'read from the checkout' || d31="$d31 attribution-read-from-the-checkout"
   [ -z "$d31" ] \
     && ok "the operator's document carries the first step, the asymmetry and the acknowledgement" \
     || bad "the operator's document carries the first step, the asymmetry and the acknowledgement (missing:$d31)"
@@ -4256,7 +4306,11 @@ r31=""
 grep -qiE '^\|[^|]*workstream[^|]*\|.*\|[^|]*tool[^|]*\|' "$TST31" 2>/dev/null || r31="$r31 template-column"
 printf '%s\n' "$(awk '/^## State Files/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG31")" \
   | grep -qiE '^\|[^|]*workstream[^|]*\|.*\|[^|]*tool[^|]*\|' || r31="$r31 protocol-column"
-printf '%s' "$(o31 7)" | grep -qiE 'tool|what created' || r31="$r31 no-writer"
+# Anchored to the ROW, in the ordered-co-occurrence shape used for the default claim: move 7 describes
+# two papers, and `tool` anywhere in it is satisfied by a sentence putting the creator on the SHEET —
+# which would leave the closing move, that reads it from the row, with nothing. A writer and a reader
+# disagreeing about which paper holds the datum is the one thing this join exists to catch.
+printf '%s' "$(o31 7)" | grep -qiE 'row carries[^.]{0,200}(what created|the tool)' || r31="$r31 no-writer"
 [ -z "$r31" ] \
   && ok "the roster records what created each front, on both sides and with a writer" \
   || bad "the roster records what created each front, on both sides and with a writer (missing:$r31)"

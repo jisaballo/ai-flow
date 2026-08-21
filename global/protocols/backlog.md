@@ -35,7 +35,7 @@ row has nothing to name — nothing created it.
 | Workstream | Checkout | Branch | Task | Epic | Areas | Tool | Opened |
 |---|---|---|---|---|---|---|---|
 | coordinator | . | main | T-XXX | E-XXX | auth, billing | — | 2026-08-19 |
-| ws-b | ../proj-wt-b | you/t-yyy-slug | T-YYY | E-XXX | notifications | orca | 2026-08-19 |
+| ws-b | ../proj-wt-b | you/t-yyy-slug | T-YYY | E-XXX | notifications | <tool> | 2026-08-19 |
 
 > Per-task phase, step, autonomy and decisions live in `artifacts/T-XXX/state.md`.
 > This file is a roster: the coordinator writes it, only at ceremonies.
@@ -373,8 +373,11 @@ what activation has always been, plus the declaration in step 2.
 
 5. **Create the linked worktree.** It opens with a question asked before anything is created: **what
    tool is this project managed in?** The answer is read from the project layer (`front_tool` in
-   `project.yml`), and identifying it is this move's first act rather than a preference applied
-   afterwards. The reason is the shape of everything below: the conditions are facts the repository can
+   `project.yml`) — and reading it is the point: **the decision may already have been made there, and
+   then it is not this opening's to make.** Identifying it is this move's first act rather than a
+   preference applied afterwards, because the reader who most needs this line is the one who does not
+   know the project layer could have settled it already: they do not form an intention and go looking for
+   permission, they look first. The reason is the shape of everything below: the conditions are facts the repository can
    answer, and the surface a person works in is not one of them — so a checkout can satisfy every one of
    them and still be a front its operator never sees.
 
@@ -389,7 +392,10 @@ what activation has always been, plus the declaration in step 2.
 
    They are not symmetric across tools, and the move says which ones a tool is taking on **by hand** —
    an operator who reads a list of conditions without reading who pays for each discovers the unpaid
-   ones at the moment they fail:
+   ones at the moment they fail. What a tool actually brings is **read from the checkout it produced,
+   never from its documentation**: a tool's silence about a condition is not evidence it ignores it, and
+   what one version brings another may not. The attributions below say where each condition usually comes
+   from; the checkout is what says whether it arrived.
 
    - **base** — the branch starts from the **published default branch**, which is what step 4 above
      checks: work committed and unpushed does not exist for a front cut from it. The native path gets it
@@ -397,8 +403,11 @@ what activation has always been, plus the declaration in step 2.
      creation.
    - **data** — the checkout holds what the project's pattern file declares travels, and **only the
      papers** of the task it owns. Move 6 below is what makes that true. The native path gets the
-     arriving half from `.worktreeinclude`; every other tool takes it on by hand, with the mechanism
-     move 6 names — and the prune is move 6's on every path.
+     arriving half from `.worktreeinclude`; whether any other tool does is **per-tool and per-version**
+     and is settled by looking — one measured case transferred exactly what that file selects while its
+     own help never mentioned the file at all. So look first and take on by hand only what the checkout
+     does not already hold. The prune is move 6's on every path regardless: a copy taken at creation is a
+     snapshot, and a snapshot can arrive holding papers of tasks this front does not own.
    - **visibility** — the checkout is not visible to the coordinator's own **audit**. Outside the
      primary's tree that holds by construction; a checkout nested inside it holds only where the
      project's ignore rules cover that path. Left uncovered, a nested front is untracked content in the
@@ -422,10 +431,11 @@ what activation has always been, plus the declaration in step 2.
 
    Where the declared tool cannot satisfy a condition and nothing completes it, the ceremony falls back
    to the floor — and that fallback costs something the four conditions cannot express: the operator
-   loses their own view of the front. So it is **acknowledged in writing on the task's sheet**, naming
-   the condition that could not be satisfied and why proceeding without that view is acceptable. It is
-   the same acknowledgement move 3 above requires of a collision, for the same reason: a loss the
-   ceremony chooses is a loss somebody decided, and there is no silent path past a decision. What is
+   loses their own view of the front. **Stop.** The opening resumes only once that is **acknowledged in
+   writing on the task's sheet**, naming the condition that could not be satisfied and why proceeding
+   without that view is acceptable. It is the same acknowledgement — and the same halt — that move 3
+   above requires of a collision, for the same reason: a loss the ceremony chooses is a loss somebody
+   decided, and there is no silent path past a decision. What is
    never acceptable is a checkout nobody checked.
 
 6. **Seed the task's artifacts and prune the rest.** The pattern file carries `artifacts/` wholesale,

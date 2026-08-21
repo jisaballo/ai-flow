@@ -131,7 +131,8 @@ Projects installed before these files existed receive them by re-running `./inst
 `update` never writes into a project, by design.
 
 **Start by identifying the tool this project is managed in.** That is the opening ceremony's first act,
-and `front_tool` above is where the answer lives. The tool you declare is the default — preferred
+and `front_tool` above is where the answer lives — read it before you decide anything, because the
+decision may already be made there. The tool you declare is the default — preferred
 wherever it can satisfy the conditions below, with whatever it does not bring completed by hand.
 Declare nothing and the ceremony uses Claude Code's own worktree path and tells you that is what it
 did, rather than leaving you to assume it.
@@ -145,14 +146,21 @@ result.
 checkout satisfying four conditions, and the opening ceremony checks them on the result rather than
 trusting the tool that produced it.
 
-They are not symmetric across tools, so each one below says who pays for it:
+They are not symmetric across tools, so each one below says who pays for it. But what your tool actually
+brings is **read from the checkout it produced, never from its documentation** — a tool that never
+mentions `.worktreeinclude` may still honour it, and one version may differ from the next. The
+attributions below say where each condition usually comes from; look at the checkout to see what
+arrived.
 
 1. **Base** — the branch starts from the **published default branch**, which is what `worktree.baseRef`
    above governs on the native path. Any other tool takes it on **by hand**: name the base ref
    explicitly when you create the checkout.
 2. **Data** — the checkout holds what `.worktreeinclude` declares travels, and **only the papers** of
-   the task it owns. The native path brings the first half without help; any other tool takes it on by
-   hand, with the seeding mechanism below. The pruning half is run on every path.
+   the task it owns. The native path brings the first half without help; whether another tool does is
+   per-tool and per-version, so look before you seed and take it on by hand only for what is missing —
+   the seeding mechanism below never overwrites what is already there. The pruning half is run on every
+   path regardless: a copy taken at creation is a snapshot, and it can arrive holding papers of tasks
+   this front does not own.
 3. **Visibility** — the coordinator's audit cannot see the checkout. Outside your project folder that
    holds by itself; inside it, only where your ignore rules cover the path. This one is **per-tool** —
    which of the two cases you are in depends on where your tool puts the checkout.
@@ -184,8 +192,9 @@ primary checkout from git's own worktree listing, not from wherever it was invok
 
 When the tool you declared cannot satisfy a condition and nothing completes it, the ceremony falls back
 to the floor — and that costs you something the four conditions cannot express: your own view of the
-front. So the fallback is **acknowledged in writing on the task's sheet**, naming the condition that
-could not be satisfied and why going ahead without that view is acceptable. It is the same
+front. So the opening **stops**, and resumes only once the fallback is **acknowledged in writing on the
+task's sheet**, naming the condition that could not be satisfied and why going ahead without that view
+is acceptable. It is the same
 acknowledgement the ceremony already asks for when two fronts collide, and for the same reason: a loss
 it chooses is a loss somebody decided.
 
