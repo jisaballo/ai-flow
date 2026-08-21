@@ -24,15 +24,16 @@ name: my-project
 area_kind: package          # what an "area" means here: app | domain | package | service
 source_dirs:                # verify scopes changed files to these
   - src
+# front_tool: "<tool>"      # optional, TOP-LEVEL — the tool this project is managed in; the opening
+                            # ceremony identifies it before it creates a front. Absent, the native
+                            # worktree path is used and the ceremony says so
 commands:
   test: "npm test"          # use {area} when the command is scoped, e.g. "npx nx test {area}"
   lint: "npm run lint"
   build: "npm run build"
-# distribute: "..."         # optional — what puts merged work into effect (publish/deploy/reinstall);
-                            # absent, the close's distribution move is a stated no-op
-# front_tool: "<tool>"      # optional — the tool this project is managed in; the opening ceremony
-                            # identifies it before it creates a front. Absent, the native worktree
-                            # path is used and the ceremony says so
+# distribute: "..."         # optional — a key UNDER commands: what puts merged work into effect
+                            # (publish/deploy/reinstall); absent, the close's distribution move is a
+                            # stated no-op
 steering:                   # area -> steering file the verify phase loads
   auth: steering/auth.md
 ```

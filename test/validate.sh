@@ -4239,8 +4239,14 @@ if [ -n "$M5_31" ]; then
     # As a KEY, never as a word: the guide and the template both discuss tools in prose, so a bare word
     # match is answered by a neighbouring sentence.
     keyed31() { printf '%s' "$1" | grep -qE "(^|[[:space:]#])${KEY31}:"; }
+    # The key's own comment BLOCK — the run of consecutive comment lines it closes. A fixed -B window is
+    # a line count masquerading as a structure: the block is five lines today and any edit to the prose
+    # moves the facts out of the window while leaving them exactly where a reader finds them.
+    BLK31="$(awk -v key="${KEY31}:" '
+      /^#/ { buf = buf $0 "\n"; if (index($0, key)) { printf "%s", buf; exit } next }
+      { buf = "" }' "$PY31")"
     if keyed31 "$(cat "$PY31")" \
-       && grep -B2 -A2 -E "(^|[[:space:]#])${KEY31}:" "$PY31" | grep -qi 'optional' \
+       && printf '%s' "$BLK31" | grep -qi 'optional' \
        && ! grep -qE "^[[:space:]]*${KEY31}:" "$PY31"; then
       ok "the shipped template documents the same key as optional and declares none"
     else
@@ -4249,6 +4255,25 @@ if [ -n "$M5_31" ]; then
     keyed31 "$(awk '/^```yaml/{f=1;next} /^```/{f=0} f' "$DOC31")" \
       && ok "the schema the docs show carries the same key" \
       || bad "the schema the docs show carries the same key"
+    # The LEVEL, not only the spelling. It holds a name and not a command, and an adopter who writes it
+    # under `commands:` gets a file the ceremony reads as declaring nothing — the join pinned the word
+    # and left the one thing a reader actually gets wrong unpinned.
+    l31=""
+    grep -qE "^#[[:space:]]*${KEY31}:" "$PY31"                    || l31="$l31 template-not-top-level"
+    # Read from the comment BLOCK around the key, not from the key's own line: the two facts live on
+    # different lines by construction, and a same-line grep asks for a sentence nobody would write.
+    printf '%s' "$BLK31" | grep -qiE 'top.level'                   || l31="$l31 template-says-nothing"
+    printf '%s' "$(awk '/^```yaml/{f=1;next} /^```/{f=0} f' "$DOC31")" | grep -qiE "${KEY31}[^#]*#.*top.level" \
+      || l31="$l31 docs-says-nothing"
+    [ -z "$l31" ] \
+      && ok "both homes say the key is top-level, not a command" \
+      || bad "both homes say the key is top-level, not a command (missing:$l31)"
+    # A re-derive writes project.yml from scratch and knows only the required keys, so an optional one
+    # this task added is deleted with nothing said. The protocol that writes the file is where that is
+    # prevented; the ceremony that reads the key would otherwise report the project as declaring none.
+    grep -qE "${KEY31}" global/protocols/discover.md \
+      && ok "the protocol that rewrites the project sheet carries the optional key over" \
+      || bad "the protocol that rewrites the project sheet carries the optional key over"
   else
     bad "the creation move names the key it reads"
     bad "the shipped template documents the same key as optional and declares none (no key named)"
@@ -4304,6 +4329,13 @@ fi
 # present when the dismantling move runs, because the row is removed after it and not before.
 r31=""
 grep -qiE '^\|[^|]*workstream[^|]*\|.*\|[^|]*tool[^|]*\|' "$TST31" 2>/dev/null || r31="$r31 template-column"
+# A header row alone is not a table: a delimiter row of the old width renders the column away, and the
+# example row is what tells an operator the cell takes a value at all.
+# Scoped to the Workstreams table: the file carries a second one (Quick Tasks) of a different width, so
+# a check that measures every pipe-line in the file compares two tables and calls the pair ragged.
+WSTBL31="$(awk '/^## Workstreams/{f=1;next} (f && /^## /){f=0} (f && /^\|/)' "$TST31" 2>/dev/null)"
+[ "$(printf '%s\n' "$WSTBL31" | grep -c '^|')" -ge 3 ] || r31="$r31 template-no-example-row"
+[ "$(printf '%s\n' "$WSTBL31" | awk -F'|' '{print NF}' | sort -u | wc -l | tr -d ' ')" = 1 ] || r31="$r31 template-ragged-table"
 printf '%s\n' "$(awk '/^## State Files/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG31")" \
   | grep -qiE '^\|[^|]*workstream[^|]*\|.*\|[^|]*tool[^|]*\|' || r31="$r31 protocol-column"
 # Anchored to the ROW, in the ordered-co-occurrence shape used for the default claim: move 7 describes
@@ -4358,10 +4390,13 @@ if ! T31="$(mktemp -d 2>/dev/null)" || [ ! -d "$T31" ]; then
 else
   H31="$T31/home"; A31="$T31/adopt"; mkdir -p "$H31" "$A31"
   ( cd "$T31" && printf 'n\nn\n' | HOME="$H31" bash "$ROOT/install.sh" init "$A31" ) > "$T31/init.out" 2>&1 || true
-  if grep -q '\.claude/worktrees/' "$T31/init.out"; then
-    ok "install names the ignore line the native worktree path needs"
+  # Both halves of "names and does not write". The negative half is the load-bearing one: a project's
+  # ignore rules are the project's own, and an installer that edits them has taken a decision nobody
+  # delegated. Asserted on the filesystem, because the notice's own wording cannot prove abstention.
+  if grep -q '\.claude/worktrees/' "$T31/init.out" && [ ! -e "$A31/.gitignore" ]; then
+    ok "install names the ignore line the native worktree path needs and writes none"
   else
-    bad "install names the ignore line the native worktree path needs"
+    bad "install names the ignore line the native worktree path needs and writes none"
   fi
   rm -rf "$T31"
 fi

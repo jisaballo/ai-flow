@@ -40,6 +40,8 @@ Fields that usually need confirmation: `area_kind` (the convention isn't always 
 
 Write `.ai-flow/project.yml` using the T-001 v1 schema. It must be valid YAML with all required keys: `name`, `area_kind`, `source_dirs`, `commands.test`, `steering`. Keep the human-authority note (project.yml is authoritative for commands; CLAUDE.md prose is human-only).
 
+**Carry over every optional key the file already declares** — `commands.distribute`, `front_tool`, anything a later schema adds. A re-derive that writes only the keys it knows about deletes the operator's own declarations without saying so, and the two above are read by ceremonies rather than by this protocol: nothing here would notice their absence, and the ceremony that reads one would report the project as declaring none.
+
 ## 5. Suggest steering — do not generate it
 
 List the candidate areas you detected (apps / domains / packages) and suggest creating `steering/<area>.md` for the high-value ones (domains with non-obvious rules, security/compliance, established patterns). **Do not generate steering skeletons** — empty files are noise. Point the user at the steering guidance in the customization docs.

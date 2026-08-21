@@ -29,6 +29,7 @@ commands:
   #                           # Declare it only where merging is not enough for the work to take
   #                           # effect. Left out, the close's distribution move is a stated no-op.
 
+# Top-level, not a key under `commands:` — it holds a name, not a command.
 # The tool this project is managed in — the surface you actually work in. The opening ceremony reads it
 # before it creates a front, prefers it where it can satisfy the front's conditions, and completes by
 # hand what it does not bring. Optional: declare it only where something other than Claude Code's own
