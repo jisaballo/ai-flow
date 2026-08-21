@@ -145,14 +145,20 @@ result.
 checkout satisfying four conditions, and the opening ceremony checks them on the result rather than
 trusting the tool that produced it.
 
+They are not symmetric across tools, so each one below says who pays for it:
+
 1. **Base** — the branch starts from the **published default branch**, which is what `worktree.baseRef`
-   above governs on the native path.
+   above governs on the native path. Any other tool takes it on **by hand**: name the base ref
+   explicitly when you create the checkout.
 2. **Data** — the checkout holds what `.worktreeinclude` declares travels, and **only the papers** of
-   the task it owns.
+   the task it owns. The native path brings the first half without help; any other tool takes it on by
+   hand, with the seeding mechanism below. The pruning half is run on every path.
 3. **Visibility** — the coordinator's audit cannot see the checkout. Outside your project folder that
-   holds by itself; inside it, only where your ignore rules cover the path.
+   holds by itself; inside it, only where your ignore rules cover the path. This one is **per-tool** —
+   which of the two cases you are in depends on where your tool puts the checkout.
 4. **Ownership** — whatever created the checkout removes it. A tool that keeps its own registry of
-   worktrees is left pointing at one something else deleted.
+   worktrees is left pointing at one something else deleted. This one holds on **every path** and is
+   free on none.
 
 Claude Code's own tooling — `EnterWorktree`, `claude -w`, an agent's `isolation: worktree` — is the
 **floor**: what the ceremony falls back to and the yardstick the rest are measured against, not the
@@ -175,6 +181,13 @@ ones you name. Name more than one when the front is working more than one — `s
 <T-XXX> [T-YYY ...]` — because that list is what stops a re-run from deleting a paused task's papers; it
 never overwrites a file that is already there. Run it from anywhere in the repository: it resolves your
 primary checkout from git's own worktree listing, not from wherever it was invoked.
+
+When the tool you declared cannot satisfy a condition and nothing completes it, the ceremony falls back
+to the floor — and that costs you something the four conditions cannot express: your own view of the
+front. So the fallback is **acknowledged in writing on the task's sheet**, naming the condition that
+could not be satisfied and why going ahead without that view is acceptable. It is the same
+acknowledgement the ceremony already asks for when two fronts collide, and for the same reason: a loss
+it chooses is a loss somebody decided.
 
 ## What NOT to Customize
 

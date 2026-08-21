@@ -4219,9 +4219,15 @@ if [ -n "$M5_31" ]; then
   fi
 
   # O1's machine half — the operator's guide is a second home for the same rules and can go stale.
+  # The asymmetry facet asks for all three of the list's own words, not for `by hand` alone: that one
+  # phrase is answered by the paragraph about preferring the declared tool, which sits above the list
+  # and says nothing about which condition costs what. A facet a neighbouring sentence can satisfy
+  # reports the list as present while it is missing.
   d31=""
   grep -qiE 'identif'  "$DOC31" 2>/dev/null || d31="$d31 first-step"
-  grep -qiE 'by hand'  "$DOC31" 2>/dev/null || d31="$d31 asymmetry"
+  { grep -qiE 'by hand' "$DOC31" 2>/dev/null \
+    && grep -qiE 'per.tool' "$DOC31" 2>/dev/null \
+    && grep -qiE 'every path' "$DOC31" 2>/dev/null; } || d31="$d31 asymmetry"
   grep -qiE 'acknowledg' "$DOC31" 2>/dev/null || d31="$d31 acknowledgement"
   [ -z "$d31" ] \
     && ok "the operator's document carries the first step, the asymmetry and the acknowledgement" \

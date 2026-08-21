@@ -378,18 +378,28 @@ what activation has always been, plus the declaration in step 2.
    What a front needs, whatever produced it, is not a particular brand but a checkout that satisfies
    four conditions, each of them read from the repository rather than taken on trust:
 
+   They are not symmetric across tools, and the move says which ones a tool is taking on **by hand** —
+   an operator who reads a list of conditions without reading who pays for each discovers the unpaid
+   ones at the moment they fail:
+
    - **base** — the branch starts from the **published default branch**, which is what step 4 above
-     checks: work committed and unpushed does not exist for a front cut from it.
+     checks: work committed and unpushed does not exist for a front cut from it. The native path gets it
+     from `worktree.baseRef`; every other tool takes it on by hand, by naming the base ref explicitly at
+     creation.
    - **data** — the checkout holds what the project's pattern file declares travels, and **only the
-     papers** of the task it owns. Move 6 below is what makes that true.
+     papers** of the task it owns. Move 6 below is what makes that true. The native path gets the
+     arriving half from `.worktreeinclude`; every other tool takes it on by hand, with the mechanism
+     move 6 names — and the prune is move 6's on every path.
    - **visibility** — the checkout is not visible to the coordinator's own **audit**. Outside the
      primary's tree that holds by construction; a checkout nested inside it holds only where the
      project's ignore rules cover that path. Left uncovered, a nested front is untracked content in the
      coordinator: the audit copies the whole of it into its snapshot and then requires the tree to be
-     byte-exact against a working copy another session is writing.
+     byte-exact against a working copy another session is writing. This one is **per-tool**: which of
+     those two cases applies is decided by where the tool puts the checkout.
    - **ownership** — whatever created the checkout is what removes it, which is what the closing
      ceremony's dismantling move spends. A tool keeping a registry of its own is left pointing at a
-     checkout something else deleted.
+     checkout something else deleted. This one holds on **every path** and is free on none: the tool
+     that created the front is the one obliged to take it down, whichever tool that was.
 
    The native path — `EnterWorktree` in a session, `claude -w` from the shell, `isolation: worktree` for
    an agent — is **the floor**: the yardstick the rest are measured against and what the ceremony falls
@@ -399,7 +409,14 @@ what activation has always been, plus the declaration in step 2.
    the checkout inside `.claude/worktrees/`, so there visibility is precisely what the project's ignore
    rules must cover — one line the ceremony **names and does not write**, because a project's ignore
    rules are the project's own. **No particular front-end is required**: any tool serves where the four
-   conditions hold, and one that satisfies only some of them is completed by the move below. What is
+   conditions hold, and one that satisfies only some of them is completed by the move below.
+
+   Where the declared tool cannot satisfy a condition and nothing completes it, the ceremony falls back
+   to the floor — and that fallback costs something the four conditions cannot express: the operator
+   loses their own view of the front. So it is **acknowledged in writing on the task's sheet**, naming
+   the condition that could not be satisfied and why proceeding without that view is acceptable. It is
+   the same acknowledgement move 3 above requires of a collision, for the same reason: a loss the
+   ceremony chooses is a loss somebody decided, and there is no silent path past a decision. What is
    never acceptable is a checkout nobody checked.
 
 6. **Seed the task's artifacts and prune the rest.** The pattern file carries `artifacts/` wholesale,
