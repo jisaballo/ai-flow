@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Run the ai-flow Verify phase for the active task — criterion-by-criterion audit against understand.md, then a deterministic multi-agent review (contract/coverage/security/architecture) with adversarial refutation of HIGH/MEDIUM findings via the verify-review workflow. Use when the user says "verify", "verifica", or runs the ai-flow verify phase. Requires an .ai-flow/ directory.
+description: Run the ai-flow Verify phase for the active task — criterion-by-criterion audit against understand.md, then a deterministic multi-agent review (contract/coverage/security/architecture) with adversarial refutation of HIGH findings and in-phase triage of the rest via the verify-review workflow. Use when the user says "verify", "verifica", or runs the ai-flow verify phase. Requires an .ai-flow/ directory.
 ---
 
 # ai-flow Verify Phase
@@ -48,18 +48,44 @@ Runs the Verify phase of the ai-flow workflow. Works in any project that has `.a
    - **Different** → restore, in the only order that cannot lose the work. **Nothing is discarded before both moves are known to apply**: `git apply -R --check "$SNAP/after.patch"` (undo what is there now) and `git apply --check "$SNAP/tree.patch"` (put back what was there). If either check fails, restore **nothing**: keep the copy, report what differed and where the copy is, and leave the recovery to the user — a restore that erases the tree and then fails to replay it is the one outcome worse than a dirty tree. If both check clean, run them in that order, put the untracked copies back, delete any untracked file that appeared, record exactly what differed, and mark the review's verdict suspect per the protocol's consolidation rules. A restored difference is never folded into a clean report. **Never restore with `git checkout -- .`**: it discards from the index rather than from this record, it is relative to the current directory, and it is the same command the prover is forbidden, for the same reason.
    This runs whether or not anything was proven and whether or not the review's agents completed: it is the phase's own step, so an agent killed mid-change cannot take the restoration down with it.
 
-9. **Consolidate** the workflow result `{ confirmed, refuted, proofs, summary }`:
-   - **HIGH confirmed** → ⚠️ flag to the user; blocks archive (same gate as a partial criterion).
-   - **MEDIUM / LOW confirmed** → list under `## Review Findings` for awareness, don't block.
-   - **refuted** → list briefly under "Dismissed (refuted)" so the audit trail stays transparent.
+9. **Consolidate** the workflow result `{ confirmed, refuted, unverified, proofs, summary }`. Three sets, and they are not interchangeable: a finding was cleared by a skeptic, killed by one, or never read by one.
+   - **`confirmed` still carrying `severity: high`** → ⚠️ flag to the user; blocks archive (same gate as a partial criterion). A HIGH the skeptic downgraded stands as a finding and no longer holds the gate.
+   - **`unverified`** → nobody has adjudicated these. **Triage the MEDIUM ones yourself, now, before writing the report** — see `## Triaging the Unadjudicated` below. LOW ones are listed as-is.
+   - **`refuted`** → list briefly under "Dismissed (refuted)" so the audit trail stays transparent.
    - No findings at all → `## Review Findings: None`.
    - **`proofs`** → for each proposed mutation the prover ran: `died` retires the finding (the assertion does guard its fact), `survived` keeps it (the assertion is hollow), `unproven` keeps it with its reason. The prover's `treeRestored` is its own word and never the verdict — step 8's comparison is.
-   - **Presentation to the user**: one line per axis (finding count + worst finding). Business Contract findings in product language — what the product does vs. what the contract says, no file paths. Full detail stays in verify.md, shown on demand.
+   - **Presentation to the user**: one line per axis (finding count + worst finding), and the count says how many were adjudicated versus triaged in-phase — a reader who cannot tell the two apart is reading one number for two different guarantees. Business Contract findings in product language — what the product does vs. what the contract says, no file paths. Full detail stays in verify.md, shown on demand.
 
 10. **Write** `.ai-flow/artifacts/T-XXX/verify.md` using the protocol's template, with the workflow findings under `## Review Findings`. Its `**Audited**` line carries the task it resolved and the source it read, plus what step 3 noted — the base, the number of commits on this branch since it, and how far the trunk is ahead of its remote with publishing named as what removes the overlap — or, when no base resolved, that the branch scope was unavailable, and when the trunk is current or no remote trunk resolved, no lag line at all; and the tree verdict from step 8: left as found, or what differed and what was restored. An audit that does not say what it read cannot be checked against what it should have read.
 
 11. **Gate**: if any criterion is ❌ or any finding is HIGH-confirmed → STOP, do NOT proceed to archive. Fix or flag per the protocol's gate rules. ⚠️ partials → flag to user, who decides proceed-or-fix.
 
+## Triaging the Unadjudicated
+
+The review hands back every MEDIUM and LOW finding without a verdict. That is deliberate: HIGH is the only
+level that holds the archive gate, so it is the only level where paying a skeptic changes an outcome. But a
+finding nobody decides is a finding that bought nothing — four auditors were paid to produce it — so the
+decision happens here instead, where the diff, the criteria and the plan are already in context.
+
+**Take each MEDIUM finding and reach one of three outcomes.** Read the cited code before deciding; the
+auditor saw the diff, not the surrounding flow.
+
+- **Fix now** — it is real, small, and inside this task's scope. Fix it, re-run the step's Verify command,
+  and record it in verify.md as fixed during verify.
+- **Backlog it** — it is real but outside this task's scope. It goes to the BACKLOG.md Icebox under
+  Discovery Triage (understand protocol), never as a new task mid-epic. Record where it went.
+- **Discard it** — it is a false positive: already handled elsewhere, intended behavior, or a misread of the
+  code. Say which, in one line. This is the judgment a refutation agent used to make, made by the actor that
+  did not have to rebuild the context to make it.
+
+**Say which outcome each one got.** An unadjudicated finding that reaches verify.md still unadjudicated has
+only moved the omission into the record — and `## Review Findings` is then a list whose reader cannot tell
+what was checked from what was merely typed. LOW findings are exempt: they are listed as raised, marked
+unadjudicated, and no outcome is required of them.
+
+**This is not the criterion audit.** A MEDIUM that contradicts a Verifiable Criterion is not a MEDIUM — it is
+a ❌ on that criterion, and it goes through step 4, not through here.
+
 ## Notes
 - The multi-agent review is **always** the workflow — never run those 4 auditors ad-hoc or "in your head". The workflow guarantees parallel execution, schema-validated output, and adversarial refutation.
-- Each Guided/Supervised verify therefore spends 4 review agents + N refutation agents (HIGH+MEDIUM). This is intended.
+- Each Guided/Supervised verify therefore spends 4 review agents + one refutation agent per HIGH finding. MEDIUM and LOW get no agent: they come back unadjudicated and this phase decides them, because it already holds the diff, the criteria and the plan that a fresh skeptic would have to rebuild from scratch to read a single finding.

@@ -1870,6 +1870,54 @@ awk '/^function refutePrompt/{f=1} f&&/^}/{exit} f' "$VW" | grep -qE '^[[:space:
   && ok "the refutation prompt inherits the shared header" \
   || bad "the refutation prompt inherits the shared header"
 
+# Fact 3c — the refutation's reach, in both directions. HIGH is what blocks the archive gate and the
+# refutation is what keeps a false one from blocking it; MEDIUM neither blocks nor gets fixed, so a skeptic
+# spent on it buys a cleaner list and nothing else. A grep for the surviving level stays green after the
+# dropped one is put back, and putting it back is the direction that costs money, so both are asserted.
+REFUTE_SET="$(grep -E '^const REFUTE = ' "$VW")"
+r3c=""
+[ -n "$REFUTE_SET" ] || r3c="$r3c declaration-absent"
+printf '%s' "$REFUTE_SET" | grep -q "'high'"   || r3c="$r3c high-missing"
+printf '%s' "$REFUTE_SET" | grep -q "'medium'" && r3c="$r3c medium-present"
+[ -z "$r3c" ] \
+  && ok "the refutation reaches HIGH and nothing else" \
+  || bad "the refutation reaches HIGH and nothing else (missing:$r3c)"
+
+# Fact 3d — and what it does not reach is not folded in beside what it cleared. A MEDIUM sitting inside the
+# confirmed set reads as though a skeptic had passed it, which is the overclaim this stage exists to remove;
+# it arrives in its own set, marked unadjudicated, for the phase to decide.
+r3d=""
+grep -qE '^const adjudicated = all\.filter\(\(f\) => f\.adjudicated\)' "$VW" || r3d="$r3d no-adjudicated-set"
+grep -qE '^const unverified = all\.filter\(\(f\) => !f\.adjudicated\)' "$VW" || r3d="$r3d no-unverified-set"
+grep -qE '^const confirmed = adjudicated\.' "$VW" || r3d="$r3d confirmed-not-from-adjudicated"
+grep -qE '^  unverified,' "$VW" || r3d="$r3d not-returned"
+[ -z "$r3d" ] \
+  && ok "what the refutation never read is returned unadjudicated, not beside what it cleared" \
+  || bad "what the refutation never read is returned unadjudicated, not beside what it cleared (missing:$r3d)"
+
+# Fact 3e — the phase that consumes the review adjudicates what the review did not. Dropping the skeptic
+# from MEDIUM is a saving only while something still decides those findings: left as a list nobody acts on,
+# the level yields neither a gate nor a fix and four auditors are paid to fill it. The phase already holds
+# the diff and the criteria, so the decision is made where the context already is.
+TRIAGE="$(awk '/Triaging the Unadjudicated/{f=1} f' "$VS" | tr '\n' ' ')"
+t3e=""
+[ -n "$TRIAGE" ] || t3e="$t3e section-absent"
+printf '%s' "$TRIAGE" | grep -qiE 'fix now|fix it now'     || t3e="$t3e no-fix-outcome"
+printf '%s' "$TRIAGE" | grep -qiE 'icebox|backlog'         || t3e="$t3e no-defer-outcome"
+printf '%s' "$TRIAGE" | grep -qiE 'discard|false positive' || t3e="$t3e no-discard-outcome"
+[ -z "$t3e" ] \
+  && ok "the verify phase triages the unadjudicated findings it is handed" \
+  || bad "the verify phase triages the unadjudicated findings it is handed (missing:$t3e)"
+
+# Fact 3f — the prover spends only on what a skeptic has already read. Proving is the most expensive
+# adjudication in the run: it applies a change and runs the whole suite, one proposal at a time. A proposal
+# carried by a finding nobody adjudicated is that cost spent on a guess, and an unadjudicated finding keeps
+# its proposal as data for the triage instead. Asserted on the set the filter reads, because `all` and
+# `unverified` would each satisfy a grep for the field's name.
+grep -qE '^const proposals = confirmed\.filter' "$VW" \
+  && ok "the prover's proposals come only from adjudicated survivors" \
+  || bad "the prover's proposals come only from adjudicated survivors"
+
 # Fact 4a — the mutation instinct becomes a structured proposal the worker hands over.
 FSCHEMA="$(awk '/^const FINDINGS_SCHEMA = \{/{f=1} f&&/^\}$/{print;exit} f' "$VW" | tr '\n' ' ')"
 if [ -n "$FSCHEMA" ] && printf '%s' "$FSCHEMA" | grep -q 'proposedMutation'; then
@@ -3737,13 +3785,15 @@ a12="$(grep -rniE '\.ai-flow/[^ ]* (directory )?with protocols|\.ai-flow/ (direc
   && ok "no newcomer document says the project's .ai-flow/ holds the phase protocols" \
   || bad "no newcomer document says the project's .ai-flow/ holds the phase protocols ($a12 line(s))"
 
-# A13 — the refutation's reach. The engine refutes HIGH and MEDIUM and lists LOW unrefuted; a document
-# claiming every finding is refuted promises a guarantee the run does not make, which is the same class of
-# falsehood this task exists to remove and was introduced by the edit that removed four others.
+# A13 — the refutation's reach. The engine refutes HIGH and hands MEDIUM and LOW to the phase
+# unadjudicated; a document claiming every finding is refuted promises a guarantee the run does not make,
+# and one still naming MEDIUM describes a stage that no longer exists — the same class of falsehood,
+# reached by drift rather than by edit.
 REF24="$(grep -ni 'refut' "$LC24")"
 a13=""
 [ -n "$REF24" ] || a13="$a13 refutation-absent"
-printf '%s' "$REF24" | grep -qiE 'HIGH and MEDIUM|HIGH/MEDIUM' || a13="$a13 scope"
+printf '%s' "$REF24" | grep -qi 'HIGH'                          || a13="$a13 scope"
+printf '%s' "$REF24" | grep -qiE 'HIGH and MEDIUM|HIGH/MEDIUM'  && a13="$a13 stale-medium"
 printf '%s' "$REF24" | grep -qiE 'every (surviving )?finding'   && a13="$a13 overclaim"
 [ -z "$a13" ] \
   && ok "the lifecycle states which findings are adversarially refuted" \

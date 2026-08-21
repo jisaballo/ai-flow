@@ -1,9 +1,9 @@
 export const meta = {
   name: 'verify-review',
-  description: 'ai-flow verify: 4 parallel auditors (contract/coverage/security/architecture) over the task diff + adversarial refutation of every HIGH/MEDIUM finding',
+  description: 'ai-flow verify: 4 parallel auditors (contract/coverage/security/architecture) over the task diff + adversarial refutation of every HIGH finding; MEDIUM and LOW are handed back unadjudicated for the phase to triage',
   phases: [
     { title: 'Review', detail: '4 auditors in parallel over the task diff' },
-    { title: 'Refute', detail: 'a skeptic agent tries to refute each HIGH/MEDIUM finding' },
+    { title: 'Refute', detail: 'a skeptic agent tries to refute each HIGH finding — the level that blocks' },
     { title: 'Prove', detail: 'one serialised agent applies the proposed mutations and puts them back' },
   ],
 }
@@ -18,7 +18,12 @@ if (typeof a === 'string') {
     a = {}
   }
 }
-const REFUTE = ['high', 'medium']
+// HIGH is the only level that blocks the archive gate, so it is the only level where a false finding
+// costs anything to hold: the skeptic is what keeps a wrong one from blocking. MEDIUM and LOW neither block
+// nor get fixed by this run, so a skeptic spent on them buys a tidier list and no decision — and buys it at
+// the price of an agent that must rebuild the whole diff to read one finding. They are handed back
+// unadjudicated instead, to the phase that already holds the context needed to decide them.
+const REFUTE = ['high']
 
 const ctx = [
   `Task: ${a.taskId || '(unknown)'} — area: ${a.area || '?'}`,
@@ -175,28 +180,35 @@ const perDimension = await pipeline(
   (d) => agent(d.prompt, { label: `review:${d.key}`, phase: 'Review', schema: FINDINGS_SCHEMA }),
   (review, d) => {
     const findings = ((review && review.findings) || []).map((f) => ({ ...f, dimension: d.key }))
-    const lows = findings
+    // What the refutation does not reach carries no verdict, and is not given one. A finding marked
+    // `confirmed` that no skeptic ever read is the overclaim this stage exists to remove, wearing the
+    // stage's own word: it would reach the report indistinguishable from a survivor of refutation.
+    const unadjudicated = findings
       .filter((f) => !REFUTE.includes(f.severity))
-      .map((f) => ({ ...f, verdict: { confirmed: true, reasoning: 'low severity — listed without adversarial check' } }))
+      .map((f) => ({ ...f, adjudicated: false }))
     const toRefute = findings.filter((f) => REFUTE.includes(f.severity))
-    if (!toRefute.length) return lows
+    if (!toRefute.length) return unadjudicated
     return parallel(
       toRefute.map((f) => () =>
         agent(refutePrompt(f), { label: `refute:${d.key}`, phase: 'Refute', schema: VERDICT_SCHEMA })
-          .then((v) => ({ ...f, verdict: v }))
-          .catch(() => ({ ...f, verdict: { confirmed: true, reasoning: 'refutation agent errored — kept conservatively' } }))
+          .then((v) => ({ ...f, adjudicated: true, verdict: v }))
+          .catch(() => ({ ...f, adjudicated: true, verdict: { confirmed: true, reasoning: 'refutation agent errored — kept conservatively' } }))
       )
-    ).then((refuted) => [...refuted, ...lows])
+    ).then((refuted) => [...refuted, ...unadjudicated])
   }
 )
 
 const all = perDimension.flat().filter(Boolean)
 all.forEach((f) => {
-  if (f.verdict && f.verdict.confirmed && f.verdict.adjustedSeverity) f.severity = f.verdict.adjustedSeverity
+  if (f.adjudicated && f.verdict && f.verdict.confirmed && f.verdict.adjustedSeverity) f.severity = f.verdict.adjustedSeverity
 })
-const confirmed = all.filter((f) => f.verdict && f.verdict.confirmed)
-const refuted = all.filter((f) => !(f.verdict && f.verdict.confirmed))
-const bySev = (sev) => confirmed.filter((f) => f.severity === sev)
+// Three sets, and the third is the point: a finding is either cleared by a skeptic, killed by one, or was
+// never read by one — and the last must not be reported as either of the first two.
+const adjudicated = all.filter((f) => f.adjudicated)
+const confirmed = adjudicated.filter((f) => f.verdict && f.verdict.confirmed)
+const refuted = adjudicated.filter((f) => !(f.verdict && f.verdict.confirmed))
+const unverified = all.filter((f) => !f.adjudicated)
+const bySev = (sev) => unverified.filter((f) => f.severity === sev)
 
 const PROOFS_SCHEMA = {
   type: 'object',
@@ -236,6 +248,9 @@ const inScope = (m) => {
   if (!f || f.startsWith('/') || f.startsWith('~') || f.split('/').includes('..')) return false
   return !(a.changedFiles && a.changedFiles.length) || a.changedFiles.includes(f)
 }
+// `confirmed` and not `all`: proving is the most expensive adjudication in the run — a change applied and
+// the whole suite run, one proposal at a time — and spending it on a finding no skeptic has read is that
+// cost spent on a guess. An unadjudicated finding keeps its `proposedMutation` as data for the triage.
 const proposals = confirmed.filter((f) => f.proposedMutation && inScope(f.proposedMutation))
 const outOfScope = confirmed.filter((f) => f.proposedMutation && !inScope(f.proposedMutation))
 let proofs = null
@@ -272,7 +287,8 @@ if (proposals.length) {
 }
 
 log(
-  `Review complete: ${confirmed.length} confirmed (${bySev('high').length} HIGH, ${bySev('medium').length} MED, ${bySev('low').length} LOW); ${refuted.length} refuted/dismissed` +
+  `Review complete: ${confirmed.length} adjudicated and standing, ${refuted.length} refuted; ` +
+    `${bySev('medium').length} MEDIUM + ${bySev('low').length} LOW handed back unadjudicated` +
     (proposals.length ? `; ${proposals.length} mutation(s) proposed, prover ${proofs ? 'reported' : 'returned nothing'}` : '') +
     (outOfScope.length ? `; ${outOfScope.length} proposal(s) dropped as out of scope` : '')
 )
@@ -280,11 +296,15 @@ log(
 return {
   confirmed,
   refuted,
+  unverified,
   proofs,
   summary: {
-    high: bySev('high').length,
-    medium: bySev('medium').length,
-    low: bySev('low').length,
+    // `high` counts what still blocks: a HIGH the skeptic downgraded stands as a finding but no longer
+    // holds the gate, which is why this reads the severity after adjustment and not the set's length.
+    high: confirmed.filter((f) => f.severity === 'high').length,
+    standing: confirmed.length,
+    mediumUnverified: bySev('medium').length,
+    lowUnverified: bySev('low').length,
     dismissed: refuted.length,
     proposed: proposals.length,
     outOfScope: outOfScope.length,

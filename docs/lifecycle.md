@@ -109,8 +109,9 @@ This phase bridges planning and execution. The tests become the contract.
    - Test Coverage Auditor
    - Security & Error Handling
    - Architecture Boundaries
-5. Adversarially refute each HIGH and MEDIUM finding — a skeptic reads the code in context and tries to
-   refute it, and only what survives surfaces. LOW findings are listed without refutation
+5. Adversarially refute each HIGH finding — a skeptic reads the code in context and tries to refute it,
+   and only what survives holds the gate. HIGH is refuted because HIGH is what blocks. MEDIUM and LOW come
+   back unadjudicated and the verify phase triages them itself, in the context it already has
 6. Write verify.md with audit table and findings
 
 **Output**: `artifacts/T-XXX/verify.md`

@@ -145,14 +145,17 @@ Runs 4 auditors in parallel over the task diff (see **The Task Diff** above):
 - **Security & Error Handling** — unvalidated (esp. user-facing) input; async without error handling; subscriptions without unsubscribe; sensitive data in logs/templates/state; missing null/undefined checks on external data.
 - **Architecture Boundaries** — imports crossing forbidden module/layer boundaries defined by the project; modules reaching into another module's internals instead of its public entry point; code bypassing the project's established access pattern; steering-rule and reference-implementation divergences.
 
-Then it **adversarially refutes every HIGH and MEDIUM finding**: a skeptic agent reads the code in context and tries to refute it; only findings that survive (confirmed=true) surface. LOW findings are listed without refutation.
+Then it **adversarially refutes every HIGH finding**: a skeptic agent reads the code in context and tries to refute it; only findings that survive (confirmed=true) hold the gate. HIGH is refuted because HIGH is what blocks — it is the one level where a false finding costs something to hold.
+
+**MEDIUM and LOW come back unadjudicated, and the phase decides them.** No skeptic is spent there: a MEDIUM neither blocks the archive nor gets fixed by the review, so an agent spent refuting one buys a tidier list and no decision — and buys it at the price of rebuilding the whole diff to read a single finding. The phase already holds the diff, the criteria and the plan, so the judgment a refuter used to make is made where the context already is. The rule is that it *is* made: a finding nobody decides is a finding four auditors were paid to produce and nobody used. MEDIUM findings are triaged one of three ways — fixed now, sent to the Icebox, or discarded as a false positive with the reason — and each outcome is recorded. LOW findings are listed as raised and marked unadjudicated; no outcome is required of them.
 
 Finally, **one prover** — alone, after every auditor and refuter has finished reading, and only when a surviving finding proposed one. The auditors are read-only (see **Mutation and the Working Copy** above): an auditor that suspects an assertion is hollow returns the change that would settle it instead of making it, and this stage is the actor the rule appoints. It applies them one at a time, runs the project's test command, and puts each file back before the next. Proposals naming a path outside the repository or outside the reviewed scope are dropped before the stage runs.
 
 ### Consolidation into verify.md
 
-- **HIGH confirmed** -> ⚠️ flag to user; blocks archive (same gate as a partial criterion).
-- **MEDIUM / LOW confirmed** -> list under `## Review Findings` for awareness, don't block.
+- **HIGH confirmed, still rated high** -> ⚠️ flag to user; blocks archive (same gate as a partial criterion). A HIGH the skeptic downgraded stands as a finding and no longer holds the gate.
+- **MEDIUM unadjudicated** -> triaged here (fixed / iceboxed / discarded), and the outcome recorded. Never listed as though a skeptic had cleared it.
+- **LOW unadjudicated** -> listed as raised, marked unadjudicated, doesn't block.
 - **Refuted** -> list briefly under "Dismissed (refuted)" for a transparent audit trail.
 - No findings -> `## Review Findings: None`.
 - **A proof came back** -> `died` retires the finding: the assertion does guard its fact. `survived` keeps it, now
@@ -210,6 +213,10 @@ did and that the sheet's position was not moved.
 
 ### Dismissed (refuted)
 - [finding + why refuted, or "None"]
+
+### Triaged in-phase (unadjudicated by the review)
+- [MEDIUM finding + fixed / iceboxed / discarded + the reason, or "None"]
+- [LOW findings, listed as raised and unadjudicated]
 
 ### Proven (mutation)
 - [finding + died/survived/unproven + the evidence, or "Nothing proposed"]

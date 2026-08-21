@@ -164,7 +164,7 @@ The framework ships optional global tooling under `global/`, installed to `~/.cl
 | `/plan` | Plan + Conform phase — max-3-step `plan.md`, then failing conformance test stubs |
 | `/verify` | Verify phase — criterion audit, then the `verify-review` workflow |
 
-**verify-review workflow** (`global/workflows/verify-review.js` → `~/.claude/workflows/`) — a deterministic multi-agent review invoked by `/verify`: three auditors (coverage / security / architecture) in parallel over the task diff, then adversarial refutation of every HIGH/MEDIUM finding so only genuine issues survive.
+**verify-review workflow** (`global/workflows/verify-review.js` → `~/.claude/workflows/`) — a deterministic multi-agent review invoked by `/verify`: four auditors (business contract / coverage / security / architecture) in parallel over the task diff, then adversarial refutation of every HIGH finding — the level that blocks — so only genuine blockers survive; MEDIUM and LOW come back unadjudicated for the verify phase to triage.
 
 **Guardrail hooks** (`global/hooks/` → `~/.claude/hooks/`) — optional Claude Code hooks that enforce the workflow. See [`global/hooks/README.md`](global/hooks/README.md) for what each does and how to register them in `settings.json`. They are safe to install globally (no-op outside an ai-flow project).
 
