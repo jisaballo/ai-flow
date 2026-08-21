@@ -397,9 +397,11 @@ It runs at **every task close**, not once per front: moves 6 and 7 are its tail 
 front has no next task, because a worktree holds a workstream — an epic with its serial chain inside —
 and lives across the tasks in it.
 
-With a single front open — the ordinary case — moves 2 and 6 have nothing to do: the task was worked in
-the coordinator, so its papers are already there and there is no second checkout to take down. The
-ceremony then reduces to what closing has always been.
+With a single front open — the ordinary case — moves 2, 3 and 6 have nothing to do: the task was worked in
+the coordinator, so its papers are already there, there is no branch to merge, and there is no second
+checkout to take down. The ceremony then reduces to what closing has always been. Naming only the two that
+need no second checkout reads as though the merge always has work, which turns the ordinary close into a
+ritual with a dead move in it.
 
 **The order is the protection.** Nothing merges before the coordinator holds the papers, and nothing is
 recorded as done before it is in the trunk — so a ceremony interrupted at any move leaves either work
@@ -528,15 +530,6 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
 ├── decisions-global.md
 ├── product.md              # Product context (users, roles, flows)
 ├── steering/               # Domain rules and pitfalls (loaded per-task)
-├── protocols/              # Phase protocols (loaded on demand)
-│   ├── understand.md
-│   ├── plan.md
-│   ├── execute.md
-│   ├── verify.md
-│   ├── quick-path.md
-│   ├── backlog.md
-│   ├── codebase-mapping.md
-│   └── discover.md
 ├── artifacts/              # ONLY open task folders
 │   └── T-XXX/              # One folder per open task
 │       └── state.md        # That task's phase, step, autonomy and decisions
@@ -551,3 +544,8 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
     ├── TESTING.md
     └── DRIFT.md
 ```
+
+**The phase protocols are not in this tree.** They live centrally at `~/.claude/ai-flow/protocols/`,
+installed once and shared by every project: a project holds only its **data**, and the engine is versioned
+in the ai-flow repository. A project directory that still contains them is a stale install, not a valid
+structure — and a drift-check hook nags whenever the installed engine and the trunk diverge.

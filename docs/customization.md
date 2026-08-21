@@ -154,7 +154,7 @@ The global CLAUDE.md includes command keywords that trigger phases. You can cust
 ### Phase Orchestration
 | Command | Action |
 |---------|--------|
-| `continue` / `continua` | Resume from STATE.md |
+| `continue` / `continua` | Resume the task this checkout owns, from that task's own sheet |
 | `status` / `estado actual` | Show current state |
 
 ### Quick Commands
@@ -188,5 +188,5 @@ To pull framework improvements on any device later, run `./install.sh update` (u
 
 **What's ephemeral** (gitignored or not committed):
 - `.ai-flow/artifacts/` — active work (consider gitignoring)
-- `.ai-flow/STATE.md` — session state (consider gitignoring)
+- `.ai-flow/STATE.md` — the roster of open workstreams (consider gitignoring)
 - `.ai-flow/archive/` — completed work (commit or gitignore, your choice)

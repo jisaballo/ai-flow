@@ -25,7 +25,7 @@ curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | b
 The installer takes two subcommands: `init` (default — new or existing project, interactive; creates the project's `.ai-flow/` data skeleton and installs the engine) and `update` (unattended — refreshes the engine in `~/.claude`: protocols, skills, the verify workflow, hooks, and the ralph runner; it never writes into a project). A bare path is treated as `init` for back-compat.
 
 This creates:
-- `.ai-flow/` directory with protocols and empty data files
+- `.ai-flow/` directory with the project's own data files — the phase protocols are not among them; they install centrally into `~/.claude` and are shared by every project
 - `CLAUDE.md` template (if none exists)
 
 ### 2. Set up global instructions
@@ -150,7 +150,7 @@ Claude: Commits with "fix(auth): quick - Fix typo in login button label"
 
 ## Tips
 
-- **One task at a time**: ai-flow enforces single-task focus for quality
+- **One task at a time, per workstream**: ai-flow keeps each front on a single task for quality — two fronts is the working parallelism
 - **Trust the phases**: Skipping understanding leads to rework
 - **Steering files pay off**: Spend 10 minutes documenting domain rules, save hours of corrections
 - **Review verify.md**: The audit table is your quality receipt

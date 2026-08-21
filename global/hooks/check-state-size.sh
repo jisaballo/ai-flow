@@ -28,7 +28,7 @@ STATE="$root/.ai-flow/STATE.md"
 if [ -f "$STATE" ]; then
   n=$(grep -cE 'shipped \+ archived|CLOSED 🎉|shipped \(' "$STATE")
   if [ "$n" -gt 0 ]; then
-    problems="STATE.md holds $n closed/archived task summary marker(s). Move each to archive/T-XXX/summary.md (or archive/E-XXX-*.md) and trim STATE.md down to the active task only before finishing."
+    problems="STATE.md holds $n closed/archived task summary marker(s). Move each to archive/T-XXX/summary.md (or archive/E-XXX-*.md) and trim STATE.md down to the roster — one row per open front — before finishing."
   fi
 fi
 

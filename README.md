@@ -54,7 +54,7 @@ CAPTURE → PRIORITIZE → ACTIVATE → UNDERSTAND → PLAN → CONFORM → EXEC
 |-------|-------------|
 | **Capture** | Add task to backlog with description |
 | **Prioritize** | Set priority and mark ready |
-| **Activate** | Load into STATE.md as the active task |
+| **Activate** | Write the task's own sheet (`artifacts/T-XXX/state.md`) and add its row to the roster of open workstreams |
 | **Understand** | Decompose, investigate, ask questions, write requirements |
 | **Plan** | Create max 3-step execution plan with verify commands |
 | **Conform** | Generate failing test stubs from requirements (TDD red phase) |
@@ -102,11 +102,11 @@ your-project/
 ├── CLAUDE.md                    # Project-specific instructions (your stack, commands, architecture)
 ├── .ai-flow/
 │   ├── BACKLOG.md               # All tasks with status and priority
-│   ├── STATE.md                 # Current session context
+│   ├── STATE.md                 # Roster of open workstreams — one row per front
 │   ├── decisions-global.md      # Cross-task decisions
 │   ├── product.md               # Product context (users, roles, flows)
 │   ├── steering/                # Domain-specific rules and patterns
-│   ├── artifacts/               # Active task work (understand.md, plan.md)
+│   ├── artifacts/               # One folder per open task (state.md, understand.md, plan.md)
 │   ├── archive/                 # Completed task summaries
 │   └── codebase/                # Codebase analysis (concerns, testing, drift)
 

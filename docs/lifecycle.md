@@ -28,12 +28,12 @@ No analysis happens here — just capture. The description can be rough.
 
 ### 3. ACTIVATE
 
-**Purpose**: Load the task as the single focus of the session.
+**Purpose**: Make the task the focus of its workstream.
 
 **Input**: A ready task
 **Output**: `artifacts/T-XXX/state.md` created with the task's branch, phase, step and autonomy; one workstream row added to STATE.md; status set to `active`
 
-**Rule**: Only one task can be active at a time. This prevents context dilution.
+**Rule**: One active task per workstream. Two fronts is the working parallelism, three the ceiling. This prevents context dilution without pinning the whole repository to one job.
 
 ### 4. UNDERSTAND
 
@@ -104,11 +104,14 @@ This phase bridges planning and execution. The tests become the contract.
 1. Re-read understand.md criteria
 2. For each criterion, cite evidence (file:line, test name)
 3. Re-run all Verify commands from the plan (catches cross-step regressions)
-4. Launch 3 review agents in parallel:
+4. Launch 4 auditors in parallel:
+   - Business Contract Auditor — the diff against the contract the user approved
    - Test Coverage Auditor
    - Security & Error Handling
    - Architecture Boundaries
-5. Write verify.md with audit table and findings
+5. Adversarially refute each HIGH and MEDIUM finding — a skeptic reads the code in context and tries to
+   refute it, and only what survives surfaces. LOW findings are listed without refutation
+6. Write verify.md with audit table and findings
 
 **Output**: `artifacts/T-XXX/verify.md`
 
@@ -116,13 +119,26 @@ This phase bridges planning and execution. The tests become the contract.
 
 ### 9. ARCHIVE
 
-**Purpose**: Clean up and preserve knowledge.
+**Purpose**: Land the work, preserve the knowledge, and take the front down.
 
-**What happens**:
-1. Generate `archive/T-XXX/summary.md` with key decisions and commits
-2. Delete `artifacts/T-XXX/` (the archive has the summary)
-3. Remove from BACKLOG.md
-4. Remove this workstream's row from STATE.md
+Archiving is a **ceremony**, not a cleanup: it runs at every task close, one front at a time, and only in
+the coordinator. **The order is the protection** — nothing is recorded as done before it is in the trunk.
+The backlog protocol owns the order and owns these moves:
+
+1. The user validates the branch — inside a front commits are free, so what gets approved is the branch.
+   In the coordinator there is no branch to approve, and the per-commit rule stands unchanged there
+2. The coordinator collects the task's papers, which live outside version control and never travel with
+   the branch
+3. The merge lands in the coordinator
+4. The record is written: `archive/T-XXX/summary.md`, the row out of BACKLOG.md, `artifacts/T-XXX/` deleted
+5. **The work is put into effect** — the project's own distribution command runs. Committed is not
+   installed: a close that ends before this leaves the work non-existent for the sessions it governs
+6. The front's working copy is dismantled — only when the front has no next task
+7. The front's roster row is removed, the coordinator's last write — only when the front has no next task
+
+With a single front open, the collect, merge and dismantle moves have nothing to do: the task was worked in
+the coordinator, so its papers are already there, and there is no branch to merge and no second checkout to
+take down. Named by role rather than by number, because a move inserted anywhere renumbers the rest.
 
 ## Execution Paths
 

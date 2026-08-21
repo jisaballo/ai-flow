@@ -1389,7 +1389,7 @@ if [ -n "$CLO" ]; then
     || bad "the ceremony has a single runner and merges one front at a time"
 
   # The ordinary case must survive: one front open means there is nothing to fetch and no checkout to
-  # take down. Without this the ceremony reads as a six-move ritual for every single archive.
+  # take down. Without this the ceremony reads as a seven-move ritual for every single archive.
   printf '%s' "$CLO" | tr '\n' ' ' | tr -s ' ' | grep -qiE 'single front|one front open' \
     && printf '%s' "$CLO" | tr '\n' ' ' | tr -s ' ' | grep -qiE 'nothing to do|nothing to collect' \
     && ok "a single open front has nothing to collect and nothing to dismantle" \
@@ -2266,23 +2266,28 @@ fi
 # the whole suite green, so the preamble could call the unconditional move part of the conditional tail.
 # The tail is not a literal here: it is whichever moves carry the condition, read from the moves.
 CLOI6="$(printf '%s\n' "$CLO6" | awk '/^1\. /{exit} {print}' | tr '\n' ' ' | tr -s ' ')"
-TAIL6=""; DIS6=""
+TAIL6=""; DIS6=""; MRG6=""
 for i in 1 2 3 4 5 6 7; do
   m="$(dmove "$i")"
   printf '%s' "$m" | grep -qiE 'no next task|has no next|last task' && TAIL6="$TAIL6 $i"
   printf '%s' "$m" | grep -qi 'dismantl' && DIS6="$i"
+  printf '%s' "$m" | grep -qi 'merge lands' && MRG6="$i"
 done
 set -- $TAIL6
-if [ -n "$CLOI6" ] && [ "$#" -eq 2 ] && [ -n "$DIS6" ]; then
+if [ -n "$CLOI6" ] && [ "$#" -eq 2 ] && [ -n "$DIS6" ] && [ -n "$MRG6" ]; then
   printf '%s' "$CLOI6" | grep -qF "moves $1 and $2" \
     && ok "the preamble names the tail by the moves that actually carry the condition" \
     || bad "the preamble names the tail by the moves that actually carry the condition (moves $1 and $2)"
-  printf '%s' "$CLOI6" | grep -qF "moves 2 and $DIS6" \
-    && ok "the single-front escape hatch names the dismantle move by its real number" \
-    || bad "the single-front escape hatch names the dismantle move by its real number (moves 2 and $DIS6)"
+  # The escape hatch carries three moves, not two: two need no second checkout and one needs no merge,
+  # because a task worked in the coordinator has no branch to land. Both numbers stay derived for the
+  # reason the comment above gives — a move inserted anywhere renumbers the rest, and a spelled number
+  # would then point at whichever move happens to sit there.
+  printf '%s' "$CLOI6" | grep -qF "moves 2, $MRG6 and $DIS6" \
+    && ok "the single-front escape hatch names the merge and dismantle moves by their real numbers" \
+    || bad "the single-front escape hatch names the merge and dismantle moves by their real numbers (moves 2, $MRG6 and $DIS6)"
 else
   bad "the preamble names the tail by the moves that actually carry the condition (nothing to compare)"
-  bad "the single-front escape hatch names the dismantle move by its real number (nothing to compare)"
+  bad "the single-front escape hatch names the merge and dismantle moves by their real numbers (nothing to compare)"
 fi
 
 # A wider negative for "names no project's command". The old one grepped a single string, so appending
@@ -3553,6 +3558,233 @@ printf '%s' "$TD27" | grep -qi 'diverged'                  || r27="$r27 diverged
   && ok "the remedy excludes the task's own commits and a diverged trunk" \
   || bad "the remedy excludes the task's own commits and a diverged trunk (missing:$r27)"
 
+
+echo "== The paper trail names the model the engine runs =="
+
+# A1 — the front door. Two claims read as a pair: the roster carries its own name, and activation writes
+# the task's own sheet. The stale wording is asserted ABSENT in the same breath, because a README that
+# gains the new sentence while keeping the old one teaches both and the reader cannot tell which won.
+# Each half is scoped to the line that carries its claim. File-wide greps let the structure block's
+# comment answer for the activation row and vice versa, so the criterion's two halves could both be
+# satisfied by one edit in one place.
+RD24="README.md"
+ACT24="$(grep '^| \*\*Activate\*\* |' "$RD24")"
+RST24="$(grep '── STATE.md' "$RD24")"
+a1=""
+[ -n "$ACT24" ] || a1="$a1 activate-row-absent"
+[ -n "$RST24" ] || a1="$a1 structure-line-absent"
+printf '%s' "$RST24" | grep -qi 'roster of open workstreams' || a1="$a1 roster-name"
+printf '%s' "$ACT24" | grep -q  'artifacts/T-XXX/state.md'   || a1="$a1 task-sheet"
+printf '%s' "$ACT24" | grep -qi 'roster'                     || a1="$a1 roster-row"
+printf '%s' "$RST24" | grep -qi 'Current session context'    && a1="$a1 stale-session-context"
+printf '%s' "$ACT24" | grep -qi 'as the active task'         && a1="$a1 stale-activation"
+[ -z "$a1" ] \
+  && ok "the front door names the roster and the task's own sheet" \
+  || bad "the front door names the roster and the task's own sheet (missing:$a1)"
+
+LC24="docs/lifecycle.md"
+
+# A2 — the audit runs four auditors. The count is asserted by naming all four, not by matching a numeral:
+# a document that says "four" and lists three is the same defect with the arithmetic corrected. The stale
+# count is asserted absent for the reason A1 gives.
+a2=""
+grep -q  'Business Contract'         "$LC24" || a2="$a2 contract"
+grep -q  'Test Coverage'             "$LC24" || a2="$a2 coverage"
+grep -qi 'Security & Error Handling' "$LC24" || a2="$a2 security"
+grep -q  'Architecture Boundaries'   "$LC24" || a2="$a2 architecture"
+grep -qiE '(3|three) review agents'  "$LC24" && a2="$a2 stale-count"
+[ -z "$a2" ] \
+  && ok "the lifecycle names all four auditors of the review" \
+  || bad "the lifecycle names all four auditors of the review (missing:$a2)"
+
+# A3 — archiving is a ceremony, and the move that puts the work into effect is the one a reader most needs:
+# a close that ends before distribution leaves the engine committed and not installed — the work is in the
+# trunk and does not exist for the sessions it governs. Scoped to the archive section so a mention anywhere
+# else cannot answer for it.
+ARC24="$(awk '/^### 9\. ARCHIVE/{f=1} f && /^## /{exit} f' "$LC24")"
+a3=""
+[ -n "$ARC24" ] || a3="$a3 section-absent"
+printf '%s' "$ARC24" | grep -qi 'ceremony'         || a3="$a3 ceremony"
+printf '%s' "$ARC24" | grep -qi 'distribut'        || a3="$a3 distribution"
+printf '%s' "$ARC24" | grep -qi 'backlog protocol' || a3="$a3 authority"
+[ -z "$a3" ] \
+  && ok "the lifecycle archive is a ceremony and names the distribution move" \
+  || bad "the lifecycle archive is a ceremony and names the distribution move (missing:$a3)"
+
+# A4 — the direction that must still hold. Every other assertion here checks that a document gained the
+# right sentence; this one checks that NO document anywhere claims a single active task without naming the
+# front it is scoped to. A guard written only in the lifting direction goes silent the moment the claim
+# reappears in a file the fix never opened.
+#
+# The pattern matches the CURRENT wording's regression shapes, not the wording that was repaired. Written
+# against the repaired text it would have been blind to every way the claim can come back — "One active
+# task at a time", "Only one task is active at a time", or simply the workstream qualifier deleted — and a
+# guard nothing can trip is indistinguishable from one that holds. The signal is ACTIVENESS, never a count:
+# "names exactly one task", "ONE task per run" and "the single-task archive checklist" are legitimate and
+# must stay unflagged, which is why singularity alone is not enough to select a line.
+a4="$(grep -rniE '(one|a single|only one)[[:space:]]+active[[:space:]]+task|(one|a single|only one)[[:space:]]+task[^.]{0,30}(active|at a time)|single[- ]task focus|single focus of the session|task at a time' \
+        README.md docs/ global/ 2>/dev/null | grep -cviE 'workstream|per front|each front')"
+[ "$a4" = "0" ] \
+  && ok "no document claims a single active task without naming the workstream" \
+  || bad "no document claims a single active task without naming the workstream ($a4 line(s))"
+
+# A5 — the hook's remedy. It runs on the coordinator, so a message sending the operator to trim the roster
+# "down to the active task only" instructs them to destroy the rows of every other open front. The
+# assertion is on the text alone: the exit codes are covered five times over and must not move.
+# Scoped to the remedy line itself, and the absence half asks what the trim TARGET is rather than pinning
+# one historic phrase: a reworded destructive remedy ("down to the current task", "down to the open task")
+# passed a check that only knew the words "active task only".
+HK24="global/hooks/check-state-size.sh"
+TRM24="$(grep -i 'trim STATE.md down to' "$HK24")"
+a5=""
+[ -n "$TRM24" ] || a5="$a5 remedy-absent"
+printf '%s' "$TRM24" | grep -qi 'down to the roster'   || a5="$a5 roster"
+printf '%s' "$TRM24" | grep -qiE 'down to the (active|current|open|single|one)' && a5="$a5 destructive-target"
+[ -z "$a5" ] \
+  && ok "the state-size hook trims to the roster, not to the active task" \
+  || bad "the state-size hook trims to the roster, not to the active task (missing:$a5)"
+
+BLG24="global/protocols/backlog.md"
+# Terminated at the next heading. Without one the window runs to end of file, so "scoped to the section"
+# is a claim the extractor does not keep — true only for as long as this happens to be the last section.
+AS24="$(awk '/^### Allowed structure/{f=1;next} f && /^#{2,3} /{exit} f' "$BLG24")"
+
+# A6 — the structure a project is allowed to have. Listing the phase protocols inside .ai-flow/ tells the
+# reader to look for the engine where the engine is not, and tells an adopter their project owns files it
+# must never edit. Both halves asserted: the stale subtree gone, and the central path named in its place.
+a6=""
+[ -n "$AS24" ] || a6="$a6 section-absent"
+printf '%s' "$AS24" | grep -q 'state.md'                 || a6="$a6 task-sheet"
+printf '%s' "$AS24" | grep -q -- '── protocols/'         && a6="$a6 stale-subtree"
+printf '%s' "$AS24" | grep -q 'claude/ai-flow/protocols' || a6="$a6 central-engine"
+[ -z "$a6" ] \
+  && ok "the allowed structure puts the phase protocols in the central engine" \
+  || bad "the allowed structure puts the phase protocols in the central engine (missing:$a6)"
+
+# A7 — the ordinary case of the closing ceremony. Two moves need no second checkout and a third needs no
+# merge, because a task worked in the coordinator has no branch to land. Naming two of the three reads as
+# though the merge always had work to do, which turns the ordinary close into a ritual with a dead move.
+CLO24="$(awk '/^## Closing a Workstream/{f=1;next} f && /^## /{exit} f' "$BLG24")"
+PRE24="$(printf '%s\n' "$CLO24" | awk '/^1\. /{exit} {print}' | tr '\n' ' ' | tr -s ' ')"
+a7=""
+[ -n "$PRE24" ] || a7="$a7 preamble-absent"
+printf '%s' "$PRE24" | grep -qiE 'no branch to merge|nothing to merge' || a7="$a7 merge-reason"
+printf '%s' "$PRE24" | grep -qi 'moves 2 and 6'                       && a7="$a7 stale-move-list"
+[ -z "$a7" ] \
+  && ok "a single open front has no branch to merge either" \
+  || bad "a single open front has no branch to merge either (missing:$a7)"
+
+QP24="global/protocols/quick-path.md"
+
+# A8 — a quick task's only written trace. The protocol said the row exists and never said whose hand
+# writes it or when: a linked checkout that writes it puts the ledger in a worktree the close deletes.
+# Scoped to the Tracking section: the file names BACKLOG.md twice for unrelated reasons, so a check over
+# the whole document answers "the authority is named" from a line about backlog entries and T-XXX IDs.
+TRK24="$(awk '/^## Tracking/{f=1;next} f && /^## /{exit} f' "$QP24")"
+a8=""
+[ -n "$TRK24" ] || a8="$a8 section-absent"
+printf '%s' "$TRK24" | grep -qi 'coordinator'                            || a8="$a8 writer"
+printf '%s' "$TRK24" | grep -qiE 'closing ceremony|ceremony that closes' || a8="$a8 moment"
+printf '%s' "$TRK24" | grep -qi 'backlog protocol'                       || a8="$a8 authority"
+[ -z "$a8" ] \
+  && ok "the quick close names the coordinator and the ceremony that writes its row" \
+  || bad "the quick close names the coordinator and the ceremony that writes its row (missing:$a8)"
+
+# A9 — the skeleton mirrors the roster, so it must mirror its heading level too: copied as written, the
+# table lands nested under whatever section precedes it and stops being the roster's own.
+a9=""
+grep -q '^## Quick Tasks Completed'  "$QP24" || a9="$a9 level"
+grep -q '^### Quick Tasks Completed' "$QP24" && a9="$a9 stale-level"
+[ -z "$a9" ] \
+  && ok "the quick-path skeleton heads Quick Tasks at the roster's own level" \
+  || bad "the quick-path skeleton heads Quick Tasks at the roster's own level (missing:$a9)"
+
+# A10 — carried over from a harness nothing ran. Four sections were asserted only there, so deleting it
+# would have retired the one thing standing between them and a silent removal.
+VP24="global/protocols/verify.md"
+UP24="global/protocols/understand.md"
+a10=""
+grep -q  'Business Contract'     "$VP24" || a10="$a10 verify-contract-auditor"
+grep -qi 'Skills Feedback'       "$VP24" || a10="$a10 verify-skills-feedback"
+grep -q  'Investigation Closure' "$UP24" || a10="$a10 understand-closure"
+grep -q  'EARS'                  "$UP24" || a10="$a10 understand-ears"
+[ -z "$a10" ] \
+  && ok "the retired harness's own anchors survive it" \
+  || bad "the retired harness's own anchors survive it (missing:$a10)"
+
+# A11 — the two repairs that had no guard at all. The identical falsehood is a hard failure for the front
+# door under A1, so leaving these unasserted made the same claim policed in one document and free in
+# another — and an unguarded prose repair is revertible with the suite green.
+CU24="docs/customization.md"
+a11=""
+CON24="$(grep -i '| .continue. / .continua. |' "$CU24")"
+EPH24="$(grep -i '`.ai-flow/STATE.md`' "$CU24")"
+[ -n "$CON24" ] || a11="$a11 continue-row-absent"
+[ -n "$EPH24" ] || a11="$a11 ephemeral-line-absent"
+printf '%s' "$CON24" | grep -qiE 'own sheet|this checkout owns' || a11="$a11 continue-reads-sheet"
+printf '%s' "$CON24" | grep -qi 'Resume from STATE.md'          && a11="$a11 stale-continue"
+printf '%s' "$EPH24" | grep -qi 'roster'                        || a11="$a11 roster"
+printf '%s' "$EPH24" | grep -qi 'session state'                 && a11="$a11 stale-session-state"
+[ -z "$a11" ] \
+  && ok "the customization guide names the sheet and the roster" \
+  || bad "the customization guide names the sheet and the roster (missing:$a11)"
+
+# A12 — the stale-install shape, in the direction that must hold. A6 declares a project directory holding
+# the phase protocols invalid; a newcomer document that promises the installer creates one teaches the
+# adopter to expect exactly what A6 calls stale. Counted across every document a newcomer reads, because
+# the claim is not confined to the file this task happened to open.
+a12="$(grep -rniE '\.ai-flow/[^ ]* (directory )?with protocols|\.ai-flow/ (directory )?(with|contains|holds) .*protocol' \
+        README.md docs/ 2>/dev/null | wc -l | tr -d ' ')"
+[ "$a12" = "0" ] \
+  && ok "no newcomer document says the project's .ai-flow/ holds the phase protocols" \
+  || bad "no newcomer document says the project's .ai-flow/ holds the phase protocols ($a12 line(s))"
+
+# A13 — the refutation's reach. The engine refutes HIGH and MEDIUM and lists LOW unrefuted; a document
+# claiming every finding is refuted promises a guarantee the run does not make, which is the same class of
+# falsehood this task exists to remove and was introduced by the edit that removed four others.
+REF24="$(grep -ni 'refut' "$LC24")"
+a13=""
+[ -n "$REF24" ] || a13="$a13 refutation-absent"
+printf '%s' "$REF24" | grep -qiE 'HIGH and MEDIUM|HIGH/MEDIUM' || a13="$a13 scope"
+printf '%s' "$REF24" | grep -qiE 'every (surviving )?finding'   && a13="$a13 overclaim"
+[ -z "$a13" ] \
+  && ok "the lifecycle states which findings are adversarially refuted" \
+  || bad "the lifecycle states which findings are adversarially refuted (missing:$a13)"
+
+# A14 — the ceremony as the newcomer reads it. Three claims the protocol makes and the summary dropped:
+# move 1 has no branch to approve in the coordinator, the last two moves run only when the front has no
+# next task, and the single-front clause must not spell move numbers — the sibling guard derives them
+# precisely because a move inserted anywhere renumbers the rest, and the copy a newcomer reads had them
+# hardcoded with nothing reading them.
+a14=""
+[ -n "$ARC24" ] || a14="$a14 section-absent"
+printf '%s' "$ARC24" | grep -qiE 'no branch to approve|per-commit'   || a14="$a14 move1-coordinator"
+printf '%s' "$ARC24" | grep -qiE 'no next task|has no next'          || a14="$a14 tail-conditional"
+printf '%s' "$ARC24" | grep -qiE 'moves? [0-9], |moves? [0-9] and'   && a14="$a14 hardcoded-numbers"
+[ -z "$a14" ] \
+  && ok "the lifecycle ceremony carries its conditions and spells no move numbers" \
+  || bad "the lifecycle ceremony carries its conditions and spells no move numbers (missing:$a14)"
+
+# P1/P2 — restored from the harness this task retired. It carried the only assertions that the generic core
+# stays generic: an origin-project identifier or the author's home path reaching global/ is the one defect
+# that breaks the product's central promise for every adopter at once, and the migration that kept four of
+# its anchors had missed these because they live inside a loop rather than on a literal check line.
+# `\bisn\b` rather than a bare `isn`, which matches "isn't" — a guard that fires on ordinary prose is a
+# guard the next person deletes.
+PUR24='\bisn\b|residents|gate-manager|zoomin|esp32|firestore|ionic|angular|haiku|/architect|/ngrx|/data-access|/frontend-design'
+p1=""
+for f in backlog execute plan quick-path understand verify; do
+  grep -qiE "$PUR24" "global/protocols/$f.md"                     && p1="$p1 $f:identifier"
+  grep -qiE 'E-099|T-7[0-9][0-9]|T-9[0-9][0-9]' "global/protocols/$f.md" && p1="$p1 $f:foreign-task-id"
+done
+[ -z "$p1" ] \
+  && ok "the six phase protocols carry no origin-project identifier" \
+  || bad "the six phase protocols carry no origin-project identifier (found:$p1)"
+
+p2="$(grep -rniE 'residents|gate-manager|zoomin|esp32|/Users/[a-z]' global/ 2>/dev/null | wc -l | tr -d ' ')"
+[ "$p2" = "0" ] \
+  && ok "the shipped engine carries no private project name and no author home path" \
+  || bad "the shipped engine carries no private project name and no author home path ($p2 line(s))"
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
