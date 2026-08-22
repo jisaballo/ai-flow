@@ -251,6 +251,71 @@ if [ "$PY3" = 1 ]; then
     *Traceback*) bad "the guard spills no traceback on an unresolvable path" ;;
     *) ok "the guard spills no traceback on an unresolvable path" ;;
   esac
+
+  # --- a payload whose fields are not the shape the guard expects ----------
+  # The guard reads three fields and assumed the type of every one: `tool_input`, the `file_path`
+  # inside it, and `cwd`. Each assumption was a traceback with the rail down — a non-blocking exit, so
+  # the write it was meant to judge went through anyway, on every Edit and Write. Exit 0 is the answer
+  # the file already gives everywhere it cannot judge: a field it cannot read is a write it cannot
+  # judge. The helper below exists because the well-formed one above cannot express a malformed payload.
+  wraw() {  # $1 = raw payload -> prints output, returns the hook's exit code
+    printf '%s' "$1" | python3 "$HK/understand-write-guard.py" 2>&1
+  }
+  malformed() {  # $1 = label, $2 = raw payload -> asserts the pair: waved through, and nothing said
+    out="$(wraw "$2")"; rc=$?
+    # Silence, not merely the absence of a crash: a guard that stands aside with a diagnostic is chatter
+    # on every Edit and Write, which is the noise the silent stand-aside was chosen over in the first
+    # place. A traceback is named separately in the failure label so a crash still reads as a crash.
+    if [ "$rc" = 0 ] && [ -z "$out" ]; then
+      ok "$1"
+    else
+      case "$out" in
+        *Traceback*) bad "$1 (exit $rc, traceback)" ;;
+        *)           bad "$1 (exit $rc, said: $out)" ;;
+      esac
+    fi
+  }
+
+  PBAD="$T11/pbad"; mkproj "$PBAD" main
+  mkdir -p "$PBAD/.ai-flow/artifacts/bad"
+  printf 'branch: main\nphase: **UNDERSTAND**\n' > "$PBAD/.ai-flow/artifacts/bad/state.md"
+
+  # The oldest arm of the promise at the top of that function, and the one nothing had ever sent: every
+  # fixture in this file was a JSON object, so the check could be deleted and the suite would not notice.
+  malformed "a top-level payload that is not an object is waved through without a traceback" \
+    '["x"]'
+  malformed "a tool_input that is not an object is waved through without a traceback" \
+    "{\"cwd\":\"$PBAD\",\"tool_input\":\"oops\"}"
+  malformed "a cwd that is not a string is waved through without a traceback" \
+    "{\"cwd\":123,\"tool_input\":{\"file_path\":\"$PBAD/app.txt\"}}"
+  malformed "a file_path that is not a string is waved through without a traceback" \
+    "{\"cwd\":\"$PBAD\",\"tool_input\":{\"file_path\":7}}"
+  # The other half of the same test, fused into one condition and only half asserted. Dropping it is not
+  # a traceback but a block naming nothing: an empty path resolves to the project root, whose relative
+  # form has no first part to compare against the ledger directory.
+  malformed "an empty file_path is waved through and blocks nothing" \
+    "{\"cwd\":\"$PBAD\",\"tool_input\":{\"file_path\":\"\"}}"
+
+  # The other arm of the directory check, and the one that keeps the rail alive. Nothing pinned it —
+  # every fixture in this file declares a directory — so the check could be widened to stand aside on a
+  # field that is merely absent, and the rail would go silent for that whole shape with the suite green.
+  out="$( cd "$PBAD" && wraw "{\"tool_input\":{\"file_path\":\"app.txt\"}}" )"; rc=$?
+  [ "$rc" = 2 ] && ok "a payload declaring no directory is judged against the one the hook runs in" \
+                || bad "a payload declaring no directory is judged against the one the hook runs in (exit $rc)"
+
+  # The control, and it sits in the same project as the three above on purpose. Without it all three
+  # are satisfied by a guard that exits 0 unconditionally, and their verdict would be borrowed from a
+  # section elsewhere in this file — which is no verdict at all. Green before the fix by design: what
+  # establishes it is the mutation that makes the guard wave everything through, not a red baseline.
+  out="$(wguard "$PBAD" "$PBAD/app.txt")"; rc=$?
+  [ "$rc" = 2 ] && ok "the same project still blocks a well-formed code write" \
+                || bad "the same project still blocks a well-formed code write (exit $rc)"
+  # The contract promises the block AND the naming over this same project. Asserting the naming only
+  # against a fixture elsewhere in this file is the borrowed verdict the paragraph above rejects.
+  case "$out" in
+    *"artifacts/bad/state.md"*) ok "and that block names the sheet it read, in this same fixture" ;;
+    *) bad "and that block names the sheet it read, in this same fixture" ;;
+  esac
 else
   echo "  [skip] read-only rail checks (python3 unavailable)"
 fi

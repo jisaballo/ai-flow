@@ -113,11 +113,23 @@ def main():
     if not isinstance(data, dict):
         sys.exit(0)  # a non-object payload must not traceback a hook that runs on every write
 
-    file_path = ((data.get('tool_input') or {}).get('file_path') or '')
-    if not file_path:
+    # The same rule one level in: the object's fields are payload too, and a field whose type the guard
+    # cannot use is a write it cannot judge — the answer every other branch here already gives. Checked
+    # where each field is read, so nothing unusable is carried forward to be cashed by a later line.
+    tool_input = data.get('tool_input')
+    file_path = tool_input.get('file_path') if isinstance(tool_input, dict) else None
+    if not isinstance(file_path, str) or not file_path:
         sys.exit(0)
 
-    cwd = Path(data.get('cwd') or '.')
+    # A payload with no usable directory — the field absent, null, or empty — falls back to this
+    # process's own, which is the session's on every real invocation, and is the behaviour that predates
+    # this check. A field declared in a type that cannot be a path is the different case: guessing a
+    # directory on top of a value the session did name would judge a file nobody was writing.
+    declared_cwd = data.get('cwd')
+    if declared_cwd is not None and not isinstance(declared_cwd, str):
+        sys.exit(0)
+
+    cwd = Path(declared_cwd or '.')
     root = ledger_root(cwd)
     if root is None:
         sys.exit(0)  # not an ai-flow project
