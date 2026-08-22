@@ -14,6 +14,10 @@ Working with AI coding assistants can feel chaotic — tasks drift in scope, con
 - **Autonomy levels**: Choose how much supervision the AI needs per task
 - **Quality verification**: LLM-as-Judge audit ensures criteria are met with evidence
 
+Underneath those five, one thesis: **ai-flow is a demanding requirements discipline sized for one person or a very small team.** It aims at the best quality standard a spec-driven flow can reach while carrying none of the ceremony that exists only to coordinate large teams. Rigor is kept wherever a rule exists because the *model* fails — it assumes, negotiates tests toward green, lets scope creep in; weight is cut wherever a rule exists only to keep several people in step, because with one operator the coordinator and the coordinated are the same brain.
+
+Two things it deliberately is **not**: enterprise coordination features, and multi-agent portability. The first because with nobody to hand off to, a rule whose only job is to synchronise several people is pure weight here. The second because ai-flow is Claude-Code-native by choice — its value is the depth of that integration (skills, hooks, workflows, subagents, memory), and abstracting for N agents would dilute precisely what makes it worth using.
+
 ## Quick Start
 
 ### Option 1: Install script
