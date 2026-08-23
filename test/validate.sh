@@ -5176,6 +5176,26 @@ git push --force origin main' \
   refuse32 "a force refspec injected through -c is refused" "$R32" \
     'git -c remote.origin.push=+refs/heads/main:refs/heads/main push origin'
 
+  # --- A7: deletion of the trunk on the remote ----------------------------
+  refuse32 "deleting the trunk on the remote is refused" "$R32" \
+    'git push origin :main' \
+    'git push origin :refs/heads/main' \
+    'git push origin --delete main' \
+    'git push origin -d main' \
+    'git push origin --delete master' \
+    'git push origin +:main'
+  # Both halves, because either alone is satisfied by the wrong message: naming deletion is met by a
+  # force refusal that happens to mention the flag it read, and not naming a force-push is met by a
+  # rail that says nothing at all.
+  out="$(rail32 'git push origin --delete main' "$R32")"
+  case "$out" in
+    *delet*) case "$out" in
+               *force-push*) bad "a refused deletion says deletion, not force (said: $out)" ;;
+               *)            ok "a refused deletion says deletion, not force" ;;
+             esac ;;
+    *)       bad "a refused deletion says deletion, not force (said: $out)" ;;
+  esac
+
   # --- A8, A9, A13: the allowed side, which is where the whole change lives -
   # Without these the refused tables above are all satisfied by a rail that refuses everything.
   allow32 "the destination decides, not the word: the trunk on the source side is allowed" "$R32" \
@@ -5201,6 +5221,13 @@ git push --force origin main' \
     "git commit -m 'fix: 1+1' && git push origin main" \
     'git push origin main # 1+1'
 
+  # --- A10: deleting anything that is not the trunk -----------------------
+  allow32 "deleting a non-trunk branch stays allowed, name collisions included" "$R32" \
+    'git push origin --delete feature' \
+    'git push origin :feature' \
+    'git push origin -d release/2.0' \
+    'git push origin --delete feature/main-menu' \
+    'git branch -D main'
 else
   echo "  [skip] target-reading checks (python3 unavailable)"
 fi

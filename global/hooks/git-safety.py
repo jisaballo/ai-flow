@@ -80,6 +80,17 @@ def force_signal(cmd: str, flags, refspecs):
     return None
 
 
+def delete_signal(flags, refspecs):
+    """The order to delete a remote branch, named, or None. Deleting the trunk on the remote destroys
+    it for everyone, which is why it is refused alongside a rewrite even though it is not a rewrite;
+    the local copy is another matter entirely, recoverable by reflog and nobody else's business."""
+    if '--delete' in flags or '-d' in flags:
+        return 'the --delete flag'
+    if any(re.match(r'^\+?:', ref) for ref in refspecs):
+        return 'an empty source on the refspec'
+    return None
+
+
 def targets_trunk(cmd: str, flags, refspecs):
     """Whether the command's own text says the trunk is a destination.
 
@@ -162,6 +173,23 @@ def main():
                 print(
                     f"BLOCKED: hard force-push to main/master is forbidden (your 'Never' rule). "
                     f"The force signal read here was {signal}. " + remedy +
+                    "If you truly intend this, run it yourself with '! <cmd>'.",
+                    file=sys.stderr,
+                )
+                sys.exit(2)
+
+        # 1b) Deleting the trunk on the remote. A separate signal against a separate rule, sharing the
+        # destination reader above: what decides is the refspec's destination, so retiring a merged
+        # branch stays ordinary work even when its name happens to carry the trunk's word.
+        deletion = delete_signal(flags, refspecs)
+        if deletion:
+            targets_main = targets_trunk(cmd, flags, refspecs)
+            if targets_main is None:
+                targets_main = current_branch() in TRUNK
+            if targets_main:
+                print(
+                    f"BLOCKED: deleting main/master on the remote is forbidden (your 'Never' rule). "
+                    f"The deletion was read from {deletion}. Delete a merged feature branch instead. "
                     "If you truly intend this, run it yourself with '! <cmd>'.",
                     file=sys.stderr,
                 )
