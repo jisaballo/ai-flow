@@ -25,8 +25,18 @@ def main():
         data = json.load(sys.stdin)
     except Exception:
         sys.exit(0)
-    cmd = ((data.get('tool_input') or {}).get('command') or '')
-    if not cmd:
+    if not isinstance(data, dict):
+        sys.exit(0)  # a non-object payload must not traceback a hook that runs on every command
+
+    # The same rule one level in: the object's fields are payload too, and a field whose type the guard
+    # cannot use is a command it cannot judge — the answer every other branch here already gives. Each
+    # field is checked where it is read, so nothing unusable is carried forward to be cashed by a later
+    # line; the regexes below are exactly that later line, and a non-string command reaches them as a
+    # TypeError. Standing aside is not a weakening: this hook's non-zero exit is a non-blocking error, so
+    # a traceback ran the command with no guard at all. Falling over was never the safe direction.
+    tool_input = data.get('tool_input')
+    cmd = tool_input.get('command') if isinstance(tool_input, dict) else None
+    if not isinstance(cmd, str) or not cmd:
         sys.exit(0)
 
     # 1) Hard force-push to main/master (allow --force-with-lease and feature branches)

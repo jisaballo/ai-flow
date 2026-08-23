@@ -5000,6 +5000,96 @@ lad30="$(grep -cE "Cost ladder|derived check" README.md)"
   && ok "the cost ladder stays out of the front door" \
   || bad "the cost ladder stays out of the front door ($lad30 line(s))"
 
+echo "== C26: the Bash rail judges what it can read, and only what is really git =="
+# Conformance stubs, generated from the Verifiable Criteria before any code was written. Every line
+# below is unconditionally red on purpose: Execute replaces each one with the fixture that actually
+# drives global/hooks/git-safety.py and asserts the criterion in BOTH directions. A stub that turns
+# green without being replaced is a stub that never tested anything.
+#
+# The rail this section covers has no behavioural coverage at all today — C9's two assertions count its
+# entry in settings.json, which is installer structure. So there is no positive control anywhere in this
+# file to borrow: A4 builds one here, in the same fixture as the payload checks, because "exit 0, no
+# traceback" is satisfied by a guard that exits 0 unconditionally and this rail's real failure mode is
+# not a crash but going quiet.
+#
+# Note for whoever writes the fixtures: the text below contains the very commands this rail refuses, so
+# a here-document that writes this file is blocked by the unfixed rail. Use an editor, not a heredoc.
+STUB="stub — implement in Execute"
+
+if [ "$PY3" = 1 ]; then
+  GS="$HK/git-safety.py"
+  graw() {  # $1 = raw payload -> prints combined output, returns the hook's exit code
+    printf '%s' "$1" | python3 "$GS" 2>&1
+  }
+  gcmd() {  # $1 = command string -> same, wrapped in a well-formed payload
+    python3 -c 'import json,sys; print(json.dumps({"tool_input":{"command":sys.argv[1]}}))' "$1" \
+      | python3 "$GS" 2>&1
+  }
+
+  # --- Step 1: a field the rail cannot read is a command it cannot judge ----
+  # Each check below drives several payload shapes and reports ONE verdict, naming the shapes that
+  # failed. Silence, not merely the absence of a crash: a rail that stands aside with a diagnostic is
+  # chatter on every Bash command, and a traceback is named separately so a crash still reads as a crash.
+  waved() {  # $1 = label, $2.. = raw payloads -> one verdict for the whole set
+    label="$1"; shift; whyw=""
+    for p in "$@"; do
+      out="$(graw "$p")"; rc=$?
+      if [ "$rc" != 0 ] || [ -n "$out" ]; then
+        case "$out" in
+          *Traceback*) whyw="$whyw [$p -> exit $rc, traceback]" ;;
+          *)           whyw="$whyw [$p -> exit $rc, said: $out]" ;;
+        esac
+      fi
+    done
+    [ -z "$whyw" ] && ok "$label" || bad "$label ($whyw)"
+  }
+
+  # The oldest arm of the promise and the one nothing had ever sent: this rail has no dict check at all,
+  # so every one of these is a traceback today. `null` and `true` were in nobody's report — the reach of
+  # the hardening is measured from what the code reads, not from what was noticed.
+  waved "a top-level payload that is not an object is waved through in silence" \
+    '["x"]' '"oops"' '7' 'null' 'true'
+
+  # A truthy non-object only: a falsy one (`null`, `[]`, `""`, `0`) already survives through `or {}` and
+  # must keep surviving. The line is drawn at the type, not at emptiness.
+  waved "a tool_input that is not an object is waved through in silence" \
+    '{"tool_input":"oops"}' '{"tool_input":["a"]}' '{"tool_input":7}'
+
+  # Truthy non-strings, which reach the first regex and raise there rather than at the read. `true` is
+  # in the set because a bool is not a str and nothing else in this file would have noticed.
+  waved "a command that is not a string is waved through in silence" \
+    '{"tool_input":{"command":123}}' '{"tool_input":{"command":["git","push"]}}' \
+    '{"tool_input":{"command":{"a":1}}}' '{"tool_input":{"command":true}}'
+
+  # The control, and it is the load-bearing assertion of this whole group. Without it the three checks
+  # above are all satisfied by a rail that exits 0 unconditionally, and their verdict would be borrowed
+  # from another section of this file — which is no verdict at all. It shares everything with them: the
+  # same hook, the same invocation, the same directory. This rail had no behavioural coverage before, so
+  # there was no control anywhere to borrow; this is it. The branch is named explicitly, so the verdict
+  # does not depend on whatever branch this suite happens to run on.
+  out="$(gcmd 'git push --force origin main')"; rc=$?
+  [ "$rc" = 2 ] && ok "the same fixture still refuses a well-formed hard force-push to main" \
+                || bad "the same fixture still refuses a well-formed hard force-push to main (exit $rc, said: $out)"
+else
+  echo "  [skip] Bash rail checks (python3 unavailable)"
+fi
+
+# --- Step 2: the force-push protection, judged on a parsed command -------
+bad "an archive write with no git invocation anywhere is not refused ($STUB)"
+bad "a force flag in another segment does not condemn a safe push ($STUB)"
+bad "a quoted forbidden command is not refused ($STUB)"
+bad "a here-document written to a file is judged without its body ($STUB)"
+bad "a here-document piped into an interpreter is judged with its body ($STUB)"
+bad "every recorded force-push shape is still refused ($STUB)"
+
+# --- Step 3: the secret-staging protection, on the same parsed command ---
+bad "a quoted staging command is not refused ($STUB)"
+bad "every recorded secret-staging shape is still refused ($STUB)"
+bad "a commit message mentioning the secrets file is not refused ($STUB)"
+bad "the refusal names the file without its quote characters ($STUB)"
+bad "a command that cannot be lexed still gets the cruder scan ($STUB)"
+bad "a broad staging written with a quoted path is still inspected ($STUB)"
+
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
