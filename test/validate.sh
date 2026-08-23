@@ -5410,9 +5410,12 @@ EOF")
     out="$(gcmd "$c")"; rc=$?
     [ "$rc" = 2 ] || whyd="$whyd [$(printf '%s' "$c" | tr '\n' '~') -> exit $rc]"
   done
+  # The size goes in a note, not in the description: a description that changes when coverage grows
+  # cannot be indexed by anything — the same defect as an assertion that renames itself on failure.
+  echo "  [note] generated sets: ${#DANGEROUS[@]} invoking forms, ${#HARMLESS[@]} mentioning forms"
   [ -z "$whyd" ] \
-    && ok "every generated form that really invokes the forbidden operation is refused (${#DANGEROUS[@]} forms)" \
-    || bad "every generated form that really invokes the forbidden operation is refused (${#DANGEROUS[@]} forms)($whyd)"
+    && ok "every generated form that really invokes the forbidden operation is refused" \
+    || bad "every generated form that really invokes the forbidden operation is refused ($whyd)"
 
   whyh=""
   for c in "${HARMLESS[@]}"; do
@@ -5420,8 +5423,8 @@ EOF")
     [ "$rc" = 0 ] || whyh="$whyh [$(printf '%s' "$c" | tr '\n' '~') -> exit $rc]"
   done
   [ -z "$whyh" ] \
-    && ok "every generated form that only mentions it is allowed (${#HARMLESS[@]} forms)" \
-    || bad "every generated form that only mentions it is allowed (${#HARMLESS[@]} forms)($whyh)"
+    && ok "every generated form that only mentions it is allowed" \
+    || bad "every generated form that only mentions it is allowed ($whyh)"
 
   # --- the triaged findings that needed a witness rather than a fix ---------
   # A comment marker inside a quoted argument is not a comment. Nothing pinned the quote tracking that
