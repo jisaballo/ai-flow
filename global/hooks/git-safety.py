@@ -1,6 +1,23 @@
 #!/usr/bin/env python3
 """PreToolUse/Bash guard (global): blocks hard force-push to main/master and staging of secret/credential files.
-Reads the hook JSON on stdin; exit 2 blocks the tool call and feeds the message back to Claude."""
+Reads the hook JSON on stdin; exit 2 blocks the tool call and feeds the message back to Claude.
+
+The shape of this file is the point, so it is stated once here.
+
+Two rounds of trying to decide "is this really an invocation?" by parsing the command taught the same
+lesson twice: every gap in the parse made the invocation invisible, and invisible meant allowed. The
+error always fell on the dangerous side, and each fix added new surface for the next gap.
+
+So the verdict is not the parser's. The **flattened** test below is the verdict — the original one, which
+looks at every character of the command and therefore cannot be slipped past. The parse only ever gets to
+**excuse** it, and only under two conditions: the walk must declare itself sure of what it read, and no
+runnable piece of the command may still look dangerous once comments and written documents are set aside.
+Anything the walk does not model — a command substitution, an unbalanced quote, a here-document whose
+terminator never arrives — withdraws the excuse rather than granting it.
+
+The consequence is deliberate: a bug in this parser costs a refusal of something harmless, with the
+`! <cmd>` escape, instead of a protection lost in silence.
+"""
 import sys, json, re, shlex, subprocess
 
 
@@ -20,167 +37,256 @@ def is_secret(path: str) -> bool:
     return False
 
 
-# The two `<` must be exactly two: a `<<<` here-string is not a here-document, and reading one as an
-# opener starts a hunt for a terminator that never arrives, which used to swallow every following line.
-HEREDOC_OPEN = re.compile(r"""(?<!<)<<(-?)(?!<)\s*'?"?([A-Za-z_][A-Za-z0-9_]*)'?"?""")
-# Commands whose whole job is to copy their standard input somewhere else. A here-document one of these
-# reads is a document being written, not a command being run.
-#
-# This list is safe in the exact way a list of interpreters was not, and the difference is the direction
-# of its gaps. A command missing from here has its body JUDGED — a false refusal, with the `! <cmd>`
-# escape. An interpreter missing from that other list would have had its body EXECUTED UNJUDGED, which is
-# a protection silently lost. Same shape of list, opposite failure mode, so the objection that refused
-# the one does not reach the other.
-STDIN_WRITERS = ('cat', 'tee', 'dd')
-# A target carrying any of these is one the rail cannot evaluate by reading: a variable, a command
-# substitution, a home-directory expansion. It could name the default branch, so it earns no allowance.
-UNRESOLVABLE = re.compile(r'[$`~]')
-# A redirect to a file, which is what makes a here-document body data. `>&1` and friends redirect to a
-# descriptor, not a file, so they are excluded: a body is not written just because stderr was merged.
+# Commands whose whole job is copying their standard input somewhere else, so a here-document one of them
+# reads is a document being written. Gaps in this list cost a refusal of a harmless write, never a lost
+# protection — which is the opposite of what a list of *interpreters* would cost, and the whole reason
+# this list is acceptable where that one was not.
+STDIN_WRITERS = ('cat', 'tee')
+# Constructs the walk does not model. Their presence does not make a command dangerous; it makes the
+# walk's reading untrustworthy, which withdraws its right to excuse anything.
+UNMODELLED = re.compile(r'\$\(|`|<\(|>\(|\$\{|\beval\b|\bexec\b|\|&|;;|&>')
+# A target the rail cannot evaluate by reading. It could name the default branch, so it earns no
+# allowance; a glob is in here for the same reason a variable is.
+UNRESOLVABLE = re.compile(r'[$`~*?\[\]]')
 FILE_REDIRECT = re.compile(r'>>?\s*(?!&)\S')
-QUOTED_SPAN = re.compile(r"""'[^']*'|"[^"]*\"""")
-SEPARATOR = re.compile(r'&&|\|\||;|\||\n')
+SEPARATOR = re.compile(r'&&|\|\||;|\|')
+HEREDOC_OPEN = re.compile(r"""(?<!<)<<(-?)(?!<)\s*('?"?)([A-Za-z_][A-Za-z0-9_]*)""")
+# Values worth not echoing back into a transcript when the refusal names the piece it judged.
+ASSIGNED_SECRET = re.compile(r'\b([A-Za-z_][A-Za-z0-9_]*)=(?!\s)\S+')
+URL_USERINFO = re.compile(r'(//)[^/\s:@]+:[^/\s@]+@')
 
 
-def split_outside_quotes(text: str):
-    """Cut on the shell's separators, but only where they are not inside a quoted span.
+def quoted_spans(text: str):
+    """Every quoted span in the text, and whether the walk ended outside all of them.
 
-    Locating separators in the raw text severs a quoted argument in half, and both directions of that
-    are wrong. A commit message carrying a semicolon left `git commit -m "wip` in one piece and
-    ` more" secrets` in another — and the piece holding the path had no `git` in it, so nothing ever
-    inspected it. The mirror of the same cut refuses a note whose quoted prose happens to contain a
-    separator, which is the false refusal this whole change exists to remove.
+    One walk, used by everything that needs to know where the quoting is: locating separators, deciding
+    whether git is really being invoked, and finding comments. Three separate readings of the same
+    question is how they came to disagree — and the disagreement was exploitable, because an escaped
+    quote fooled one of them and not the others.
 
-    The separators are found on a copy whose quoted spans are blanked to the SAME LENGTH, and the raw
-    text is sliced at those offsets, so every piece that comes out still carries its own quotes — the
-    target reads need them, and only the invocation test blanks them.
+    A backslash escapes the next character everywhere except inside single quotes, where the shell
+    treats it literally.
     """
-    masked = QUOTED_SPAN.sub(lambda m: ' ' * len(m.group(0)), text)
-    parts, last = [], 0
-    for m in SEPARATOR.finditer(masked):
-        parts.append(text[last:m.start()])
-        last = m.end()
-    parts.append(text[last:])
-    return [p for p in parts if p.strip()]
-
-
-def strip_comment(line: str) -> str:
-    """A trailing shell comment is not part of the command.
-
-    Reading one as part of the command is how a note *about* a forbidden operation gets refused *as*
-    the operation: `git add README.md  # never add .env` stages one file and mentions another. Quote
-    state is tracked because `-m "fix #1"` is a message, not a comment.
-    """
-    quote, i = '', 0
-    while i < len(line):
-        ch = line[i]
+    spans, quote, start, i = [], '', 0, 0
+    while i < len(text):
+        ch = text[i]
         if quote == "'":
-            if ch == "'":       # inside single quotes a backslash is an ordinary character
+            if ch == "'":
+                spans.append((start, i + 1))
+                quote = ''
+        elif quote == '"':
+            if ch == '\\':
+                i += 1
+            elif ch == '"':
+                spans.append((start, i + 1))
                 quote = ''
         elif ch == '\\':
-            i += 1              # an escaped character is data, never a quote and never a comment marker
-        elif quote:
-            if ch == quote:
-                quote = ''
+            i += 1
         elif ch in '\'"':
-            quote = ch
-        elif ch == '#' and (i == 0 or line[i - 1].isspace()):
-            return line[:i]
+            quote, start = ch, i
         i += 1
-    return line
+    return spans, quote == ''
 
 
-def lex(seg: str):
-    """The words of one command, with its quotes understood.
+def blank(text: str, spans) -> str:
+    """The text with the given spans replaced by spaces, so offsets are preserved."""
+    out = list(text)
+    for a, b in spans:
+        for i in range(a, min(b, len(out))):
+            if out[i] != '\n':
+                out[i] = ' '
+    return ''.join(out)
 
-    This is what separates a file being staged from a file being mentioned: under a whitespace split
-    `git commit -m "add .env to gitignore"` yields a bare `.env` token and the message reads as a
-    staged secret. It closes the opposite hole too — `git add "."` was never inspected at all, because
-    the broad-add test could not see a quoted dot, so a repository holding an untracked secret was
-    staged with no check. A command that cannot be lexed falls back to the whitespace split, which is
-    the stricter of the two readings; never to no scan.
+
+def dequote(text: str) -> str:
+    spans, _ = quoted_spans(text)
+    return blank(text, spans)
+
+
+def comment_spans(text: str, spans):
+    """Where the comments are, judged on the whole text with the quoting already located.
+
+    Judged on the whole text and not line by line, because a quoted argument may span lines: reading each
+    line alone made a `#` opening the second line of a message look like a comment, which deleted the
+    rest of the command and everything it was doing.
     """
-    try:
-        return shlex.split(seg)
-    except ValueError:
-        return [t for t in re.split(r'\s+', seg) if t]
+    covered = [False] * len(text)
+    for a, b in spans:
+        for i in range(a, min(b, len(text))):
+            covered[i] = True
+    out, i = [], 0
+    while i < len(text):
+        if text[i] == '#' and not covered[i] and (i == 0 or text[i - 1] in ' \t\n'):
+            end = text.find('\n', i)
+            end = len(text) if end < 0 else end
+            out.append((i, end))
+            i = end
+        else:
+            i += 1
+    return out
 
 
-def writes_body(opener: str) -> bool:
-    """Whether this opening line copies its here-document into a file rather than running it.
+def owns_heredoc(line_before: str) -> bool:
+    """Whether the simple command that opens a here-document on this line writes it to a file.
 
-    Two things must hold, and the earlier version of this check asked only the second. The command
-    reading the document must be one whose whole job is copying its input — otherwise
-    `bash <<'EOF' > out.log` read as a write, and its body, a hard force-push, executed unjudged. And the
-    line must redirect somewhere, or `cat <<'EOF' | sh` is a write too and its body would go free.
-
-    The redirect is read with quoted spans blanked, so a `>` inside an argument is not a redirect.
+    Read from the piece that actually owns the `<<`, not from the whole line: a redirect belonging to a
+    later stage of a pipeline made `cat <<EOF | sh > out.log` look like a document being written, and the
+    body then ran unjudged. Cutting at the last separator before the operator is what ties the command
+    word and the redirect to the same simple command.
     """
-    bare = QUOTED_SPAN.sub(' ', opener)
-    words = [w for w in re.split(r'\s+', bare.strip()) if w and '=' not in w]
+    bare = dequote(line_before)
+    piece = SEPARATOR.split(bare)[-1]
+    words = [w for w in piece.split() if '=' not in w]
     head = words[0].rsplit('/', 1)[-1] if words else ''
-    return head in STDIN_WRITERS and bool(FILE_REDIRECT.search(bare))
+    return head in STDIN_WRITERS and bool(FILE_REDIRECT.search(piece))
 
 
-def segments(cmd: str):
-    """The command as the shell would run it, one runnable piece at a time.
+def parse(cmd: str):
+    """The runnable pieces of the command, and whether the walk is sure of them.
 
-    A here-document body is dropped only where `writes_body` says the line copies it into a file, and
-    kept everywhere else — including where its terminator never arrived, since a body whose end was
-    never found was misread rather than written. Dropping written bodies is what lets a document quote a
-    forbidden command without being refused for it; keeping every other body is what stops an
-    interpreter from running one unjudged.
-
-    Then the rest is cut on the shell's own separators — outside quoted spans, and after joining lines
-    a trailing backslash continues — so each protection is judged against one runnable piece rather
-    than the whole line. This scopes rather than positions: it never asks whether `git` is the first
-    word, so an invocation behind `sudo`, after an environment assignment, inside a `for ... do` loop,
-    after a directory change or under `xargs` is still found — while an unrelated `rm -rf` in another
-    piece can no longer condemn a safe push.
+    Returns `(pieces, confident)`. `confident` is False the moment the walk meets something it does not
+    model, because a reading it cannot vouch for must not be allowed to excuse anything.
     """
-    kept, lines, i = [], cmd.split('\n'), 0
+    spans, balanced = quoted_spans(cmd)
+    confident = balanced and not UNMODELLED.search(blank(cmd, spans))
+
+    # comments first: they are not command text, and a `#` inside quotes is not a comment
+    text = blank(cmd, comment_spans(cmd, spans))
+    # a command wrapped across lines is one command
+    text = re.sub(r'\\\n', '  ', text)
+
+    kept, lines, i = [], text.split('\n'), 0
     while i < len(lines):
-        opener = lines[i]
-        kept.append(opener)
-        match = HEREDOC_OPEN.search(opener)
+        line = lines[i]
+        kept.append(line)
+        match = HEREDOC_OPEN.search(line)
         i += 1
         if not match:
             continue
-        dash, tag = match.group(1), match.group(2)
+        dash, tag = match.group(1), match.group(3)
         body, terminated = [], False
         while i < len(lines):
-            # only the dash form lets its terminator be indented; the plain form wants it exactly, so a
-            # body line that merely looks like the terminator cannot end the document early
             if (lines[i].strip() if dash else lines[i]) == tag:
                 terminated = True
-                i += 1  # the terminator line is not a command either
+                i += 1
                 break
             body.append(lines[i])
             i += 1
-        # A body whose end never arrived was misread, not written: treating those lines as a document
-        # would let a mis-spelled terminator swallow every command after it. Judge them instead — the
-        # stricter reading, which is the direction every fallback in this file already takes.
-        if not terminated or not writes_body(opener):
-            kept.extend(body)  # a command's input, or a body whose terminator was never found
-    text = '\n'.join(strip_comment(line) for line in kept)
-    # A command wrapped across lines with a trailing backslash is one command, and cutting on the newline
-    # made two of it — the invocation in one piece, its force flag or its target in another, and neither
-    # piece complete enough to judge. Joined after the here-document pass, whose openers need their own
-    # line, and before the cut. Comments go first, so a backslash inside a comment is already gone.
-    text = re.sub(r'\\\n', ' ', text)
-    return split_outside_quotes(text)
+        if not terminated:
+            confident = False          # a body whose end never arrived was misread, not written
+        if not (terminated and owns_heredoc(line[:match.start()])):
+            kept.extend(body)          # input to a command, so still command text
+
+    # Separators are located on a copy whose quoted spans are blank, then the ORIGINAL text is sliced at
+    # those offsets — so a separator inside an argument neither severs a command nor condemns a note,
+    # and every piece keeps its own quotes for the reads that need them.
+    joined = '\n'.join(kept)
+    jspans, _ = quoted_spans(joined)
+    masked = blank(joined, jspans)
+    pieces, last = [], 0
+    for m in SEPARATOR.finditer(masked):
+        pieces.append(joined[last:m.start()])
+        last = m.end()
+    pieces.append(joined[last:])
+    return [p for p in pieces if p.strip()], confident
 
 
-def invokes(seg: str, subcommand: str) -> bool:
-    """Whether this piece of the command really invokes `git <subcommand>`.
-
-    Asked of the piece with its quoted spans blanked out, because a note that quotes a command is prose
-    and not an invocation. Only this question is asked of the de-quoted text: what the command is aimed
-    at — which branch, which files — is read from the raw piece, since a branch name or a path may
-    legitimately be quoted. Blanking the quotes there would let a real command through.
-    """
-    bare = QUOTED_SPAN.sub(' ', seg)
+def invokes(piece: str, subcommand: str) -> bool:
+    bare = dequote(piece)
     return bool(re.search(r'\bgit\b', bare)) and bool(re.search(r'\b%s\b' % subcommand, bare))
+
+
+def lex(text: str):
+    """The words of a command with its quotes understood, falling back to a whitespace split when it
+    cannot be lexed — the stricter of the two readings, never no reading at all."""
+    try:
+        return shlex.split(text)
+    except ValueError:
+        return [t for t in re.split(r'\s+', text) if t]
+
+
+def current_branch() -> str:
+    try:
+        return subprocess.run(['git', 'branch', '--show-current'],
+                              capture_output=True, text=True, timeout=3).stdout.strip()
+    except Exception:
+        return ''
+
+
+def force_push_hit(text: str) -> bool:
+    """The flattened test, and the verdict. Run over the whole command it cannot be slipped past; run
+    over one piece it says whether that piece is the dangerous one."""
+    if not re.search(r'\bpush\b', text):
+        return False
+    hard = bool(re.search(r'--force(?!-with-lease)\b', text)) or bool(
+        re.search(r'(?:^|\s)-[A-Za-z]*f(?:\s|$)', text))
+    if not hard or '--force-with-lease' in text:
+        return False
+    if re.search(r'\b(main|master)\b', text):
+        return True
+    toks = lex(text)
+    try:
+        positionals = [t for t in toks[toks.index('push') + 1:]
+                       if not t.startswith('-') and not UNRESOLVABLE.search(t)]
+    except ValueError:
+        positionals = []
+    # An explicitly named branch that is not the default earns its allowance — but only where the text
+    # holds nothing this guard cannot read. A command substitution carrying a space is split into words
+    # by the lexer, and one of the fragments then reads as an ordinary branch name: `$(cat b)` became
+    # `$(cat` and `b)`, the first filtered as unresolvable and the second counted as a named branch. An
+    # allowance granted off a reading this guard has already declared untrustworthy is not an allowance.
+    if len(positionals) >= 2 and not UNMODELLED.search(dequote(text)):
+        return False
+    return current_branch() in ('main', 'master')
+
+
+def staged_secrets(text: str):
+    """The secret paths this text would stage, by the flattened reading."""
+    if not (re.search(r'\bgit\b', text) and re.search(r'\b(add|commit)\b', text)):
+        return []
+    toks = lex(text)
+    # Shell punctuation glued to a word is not part of the filename. The lexer is not a shell parser,
+    # so `git add .env;` inside a loop yields the word `.env;`, and the anchored path test does not match
+    # it — the path was there, spelled correctly, and went unseen. Stripped here, in the reading that
+    # cannot be slipped past, because that is the one whose misses are protections lost.
+    cand = [t.strip('"\'').rstrip(';,)&|') for t in toks if not t.startswith('-')]
+    danger = [t for t in cand if is_secret(t)]
+    if danger:
+        return danger
+    broad = any(t in ('-A', '--all', '-u', '--update', '.', './', ':/', ':') for t in toks) or any(
+        len(t) > 1 and t[0] == '-' and t[1] != '-' and ('A' in t or 'u' in t) for t in toks)
+    if not (broad and re.search(r'\badd\b', text)):
+        return []
+    try:
+        out = subprocess.run(['git', 'status', '--porcelain', '--untracked-files=all'],
+                             capture_output=True, text=True, timeout=5).stdout
+    except Exception:
+        return []
+    found = []
+    for line in out.splitlines():
+        path = line[3:].strip().strip('"')
+        if ' -> ' in path:
+            path = path.split(' -> ')[-1]
+        if is_secret(path):
+            found.append(path)
+    return found
+
+
+def quote_for_message(text: str) -> str:
+    """The piece the refusal names, with what should not be echoed taken out.
+
+    The refusal exists to make a false one diagnosable in one read, and it goes into the model's context
+    and the session transcript. A command line carries inline credentials often enough that echoing it
+    verbatim is a leak the diagnosis does not need: the shape is what a reader wants, not the value.
+    """
+    safe = ASSIGNED_SECRET.sub(lambda m: f'{m.group(1)}=<redacted>', text.strip())
+    safe = URL_USERINFO.sub(r'\1<redacted>@', safe)
+    return repr(safe if len(safe) <= 200 else safe[:200] + '…')
+
+
+def refuse(message: str) -> None:
+    print(message, file=sys.stderr)
+    sys.exit(2)
 
 
 def main():
@@ -191,105 +297,48 @@ def main():
     if not isinstance(data, dict):
         sys.exit(0)  # a non-object payload must not traceback a hook that runs on every command
 
-    # The same rule one level in: the object's fields are payload too, and a field whose type the guard
-    # cannot use is a command it cannot judge — the answer every other branch here already gives. Each
-    # field is checked where it is read, so nothing unusable is carried forward to be cashed by a later
-    # line; the regexes below are exactly that later line, and a non-string command reaches them as a
-    # TypeError. Standing aside is not a weakening: this hook's non-zero exit is a non-blocking error, so
-    # a traceback ran the command with no guard at all. Falling over was never the safe direction.
+    # A field whose type the guard cannot use is a command it cannot judge, and the answer is the one
+    # every other stand-aside branch here gives. Checked where each field is read, so nothing unusable is
+    # carried forward to be cashed by a later line — the matchers below are exactly that later line.
     tool_input = data.get('tool_input')
     cmd = tool_input.get('command') if isinstance(tool_input, dict) else None
     if not isinstance(cmd, str) or not cmd:
         sys.exit(0)
 
-    # 1) Hard force-push to main/master (allow --force-with-lease and feature branches).
-    # Judged one runnable piece at a time: the invocation, the force signal and the target must all be
-    # in the same piece, so a force flag belonging to another command no longer condemns a safe push.
-    for seg in segments(cmd):
-        if not invokes(seg, 'push'):
-            continue
-        hard_force = bool(re.search(r'--force(?!-with-lease)\b', seg)) or bool(
-            re.search(r'(?:^|\s)-[A-Za-z]*f(?:\s|$)', seg)
-        )
-        with_lease = '--force-with-lease' in seg
-        if hard_force and not with_lease:
-            if re.search(r'\b(main|master)\b', seg):
-                targets_main = True  # main/master named explicitly
-            else:
-                # no main/master mentioned: if an explicit (non-main) branch is given, allow;
-                # only fall back to the current branch when no refspec is provided.
-                # A target the rail cannot resolve is not an explicit safe branch. A positional naming a
-                # shell variable could hold anything, main included, so it does not earn the allowance
-                # that a named non-main branch earns; the judgement falls through to the checked-out
-                # branch instead. Flattening used to catch the assignment by coincidence — only while it
-                # sat in the same command, so a variable set in an earlier one was never covered at all.
-                # Read with the same lexer the staging protection uses, rather than a second tokenizer
-                # re-derived here; two readings of one string in one file is how they drift apart.
-                toks = lex(seg)
-                try:
-                    positionals = [t for t in toks[toks.index('push') + 1:]
-                                   if not t.startswith('-') and not UNRESOLVABLE.search(t)]
-                except ValueError:
-                    positionals = []
-                if len(positionals) >= 2:
-                    targets_main = False  # explicit non-main branch
-                else:
-                    try:
-                        cur = subprocess.run(
-                            ['git', 'branch', '--show-current'], capture_output=True, text=True, timeout=3
-                        ).stdout.strip()
-                        targets_main = cur in ('main', 'master')
-                    except Exception:
-                        targets_main = False
-            if targets_main:
-                # Naming the piece that was judged is what makes the next false refusal diagnosable in
-                # one read, instead of by re-deriving what the rail matched against.
-                print(
-                    "BLOCKED: hard force-push to main/master is forbidden (your 'Never' rule). "
-                    f"Judged this part of the command: {seg.strip()!r}. "
-                    "Use --force-with-lease, or push a feature branch. "
-                    "If you truly intend this, run it yourself with '! <cmd>'.",
-                    file=sys.stderr,
-                )
-                sys.exit(2)
+    hit_force = force_push_hit(cmd)
+    hit_secrets = staged_secrets(cmd)
+    if not hit_force and not hit_secrets:
+        sys.exit(0)          # the flattened reading sees nothing; there is nothing to excuse
 
-    # 2) Staging secret/credential files — judged one runnable piece at a time, like the protection
-    # above, and with the piece's own words rather than whatever the whitespace fell between.
-    for seg in segments(cmd):
-        stages = invokes(seg, 'add')
-        if not stages and not invokes(seg, 'commit'):
-            continue
-        toks = lex(seg)
-        # explicitly named files in this piece of the command
-        # Reported without the quoting around it. `is_secret` already strips quotes to make its own
-        # decision, so a raw token here named the file one way and judged it another — and on the
-        # whitespace fallback, where tokens keep their quotes, that is the path the refusal printed.
-        danger = [t.strip('"\'') for t in toks if not t.startswith('-') and is_secret(t)]
-        # broad add (git add . / -A / --all / -u): inspect what would be staged
-        if not danger and stages and any(t in ('-A', '--all', '-u', '.') for t in toks):
-            try:
-                out = subprocess.run(
-                    ['git', 'status', '--porcelain', '--untracked-files=all'],
-                    capture_output=True, text=True, timeout=5,
-                ).stdout
-                for line in out.splitlines():
-                    path = line[3:].strip().strip('"')
-                    if ' -> ' in path:
-                        path = path.split(' -> ')[-1]
-                    if is_secret(path):
-                        danger.append(path)
-            except Exception:
-                pass
-        if danger:
-            uniq = ', '.join(sorted(set(danger)))
-            print(
-                f"BLOCKED: this command appears to stage a secret/credential file: {uniq}. "
-                f"Judged this part of the command: {seg.strip()!r}. "
-                "Never commit secrets. If it's a false positive, run it yourself with '! <cmd>' "
-                "or add the file to .gitignore.",
-                file=sys.stderr,
+    pieces, confident = parse(cmd)
+
+    if hit_force:
+        guilty = [p for p in pieces if invokes(p, 'push') and force_push_hit(p)]
+        if not confident or guilty:
+            named = quote_for_message(guilty[0] if guilty else cmd)
+            refuse(
+                "BLOCKED: hard force-push to main/master is forbidden (your 'Never' rule). "
+                f"Judged this part of the command: {named}. "
+                + ("" if confident else "The command uses something this guard cannot read, so it was "
+                                        "judged as a whole. ")
+                + "Use --force-with-lease, or push a feature branch. "
+                "If you truly intend this, run it yourself with '! <cmd>'."
             )
-            sys.exit(2)
+
+    if hit_secrets:
+        guilty = [(p, staged_secrets(p)) for p in pieces
+                  if (invokes(p, 'add') or invokes(p, 'commit')) and staged_secrets(p)]
+        if not confident or guilty:
+            piece, found = guilty[0] if guilty else (cmd, hit_secrets)
+            uniq = ', '.join(sorted(set(found)))
+            refuse(
+                f"BLOCKED: this command appears to stage a secret/credential file: {uniq}. "
+                f"Judged this part of the command: {quote_for_message(piece)}. "
+                + ("" if confident else "The command uses something this guard cannot read, so it was "
+                                        "judged as a whole. ")
+                + "Never commit secrets. If it's a false positive, run it yourself with '! <cmd>' "
+                "or add the file to .gitignore."
+            )
 
     sys.exit(0)
 

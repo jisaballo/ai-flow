@@ -5244,7 +5244,8 @@ EOF"
   RSEC="$T11/gs-secret"; mkproj "$RSEC" main
   printf 'SECRET=1\n' > "$RSEC/$ENVF"
   whyb=""
-  for broad in "git add ." "git add \".\"" "git add '.'" "git add -A" "git add --all" "git add -u"; do
+  for broad in "git add ." "git add \".\"" "git add '.'" "git add -A" "git add --all" "git add -u" \
+              "git add -Au" "git add ./" "git add :/" "git add --update"; do
     out="$(gcmd_in "$RSEC" "$broad")"; rc=$?
     [ "$rc" = 2 ] || whyb="$whyb [$broad -> exit $rc]"
   done
@@ -5357,16 +5358,26 @@ $FORBIDDEN_BODY
   DC="git push --force origin main"
   DS="git add $ENVF"
 
-  DANGEROUS=(
-    "$DC" "sudo $DC" "X=1 $DC" "env X=1 $DC" "time $DC" "/usr/bin/$DC"
-    "cd /repo && $DC" "for r in a b; do $DC; done" "($DC)" "xargs -n0 $DC"
-    "true; $DC" "true && $DC" "true || $DC" "echo hi | $DC"
-    "$DC # keep the branch" "$DC -o \"a;b\"" "$DC -o \"x&&y\""
-    "git -C /repo push --force origin main" "git --git-dir=/r/.git push --force main"
-    "$DS" "sudo $DS" "cd /r && $DS" "true; $DS" "$DS -v"
-    "git commit -m \"a;b\" $ENVF" "git commit -m \"note # 1\" $ENVF"
-    "git add certs/server.pem" "git add .ssh/id_rsa" "git add gcp-service-account.json"
-  )
+  # Built as a PRODUCT, which is what A23 asks for and what the first attempt did not deliver: it was
+  # two hand-written arrays wearing the word "generated". A list covers the cells someone thought of; a
+  # product covers every combination of the axes, so a new wrapper is covered against every core at once
+  # and a new core against every wrapper. That is the difference between finding the tenth shape and
+  # waiting for a review to find it.
+  CORES=("git push --force origin main" "git add $ENVF")
+  WRAPPERS=("%s" "sudo %s" "X=1 %s" "env X=1 %s" "time %s" "/usr/bin/%s"
+            "cd /r && %s" "for r in a b; do %s; done" "(%s)" "xargs -n0 %s"
+            "true; %s" "true && %s" "true || %s" "echo hi | %s" "%s # a trailing note")
+  DANGEROUS=()
+  for w in "${WRAPPERS[@]}"; do
+    for c in "${CORES[@]}"; do
+      DANGEROUS+=("$(printf "$w" "$c")")
+    done
+  done
+  # the cells the axes cannot express on one line, appended by hand and named
+  DANGEROUS+=("git -C /repo push --force origin main" "git --git-dir=/r/.git push --force main")
+  DANGEROUS+=("git push --force origin main -o \"a;b\"" "git commit -m \"a;b\" $ENVF")
+  DANGEROUS+=("git commit -m \"note # 1\" $ENVF")
+  DANGEROUS+=("git add certs/server.pem" "git add .ssh/id_rsa" "git add gcp-service-account.json")
   # the multi-line forms, which cannot sit on one line of an array literal
   DANGEROUS+=("git push --force \\
 origin main")
@@ -5382,19 +5393,34 @@ EOF")
 $DS
 EOF")
 
-  HARMLESS=(
-    "echo \"$DC\" > notes.md" "echo '$DC' >> notes.md"
-    "echo \"first this; then $DC\" > notes.md"
-    "true # $DC" "true # $DS"
-    "rm -rf build && echo 'push to main later'"
-    "tar -xzf main.tgz" "npm run push -- -f --branch main"
-    "grep -rf pat main.c && echo push"
-    "git push --force-with-lease origin main" "git push --force origin feature/x"
-    "git push origin HEAD:refs/x && rm -rf /tmp/main"
-    "echo \"$DS\" > notes.md" "git add README.md  # never add $ENVF"
-    "git commit -m \"add $ENVF to gitignore\"" "git add $ENVF.example"
-    "git status && echo \"never $DS\"" "git log --oneline -- $ENVF.example"
-  )
+  # The other half of the product: the same cores placed where nothing is invoked.
+  ENCLOSERS=('echo "%s" > n.md' "echo '%s' >> n.md" "true # %s" "git status  # %s"
+             'echo "first; then %s" > n.md')
+  HARMLESS=()
+  for e in "${ENCLOSERS[@]}"; do
+    for c in "${CORES[@]}"; do
+      HARMLESS+=("$(printf "$e" "$c")")
+    done
+  done
+  # and the written-document axis, which needs its own lines. The wrapper cell is here because the
+  # remediation once refused exactly this shape: a writer reached after another command.
+  for c in "${CORES[@]}"; do
+    HARMLESS+=("cat > doc.md <<'EOF'
+Never run: $c
+EOF")
+    HARMLESS+=("mkdir -p d && cat > d/doc.md <<'EOF'
+Never run: $c
+EOF")
+    HARMLESS+=("tee doc.md > /dev/null <<'EOF'
+Never run: $c
+EOF")
+  done
+  HARMLESS+=("rm -rf build && echo 'push to main later'" "tar -xzf main.tgz")
+  HARMLESS+=("npm run push -- -f --branch main" "grep -rf pat main.c && echo push")
+  HARMLESS+=("git push --force-with-lease origin main" "git push --force origin feature/x")
+  HARMLESS+=("git push origin HEAD:refs/x && rm -rf /tmp/main")
+  HARMLESS+=("git add README.md  # never add $ENVF" "git commit -m \"add $ENVF to gitignore\"")
+  HARMLESS+=("git add $ENVF.example" "git log --oneline -- $ENVF.example")
   HARMLESS+=("cat > doc.md <<'EOF'
 Never run: $DC
 EOF")
@@ -5463,6 +5489,123 @@ EOF")
   # mean positioning on the command word, which is the choice D2 rejected.
   refuses "unquoted prose naming git and a subcommand is still refused, as declared" \
     "remember to never run git push --force origin main"
+
+  # --- the inverted design: the flattened reading is the verdict, the parse only excuses ----
+  # Two rounds of parsing bugs all failed the same way — a gap made the invocation invisible, and
+  # invisible meant allowed. The verdict is now the flattened reading, which cannot be slipped past, and
+  # the parse can only take a refusal away. These assertions pin both halves of that.
+
+  # The three false negatives the second audit found, each reproduced before it was fixed.
+  all_refused "a redirect owned by the pipeline does not launder a here-document body" \
+    "cat <<'EOF' | sh > out.log
+git push --force origin main
+EOF" \
+    "cat <<'EOF' | sh > out.log
+git add $ENVF
+EOF" \
+    "cat <<'EOF' | while read l; do sh -c \"\$l\"; done > log
+git push --force origin main
+EOF"
+  # The half of that rule the prover proved unguarded: without the redirect test the piped form goes
+  # free, and the whole section stayed green. This is its witness.
+  refuses "a here-document piped into an interpreter with no redirect is judged" \
+    "cat <<'EOF' | sh
+git push --force origin main
+EOF"
+  # The writer half of the same rule, which nothing had pinned. It only bites where the redirect is
+  # written BEFORE the operator: there the redirect test alone would read the line as a document being
+  # written, and only asking what command reads it keeps the body judged.
+  refuses "a non-writer whose redirect precedes the operator still has its body judged" \
+    "bash > out.log <<'EOF'
+git push --force origin main
+EOF"
+
+  # A quoted argument may span lines, so a comment cannot be found line by line: reading line two alone
+  # made a leading `#` delete the rest of the command and everything it was doing.
+  all_refused "a comment marker inside a multi-line quoted argument is not a comment" \
+    "git commit -m \"line one
+# notes\" $ENVF" \
+    "echo \"keep
+# note\" && git push --force origin main"
+
+  # One walk over the quoting, so the three readings that used to disagree cannot. An escaped quote is
+  # not a quote, and reading it as one masked a span that hid a real separator and a real path.
+  refuses "an escaped quote does not mask away a separator and a path" \
+    "git commit -m \"a\\\" ; b\" $ENVF"
+  # The escape arm's real job, measured rather than assumed: it prevents a FALSE REFUSAL. With escapes
+  # unhonoured the quote reads as closed early, the rest of the span opens one that never closes, the
+  # walk stops being sure of itself, and the flattened verdict stands — which is the inversion absorbing
+  # the bug, and why the refusal above survives that mutation. What the arm actually buys is this note
+  # being allowed.
+  allows "an escaped quote inside prose does not cost a false refusal" \
+    "echo \"a\\\" ; git push --force origin main\" > n.md"
+
+  # The new failure mode, and the whole point of the inversion: something the walk does not model
+  # withdraws its excuse, so the flattened verdict stands. Each of these would have been allowed by a
+  # parse that guessed.
+  whyu2=""
+  for c in "eval \"git push --force origin main\"" \
+           "git add \"x $ENVF" \
+           "git push --force origin main < <(echo x)" \
+           "cd \$(pwd) && git push --force origin main"; do
+    out="$(gcmd "$c")"; rc=$?
+    [ "$rc" = 2 ] || whyu2="$whyu2 [$c -> exit $rc]"
+  done
+  out="$(gcmd "cat > d.md <<'NOPE'
+git push --force origin main")"; rc=$?
+  [ "$rc" = 2 ] || whyu2="$whyu2 [unterminated here-document -> exit $rc]"
+  [ -z "$whyu2" ] \
+    && ok "a construct the walk cannot read withdraws the excuse rather than granting it" \
+    || bad "a construct the walk cannot read withdraws the excuse rather than granting it ($whyu2)"
+
+  # An unreadable target, from a checkout on the default branch. The substitution carrying a space is
+  # the one that got through: the lexer split it, and one fragment read as an ordinary branch name.
+  whyt2=""
+  for tgt in '$B' '${B}' '$(cat b)' '`cat b`' '~/b' '*' 'ma*n' '?ain'; do
+    out="$(gcmd_in "$RMAIN" "git push --force origin $tgt")"; rc=$?
+    [ "$rc" = 2 ] || whyt2="$whyt2 [$tgt -> exit $rc]"
+  done
+  for tgt in 'feature/x' 'HEAD:feature/x'; do
+    out="$(gcmd_in "$RMAIN" "git push --force origin $tgt")"; rc=$?
+    [ "$rc" = 0 ] || whyt2="$whyt2 [readable $tgt was refused -> exit $rc]"
+  done
+  [ -z "$whyt2" ] \
+    && ok "no unreadable target earns the named-branch allowance, and a readable one still does" \
+    || bad "no unreadable target earns the named-branch allowance, and a readable one still does ($whyt2)"
+
+  # Shell punctuation glued to a path is not part of the filename. The lexer is not a shell parser, so
+  # the word arrived as `.env;` and the anchored test did not match it — the path was there and unseen.
+  all_refused "a path glued to shell punctuation is still seen" \
+    "for r in a b; do git add $ENVF; done" \
+    "(git add $ENVF)" \
+    "git add $ENVF; echo done"
+
+  # The other assertion the prover proved hollow: the quote strip on reported paths could be removed
+  # with the whole section green. Its witness has to take the whitespace fallback, which is where the
+  # tokens keep their quotes.
+  out="$(gcmd "git add \"$ENVF\" \"unclosed")"
+  named2="${out#*credential file: }"; named2="${named2%%. Judged*}"
+  whyn=""
+  case "$named2" in
+    *'"'*|*"'"*) whyn="named with its quote characters: $named2" ;;
+    *"$ENVF"*)   ;;
+    *)           whyn="the file was not named at all, said: ${out:-<nothing>}" ;;
+  esac
+  [ -z "$whyn" ] \
+    && ok "a refused path is named without its quoting even on the cruder reading" \
+    || bad "a refused path is named without its quoting even on the cruder reading ($whyn)"
+
+  # The refusal goes into the model's context and the session transcript, and a command line carries
+  # inline credentials often enough that echoing it verbatim is a leak the diagnosis does not need.
+  out="$(gcmd "TOKEN=abc123secret git push --force origin main")"
+  whyr2=""
+  case "$out" in *abc123secret*) whyr2="the assignment value was echoed" ;; esac
+  case "$out" in *"TOKEN=<redacted>"*) ;; *) whyr2="$whyr2 [the name was not kept]" ;; esac
+  out="$(gcmd "git push --force https://u:p4ssw0rd@host/r main")"
+  case "$out" in *p4ssw0rd*) whyr2="$whyr2 [the URL password was echoed]" ;; esac
+  [ -z "$whyr2" ] \
+    && ok "the refusal names the piece it judged without echoing a credential" \
+    || bad "the refusal names the piece it judged without echoing a credential ($whyr2)"
 else
   echo "  [skip] Bash rail checks (python3 unavailable)"
 fi
