@@ -147,6 +147,9 @@ def parse(cmd: str):
     Returns `(pieces, confident)`. `confident` is False the moment the walk meets something it does not
     model, because a reading it cannot vouch for must not be allowed to excuse anything.
     """
+    # Line endings are normalised once, so a document written on a CRLF machine still matches its own
+    # terminator instead of being read as a body that never ends.
+    cmd = cmd.replace('\r\n', '\n')
     spans, balanced = quoted_spans(cmd)
     confident = balanced and not UNMODELLED.search(blank(cmd, spans))
 
@@ -206,11 +209,18 @@ def lex(text: str):
 
 
 def current_branch() -> str:
+    """The checked-out branch, or the strict answer when it cannot be read.
+
+    A probe that fails used to come back empty, which reads as "not the default branch" and lets a
+    force-push through — a protection lost because a subprocess timed out. The failure now takes the
+    strict side and says so through the refusal, which has the `! <cmd>` escape.
+    """
     try:
-        return subprocess.run(['git', 'branch', '--show-current'],
-                              capture_output=True, text=True, timeout=3).stdout.strip()
+        p = subprocess.run(['git', 'branch', '--show-current'],
+                           capture_output=True, text=True, timeout=3)
+        return p.stdout.strip() if p.returncode == 0 else 'main'
     except Exception:
-        return ''
+        return 'main'
 
 
 def force_push_hit(text: str) -> bool:
@@ -218,16 +228,23 @@ def force_push_hit(text: str) -> bool:
     over one piece it says whether that piece is the dangerous one."""
     if not re.search(r'\bpush\b', text):
         return False
+    # The two signals are read from different text, and the asymmetry is the point: each errs toward
+    # refusing. The force flag is read RAW, so quoting it cannot hide it. The lease is read DE-QUOTED, so
+    # a quoted *mention* of `--force-with-lease` — in a message, in prose — cannot switch the protection
+    # off. Reading both from the same text would let one of them be faked.
     hard = bool(re.search(r'--force(?!-with-lease)\b', text)) or bool(
         re.search(r'(?:^|\s)-[A-Za-z]*f(?:\s|$)', text))
-    if not hard or '--force-with-lease' in text:
+    if not hard or '--force-with-lease' in dequote(text):
         return False
     if re.search(r'\b(main|master)\b', text):
         return True
     toks = lex(text)
     try:
+    # A refspec's source half may legitimately carry characters this guard cannot evaluate — `HEAD~1`
+        # is an ordinary way to name a commit — while what the push lands on is the half after the colon.
+        # Judging the whole word refused an explicitly named feature branch for the shape of its source.
         positionals = [t for t in toks[toks.index('push') + 1:]
-                       if not t.startswith('-') and not UNRESOLVABLE.search(t)]
+                       if not t.startswith('-') and not UNRESOLVABLE.search(t.rsplit(':', 1)[-1])]
     except ValueError:
         positionals = []
     # An explicitly named branch that is not the default earns its allowance — but only where the text

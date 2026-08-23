@@ -5575,6 +5575,35 @@ git push --force origin main")"; rc=$?
 
   # Shell punctuation glued to a path is not part of the filename. The lexer is not a shell parser, so
   # the word arrived as `.env;` and the anchored test did not match it — the path was there and unseen.
+  # A marker glued to a word is not a comment — the whitespace precondition in the walk. Nothing had
+  # pinned it, so the precondition could be dropped and a path containing one would vanish.
+  # Where the branch cannot be read at all — no repository under the directory the hook runs in — the
+  # probe used to come back empty, which reads as "not the default branch" and let the push through. A
+  # protection lost because a subprocess failed is the cheapest kind of hole there is.
+  NOREPO="$T11/gs-norepo"; mkdir -p "$NOREPO"
+  out="$(gcmd_in "$NOREPO" 'git push --force origin $B')"; rc=$?
+  [ "$rc" = 2 ] \
+    && ok "a probe that cannot answer takes the strict side" \
+    || bad "a probe that cannot answer takes the strict side (exit $rc, said: $out)"
+  refuses "a marker glued to a word is not a comment" \
+    "git add a#b $ENVF"
+  # A refspec's source half may carry what this guard cannot evaluate; the destination is what matters.
+  # Driven from a checkout ON the default branch, because that is the only place the answer differs: run
+  # from anywhere else the fall-through allows it either way and the assertion tests nothing.
+  out="$(gcmd_in "$RMAIN" "git push --force origin HEAD~1:feature/x")"; rc=$?
+  [ "$rc" = 0 ] \
+    && ok "a refspec whose source half is unreadable still names its destination" \
+    || bad "a refspec whose source half is unreadable still names its destination (exit $rc, said: $out)"
+  # A quoted mention of the lease flag must not switch the protection off.
+  refuses "a quoted mention of the lease flag does not disable the block" \
+    "git push --force origin main -m \"see --force-with-lease\""
+  # A document written with CRLF still matches its own terminator.
+  CR=$'\r'
+  CRLF="cat > d.md <<'EOF'$CR
+Never run: git push --force origin main$CR
+EOF$CR
+"
+  allows "a document written with CRLF still matches its terminator" "$CRLF"
   all_refused "a path glued to shell punctuation is still seen" \
     "for r in a b; do git add $ENVF; done" \
     "(git add $ENVF)" \
