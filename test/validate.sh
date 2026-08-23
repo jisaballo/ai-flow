@@ -5000,7 +5000,7 @@ lad30="$(grep -cE "Cost ladder|derived check" README.md)"
   && ok "the cost ladder stays out of the front door" \
   || bad "the cost ladder stays out of the front door ($lad30 line(s))"
 
-echo "== C26: the Bash rail judges what it can read, and only what is really git =="
+echo "== C31: the Bash rail judges what it can read, and only what is really git =="
 # Conformance stubs, generated from the Verifiable Criteria before any code was written. Every line
 # below is unconditionally red on purpose: Execute replaces each one with the fixture that actually
 # drives global/hooks/git-safety.py and asserts the criterion in BOTH directions. A stub that turns
@@ -5070,25 +5070,123 @@ if [ "$PY3" = 1 ]; then
   out="$(gcmd 'git push --force origin main')"; rc=$?
   [ "$rc" = 2 ] && ok "the same fixture still refuses a well-formed hard force-push to main" \
                 || bad "the same fixture still refuses a well-formed hard force-push to main (exit $rc, said: $out)"
+
+  # --- Step 2: the force-push protection, judged on a parsed command -------
+  refuses() {  # $1 = label, $2 = command -> the rail must refuse it
+    out="$(gcmd "$2")"; rc=$?
+    [ "$rc" = 2 ] && ok "$1" || bad "$1 (exit $rc, said: $out)"
+  }
+  allows() {   # $1 = label, $2 = command -> the rail must stand aside
+    out="$(gcmd "$2")"; rc=$?
+    [ "$rc" = 0 ] && ok "$1" || bad "$1 (exit $rc, said: $out)"
+  }
+  all_refused() {  # $1 = label, $2.. = commands -> one verdict, naming whatever got through
+    label="$1"; shift; whyr=""
+    for c in "$@"; do
+      out="$(gcmd "$c")"; rc=$?
+      [ "$rc" = 2 ] || whyr="$whyr [$c -> exit $rc]"
+    done
+    [ -z "$whyr" ] && ok "$label" || bad "$label ($whyr)"
+  }
+
+  # The refusal that started this task: an archive write, reproduced from the session that hit it. There
+  # is no git invocation anywhere in it. What condemned it was an unrelated `rm -rf` satisfying the
+  # hard-force test, the word push sitting in prose, and the word main appearing throughout.
+  ARCHIVE_WRITE="cat > .ai-flow/archive/summary.md <<'EOF'
+The step was to rm -rf the stale copy, then push the result. The main
+lesson: the rail judges strings it has not parsed.
+EOF"
+  allows "an archive write with no git invocation anywhere is not refused" "$ARCHIVE_WRITE"
+
+  # A safe push and an unrelated deletion. Flattened into one string the force flag belongs to whichever
+  # command the matcher likes; scoped to a piece it belongs to the `rm`, which invokes no git at all.
+  allows "a force flag in another segment does not condemn a safe push" \
+    "git push origin HEAD:refs/x && rm -rf /tmp/main"
+
+  # Prose that quotes the forbidden command. This is the shape that refused this session's own
+  # investigation script, whose fixture strings named git and a subcommand with nothing being invoked.
+  allows "a quoted forbidden command is not refused" \
+    'echo "git push --force origin main" >> notes.md'
+
+  # The two halves of the closed rule, and they differ in exactly one character: whether the opening
+  # line redirects into a file. Same body, opposite verdicts — which is what makes this a discriminator
+  # rather than a blanket exemption for here-documents.
+  FORBIDDEN_BODY="Never run: git push --force origin main"
+  allows "a here-document written to a file is judged without its body" \
+    "cat > doc.md <<'EOF'
+$FORBIDDEN_BODY
+EOF"
+  refuses "a here-document piped into an interpreter is judged with its body" \
+    "bash <<'EOF'
+$FORBIDDEN_BODY
+EOF"
+
+  # Every force-push form measured as refused before this change, enumerated so that a shape dropped
+  # from coverage shows up as a deletion rather than as an absence. The three that pin the choice to
+  # scope rather than position are `sudo`, the `for ... do` loop and `xargs`: under a matcher that
+  # required git to be the command word, all three would go quiet.
+  NEWLINE_SCRIPT="cd /repo
+git push --force origin main"
+  INTERPRETER_BODY="bash <<'EOF'
+git push --force origin main
+EOF"
+  all_refused "every recorded force-push shape is still refused" \
+    "git push --force origin main" \
+    "sudo git push --force origin main" \
+    "GIT_SSH_COMMAND=ssh git push --force origin main" \
+    "env X=1 git push -f origin main" \
+    "time git push -f origin main" \
+    "/usr/bin/git push --force origin main" \
+    "git -C /repo push --force origin main" \
+    "git --git-dir=/r/.git push --force main" \
+    "cd /repo && git push --force origin main" \
+    "for r in a b; do git push -f main; done" \
+    "(git push --force origin main)" \
+    "$NEWLINE_SCRIPT" \
+    "$INTERPRETER_BODY" \
+    "xargs -n0 git push --force origin main"
+
+  # The allowed side of the same protection, which no criterion names but which a narrowing could break
+  # in the other direction: a rail that refuses these is a rail nobody can push with.
+  allows "a lease-guarded force-push to main is still allowed" \
+    "git push --force-with-lease origin main"
+  allows "a hard force-push to a feature branch is still allowed" \
+    "git push --force origin feature/x"
+
+  # A target the rail cannot read. Judging one runnable piece means a `B=main` assignment in another
+  # piece is no longer visible, and flattening only ever caught it while the assignment sat in the same
+  # command — a variable set in an earlier one was never covered. So an unresolvable positional stops
+  # earning the allowance a named branch earns, and the judgement falls to the checked-out branch. Three
+  # legs, because the first alone is satisfied by a rail that refuses every force-push from a main
+  # checkout: the second proves the fall-through reads the branch, the third proves a named branch is
+  # still believed.
+  gcmd_in() {  # $1 = directory, $2 = command -> the rail as if the session were in that directory
+    ( cd "$1" && python3 -c 'import json,sys; print(json.dumps({"tool_input":{"command":sys.argv[1]}}))' "$2" \
+        | python3 "$GS" 2>&1 )
+  }
+  RMAIN="$T11/gs-main"; mkproj "$RMAIN" main
+  RFEAT="$T11/gs-feat"; mkproj "$RFEAT" feature/x
+  whyu=""
+  out="$(gcmd_in "$RMAIN" 'git push --force origin $B')"; rc=$?
+  [ "$rc" = 2 ] || whyu="$whyu [from main, a variable target was allowed: exit $rc]"
+  out="$(gcmd_in "$RFEAT" 'git push --force origin $B')"; rc=$?
+  [ "$rc" = 0 ] || whyu="$whyu [from a feature branch, a variable target was refused: exit $rc]"
+  out="$(gcmd_in "$RMAIN" 'git push --force origin feature/x')"; rc=$?
+  [ "$rc" = 0 ] || whyu="$whyu [from main, a named feature branch was refused: exit $rc]"
+  [ -z "$whyu" ] \
+    && ok "a force-push to an unresolvable target is judged against the checked-out branch" \
+    || bad "a force-push to an unresolvable target is judged against the checked-out branch ($whyu)"
+
+  # --- Step 3: the secret-staging protection, on the same parsed command ---
+  bad "a quoted staging command is not refused ($STUB)"
+  bad "every recorded secret-staging shape is still refused ($STUB)"
+  bad "a commit message mentioning the secrets file is not refused ($STUB)"
+  bad "the refusal names the file without its quote characters ($STUB)"
+  bad "a command that cannot be lexed still gets the cruder scan ($STUB)"
+  bad "a broad staging written with a quoted path is still inspected ($STUB)"
 else
   echo "  [skip] Bash rail checks (python3 unavailable)"
 fi
-
-# --- Step 2: the force-push protection, judged on a parsed command -------
-bad "an archive write with no git invocation anywhere is not refused ($STUB)"
-bad "a force flag in another segment does not condemn a safe push ($STUB)"
-bad "a quoted forbidden command is not refused ($STUB)"
-bad "a here-document written to a file is judged without its body ($STUB)"
-bad "a here-document piped into an interpreter is judged with its body ($STUB)"
-bad "every recorded force-push shape is still refused ($STUB)"
-
-# --- Step 3: the secret-staging protection, on the same parsed command ---
-bad "a quoted staging command is not refused ($STUB)"
-bad "every recorded secret-staging shape is still refused ($STUB)"
-bad "a commit message mentioning the secrets file is not refused ($STUB)"
-bad "the refusal names the file without its quote characters ($STUB)"
-bad "a command that cannot be lexed still gets the cruder scan ($STUB)"
-bad "a broad staging written with a quoted path is still inspected ($STUB)"
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
