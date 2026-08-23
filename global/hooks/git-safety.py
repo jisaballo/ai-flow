@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """PreToolUse/Bash guard (global): blocks hard force-push to main/master and staging of secret/credential files.
 Reads the hook JSON on stdin; exit 2 blocks the tool call and feeds the message back to Claude."""
-import sys, json, re, subprocess
+import sys, json, re, shlex, subprocess
 
 
 def is_secret(path: str) -> bool:
@@ -25,6 +25,41 @@ HEREDOC_OPEN = re.compile(r"""<<-?\s*'?"?([A-Za-z_][A-Za-z0-9_]*)'?"?""")
 # descriptor, not a file, so they are excluded: a body is not written just because stderr was merged.
 FILE_REDIRECT = re.compile(r'>>?\s*(?!&)\S')
 QUOTED_SPAN = re.compile(r"""'[^']*'|"[^"]*\"""")
+
+
+def strip_comment(line: str) -> str:
+    """A trailing shell comment is not part of the command.
+
+    Reading one as part of the command is how a note *about* a forbidden operation gets refused *as*
+    the operation: `git add README.md  # never add .env` stages one file and mentions another. Quote
+    state is tracked because `-m "fix #1"` is a message, not a comment.
+    """
+    quote = ''
+    for i, ch in enumerate(line):
+        if quote:
+            if ch == quote:
+                quote = ''
+        elif ch in '\'"':
+            quote = ch
+        elif ch == '#' and (i == 0 or line[i - 1].isspace()):
+            return line[:i]
+    return line
+
+
+def lex(seg: str):
+    """The words of one command, with its quotes understood.
+
+    This is what separates a file being staged from a file being mentioned: under a whitespace split
+    `git commit -m "add .env to gitignore"` yields a bare `.env` token and the message reads as a
+    staged secret. It closes the opposite hole too — `git add "."` was never inspected at all, because
+    the broad-add test could not see a quoted dot, so a repository holding an untracked secret was
+    staged with no check. A command that cannot be lexed falls back to the whitespace split, which is
+    the stricter of the two readings; never to no scan.
+    """
+    try:
+        return shlex.split(seg)
+    except ValueError:
+        return [t for t in re.split(r'\s+', seg) if t]
 
 
 def segments(cmd: str):
@@ -58,7 +93,8 @@ def segments(cmd: str):
         i += 1  # the terminator line is not a command either
         if not FILE_REDIRECT.search(opener):
             kept.extend(body)  # fed to a command's standard input, so still a command
-    return [s for s in re.split(r'&&|\|\||;|\||\n', '\n'.join(kept)) if s.strip()]
+    text = '\n'.join(strip_comment(line) for line in kept)
+    return [s for s in re.split(r'&&|\|\||;|\||\n', text) if s.strip()]
 
 
 def invokes(seg: str, subcommand: str) -> bool:
@@ -141,15 +177,17 @@ def main():
                 )
                 sys.exit(2)
 
-    # 2) Staging secret/credential files
-    if re.search(r'\bgit\b', cmd) and re.search(r'\b(add|commit)\b', cmd):
-        danger = []
-        # explicitly named files in the command
-        for tok in re.split(r'\s+', cmd):
-            if tok and not tok.startswith('-') and is_secret(tok):
-                danger.append(tok)
+    # 2) Staging secret/credential files — judged one runnable piece at a time, like the protection
+    # above, and with the piece's own words rather than whatever the whitespace fell between.
+    for seg in segments(cmd):
+        stages = invokes(seg, 'add')
+        if not stages and not invokes(seg, 'commit'):
+            continue
+        toks = lex(seg)
+        # explicitly named files in this piece of the command
+        danger = [t for t in toks if not t.startswith('-') and is_secret(t)]
         # broad add (git add . / -A / --all / -u): inspect what would be staged
-        if not danger and re.search(r'\badd\b', cmd) and re.search(r'(?:\s|^)(-A|--all|-u|\.)(?:\s|$)', cmd):
+        if not danger and stages and any(t in ('-A', '--all', '-u', '.') for t in toks):
             try:
                 out = subprocess.run(
                     ['git', 'status', '--porcelain', '--untracked-files=all'],
@@ -167,6 +205,7 @@ def main():
             uniq = ', '.join(sorted(set(danger)))
             print(
                 f"BLOCKED: this command appears to stage a secret/credential file: {uniq}. "
+                f"Judged this part of the command: {seg.strip()!r}. "
                 "Never commit secrets. If it's a false positive, run it yourself with '! <cmd>' "
                 "or add the file to .gitignore.",
                 file=sys.stderr,

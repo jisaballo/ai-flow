@@ -5178,12 +5178,87 @@ EOF"
     || bad "a force-push to an unresolvable target is judged against the checked-out branch ($whyu)"
 
   # --- Step 3: the secret-staging protection, on the same parsed command ---
-  bad "a quoted staging command is not refused ($STUB)"
-  bad "every recorded secret-staging shape is still refused ($STUB)"
-  bad "a commit message mentioning the secrets file is not refused ($STUB)"
-  bad "the refusal names the file without its quote characters ($STUB)"
-  bad "a command that cannot be lexed still gets the cruder scan ($STUB)"
-  bad "a broad staging written with a quoted path is still inspected ($STUB)"
+  # The secrets file is spelled through a variable throughout this block. Naming it literally in a
+  # fixture is what got this session's own investigation script refused by the rail under test, and
+  # writing this file with a here-document would be refused for the same reason.
+  ENVF=".env"
+
+  # The shape that refused this task's own investigation: a helper invocation whose argument quotes a
+  # staging command. Nothing is staged; the words are inside a string.
+  allows "a quoted staging command is not refused" \
+    "b \"git add README.md  # never add $ENVF\""
+
+  # Every secret-staging form measured as refused before this change, enumerated so a shape dropped
+  # from coverage shows up as a deletion rather than an absence. The two quoted-path rows are the ones
+  # that pin the reading of quotes: under a de-quoted scan they would go quiet.
+  all_refused "every recorded secret-staging shape is still refused" \
+    "git add $ENVF" \
+    "git add '$ENVF'" \
+    "git add \"$ENVF\"" \
+    "sudo git add $ENVF" \
+    "git -C /repo add $ENVF" \
+    "cd /repo && git add $ENVF" \
+    "git commit $ENVF -m wip" \
+    "git add certs/server.pem" \
+    "git add .ssh/id_rsa" \
+    "git add gcp-service-account.json"
+
+  # A message that mentions the file, and a comment beside a legitimate staging. Under a whitespace
+  # split both yield a bare token that reads as a staged secret; neither stages anything.
+  allows "a commit message mentioning the secrets file is not refused" \
+    "git commit -m \"add $ENVF to gitignore\""
+  allows "a comment beside a legitimate staging is not refused" \
+    "git add README.md  # TODO: never add $ENVF"
+  # The other side of that: a message is a message, but a path is still a path even in the same command.
+  refuses "a real staging is still refused when a message sits beside it" \
+    "git commit -m \"wip\" $ENVF"
+
+  # The refusal names what it found, and names it as a path rather than as whatever the whitespace fell
+  # between. Before this change a quoted path was reported with its quote characters attached.
+  # Asserted against the reported file list alone, not the whole message: the message also echoes the
+  # piece of the command it judged, and that echo shows the command verbatim on purpose — quotes and
+  # all. Matching the whole message would read that echo as the defect it is there to diagnose.
+  # One description for both outcomes, with the diagnosis in parentheses. An assertion that renames
+  # itself on failure is invisible to anything indexing by description — the mutation harness read it as
+  # still green, and the criteria audit maps criterion to assertion the same way.
+  out="$(gcmd "git add \"$ENVF\"")"
+  named="${out#*credential file: }"; named="${named%%. Judged*}"
+  whyq=""
+  case "$named" in
+    *'"'*|*"'"*) whyq="named with its quote characters: $named" ;;
+    *"$ENVF"*)   ;;
+    *)           whyq="the file was not named at all, said: ${out:-<nothing>}" ;;
+  esac
+  [ -z "$whyq" ] \
+    && ok "the refusal names the file without its quote characters" \
+    || bad "the refusal names the file without its quote characters ($whyq)"
+
+  # An unbalanced quote cannot be lexed. The fallback is the whitespace split, which is the stricter of
+  # the two readings — falling back to no scan at all would turn an unreadable command into a free pass.
+  refuses "a command that cannot be lexed still gets the cruder scan" \
+    "git add $ENVF \"unclosed"
+
+  # The broad-staging path, and the hole it closes. A repository holding an untracked secret, staged
+  # wholesale: the unquoted forms were inspected, the quoted ones were not seen at all. Run from inside
+  # the repository, because this is the one branch of the rail that asks git what would be staged.
+  RSEC="$T11/gs-secret"; mkproj "$RSEC" main
+  printf 'SECRET=1\n' > "$RSEC/$ENVF"
+  whyb=""
+  for broad in "git add ." "git add \".\"" "git add '.'" "git add -A" "git add --all" "git add -u"; do
+    out="$(gcmd_in "$RSEC" "$broad")"; rc=$?
+    [ "$rc" = 2 ] || whyb="$whyb [$broad -> exit $rc]"
+  done
+  [ -z "$whyb" ] \
+    && ok "a broad staging written with a quoted path is still inspected" \
+    || bad "a broad staging written with a quoted path is still inspected ($whyb)"
+  # The control for that group: the same repository, the same broad staging, once the file is not a
+  # secret. Without it every row above is satisfied by a rail that refuses all broad staging.
+  rm -f "$RSEC/$ENVF"; printf 'x\n' > "$RSEC/notes.txt"
+  out="$(gcmd_in "$RSEC" "git add .")"; rc=$?
+  [ "$rc" = 0 ] && ok "the same broad staging is allowed once no secret would be staged" \
+                || bad "the same broad staging is allowed once no secret would be staged (exit $rc, said: $out)"
+  # And the exemption that predates this change, unmoved.
+  allows "an example environment file is still allowed" "git add $ENVF.example"
 else
   echo "  [skip] Bash rail checks (python3 unavailable)"
 fi
