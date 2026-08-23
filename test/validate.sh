@@ -5068,7 +5068,100 @@ else
   echo "  [skip] Bash rail checks (python3 unavailable)"
 fi
 
+echo "== C32: the rail judges the target it reads, not a word it recognises =="
+# C31 above is scoped to the payload the rail reads and says nothing about how a command is matched.
+# This section is the other half: which orders count as forcing the trunk, which count as deleting it,
+# and — the question neither the rail nor its suite has ever asked — what the command actually points at.
+#
+# Two tables carry the whole verdict, and they are tables on purpose: a shape that stops being covered
+# names itself here instead of disappearing into a helper. Their sizes are a note, never part of an
+# assertion's name, because a name that counts is a name that has to be edited every time the set grows.
+#
+# The refused table's first block is inherited: the shapes an earlier task measured as dangerous and
+# recorded in prose, never in code. Building it is what priced the destination reader — three of them
+# read as harmless to a positional reader, two from shell punctuation glued to the token and one whose
+# target the flat scan only ever caught by accident.
+if [ "$PY3" = 1 ]; then
+  GS32="$HK/git-safety.py"
+  R32="$T11/rail32"; mkproj "$R32" feature   # a non-trunk checkout: the only position from which a
+                                             # command that names no branch reveals what it assumes
+  rail32() {  # $1 = command, $2 = cwd -> combined output, returns the rail's exit code
+    python3 -c 'import json,sys; print(json.dumps({"tool_input":{"command":sys.argv[1]}}))' "$1" \
+      | ( cd "$2" && python3 "$GS32" 2>&1 )
+  }
+  refuse32() {  # $1 = label, $2 = cwd, $3.. = commands that must each exit 2
+    label="$1"; cwd="$2"; shift 2; why32=""
+    for c in "$@"; do
+      out="$(rail32 "$c" "$cwd")"; rc=$?
+      [ "$rc" = 2 ] || why32="$why32 [$c -> exit $rc]"
+    done
+    [ -z "$why32" ] && ok "$label" || bad "$label ($why32)"
+  }
+  allow32() {  # $1 = label, $2 = cwd, $3.. = commands that must each exit 0 in silence
+    label="$1"; cwd="$2"; shift 2; why32=""
+    for c in "$@"; do
+      out="$(rail32 "$c" "$cwd")"; rc=$?
+      [ "$rc" = 0 ] || why32="$why32 [$c -> exit $rc, said: $out]"
+    done
+    [ -z "$why32" ] && ok "$label" || bad "$label ($why32)"
+  }
 
+  # --- the control, in this section's own fixture ---------------------------
+  # Every check below is satisfied by a rail that refuses everything, and every allow check by a rail
+  # that refuses nothing. Neither reading is available while these two stand together, and they stand
+  # in the same fixture as the rest: same hook, same invocation, same checkout.
+  refuse32 "the fixture refuses a well-formed hard force-push to the trunk" "$R32" \
+    'git push --force origin main'
+  allow32 "the fixture allows an ordinary push to the trunk" "$R32" \
+    'git push origin main'
+
+  # --- A12: the inherited non-regression set, in code for the first time ----
+  refuse32 "every recorded force-push shape is still refused" "$R32" \
+    'git push --force origin main' \
+    'sudo git push --force origin main' \
+    'GIT_TRACE=1 git push --force origin main' \
+    'env GIT_TRACE=1 git push --force origin main' \
+    'time git push --force origin main' \
+    '/usr/bin/git push --force origin main' \
+    'git -C /tmp/x push --force origin main' \
+    'git --git-dir=/tmp/x/.git push --force origin main' \
+    'cd /tmp/x && git push --force origin main' \
+    'for i in 1 2; do git push --force origin main; done' \
+    '(git push --force origin main)' \
+    'echo hi
+git push --force origin main' \
+    "echo 'git push --force origin main' | bash" \
+    'echo main | xargs -I{} git push --force origin {}'
+
+  # --- A5: an order that reaches every ref reaches the trunk ---------------
+  # Driven from the non-trunk checkout on purpose: on the trunk these pass for the wrong reason,
+  # because the fallback would answer with the trunk whatever the command actually said.
+  refuse32 "a force that sends every ref reaches the trunk from a non-trunk checkout" "$R32" \
+    'git push --all --force origin' \
+    'git push --branches --force origin' \
+    'git push --all -f origin'
+
+  # --- A8, A9, A13: the allowed side, which is where the whole change lives -
+  # Without these the refused tables above are all satisfied by a rail that refuses everything.
+  allow32 "the destination decides, not the word: the trunk on the source side is allowed" "$R32" \
+    'git push --force origin main:feature' \
+    'git push origin +main:feature' \
+    'git push --force origin HEAD:feature'
+  allow32 "a branch whose name contains the trunk word is not the trunk" "$R32" \
+    'git push --force origin feature/main-menu' \
+    'git push --force origin fix/main-nav' \
+    'git push origin +feature/main-menu' \
+    'git push --force origin feature/domain-model' \
+    'git push --force origin docs/maintenance'
+  allow32 "an explicit non-trunk destination is allowed, and a bare force falls back to the checkout" "$R32" \
+    'git push --force origin feature' \
+    'git push origin +feature' \
+    'git push --force origin' \
+    'git push --force-with-lease origin main'
+
+else
+  echo "  [skip] target-reading checks (python3 unavailable)"
+fi
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"

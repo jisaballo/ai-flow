@@ -20,6 +20,81 @@ def is_secret(path: str) -> bool:
     return False
 
 
+TRUNK = ('main', 'master')
+
+# A literal ref name, as opposed to something the shell or another program will substitute before git
+# ever sees it. Braces and `$` are excluded on purpose: `{}` is an xargs placeholder and `$BRANCH` a
+# shell variable, and neither says what the destination will be. The charset is what git itself accepts
+# in a refspec (`+`, `:`, `^`, `~`, `@` included) minus those substitution markers.
+LITERAL_REF = re.compile(r'^[A-Za-z0-9._/+:^~@\-]+$')
+
+
+def push_args(cmd: str):
+    """The tokens after the `push` subcommand, split into flags and positionals.
+
+    Quotes are stripped because a refspec is often written inside them and git never sees them. Shell
+    punctuation glued to a token is deliberately *not* stripped: a target written inside a loop arrives
+    as `main;` and one inside a subshell as `main)`, and leaving them is what makes those tokens fail
+    the literal-ref test below — which routes the command to the broad read that already convicts it.
+    Trimming them was measured to protect nothing the broad read does not already protect."""
+    toks = re.split(r'\s+', cmd.strip())
+    try:
+        after = toks[toks.index('push') + 1:]
+    except ValueError:
+        return [], []
+    flags, positionals = [], []
+    for tok in after:
+        if tok.startswith('-'):
+            flags.append(tok)
+            continue
+        ref = tok.strip('"\'')
+        if ref:
+            positionals.append(ref)
+    return flags, positionals
+
+
+def targets_trunk(cmd: str, flags, positionals):
+    """Whether the command's own text says the trunk is a destination.
+
+    Three answers, not two. `None` means the command names no refspec at all, so its destination is
+    the checkout's current branch and is not in the text for this function to read — the caller
+    answers that one.
+
+    The destination is the right of `src:dst`, or the whole ref when there is no colon. The side
+    matters: pushing the trunk *into* a feature branch is harmless, and no test over the flattened
+    command can tell that from the reverse, because both spell the trunk's name."""
+    if any(f in ('--mirror', '--all', '--branches') for f in flags):
+        return True  # every ref is sent, so the trunk is among them whatever branch we are on
+    resolved, unreadable = [], False
+    for ref in positionals[1:]:  # the first positional is the repository, never a refspec
+        if not LITERAL_REF.match(ref):
+            unreadable = True
+            continue
+        dst = ref.lstrip('+')
+        if ':' in dst:
+            dst = dst.split(':')[-1]
+        resolved.append(re.sub(r'^refs/heads/', '', dst))
+    if any(dst in TRUNK for dst in resolved):
+        return True
+    if unreadable:
+        # The destination will be substituted, so the narrow read cannot answer for this command.
+        # Fall back to the broad read this guard has always used: it convicts on the trunk's name
+        # appearing anywhere, which over-refuses — and over-refusing is the safe direction here.
+        return bool(re.search(r'\b(main|master)\b', cmd))
+    return False if resolved else None
+
+
+def current_branch() -> str:
+    """The branch of the checkout, or '' when it cannot be read. Run in this process's own directory,
+    which is not necessarily the one the session declared — a known defect, tracked separately."""
+    try:
+        return subprocess.run(
+            ['git', 'branch', '--show-current'], capture_output=True, text=True, timeout=3
+        ).stdout.strip()
+    except Exception:
+        return ''
+
+
 def main():
     try:
         data = json.load(sys.stdin)
@@ -46,26 +121,10 @@ def main():
         )
         with_lease = '--force-with-lease' in cmd
         if hard_force and not with_lease:
-            if re.search(r'\b(main|master)\b', cmd):
-                targets_main = True  # main/master named explicitly
-            else:
-                # no main/master mentioned: if an explicit (non-main) branch is given, allow;
-                # only fall back to the current branch when no refspec is provided.
-                toks = re.split(r'\s+', cmd.strip())
-                try:
-                    positionals = [t for t in toks[toks.index('push') + 1:] if not t.startswith('-')]
-                except ValueError:
-                    positionals = []
-                if len(positionals) >= 2:
-                    targets_main = False  # explicit non-main branch
-                else:
-                    try:
-                        cur = subprocess.run(
-                            ['git', 'branch', '--show-current'], capture_output=True, text=True, timeout=3
-                        ).stdout.strip()
-                        targets_main = cur in ('main', 'master')
-                    except Exception:
-                        targets_main = False
+            flags, positionals = push_args(cmd)
+            targets_main = targets_trunk(cmd, flags, positionals)
+            if targets_main is None:
+                targets_main = current_branch() in TRUNK  # no refspec: git pushes the current branch
             if targets_main:
                 print(
                     "BLOCKED: hard force-push to main/master is forbidden (your 'Never' rule). "
