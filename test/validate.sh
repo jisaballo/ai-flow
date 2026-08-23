@@ -5259,6 +5259,207 @@ EOF"
                 || bad "the same broad staging is allowed once no secret would be staged (exit $rc, said: $out)"
   # And the exemption that predates this change, unmoved.
   allows "an example environment file is still allowed" "git add $ENVF.example"
+
+  # --- Step R1: the cut understands quotes, and a wrapped command is one command ----
+  # Both of these were refused before this task and were allowed by its first three commits. They are
+  # not exotic: a semicolon in a commit message and a command wrapped across lines are ordinary writing.
+  # The cause was one cut made in the raw text before any quote was understood, which severed a quoted
+  # argument and left each half too incomplete to judge.
+  all_refused "a separator inside a quoted argument no longer severs the command" \
+    "git commit -m \"wip; more\" $ENVF" \
+    "git commit -m \"a && b\" $ENVF" \
+    "git commit -m \"a | b\" $ENVF" \
+    "git push --force -o \"a;b\" origin main" \
+    "git push --force -o \"x&&y\" origin main"
+
+  # The mirror of the same cut, and the direction this whole task exists for: quoted prose carrying a
+  # separator must NOT be refused. Without this leg the fix above could have been "cut nowhere", which
+  # would refuse every note again.
+  CONT_PROSE='echo "first do this; then git push --force origin main" > notes.md'
+  allows "quoted prose carrying a separator is still not refused" "$CONT_PROSE"
+
+  # A trailing backslash joins two lines into one command. The continuation is written with a real
+  # backslash-newline inside a double-quoted bash string, which is the only way to put one here.
+  CONT_AFTER_FLAG="git push --force \\
+origin main"
+  CONT_BEFORE_FLAG="git push \\
+  --force origin main"
+  CONT_STAGING="git add \\
+  $ENVF"
+  all_refused "a command wrapped across lines is judged as one command" \
+    "$CONT_AFTER_FLAG" "$CONT_BEFORE_FLAG" "$CONT_STAGING"
+
+  # --- Step R2: the here-document's fate follows the command that reads it ----
+  # The earlier rule read any redirect on the opening line as "this body is being written". An
+  # interpreter whose own output goes to a file satisfied that and had its body dropped — a force-push
+  # executed with nothing judging it. The question is now about the command, not about the redirect.
+  all_refused "an interpreter reading a body is judged even when its own output is redirected" \
+    "bash <<'EOF' > out.log
+$FORBIDDEN_BODY
+EOF" \
+    "bash <<'EOF' 2> errors.log
+$FORBIDDEN_BODY
+EOF" \
+    "sh <<'EOF' >> run.log
+$FORBIDDEN_BODY
+EOF"
+
+  # And the writing side still writes, which is what keeps the rule from being "judge every body".
+  # Three plain writers of standard input, each redirecting into a file.
+  whyw2=""
+  for writer in "cat > doc.md" "tee doc.md > /dev/null" "cat >> doc.md"; do
+    out="$(gcmd "$writer <<'EOF'
+$FORBIDDEN_BODY
+EOF")"; rc=$?
+    [ "$rc" = 0 ] || whyw2="$whyw2 [$writer -> exit $rc]"
+  done
+  [ -z "$whyw2" ] \
+    && ok "a plain writer of standard input still writes its body rather than running it" \
+    || bad "a plain writer of standard input still writes its body rather than running it ($whyw2)"
+
+  # A here-string is not a here-document. Read as one, the opener regex captures the first word of the
+  # string as a terminator tag and everything up to a line matching it becomes body. The last line here
+  # is that pseudo-tag: without it the hunt finds no terminator and the body is judged anyway, so the
+  # assertion would pass for the wrong reason and prove nothing about the operator being read correctly.
+  HERESTRING="cat > out.txt <<<\"never text\"
+git push --force origin main
+never"
+  refuses "a here-string does not swallow the command after it" "$HERESTRING"
+
+  # A terminator that never arrives means the body was misread, not written. Judge those lines.
+  UNTERMINATED="cat > doc.md <<'NOPE'
+git push --force origin main"
+  refuses "a body whose terminator never arrives is judged, not treated as a document" "$UNTERMINATED"
+
+  # The plain form wants its terminator exactly; a body line that merely looks like it must not end the
+  # document early, or the original false fire reopens for everything after that line.
+  LOOKALIKE="cat > doc.md <<'EOF'
+  EOF
+$FORBIDDEN_BODY
+EOF"
+  allows "an indented look-alike terminator does not end a plain here-document" "$LOOKALIKE"
+  # The dash form is the one that accepts an indented terminator, and it still does.
+  DASHFORM="cat > doc.md <<-EOF
+$FORBIDDEN_BODY
+	EOF"
+  allows "the dash form still accepts an indented terminator" "$DASHFORM"
+
+  # --- Step R3: coverage by construction, not by a list ---------------------
+  # The enumerated tables above are named regression rows and they stay. But an enumerated list cannot
+  # measure what it omits, and every one of the nine shapes this task lost lay outside its 24-row list —
+  # twice over, because the note "a non-regression list proves nothing about what is not on it" was
+  # already written in this task's own spec before the second miss.
+  #
+  # So the two sets below are BUILT rather than listed: one forbidden operation combined with every
+  # wrapper, quoting, separator, continuation and here-document form to hand, and one set of the same
+  # words in positions where nothing is invoked. Each set knows by construction which it is, so the
+  # assertion is an invariant over the whole product instead of a row someone remembered to add.
+  DC="git push --force origin main"
+  DS="git add $ENVF"
+
+  DANGEROUS=(
+    "$DC" "sudo $DC" "X=1 $DC" "env X=1 $DC" "time $DC" "/usr/bin/$DC"
+    "cd /repo && $DC" "for r in a b; do $DC; done" "($DC)" "xargs -n0 $DC"
+    "true; $DC" "true && $DC" "true || $DC" "echo hi | $DC"
+    "$DC # keep the branch" "$DC -o \"a;b\"" "$DC -o \"x&&y\""
+    "git -C /repo push --force origin main" "git --git-dir=/r/.git push --force main"
+    "$DS" "sudo $DS" "cd /r && $DS" "true; $DS" "$DS -v"
+    "git commit -m \"a;b\" $ENVF" "git commit -m \"note # 1\" $ENVF"
+    "git add certs/server.pem" "git add .ssh/id_rsa" "git add gcp-service-account.json"
+  )
+  # the multi-line forms, which cannot sit on one line of an array literal
+  DANGEROUS+=("git push --force \\
+origin main")
+  DANGEROUS+=("git add \\
+  $ENVF")
+  DANGEROUS+=("bash <<'EOF'
+$DC
+EOF")
+  DANGEROUS+=("bash <<'EOF' > log.txt
+$DC
+EOF")
+  DANGEROUS+=("sh <<'EOF' 2> err.log
+$DS
+EOF")
+
+  HARMLESS=(
+    "echo \"$DC\" > notes.md" "echo '$DC' >> notes.md"
+    "echo \"first this; then $DC\" > notes.md"
+    "true # $DC" "true # $DS"
+    "rm -rf build && echo 'push to main later'"
+    "tar -xzf main.tgz" "npm run push -- -f --branch main"
+    "grep -rf pat main.c && echo push"
+    "git push --force-with-lease origin main" "git push --force origin feature/x"
+    "git push origin HEAD:refs/x && rm -rf /tmp/main"
+    "echo \"$DS\" > notes.md" "git add README.md  # never add $ENVF"
+    "git commit -m \"add $ENVF to gitignore\"" "git add $ENVF.example"
+    "git status && echo \"never $DS\"" "git log --oneline -- $ENVF.example"
+  )
+  HARMLESS+=("cat > doc.md <<'EOF'
+Never run: $DC
+EOF")
+  HARMLESS+=("cat > doc.md <<'EOF'
+Also never: $DS
+EOF")
+  HARMLESS+=("tee doc.md > /dev/null <<'EOF'
+$DC
+EOF")
+
+  whyd=""
+  for c in "${DANGEROUS[@]}"; do
+    out="$(gcmd "$c")"; rc=$?
+    [ "$rc" = 2 ] || whyd="$whyd [$(printf '%s' "$c" | tr '\n' '~') -> exit $rc]"
+  done
+  [ -z "$whyd" ] \
+    && ok "every generated form that really invokes the forbidden operation is refused (${#DANGEROUS[@]} forms)" \
+    || bad "every generated form that really invokes the forbidden operation is refused (${#DANGEROUS[@]} forms)($whyd)"
+
+  whyh=""
+  for c in "${HARMLESS[@]}"; do
+    out="$(gcmd "$c")"; rc=$?
+    [ "$rc" = 0 ] || whyh="$whyh [$(printf '%s' "$c" | tr '\n' '~') -> exit $rc]"
+  done
+  [ -z "$whyh" ] \
+    && ok "every generated form that only mentions it is allowed (${#HARMLESS[@]} forms)" \
+    || bad "every generated form that only mentions it is allowed (${#HARMLESS[@]} forms)($whyh)"
+
+  # --- the triaged findings that needed a witness rather than a fix ---------
+  # A comment marker inside a quoted argument is not a comment. Nothing pinned the quote tracking that
+  # decides this, so the whole walk could be deleted with every assertion above still green.
+  refuses "a comment marker inside a quoted argument does not truncate a real staging" \
+    "git commit -m \"see # 12\" $ENVF"
+  # The other arm of the same walk, and it runs the other way. An escaped quote is not a quote: read as
+  # one it opens a span that never closes, which swallows the `#` after it, and the comment naming the
+  # secrets file is then judged as part of the command — a refusal of a staging that stages nothing.
+  allows "an escaped quote does not make a comment part of the command" \
+    "git add README.md \\\" # never add $ENVF"
+  # A target the rail cannot evaluate is more than a variable: a command substitution and a home
+  # expansion are equally unreadable, and each could name the default branch.
+  whyt=""
+  for tgt in '$B' '`cat b`' '~/b'; do
+    out="$(gcmd_in "$RMAIN" "git push --force origin $tgt")"; rc=$?
+    [ "$rc" = 2 ] || whyt="$whyt [$tgt -> exit $rc]"
+  done
+  [ -z "$whyt" ] \
+    && ok "no unreadable target earns the named-branch allowance" \
+    || bad "no unreadable target earns the named-branch allowance ($whyt)"
+  # The force-push refusal names the piece it judged, the same promise the staging refusal already keeps.
+  out="$(gcmd "true; $DC")"
+  case "$out" in
+    *"Judged this part of the command: 'git push --force origin main'"*)
+      ok "the force-push refusal names the piece it judged" ;;
+    *) bad "the force-push refusal names the piece it judged (said: $out)" ;;
+  esac
+  # The falsy wrong-typed fields the spec's Edge Cases name: they survived by accident before and must
+  # keep surviving, and nothing had ever sent one.
+  waved "a falsy wrong-typed field is waved through in silence" \
+    '{"tool_input":null}' '{"tool_input":[]}' '{"tool_input":{"command":null}}' \
+    '{"tool_input":{"command":""}}' '{"tool_input":{"command":0}}'
+  # A declared limit, asserted so it reads as a decision rather than as an absence: prose that names git
+  # and a subcommand without quotes and without a comment marker is still refused. Narrowing it would
+  # mean positioning on the command word, which is the choice D2 rejected.
+  refuses "unquoted prose naming git and a subcommand is still refused, as declared" \
+    "remember to never run git push --force origin main"
 else
   echo "  [skip] Bash rail checks (python3 unavailable)"
 fi
