@@ -5133,6 +5133,33 @@ git push --force origin main' \
     "echo 'git push --force origin main' | bash" \
     'echo main | xargs -I{} git push --force origin {}'
 
+  # --- A1: the filed defect, every form it was measured in ------------------
+  refuse32 "a leading + on a refspec targeting the trunk is refused" "$R32" \
+    'git push origin +main' \
+    'git push origin +HEAD:main' \
+    'git push origin +master' \
+    'git push origin +refs/heads/main' \
+    'git push origin +HEAD:refs/heads/main' \
+    'git push origin +main:main' \
+    'git push origin +feature:main' \
+    'git push origin "+main"' \
+    "git push origin '+main'"
+
+  # --- A2: the lease does not cover a + refspec, so it must not exempt one --
+  # Measured against real git rather than reasoned: on a stale lease, the same fixture refuses
+  # `--force-with-lease origin main` and force-updates `--force-with-lease origin +main`.
+  refuse32 "the lease does not exempt a + refspec targeting the trunk" "$R32" \
+    'git push --force-with-lease origin +main' \
+    'git push --force-with-lease origin +HEAD:main'
+
+  # --- A3: the flag cluster, whatever position the f sits in ----------------
+  refuse32 "a short-flag cluster containing f is a force signal wherever the f sits" "$R32" \
+    'git push -f origin main' \
+    'git push -uf origin main' \
+    'git push -fu origin main' \
+    'git push -qf origin main' \
+    'git push -fq origin main'
+
   # --- A5: an order that reaches every ref reaches the trunk ---------------
   # Driven from the non-trunk checkout on purpose: on the trunk these pass for the wrong reason,
   # because the fallback would answer with the trunk whatever the command actually said.
@@ -5140,6 +5167,14 @@ git push --force origin main' \
     'git push --all --force origin' \
     'git push --branches --force origin' \
     'git push --all -f origin'
+
+  # --- A4: --mirror, which git documents as forcing every ref it updates ----
+  refuse32 "--mirror is refused whatever branch the checkout is on" "$R32" \
+    'git push --mirror origin'
+
+  # --- A6: a force refspec injected through configuration ------------------
+  refuse32 "a force refspec injected through -c is refused" "$R32" \
+    'git -c remote.origin.push=+refs/heads/main:refs/heads/main push origin'
 
   # --- A8, A9, A13: the allowed side, which is where the whole change lives -
   # Without these the refused tables above are all satisfied by a rail that refuses everything.
@@ -5158,6 +5193,13 @@ git push --force origin main' \
     'git push origin +feature' \
     'git push --force origin' \
     'git push --force-with-lease origin main'
+
+  # --- A11: a + that is not a refspec is not a force signal ---------------
+  # The over-block trap of this whole change, and the realistic one: commit messages carry plus signs.
+  allow32 "a + outside a refspec is not a force signal" "$R32" \
+    "echo 'a+b' && git push origin main" \
+    "git commit -m 'fix: 1+1' && git push origin main" \
+    'git push origin main # 1+1'
 
 else
   echo "  [skip] target-reading checks (python3 unavailable)"

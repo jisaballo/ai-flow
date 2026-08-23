@@ -53,7 +53,34 @@ def push_args(cmd: str):
     return flags, positionals
 
 
-def targets_trunk(cmd: str, flags, positionals):
+def config_refspecs(cmd: str):
+    """Refspecs injected through `git -c <key>=<value>`, which sit *before* the subcommand and so are
+    invisible to any reader of the push arguments. A value carrying a leading `+` is a force
+    instruction with a destination of its own, and git honours it exactly as if it had been typed."""
+    return [v for v in re.findall(r'(?:^|\s)-c\s+[^\s=]+=(\S+)', cmd) if v.startswith('+')]
+
+
+def force_signal(cmd: str, flags, refspecs):
+    """The order to force this command carries, named, or None if it carries none.
+
+    Named rather than boolean because the name is what the refusal reports and what decides whether
+    the lease is a remedy: an operator told only that something was refused cannot tell which of five
+    forms fired, and the advice for one of them is wrong."""
+    if re.search(r'--force(?!-with-lease)\b', cmd):
+        return 'the --force flag'
+    if any(re.fullmatch(r'-[A-Za-z]*f[A-Za-z]*', f) for f in flags):
+        # The whole cluster is read, not just its last letter: `-fu` forces exactly as `-uf` does.
+        return 'an -f flag'
+    if any(ref.startswith('+') for ref in refspecs):
+        return 'a leading + on a refspec'
+    if '--mirror' in flags:
+        # Git's own manual: every locally updated ref is force-updated on the remote end and every
+        # ref absent locally is removed. `--all` is not here — it widens what is sent, never forces.
+        return '--mirror'
+    return None
+
+
+def targets_trunk(cmd: str, flags, refspecs):
     """Whether the command's own text says the trunk is a destination.
 
     Three answers, not two. `None` means the command names no refspec at all, so its destination is
@@ -66,7 +93,7 @@ def targets_trunk(cmd: str, flags, positionals):
     if any(f in ('--mirror', '--all', '--branches') for f in flags):
         return True  # every ref is sent, so the trunk is among them whatever branch we are on
     resolved, unreadable = [], False
-    for ref in positionals[1:]:  # the first positional is the repository, never a refspec
+    for ref in refspecs:
         if not LITERAL_REF.match(ref):
             unreadable = True
             continue
@@ -116,19 +143,25 @@ def main():
 
     # 1) Hard force-push to main/master (allow --force-with-lease and feature branches)
     if re.search(r'\bpush\b', cmd):
-        hard_force = bool(re.search(r'--force(?!-with-lease)\b', cmd)) or bool(
-            re.search(r'(?:^|\s)-[A-Za-z]*f(?:\s|$)', cmd)
-        )
-        with_lease = '--force-with-lease' in cmd
-        if hard_force and not with_lease:
-            flags, positionals = push_args(cmd)
-            targets_main = targets_trunk(cmd, flags, positionals)
+        flags, positionals = push_args(cmd)
+        refspecs = positionals[1:] + config_refspecs(cmd)  # the first positional is the repository
+        signal = force_signal(cmd, flags, refspecs)
+        # The lease is a remedy for the flag forms only. Measured against real git: on a stale lease
+        # `--force-with-lease origin main` is refused for stale info, while the same lease over
+        # `--force-with-lease origin +main` force-updates the remote. The per-ref `+` overrides it, so
+        # exempting a command that carries one would exempt the very case the lease does not cover.
+        lease_covers = '--force-with-lease' in cmd and signal != 'a leading + on a refspec'
+        if signal and not lease_covers:
+            targets_main = targets_trunk(cmd, flags, refspecs)
             if targets_main is None:
                 targets_main = current_branch() in TRUNK  # no refspec: git pushes the current branch
             if targets_main:
+                remedy = ("Use --force-with-lease, or push a feature branch. "
+                          if signal != 'a leading + on a refspec' else
+                          "Drop the + and push a feature branch — the lease does not cover a + refspec. ")
                 print(
-                    "BLOCKED: hard force-push to main/master is forbidden (your 'Never' rule). "
-                    "Use --force-with-lease, or push a feature branch. "
+                    f"BLOCKED: hard force-push to main/master is forbidden (your 'Never' rule). "
+                    f"The force signal read here was {signal}. " + remedy +
                     "If you truly intend this, run it yourself with '! <cmd>'.",
                     file=sys.stderr,
                 )
