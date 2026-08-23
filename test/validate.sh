@@ -5173,8 +5173,31 @@ git push --force origin main' \
     'git push --mirror origin'
 
   # --- A6: a force refspec injected through configuration ------------------
+  # The configured refspec answers two questions and they must not share a test. The leading `+` says
+  # the command forces; the value says where it lands. Filtering the collection on the `+` answered the
+  # first while destroying the second, so a force supplied by a flag beside a destination supplied by
+  # configuration lost its target and fell through to the current branch — refused before this section
+  # existed, allowed after. The rows without a `+` are that regression, and they are here rather than in
+  # a note because a note cannot fail. Quoting is enumerated for the same reason: the quotes sit either
+  # side of the `=`, and only one of those positions was ever driven.
   refuse32 "a force refspec injected through -c is refused" "$R32" \
-    'git -c remote.origin.push=+refs/heads/main:refs/heads/main push origin'
+    'git -c remote.origin.push=+refs/heads/main:refs/heads/main push origin' \
+    'git -c remote.origin.push=+main push origin' \
+    'git -c remote.origin.push=refs/heads/main:refs/heads/main push --force origin' \
+    'git -c remote.origin.push=refs/heads/main push -f origin' \
+    "git -c 'remote.origin.push=+refs/heads/main' push origin" \
+    'git -c "remote.origin.push=+refs/heads/main" push origin' \
+    "git -c remote.origin.push='+refs/heads/main' push origin" \
+    'git -c remote.origin.push="+refs/heads/main" push origin'
+
+  # The other direction of the same fix: only keys git reads a push refspec from may be collected. Were
+  # every `-c` value collected, an unrelated one would read as a destination and silence the very
+  # fallback the rows above restore — the same protection lost, reached from the opposite side.
+  allow32 "an unrelated -c value is not read as a destination" "$R32" \
+    'git -c user.email=t@t push --force origin' \
+    'git -c core.pager=cat push --force origin feature'
+  refuse32 "an unrelated -c value does not stop the trunk being seen" "$R32" \
+    'git -c core.pager=cat push --force origin main'
 
   # --- A7: deletion of the trunk on the remote ----------------------------
   refuse32 "deleting the trunk on the remote is refused" "$R32" \
@@ -5187,6 +5210,49 @@ git push --force origin main' \
   # Both halves, because either alone is satisfied by the wrong message: naming deletion is met by a
   # force refusal that happens to mention the flag it read, and not naming a force-push is met by a
   # rail that says nothing at all.
+  # A deletion written with an empty source carries a `+`, and the force reader would claim it first.
+  # Both refuse, so the exit code cannot tell them apart — only the advice can, and the force advice
+  # there is actively wrong: dropping the `+` from `+:main` leaves `:main`, which still destroys the
+  # trunk. This is the row that holds the ordering in place.
+  out="$(rail32 'git push origin +:main' "$R32")"
+  case "$out" in
+    *deleting*) ok "a deletion written with an empty source is reported as a deletion, not a force" ;;
+    *)          bad "a deletion written with an empty source is reported as a deletion, not a force (said: $out)" ;;
+  esac
+
+  # The force refusal's own wording, which was asserted nowhere: it must name the signal it read, and
+  # on the + path it must not offer the lease, because the lease does not cover a + refspec.
+  out="$(rail32 'git push origin +main' "$R32")"
+  case "$out" in
+    *"a leading + on a refspec"*) case "$out" in
+                                    *force-with-lease*) bad "the + refusal names its signal and does not offer the lease (said: $out)" ;;
+                                    *)                  ok "the + refusal names its signal and does not offer the lease" ;;
+                                  esac ;;
+    *) bad "the + refusal names its signal and does not offer the lease (said: $out)" ;;
+  esac
+  out="$(rail32 'git push --force origin main' "$R32")"
+  case "$out" in
+    *"the --force flag"*) ok "a flag refusal names the flag it read and keeps the lease as its remedy" ;;
+    *)                    bad "a flag refusal names the flag it read and keeps the lease as its remedy (said: $out)" ;;
+  esac
+
+  # The intersection of the two tables above, which neither drove on its own: a flag cluster written
+  # inside each shell context the inherited set enumerates. Measured to hold before it was asserted.
+  refuse32 "a flag cluster is still read inside every recorded shell context" "$R32" \
+    'sudo git push -fu origin main' \
+    'GIT_TRACE=1 git push -fu origin main' \
+    'for i in 1 2; do git push -fu origin main; done' \
+    '(git push -fu origin main)' \
+    "echo 'git push -fu origin main' | bash" \
+    'echo main | xargs -I{} git push -fu origin {}' \
+    'cd /tmp/x && git push -fu origin main'
+
+  # A deletion refspec can be injected through configuration exactly as a force one can, and the same
+  # collection now carries it to the deletion reader.
+  refuse32 "a deletion refspec injected through -c is refused" "$R32" \
+    'git -c remote.origin.push=:main push origin' \
+    'git -c remote.origin.push=:refs/heads/main push origin'
+
   out="$(rail32 'git push origin --delete main' "$R32")"
   case "$out" in
     *delet*) case "$out" in
@@ -5220,6 +5286,40 @@ git push --force origin main' \
     "echo 'a+b' && git push origin main" \
     "git commit -m 'fix: 1+1' && git push origin main" \
     'git push origin main # 1+1'
+
+  # --- A13, second half: the fallback's refusing direction -----------------
+  # Every table above runs from a feature checkout, which proves only that the no-refspec fallback
+  # *allows*. Its refusing direction — a bare force typed while standing on the trunk, which is the
+  # commonest dangerous shape there is — was guarded by nothing: the branch lookup could be emptied and
+  # no assertion went red, on the force half and the deletion half alike. A second fixture is what makes
+  # that impossible, and it carries its own allow row so it cannot be met by a rail that refuses
+  # everything from the trunk.
+  T32="$T11/rail32main"; mkproj "$T32" main
+  refuse32 "a command naming no refspec is judged on the checkout it runs in" "$T32" \
+    'git push --force origin' \
+    'git push -f' \
+    'git push --force' \
+    'git push origin --delete'
+  allow32 "the trunk checkout still allows an ordinary push and an explicit feature target" "$T32" \
+    'git push origin' \
+    'git push --force origin feature' \
+    'git push origin --delete feature'
+  # The other half of the configured-value fix, and it only discriminates from here. Collecting every
+  # `-c` value would put an unrelated one into the destination list; the reader would then answer "a
+  # destination, and not the trunk" where it should answer "none named" — and the checkout fallback that
+  # refuses a bare force on the trunk would never run. From a feature checkout both readings allow, so
+  # an assertion placed there proves nothing about it.
+  refuse32 "an unrelated -c value does not silence the checkout fallback" "$T32" \
+    'git -c user.email=t@t push --force origin' \
+    'git -c core.pager=cat push -f origin'
+
+  # --- A5, allowed side: the wideners widen, they never force --------------
+  # Without this the widener list reads as a force signal, and nothing above would notice: sending every
+  # branch with no force flag is an ordinary fast-forward push.
+  allow32 "sending every ref without a force flag stays allowed" "$R32" \
+    'git push --all origin' \
+    'git push --branches origin' \
+    'git push --all --force-with-lease origin'
 
   # --- A10: deleting anything that is not the trunk -----------------------
   allow32 "deleting a non-trunk branch stays allowed, name collisions included" "$R32" \

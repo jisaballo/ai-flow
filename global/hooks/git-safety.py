@@ -55,17 +55,28 @@ def push_args(cmd: str):
 
 def config_refspecs(cmd: str):
     """Refspecs injected through `git -c <key>=<value>`, which sit *before* the subcommand and so are
-    invisible to any reader of the push arguments. A value carrying a leading `+` is a force
-    instruction with a destination of its own, and git honours it exactly as if it had been typed."""
-    return [v for v in re.findall(r'(?:^|\s)-c\s+[^\s=]+=(\S+)', cmd) if v.startswith('+')]
+    invisible to any reader of the push arguments. git honours them exactly as if they had been typed.
+
+    Every one is returned, not only those carrying a leading `+`. The `+` answers whether the command
+    forces; filtering on it here answered the wrong question and cost a protection: with the force
+    supplied by a flag and the destination supplied by configuration, the destination was dropped, the
+    reader saw no refspec at all, and the verdict fell to the current branch — so a forced rewrite of
+    the trunk from a feature checkout went unrefused. Measured against the previous behaviour, not
+    against a list: it was refused before and allowed after.
+
+    Only keys git reads a push refspec from are collected, because any other `-c` value would be read
+    as a destination and would silence the same fallback in the other direction. Quotes come off for
+    the reason they come off a positional: git never sees them, and they sit either side of the `=`."""
+    pairs = re.findall(r'(?:^|\s)-c\s+([^\s=]+)=(\S+)', cmd)
+    return [v.strip('"\'') for k, v in pairs if k.strip('"\'').endswith('.push')]
 
 
 def force_signal(cmd: str, flags, refspecs):
     """The order to force this command carries, named, or None if it carries none.
 
     Named rather than boolean because the name is what the refusal reports and what decides whether
-    the lease is a remedy: an operator told only that something was refused cannot tell which of five
-    forms fired, and the advice for one of them is wrong."""
+    the lease is a remedy: an operator told only that something was refused cannot tell which of the
+    four forms fired, and the advice for one of them is wrong."""
     if re.search(r'--force(?!-with-lease)\b', cmd):
         return 'the --force flag'
     if any(re.fullmatch(r'-[A-Za-z]*f[A-Za-z]*', f) for f in flags):
@@ -157,12 +168,17 @@ def main():
         flags, positionals = push_args(cmd)
         refspecs = positionals[1:] + config_refspecs(cmd)  # the first positional is the repository
         signal = force_signal(cmd, flags, refspecs)
+        # A deletion is decided first even though it is refused second, because a refspec with an empty
+        # source carries a `+` as often as not and would otherwise be reported as a force. That is not a
+        # weaker refusal — both exit — but the advice attached to it was wrong: it told the operator to
+        # drop the `+`, and dropping it from `+:main` leaves `:main`, which still destroys the trunk.
+        deletion = delete_signal(flags, refspecs)
         # The lease is a remedy for the flag forms only. Measured against real git: on a stale lease
         # `--force-with-lease origin main` is refused for stale info, while the same lease over
         # `--force-with-lease origin +main` force-updates the remote. The per-ref `+` overrides it, so
         # exempting a command that carries one would exempt the very case the lease does not cover.
         lease_covers = '--force-with-lease' in cmd and signal != 'a leading + on a refspec'
-        if signal and not lease_covers:
+        if signal and not deletion and not lease_covers:
             targets_main = targets_trunk(cmd, flags, refspecs)
             if targets_main is None:
                 targets_main = current_branch() in TRUNK  # no refspec: git pushes the current branch
@@ -181,7 +197,6 @@ def main():
         # 1b) Deleting the trunk on the remote. A separate signal against a separate rule, sharing the
         # destination reader above: what decides is the refspec's destination, so retiring a merged
         # branch stays ordinary work even when its name happens to carry the trunk's word.
-        deletion = delete_signal(flags, refspecs)
         if deletion:
             targets_main = targets_trunk(cmd, flags, refspecs)
             if targets_main is None:
