@@ -72,13 +72,20 @@ def protection_state(cwd):
     if git(cwd, "rev-parse", "--is-inside-work-tree") != "true":
         return None
 
-    if git(cwd, "config", "--get", ACK_KEY):
+    # Read from this repository's own configuration and no wider. Reading every scope let a single
+    # global setting silence the reminder on the whole machine while the refusal that offers it says
+    # "this repository only" — an accepted gap turning into a silent one, which is the distinction this
+    # key exists to make.
+    if git(cwd, "config", "--local", "--get", ACK_KEY):
         return "acknowledged"
 
-    # The engine's own copy has to exist before anything can be pointed at it. An installation that
-    # carries this rail and not the hooks it reports on protects nothing, and saying so is the whole
-    # reason this file still runs.
-    if not all(os.path.isfile(os.path.join(ENGINE_HOOKS, n)) for n in HOOK_NAMES):
+    # The engine's own copies have to be there AND runnable before anything can be pointed at them. The
+    # first version of this line asked only whether they existed, while the branch below asked a
+    # repository's own copies whether they could run — the weaker question, asked of the branch the
+    # installer always takes. With the two files present at mode 644 the rail called the protection
+    # active while git ran neither hook: both rules off, and the guard whose only job is to say so
+    # said nothing. The executable bit is exactly what git tests, so it is what this must test.
+    if not all(os.access(os.path.join(ENGINE_HOOKS, n), os.X_OK) for n in HOOK_NAMES):
         return "absent-engine"
 
     configured = git(cwd, "config", "--get", "core.hooksPath")
@@ -140,12 +147,14 @@ def main():
     if not RECORDS_OR_PUBLISHES.search(cmd):
         sys.exit(0)
 
-    # The directory the session declares, never this process's own. A guard that resolves against its
-    # own working directory both leaks and lies — and here it would answer about the wrong repository
-    # entirely.
+    # The directory the session declares, never this process's own — and when the session declares none
+    # the answer is silence, not a guess. Falling back to "." made this rail judge whatever directory it
+    # happened to be standing in and refuse there, which is both halves of what it must not do: a field
+    # it cannot use is a command it cannot judge, and the directory it judges is the declared one. The
+    # guess was reproduced refusing over a repository the session never named.
     cwd = data.get("cwd")
     if not isinstance(cwd, str) or not os.path.isdir(cwd):
-        cwd = "."
+        sys.exit(0)
 
     state = protection_state(cwd)
     if state in (None, "active", "acknowledged"):

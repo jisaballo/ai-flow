@@ -269,7 +269,7 @@ When onboarding team members:
 2. They customize the `## Personal Preferences` section of their `~/.claude/CLAUDE.md`
 3. Steering files, product.md, `project.yml`, and project CLAUDE.md are shared via git
 
-To pull framework improvements on any device later, run `./install.sh update` (unattended): it refreshes the engine in `~/.claude` — protocols, skills, the verify workflow, hooks, the ceremony scripts, and the ralph runner — and never writes into any project.
+To pull framework improvements on any device later, run `./install.sh update` (unattended): it refreshes the engine in `~/.claude` — protocols, skills, the verify workflow, hooks, the ceremony scripts, and the ralph runner — and writes no project file. It makes exactly one change outside `~/.claude`: it points git's `core.hooksPath` at `~/.claude/hooks/git` so the two git guards run in every repository on the machine. An existing global hook path is reported and left untouched. Undo with `git config --global --unset core.hooksPath`.
 
 **What's shared** (committed to repo):
 - `.ai-flow/product.md` — product context

@@ -170,7 +170,9 @@ The framework ships optional global tooling under `global/`, installed to `~/.cl
 
 **verify-review workflow** (`global/workflows/verify-review.js` → `~/.claude/workflows/`) — a deterministic multi-agent review invoked by `/verify`: four auditors (business contract / coverage / security / architecture) in parallel over the task diff, then adversarial refutation of every HIGH finding — the level that blocks — so only genuine blockers survive; MEDIUM and LOW come back unadjudicated for the verify phase to triage.
 
-**Guardrail hooks** (`global/hooks/` → `~/.claude/hooks/`) — optional Claude Code hooks that enforce the workflow. See [`global/hooks/README.md`](global/hooks/README.md) for what each does and how to register them in `settings.json`. They are safe to install globally (no-op outside an ai-flow project).
+**Guardrail hooks** (`global/hooks/` → `~/.claude/hooks/`) — optional Claude Code hooks that enforce the workflow. See [`global/hooks/README.md`](global/hooks/README.md) for what each does and how to register them in `settings.json`. These are safe to install globally (no-op outside an ai-flow project).
+
+**Git hooks** (`global/hooks/git/` → `~/.claude/hooks/git/`) — these are **not** Claude Code hooks and they are **not** no-ops outside an ai-flow project. They carry the two `Never` rules — the trunk is never rewritten or deleted on a remote, a commit never records a secret — and they are reached by pointing git's `core.hooksPath` at them, which is machine-wide by design. Because that setting replaces where git looks for *every* hook, the directory also holds a pass-through for every other hook name, so a repository keeps its own `commit-msg`, `post-checkout` and the rest: the engine adds two guards and takes nothing away. An existing global hook path is reported and left alone rather than replaced. Bypass either guard with `--no-verify`; accept the gap in one repository with `git config aiflow.protection acknowledged`.
 
 ## Documentation
 

@@ -8,8 +8,9 @@ set -e
 #     curl -sL .../install.sh | bash -s /path/to/project        # back-compat: bare path => init
 #     curl -sL .../install.sh | bash -s init /path/to/project
 #     ./install.sh [init] [target-directory]
-#   Update (re-fetch the engine + global tooling into ~/.claude; unattended,
-#   never writes into any project):
+#   Update (re-fetch the engine + global tooling into ~/.claude; unattended.
+#   It writes no project file, and it makes one machine-wide change outside ~/.claude: git's
+#   core.hooksPath, so the two git guards run. An existing value is reported and left alone):
 #     curl -sL .../install.sh | bash -s update
 #     ./install.sh update
 
@@ -35,7 +36,7 @@ if [ "$CMD" = "init" ]; then
   TARGET="$(cd "$TARGET" && pwd)"
   TARGET_LINE="  Target: $TARGET"
 else
-  TARGET_LINE="  Target: $HOME/.claude (no project is touched)"
+  TARGET_LINE="  Target: $HOME/.claude, plus git's core.hooksPath (no project file is touched)"
 fi
 
 echo ""
@@ -95,7 +96,19 @@ HOOKS="check-state-size.sh diff-size-guard.py git-safety.py understand-write-gua
 # Git's own hooks, which carry the two Never rules. They live under a subdirectory because that is
 # what core.hooksPath is pointed at, and because the drift guard's prefix map already covers the
 # path with no change to the guard.
-GIT_HOOKS="pre-push pre-commit"
+GIT_HOOKS="pre-push pre-commit _chain"
+
+# Pointing core.hooksPath at a directory REPLACES where git looks for every hook, so a repository's own
+# commit-msg, post-checkout or post-merge would simply stop running. Every other name git knows gets a
+# copy of _chain, which hands the hook straight back to the repository. The engine adds two guards and
+# takes nothing away.
+#
+# fsmonitor-watchman is deliberately absent: it is opted into by configuration rather than by presence,
+# and it sits on the hot path of every status. A repository that wants it under a hook path can add it.
+GIT_CHAINED="applypatch-msg pre-applypatch post-applypatch pre-merge-commit prepare-commit-msg \
+commit-msg post-commit pre-rebase post-checkout post-merge pre-auto-gc post-rewrite sendemail-validate \
+post-index-change reference-transaction push-to-checkout proc-receive pre-receive update post-receive \
+post-update"
 RALPH="ralph.sh ralph-prompt.md review-prompt.md"
 SCRIPTS="seed-front.sh"
 
@@ -260,7 +273,13 @@ install_tooling() {
     fetch_file "global/hooks/git/$hook" "$HOME/.claude/hooks/git/$hook"
     chmod +x "$HOME/.claude/hooks/git/$hook" 2>/dev/null || true
   done
-  echo "  [ok] Git hooks installed to ~/.claude/hooks/git"
+  # A copy per name rather than a symlink: the download path cannot carry a link, and a copy is what
+  # lets each one read its own name from the path git invoked it by.
+  for hook in $GIT_CHAINED; do
+    cp "$HOME/.claude/hooks/git/_chain" "$HOME/.claude/hooks/git/$hook" 2>/dev/null || true
+    chmod +x "$HOME/.claude/hooks/git/$hook" 2>/dev/null || true
+  done
+  echo "  [ok] Git hooks installed to ~/.claude/hooks/git (2 guards + pass-through for every other hook)"
   point_git_at_hooks
 
   mkdir -p "$HOME/.claude/ai-flow/ralph"

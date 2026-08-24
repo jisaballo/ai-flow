@@ -1,0 +1,47 @@
+#!/bin/sh
+# Hand this hook back to the repository's own copy, if it has one.
+#
+# Pointing core.hooksPath at a directory does not add hooks to a repository — it REPLACES where git
+# looks for all of them. Without this file, installing the engine's two guards would take away every
+# other hook every repository on the machine has: its commit-msg, its post-checkout, its post-merge.
+# Silently, and everywhere. That cost was not priced when the machine-wide hook path was chosen, and
+# it was found by an audit that proved it with a failing assertion rather than by reading.
+#
+# So every hook name git knows gets a copy of this file, and each one is a pass-through: the engine
+# adds two guards and takes nothing away. The two guards — pre-push and pre-commit — are not copies of
+# this file; they carry the same hand-back at their own end.
+#
+# The hook's name is read from the path git invoked it by, which is why one script serves every name.
+#
+# Cost matters here in a way it does not in the guards. reference-transaction fires three times per
+# commit and once per ref a fetch updates, so a subprocess in this file would be paid hundreds of times
+# on an ordinary fetch. The ordinary case therefore spends none: git runs a hook with the working tree's
+# top as its directory, so `.git/hooks/<name>` is reachable without asking git anything. Only a linked
+# worktree — where `.git` is a file rather than a directory — pays for the question, and there it is
+# paid once. Measured: git sets no GIT_DIR for hooks, so there is no cheaper answer than this.
+#
+# `exec` rather than a call: the repository's hook inherits this process's standard input, which
+# pre-push and several others are given and would otherwise lose, and its exit status reaches git
+# unaltered — a refusal stays a refusal.
+
+set -u
+
+name=${0##*/}
+
+if [ -d .git ]; then
+  dir=.git
+else
+  dir="$(git rev-parse --git-common-dir 2>/dev/null)" || exit 0
+  [ -n "$dir" ] || exit 0
+fi
+
+own="$dir/hooks/$name"
+[ -x "$own" ] || exit 0
+
+# The one case that must not happen: this file standing where the repository's own copy would be, so
+# that handing over hands over to itself. Resolved by comparing the paths rather than by trusting that
+# the directories differ.
+abspath() { ( cd "$(dirname "$1")" 2>/dev/null && printf '%s/%s\n' "$(pwd -P)" "$(basename "$1")" ); }
+[ "$(abspath "$own")" = "$(abspath "$0")" ] && exit 0
+
+exec "$own" "$@"

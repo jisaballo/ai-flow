@@ -8,6 +8,19 @@ set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+# Git's global configuration is sandboxed for the whole run, and this is a guard rather than tidiness.
+# The installer this suite exercises writes `core.hooksPath` with `git config --global`; a sandbox that
+# only redirects HOME does not contain that, because git writes its global config to
+# $XDG_CONFIG_HOME/git/config when that file exists. On a developer who sets XDG_CONFIG_HOME, running
+# this suite rewrote their real global hook path. Both variables are set here, at the top, so no call
+# site can be added later that escapes it.
+GITSANDBOX="$(mktemp -d)"
+mkdir -p "$GITSANDBOX/git"
+: > "$GITSANDBOX/gitconfig"
+export GIT_CONFIG_GLOBAL="$GITSANDBOX/gitconfig"
+export XDG_CONFIG_HOME="$GITSANDBOX"
+trap 'rm -rf "$GITSANDBOX"' EXIT
+
 PASS=0
 FAIL=0
 ok()   { echo "  [ok]   $1"; PASS=$((PASS+1)); }
@@ -5064,8 +5077,16 @@ if [ "$PY3" = 1 ]; then
   # a reason unrelated to what it is named for. The control is the same shape against the new job: a
   # repository with no protection in place, where the rail must refuse and say so. It is driven from a
   # fixture whose state is known rather than from whatever repository this suite happens to run in.
+  # A sandboxed HOME as well as a fixture repository: the rail resolves the engine's hook directory from
+  # HOME, so a control that leaves it real reads the state of the machine running the suite and inverts
+  # once the installer has been run there. The engine copies here are throwaway and executable, so the
+  # fixture reaches the question it means to ask instead of stopping at "no engine hooks installed".
+  C31H="$T11/c31home"; mkdir -p "$C31H/.claude/hooks/git"
+  printf '#!/bin/sh\nexit 0\n' > "$C31H/.claude/hooks/git/pre-push"
+  printf '#!/bin/sh\nexit 0\n' > "$C31H/.claude/hooks/git/pre-commit"
+  chmod 755 "$C31H/.claude/hooks/git/pre-push" "$C31H/.claude/hooks/git/pre-commit"
   C31R="$T11/c31rail"; mkproj "$C31R" main
-  out="$(printf '{"cwd":"%s","tool_input":{"command":"git push origin main"}}' "$C31R" | python3 "$GS" 2>&1)"; rc=$?
+  out="$(printf '{"cwd":"%s","tool_input":{"command":"git push origin main"}}' "$C31R" | HOME="$C31H" python3 "$GS" 2>&1)"; rc=$?
   case "$out" in *"not active in this repository"*) said=1 ;; *) said=0 ;; esac
   { [ "$rc" = 2 ] && [ "$said" = 1 ]; } \
     && ok "the same fixture still refuses where the protection is not in place" \
@@ -5192,6 +5213,25 @@ if command -v git >/dev/null 2>&1; then
     ok "an ordinary advance of the trunk is allowed"
   else
     bad "an ordinary advance of the trunk is allowed (exit $rc, remote $b33 -> $a33, said: $out)"
+  fi
+
+  # --- creating the trunk on a remote that does not have it yet ------------
+  # The only arm that lets a first push of the trunk through, and nothing drove it: deleting the arm
+  # blocks every initial push to a new remote and the suite stayed green. A create destroys nothing,
+  # which is why it is allowed and why it must be witnessed.
+  # A second remote that has never seen the trunk. Emptying the first one is not the way: its HEAD names
+  # the trunk, and git refuses to remove the branch a remote's HEAD points at — the fixture would then
+  # be measuring git's protection rather than building the state it needs.
+  mkpair33 fresh main
+  git init -q --bare "$T33/fresh/empty.git"
+  git -C "$T33/fresh/work" remote add blank "$T33/fresh/empty.git"
+  b33="$(git -C "$T33/fresh/empty.git" rev-parse -q --verify refs/heads/main 2>/dev/null || echo none)"
+  out="$(run33 fresh push blank main)"; rc=$?
+  a33="$(git -C "$T33/fresh/empty.git" rev-parse -q --verify refs/heads/main 2>/dev/null || echo none)"
+  if [ "$b33" = none ] && [ "$rc" = 0 ] && [ "$a33" != none ]; then
+    ok "creating the trunk on a remote that lacks it is allowed"
+  else
+    bad "creating the trunk on a remote that lacks it is allowed (before=$b33 exit=$rc after=$a33, said: $out)"
   fi
 
   # --- row 4: every other ref, whatever its shape --------------------------
@@ -5398,6 +5438,85 @@ SHAPES
   [ -z "$why33" ] && ok "every recorded allowed shape is still allowed" \
                   || bad "every recorded allowed shape is still allowed ($why33)"
 
+  # --- a repository whose object names are not forty characters long -------
+  # An absent object is reported as an all-zero name whose length is the repository's hash length. The
+  # first version of this hook compared against a forty-character constant, so under SHA-256 every one
+  # of those tests answered "not absent": a creation read as a rewrite and a deletion as an update.
+  # Skipped rather than faked where the git in use cannot make such a repository.
+  if git init -q --object-format=sha256 "$T33/sha256probe" 2>/dev/null; then
+    rm -rf "$T33/sha256probe"
+    d33="$T33/sha256"; rm -rf "$d33"; mkdir -p "$d33"
+    git init -q --bare --object-format=sha256 "$d33/remote.git"
+    git -C "$d33/remote.git" symbolic-ref HEAD refs/heads/main
+    git init -q --object-format=sha256 "$d33/work"
+    git -C "$d33/work" symbolic-ref HEAD refs/heads/main
+    git -C "$d33/work" config user.email t@t.t
+    git -C "$d33/work" config user.name t
+    git -C "$d33/work" config commit.gpgsign false
+    printf 'a\n' > "$d33/work/f.txt"
+    git -C "$d33/work" add -A >/dev/null 2>&1
+    git -C "$d33/work" commit -q -m one
+    git -C "$d33/work" remote add origin "$d33/remote.git"
+    git -C "$d33/work" config core.hooksPath "$GHK"
+    why33=""
+    # a create, which must be allowed — the arm the fixed-length constant broke first
+    out="$( ( cd "$d33/work" && git push origin main 2>&1 ) )"; rc=$?
+    [ "$rc" = 0 ] || why33="$why33 [create -> exit $rc, said: $out]"
+    # and a rewrite, which must still be refused
+    printf 'b\n' >> "$d33/work/f.txt"; git -C "$d33/work" commit -qam two
+    git -C "$d33/work" -c core.hooksPath="$NOHOOK" push -q origin main
+    git -C "$d33/work" commit -q --amend -m two-rewritten
+    out="$( ( cd "$d33/work" && git push --force origin main 2>&1 ) )"; rc=$?
+    case "$out" in *"rewriting refs/heads/main"*) ;; *) why33="$why33 [rewrite -> exit $rc, said: $out]" ;; esac
+    [ "$rc" != 0 ] || why33="$why33 [rewrite was allowed]"
+    [ -z "$why33" ] && ok "object names longer than forty characters are read as absent when they are" \
+                    || bad "object names longer than forty characters are read as absent when they are ($why33)"
+  else
+    echo "  [skip] non-SHA-1 object names (this git cannot create such a repository)"
+  fi
+
+  # --- the engine's hook standing where a repository's own would be --------
+  # A real arrangement — it is what a per-repository install produces — and nothing drove it. What this
+  # row proves is that the guard still reaches its verdict from there.
+  #
+  # What it does NOT prove, declared rather than faked: that the hand-back refuses to hand over to
+  # itself. That arm only decides once a push is ALLOWED and the chaining code is reached, and its
+  # failure mode is unbounded recursion — a fixture that drives it would spawn processes without end
+  # inside this suite, and killing the parent would not stop the children. A check that cannot be made
+  # to fail safely has not been proven, and saying so costs less than a fork bomb in a conformance run.
+  mkpair33 selfch main
+  mkdir -p "$T33/selfch/work/.git/hooks"
+  cp "$GHK/pre-push" "$T33/selfch/work/.git/hooks/pre-push"
+  chmod 755 "$T33/selfch/work/.git/hooks/pre-push"
+  git -C "$T33/selfch/work" config core.hooksPath "$T33/selfch/work/.git/hooks"
+  diverge33 selfch
+  b33="$(ref33 selfch main)"
+  out="$(run33 selfch push --force origin main)"; rc=$?
+  if [ "$rc" != 0 ] && [ "$b33" = "$(ref33 selfch main)" ]; then
+    ok "the guard still reaches its verdict when it is the repository's own hook"
+  else
+    bad "the guard still reaches its verdict when it is the repository's own hook (exit $rc, said: $out)"
+  fi
+
+  # --- what a chained hook is handed --------------------------------------
+  # The engine holds standard input so it can be read twice. Nothing asserted that what reaches the
+  # repository's own hook is the ref lines git sent rather than an empty stream — and an empty stream
+  # is a hook that allows everything while appearing to run.
+  mkpair33 handed main
+  mkdir -p "$T33/handed/work/.git/hooks"
+  printf '#!/bin/sh\nn=0\nwhile read -r a b c d; do n=$((n+1)); echo "$c" >> "$(git rev-parse --git-common-dir)/refs-seen"; done\necho "$n" > "$(git rev-parse --git-common-dir)/refs-count"\nexit 0\n' \
+    > "$T33/handed/work/.git/hooks/pre-push"
+  chmod 755 "$T33/handed/work/.git/hooks/pre-push"
+  printf 'z\n' >> "$T33/handed/work/f.txt"; git -C "$T33/handed/work" commit -qam handed
+  run33 handed push origin main >/dev/null 2>&1
+  seen="$(cat "$T33/handed/work/.git/refs-seen" 2>/dev/null || echo none)"
+  cnt="$(cat "$T33/handed/work/.git/refs-count" 2>/dev/null || echo 0)"
+  if [ "$cnt" = "1" ] && [ "$seen" = "refs/heads/main" ]; then
+    ok "a chained hook is handed the ref lines git sent, not an empty stream"
+  else
+    bad "a chained hook is handed the ref lines git sent, not an empty stream (count=$cnt seen=$seen)"
+  fi
+
   # --- row 10: a repository that already had a hook of its own -------------
   # Two things at once, and both matter: the engine's hook must reach the repository's own copy, and it
   # must reach it exactly once. Resolving "this repository's own hook" through the redirected path hands
@@ -5508,6 +5627,33 @@ if command -v git >/dev/null 2>&1; then
   { [ "$rc" = 0 ] && [ "$b34" != "$(head34 named)" ]; } || why34="$why34 [removing a committed secret -> exit $rc, said: $out]"
   [ -z "$why34" ] && ok "a secret named but not recorded does not refuse the commit" \
                   || bad "a secret named but not recorded does not refuse the commit ($why34)"
+
+  # --- the classification's negative direction ----------------------------
+  # Every fixture above hands it a path that IS a secret, so a classification that answered "yes" to
+  # everything would read as correct. These are the near misses: the words appear and the path is
+  # ordinary.
+  mkrepo34 benign
+  why34=""
+  for f in "environment.ts" "docs/pem-format.md" "src/keystore-adapter.java" "id_rsa_helper.py" \
+           "config/environment.md" "service-accounts.md" "lib/pembroke.txt"; do
+    mkdir -p "$(dirname "$T34/benign/$f")" 2>/dev/null
+    printf 'x\n' > "$T34/benign/$f"
+    git -C "$T34/benign" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+    b34="$(head34 benign)"
+    out="$(sh34 benign "git commit -m ordinary")"; rc=$?
+    { [ "$rc" = 0 ] && [ "$b34" != "$(head34 benign)" ]; } || why34="$why34 [$f -> exit $rc, said: $out]"
+  done
+  # And the case folding, which nothing exercised in either direction.
+  mkdir -p "$T34/benign/CERTS"
+  printf 'K=1\n' > "$T34/benign/CERTS/SERVER.PEM"
+  git -C "$T34/benign" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+  b34="$(head34 benign)"
+  out="$(sh34 benign "git commit -m upper")"; rc=$?
+  case "$out" in *"would record a secret"*) refused=1 ;; *) refused=0 ;; esac
+  { [ "$rc" != 0 ] && [ "$refused" = 1 ] && [ "$b34" = "$(head34 benign)" ]; } \
+    || why34="$why34 [an upper-case secret slipped through -> exit $rc, refused=$refused, said: $out]"
+  [ -z "$why34" ] && ok "an ordinary path that merely reads like a secret is committed, and case does not hide one" \
+                  || bad "an ordinary path that merely reads like a secret is committed, and case does not hide one ($why34)"
 
   # --- row 13: the recorded shapes, staged for real -----------------------
   # The wrappings the inherited table carried are driven as a product here. They must all reach the same
@@ -5704,6 +5850,79 @@ SHAPES
   [ -z "$why35" ] && ok "a repository without the protection is told, and told how" \
                   || bad "a repository without the protection is told, and told how ($why35)"
 
+  # --- engine hooks present but not runnable ------------------------------
+  # The configured-path branch used to ask only whether the engine's copies existed, while the branch
+  # for a repository's own copies asked whether they could run. With the two files at mode 644 the rail
+  # called the protection active while git ran neither hook. Nothing reached that state until a mutation
+  # survived for want of a witness.
+  DEADH="$T35/deadhome"; mkdir -p "$DEADH/.claude/hooks/git"
+  cp "$ENG35/pre-push" "$ENG35/pre-commit" "$DEADH/.claude/hooks/git/"
+  chmod 644 "$DEADH/.claude/hooks/git/pre-push" "$DEADH/.claude/hooks/git/pre-commit"
+  DEADR="$T35/deadrepo"; mkproj "$DEADR" main
+  git -C "$DEADR" config core.hooksPath "$DEADH/.claude/hooks/git"
+  out="$(printf '{"cwd":"%s","tool_input":{"command":"git push origin main"}}' "$DEADR" \
+        | ( cd "$DEADR" && HOME="$DEADH" python3 "$GS35" 2>&1 ))"; rc=$?
+  [ "$rc" = 2 ] && ok "hooks the hook path names but git cannot run are not called active" \
+                || bad "hooks the hook path names but git cannot run are not called active (exit $rc, said: $out)"
+
+  # --- an unusable declared directory means silence, not a guess ----------
+  # Both halves of what the rail must not do met on one line: it substituted its own process directory
+  # and refused over a repository the session never named. Three shapes, and the fixture stands in an
+  # UNPROTECTED repository so a rail that guessed would have something to refuse about.
+  why35=""
+  for payload in '{"tool_input":{"command":"git push origin main"}}' \
+                 '{"cwd":123,"tool_input":{"command":"git push origin main"}}' \
+                 '{"cwd":"/no/such/directory/here","tool_input":{"command":"git push origin main"}}'; do
+    out="$(printf '%s' "$payload" | ( cd "$UNPROT" && HOME="$T35/home" python3 "$GS35" 2>&1 ))"; rc=$?
+    { [ "$rc" = 0 ] && [ -z "$out" ]; } || why35="$why35 [$payload -> exit $rc, said: $out]"
+  done
+  [ -z "$why35" ] && ok "a declared directory the rail cannot use means silence, not its own directory" \
+                  || bad "a declared directory the rail cannot use means silence, not its own directory ($why35)"
+
+  # --- the state where the engine itself is not installed ------------------
+  # Its own report names the installer rather than the hook path, and no fixture reached it: the rail
+  # would have stopped distinguishing "nothing to point at" from "pointed elsewhere" unnoticed.
+  NOENG="$T35/noenginehome"; mkdir -p "$NOENG/.claude/hooks"
+  out="$(printf '{"cwd":"%s","tool_input":{"command":"git push origin main"}}' "$UNPROT" \
+        | ( cd "$UNPROT" && HOME="$NOENG" python3 "$GS35" 2>&1 ))"; rc=$?
+  case "$out" in *"install.sh update"*) named=1 ;; *) named=0 ;; esac
+  { [ "$rc" = 2 ] && [ "$named" = 1 ]; } \
+    && ok "an engine whose git hooks are not installed says so, and names the installer" \
+    || bad "an engine whose git hooks are not installed says so, and names the installer (exit $rc, said: $out)"
+
+  # --- a relative hook path, in the direction that resolves ----------------
+  # Only the failing direction was driven. A relative value is resolved by git against the top of the
+  # working tree, so the rail must resolve it the same way; reading it against anything else calls an
+  # active protection displaced. The engine directory here IS the repository's own `.myhooks`, reached
+  # through a link, so the relative value and the engine path are the same place by two names — which
+  # is the only arrangement in which this branch decides anything.
+  RELR="$T35/relative"; mkproj "$RELR" main
+  mkdir -p "$RELR/.myhooks"
+  cp "$ENG35/pre-push" "$ENG35/pre-commit" "$RELR/.myhooks/"
+  git -C "$RELR" config core.hooksPath .myhooks
+  RELH="$T35/relhome"; mkdir -p "$RELH/.claude/hooks"
+  if ln -s "$RELR/.myhooks" "$RELH/.claude/hooks/git" 2>/dev/null; then
+    out="$(printf '{"cwd":"%s","tool_input":{"command":"git push origin main"}}' "$RELR" \
+          | ( cd / && HOME="$RELH" python3 "$GS35" 2>&1 ))"; rc=$?
+    { [ "$rc" = 0 ] && [ -z "$out" ]; } \
+      && ok "a relative hook path is resolved against the working tree, not the caller's directory" \
+      || bad "a relative hook path is resolved against the working tree, not the caller's directory (exit $rc, said: $out)"
+  else
+    echo "  [skip] relative hook path (symbolic links unavailable)"
+  fi
+
+  # --- the acknowledgement belongs to one repository ----------------------
+  # The refusal that offers it says "this repository only". Read across every scope, a single global
+  # setting would silence the reminder machine-wide — an accepted gap becoming a silent one, which is
+  # the distinction the key exists to make.
+  GACK="$T35/gackhome"; mkdir -p "$GACK/.claude/hooks/git"
+  cp "$ENG35/pre-push" "$ENG35/pre-commit" "$GACK/.claude/hooks/git/"
+  printf '[aiflow]\n\tprotection = acknowledged\n' > "$GACK/.gitconfig"
+  out="$(printf '{"cwd":"%s","tool_input":{"command":"git push origin main"}}' "$UNPROT" \
+        | ( cd "$UNPROT" && HOME="$GACK" GIT_CONFIG_GLOBAL="$GACK/.gitconfig" python3 "$GS35" 2>&1 ))"; rc=$?
+  [ "$rc" = 2 ] && ok "an acknowledgement set machine-wide does not silence an unacknowledged repository" \
+                || bad "an acknowledgement set machine-wide does not silence an unacknowledged repository (exit $rc, said: $out)"
+
   # --- the three classes the previous change introduced -------------------
   why35=""
   for shape in "git push origin main && chmod +x a.sh" \
@@ -5759,9 +5978,66 @@ SHAPES
   [ -z "$why35" ] && ok "the installed git hooks are executable however they arrived" \
                   || bad "the installed git hooks are executable however they arrived ($why35)"
 
+  # --- the installer's success path, which nothing exercised ---------------
+  # Only the "a hook path is already set" arm was covered. Deleting the line that actually points git at
+  # the hooks — leaving the reassuring [ok] echo in place — left the suite green, so the installer could
+  # stop installing the protection while still claiming to have installed it.
+  IH2="$T35/ihome2"; IT2="$T35/itarget2"; IW2="$T35/iwork2"
+  mkdir -p "$IH2" "$IT2/.ai-flow" "$IW2"
+  printf '[user]\n\tname = t\n' > "$IH2/.gitconfig"
+  ( cd "$IW2" && HOME="$IH2" GIT_CONFIG_GLOBAL="$IH2/.gitconfig" bash "$ROOT/install.sh" update "$IT2" </dev/null >/dev/null 2>&1 ) || true
+  setv="$(git config --file "$IH2/.gitconfig" --get core.hooksPath)"
+  [ "$setv" = "$IH2/.claude/hooks/git" ] \
+    && ok "the installer points git at the engine's hooks when nothing else claims the path" \
+    || bad "the installer points git at the engine's hooks when nothing else claims the path (value '$setv')"
+
+  # --- the engine adds two guards and takes nothing away -------------------
+  # Pointing the hook path at a directory replaces where git looks for EVERY hook, so without a
+  # pass-through a repository's own commit-msg simply stops running. Proven the other way round first:
+  # an added assertion driving exactly this went red before the pass-through existed.
+  why35=""
+  for h in commit-msg post-commit prepare-commit-msg post-checkout; do
+    [ -x "$IH2/.claude/hooks/git/$h" ] || why35="$why35 [$h not installed as a pass-through]"
+  done
+  CH35="$T35/chainrepo"; mkproj "$CH35" main
+  git -C "$CH35" config core.hooksPath "$IH2/.claude/hooks/git"
+  mkdir -p "$CH35/.git/hooks"
+  printf '#!/bin/sh\necho ran >> "$(git rev-parse --git-common-dir)/own-msg-ran"\nexit 0\n' > "$CH35/.git/hooks/commit-msg"
+  chmod 755 "$CH35/.git/hooks/commit-msg"
+  printf 'x\n' >> "$CH35/app.txt"
+  $GIT -C "$CH35" add -A >/dev/null 2>&1
+  $GIT -C "$CH35" commit -q -m chained >/dev/null 2>&1
+  [ -f "$CH35/.git/own-msg-ran" ] || why35="$why35 [the repository's own commit-msg never ran]"
+  # And the other direction: a refusal from the repository's own hook must reach git.
+  printf '#!/bin/sh\nexit 9\n' > "$CH35/.git/hooks/commit-msg"
+  chmod 755 "$CH35/.git/hooks/commit-msg"
+  b35="$($GIT -C "$CH35" rev-parse HEAD)"
+  printf 'y\n' >> "$CH35/app.txt"
+  $GIT -C "$CH35" add -A >/dev/null 2>&1
+  $GIT -C "$CH35" commit -q -m refused >/dev/null 2>&1
+  [ "$b35" = "$($GIT -C "$CH35" rev-parse HEAD)" ] || why35="$why35 [the repository's own refusal did not reach git]"
+  [ -z "$why35" ] && ok "a repository keeps every hook of its own that the engine does not guard" \
+                  || bad "a repository keeps every hook of its own that the engine does not guard ($why35)"
+
+  # --- the suite's own containment ----------------------------------------
+  # This section runs an installer that writes git's global configuration. Nothing asserted where that
+  # write lands, and a HOME-only sandbox does not contain it: git writes the global config to
+  # $XDG_CONFIG_HOME/git/config when that file exists, so on a developer who sets that variable the
+  # suite rewrote their real global hook path. The row guards the containment rather than trusting it.
+  why35=""
+  [ -n "${GIT_CONFIG_GLOBAL:-}" ] || why35="$why35 [no global config sandbox is in effect]"
+  case "${GIT_CONFIG_GLOBAL:-}" in
+    "$HOME"/*) why35="$why35 [the global config sandbox points inside the real HOME: $GIT_CONFIG_GLOBAL]" ;;
+  esac
+  case "${XDG_CONFIG_HOME:-}" in
+    ""|"$HOME"/*) why35="$why35 [XDG_CONFIG_HOME is unset or inside the real HOME, so git can still escape]" ;;
+  esac
+  [ -z "$why35" ] && ok "the suite cannot write git configuration outside its own sandbox" \
+                  || bad "the suite cannot write git configuration outside its own sandbox ($why35)"
+
   # --- the drift guard, which must cover them with no change to itself -----
   why35=""
-  for h in pre-push pre-commit; do
+  for h in pre-push pre-commit _chain; do
     grep -q "global/hooks/\*" "$HK/drift-check.sh" || why35="$why35 [the guard has no prefix map for the hooks directory]"
     git -C "$ROOT" ls-files --error-unmatch "global/hooks/git/$h" >/dev/null 2>&1 \
       || why35="$why35 [global/hooks/git/$h is not tracked, so the guard's listing never reaches it]"
