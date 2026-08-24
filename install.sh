@@ -92,6 +92,10 @@ fetch_file() {
 PROTOCOLS="understand plan execute verify quick-path backlog codebase-mapping discover"
 SKILLS="understand plan verify discover"
 HOOKS="check-state-size.sh diff-size-guard.py git-safety.py understand-write-guard.py drift-check.sh"
+# Git's own hooks, which carry the two Never rules. They live under a subdirectory because that is
+# what core.hooksPath is pointed at, and because the drift guard's prefix map already covers the
+# path with no change to the guard.
+GIT_HOOKS="pre-push pre-commit"
 RALPH="ralph.sh ralph-prompt.md review-prompt.md"
 SCRIPTS="seed-front.sh"
 
@@ -206,6 +210,30 @@ PY
   echo "  [ok] Hooks registered in $settings"
 }
 
+# Point git at the engine's hooks, for every repository on this machine.
+#
+# It reports rather than overwrites. Someone who already manages hooks globally has a setup of their own,
+# and replacing it silently would take away a protection to install one — so an existing value is named
+# and left exactly as it was. The engine's Bash rail is what then tells them, per repository, that these
+# hooks are not running, and it names the same two commands this function would have run.
+point_git_at_hooks() {
+  local target="$HOME/.claude/hooks/git"
+  if ! command -v git >/dev/null 2>&1; then
+    echo "  [skip] git not found — the trunk and secret hooks are installed but nothing points at them"
+    return 0
+  fi
+  local current
+  current="$(git config --global --get core.hooksPath 2>/dev/null || true)"
+  if [ -n "$current" ] && [ "$current" != "$target" ]; then
+    echo "  [skip] a global hook path is already set ($current) — left untouched"
+    echo "         to run the engine's hooks too, chain them from there, or set:"
+    echo "           git config --global core.hooksPath $target"
+    return 0
+  fi
+  git config --global core.hooksPath "$target"
+  echo "  [ok] git points at $target (every repository on this machine)"
+}
+
 # Global tooling: phase skills, verify-review workflow, guardrail hooks + settings.json merge
 install_tooling() {
   mkdir -p "$HOME/.claude"/skills "$HOME/.claude/workflows" "$HOME/.claude/hooks"
@@ -223,6 +251,17 @@ install_tooling() {
   done
   chmod +x "$HOME/.claude/hooks/check-state-size.sh" 2>/dev/null || true
   echo "  [ok] Hooks installed to ~/.claude/hooks"
+
+  # Git's own hooks. The executable bit is set explicitly and is not optional: the download path fetches
+  # with curl, which does not carry it, and git skips a hook that lacks it with a hint and nothing else
+  # — the quietest way this protection can fail.
+  mkdir -p "$HOME/.claude/hooks/git"
+  for hook in $GIT_HOOKS; do
+    fetch_file "global/hooks/git/$hook" "$HOME/.claude/hooks/git/$hook"
+    chmod +x "$HOME/.claude/hooks/git/$hook" 2>/dev/null || true
+  done
+  echo "  [ok] Git hooks installed to ~/.claude/hooks/git"
+  point_git_at_hooks
 
   mkdir -p "$HOME/.claude/ai-flow/ralph"
   for f in $RALPH; do

@@ -5055,282 +5055,29 @@ if [ "$PY3" = 1 ]; then
     '{"tool_input":{"command":123}}' '{"tool_input":{"command":["git","push"]}}' \
     '{"tool_input":{"command":{"a":1}}}' '{"tool_input":{"command":true}}'
 
-  # The control, and it is the load-bearing assertion of this whole group. Without it the three checks
+  # The control, and it is the load-bearing assertion of this whole group: without it the three checks
   # above are all satisfied by a rail that exits 0 unconditionally, and their verdict would be borrowed
-  # from another section of this file — which is no verdict at all. It shares everything with them: the
-  # same hook, the same invocation, the same directory. This rail had no behavioural coverage before, so
-  # there was no control anywhere to borrow; this is it. The branch is named explicitly, so the verdict
-  # does not depend on whatever branch this suite happens to run on.
-  out="$(gcmd 'git push --force origin main')"; rc=$?
-  [ "$rc" = 2 ] && ok "the same fixture still refuses a well-formed hard force-push to main" \
-                || bad "the same fixture still refuses a well-formed hard force-push to main (exit $rc, said: $out)"
+  # from elsewhere in this file, which is no verdict at all.
+  #
+  # What it controls for changed with the rail's job. It used to drive a hard force-push, because the
+  # rail judged commands; the rail no longer judges any command, so that fixture would now be green for
+  # a reason unrelated to what it is named for. The control is the same shape against the new job: a
+  # repository with no protection in place, where the rail must refuse and say so. It is driven from a
+  # fixture whose state is known rather than from whatever repository this suite happens to run in.
+  C31R="$T11/c31rail"; mkproj "$C31R" main
+  out="$(printf '{"cwd":"%s","tool_input":{"command":"git push origin main"}}' "$C31R" | python3 "$GS" 2>&1)"; rc=$?
+  case "$out" in *"not active in this repository"*) said=1 ;; *) said=0 ;; esac
+  { [ "$rc" = 2 ] && [ "$said" = 1 ]; } \
+    && ok "the same fixture still refuses where the protection is not in place" \
+    || bad "the same fixture still refuses where the protection is not in place (exit $rc, said: $out)"
 else
   echo "  [skip] Bash rail checks (python3 unavailable)"
 fi
 
-echo "== C32: the rail judges the target it reads, not a word it recognises =="
-# C31 above is scoped to the payload the rail reads and says nothing about how a command is matched.
-# This section is the other half: which orders count as forcing the trunk, which count as deleting it,
-# and — the question neither the rail nor its suite has ever asked — what the command actually points at.
-#
-# Two tables carry the whole verdict, and they are tables on purpose: a shape that stops being covered
-# names itself here instead of disappearing into a helper. Their sizes are a note, never part of an
-# assertion's name, because a name that counts is a name that has to be edited every time the set grows.
-#
-# The refused table's first block is inherited: the shapes an earlier task measured as dangerous and
-# recorded in prose, never in code. Building it is what priced the destination reader — three of them
-# read as harmless to a positional reader, two from shell punctuation glued to the token and one whose
-# target the flat scan only ever caught by accident.
-if [ "$PY3" = 1 ]; then
-  GS32="$HK/git-safety.py"
-  R32="$T11/rail32"; mkproj "$R32" feature   # a non-trunk checkout: the only position from which a
-                                             # command that names no branch reveals what it assumes
-  rail32() {  # $1 = command, $2 = cwd -> combined output, returns the rail's exit code
-    python3 -c 'import json,sys; print(json.dumps({"tool_input":{"command":sys.argv[1]}}))' "$1" \
-      | ( cd "$2" && python3 "$GS32" 2>&1 )
-  }
-  refuse32() {  # $1 = label, $2 = cwd, $3.. = commands that must each exit 2
-    label="$1"; cwd="$2"; shift 2; why32=""
-    for c in "$@"; do
-      out="$(rail32 "$c" "$cwd")"; rc=$?
-      [ "$rc" = 2 ] || why32="$why32 [$c -> exit $rc]"
-    done
-    [ -z "$why32" ] && ok "$label" || bad "$label ($why32)"
-  }
-  allow32() {  # $1 = label, $2 = cwd, $3.. = commands that must each exit 0 in silence
-    label="$1"; cwd="$2"; shift 2; why32=""
-    for c in "$@"; do
-      out="$(rail32 "$c" "$cwd")"; rc=$?
-      [ "$rc" = 0 ] || why32="$why32 [$c -> exit $rc, said: $out]"
-    done
-    [ -z "$why32" ] && ok "$label" || bad "$label ($why32)"
-  }
-
-  # --- the control, in this section's own fixture ---------------------------
-  # Every check below is satisfied by a rail that refuses everything, and every allow check by a rail
-  # that refuses nothing. Neither reading is available while these two stand together, and they stand
-  # in the same fixture as the rest: same hook, same invocation, same checkout.
-  refuse32 "the fixture refuses a well-formed hard force-push to the trunk" "$R32" \
-    'git push --force origin main'
-  allow32 "the fixture allows an ordinary push to the trunk" "$R32" \
-    'git push origin main'
-
-  # --- A12: the inherited non-regression set, in code for the first time ----
-  refuse32 "every recorded force-push shape is still refused" "$R32" \
-    'git push --force origin main' \
-    'sudo git push --force origin main' \
-    'GIT_TRACE=1 git push --force origin main' \
-    'env GIT_TRACE=1 git push --force origin main' \
-    'time git push --force origin main' \
-    '/usr/bin/git push --force origin main' \
-    'git -C /tmp/x push --force origin main' \
-    'git --git-dir=/tmp/x/.git push --force origin main' \
-    'cd /tmp/x && git push --force origin main' \
-    'for i in 1 2; do git push --force origin main; done' \
-    '(git push --force origin main)' \
-    'echo hi
-git push --force origin main' \
-    "echo 'git push --force origin main' | bash" \
-    'echo main | xargs -I{} git push --force origin {}'
-
-  # --- A1: the filed defect, every form it was measured in ------------------
-  refuse32 "a leading + on a refspec targeting the trunk is refused" "$R32" \
-    'git push origin +main' \
-    'git push origin +HEAD:main' \
-    'git push origin +master' \
-    'git push origin +refs/heads/main' \
-    'git push origin +HEAD:refs/heads/main' \
-    'git push origin +main:main' \
-    'git push origin +feature:main' \
-    'git push origin "+main"' \
-    "git push origin '+main'"
-
-  # --- A2: the lease does not cover a + refspec, so it must not exempt one --
-  # Measured against real git rather than reasoned: on a stale lease, the same fixture refuses
-  # `--force-with-lease origin main` and force-updates `--force-with-lease origin +main`.
-  refuse32 "the lease does not exempt a + refspec targeting the trunk" "$R32" \
-    'git push --force-with-lease origin +main' \
-    'git push --force-with-lease origin +HEAD:main'
-
-  # --- A3: the flag cluster, whatever position the f sits in ----------------
-  refuse32 "a short-flag cluster containing f is a force signal wherever the f sits" "$R32" \
-    'git push -f origin main' \
-    'git push -uf origin main' \
-    'git push -fu origin main' \
-    'git push -qf origin main' \
-    'git push -fq origin main'
-
-  # --- A5: an order that reaches every ref reaches the trunk ---------------
-  # Driven from the non-trunk checkout on purpose: on the trunk these pass for the wrong reason,
-  # because the fallback would answer with the trunk whatever the command actually said.
-  refuse32 "a force that sends every ref reaches the trunk from a non-trunk checkout" "$R32" \
-    'git push --all --force origin' \
-    'git push --branches --force origin' \
-    'git push --all -f origin'
-
-  # --- A4: --mirror, which git documents as forcing every ref it updates ----
-  refuse32 "--mirror is refused whatever branch the checkout is on" "$R32" \
-    'git push --mirror origin'
-
-  # --- A6: a force refspec injected through configuration ------------------
-  # The configured refspec answers two questions and they must not share a test. The leading `+` says
-  # the command forces; the value says where it lands. Filtering the collection on the `+` answered the
-  # first while destroying the second, so a force supplied by a flag beside a destination supplied by
-  # configuration lost its target and fell through to the current branch — refused before this section
-  # existed, allowed after. The rows without a `+` are that regression, and they are here rather than in
-  # a note because a note cannot fail. Quoting is enumerated for the same reason: the quotes sit either
-  # side of the `=`, and only one of those positions was ever driven.
-  refuse32 "a force refspec injected through -c is refused" "$R32" \
-    'git -c remote.origin.push=+refs/heads/main:refs/heads/main push origin' \
-    'git -c remote.origin.push=+main push origin' \
-    'git -c remote.origin.push=refs/heads/main:refs/heads/main push --force origin' \
-    'git -c remote.origin.push=refs/heads/main push -f origin' \
-    "git -c 'remote.origin.push=+refs/heads/main' push origin" \
-    'git -c "remote.origin.push=+refs/heads/main" push origin' \
-    "git -c remote.origin.push='+refs/heads/main' push origin" \
-    'git -c remote.origin.push="+refs/heads/main" push origin'
-
-  # The other direction of the same fix: only keys git reads a push refspec from may be collected. Were
-  # every `-c` value collected, an unrelated one would read as a destination and silence the very
-  # fallback the rows above restore — the same protection lost, reached from the opposite side.
-  allow32 "an unrelated -c value is not read as a destination" "$R32" \
-    'git -c user.email=t@t push --force origin' \
-    'git -c core.pager=cat push --force origin feature'
-  refuse32 "an unrelated -c value does not stop the trunk being seen" "$R32" \
-    'git -c core.pager=cat push --force origin main'
-
-  # --- A7: deletion of the trunk on the remote ----------------------------
-  refuse32 "deleting the trunk on the remote is refused" "$R32" \
-    'git push origin :main' \
-    'git push origin :refs/heads/main' \
-    'git push origin --delete main' \
-    'git push origin -d main' \
-    'git push origin --delete master' \
-    'git push origin +:main'
-  # Both halves, because either alone is satisfied by the wrong message: naming deletion is met by a
-  # force refusal that happens to mention the flag it read, and not naming a force-push is met by a
-  # rail that says nothing at all.
-  # A deletion written with an empty source carries a `+`, and the force reader would claim it first.
-  # Both refuse, so the exit code cannot tell them apart — only the advice can, and the force advice
-  # there is actively wrong: dropping the `+` from `+:main` leaves `:main`, which still destroys the
-  # trunk. This is the row that holds the ordering in place.
-  out="$(rail32 'git push origin +:main' "$R32")"
-  case "$out" in
-    *deleting*) ok "a deletion written with an empty source is reported as a deletion, not a force" ;;
-    *)          bad "a deletion written with an empty source is reported as a deletion, not a force (said: $out)" ;;
-  esac
-
-  # The force refusal's own wording, which was asserted nowhere: it must name the signal it read, and
-  # on the + path it must not offer the lease, because the lease does not cover a + refspec.
-  out="$(rail32 'git push origin +main' "$R32")"
-  case "$out" in
-    *"a leading + on a refspec"*) case "$out" in
-                                    *force-with-lease*) bad "the + refusal names its signal and does not offer the lease (said: $out)" ;;
-                                    *)                  ok "the + refusal names its signal and does not offer the lease" ;;
-                                  esac ;;
-    *) bad "the + refusal names its signal and does not offer the lease (said: $out)" ;;
-  esac
-  out="$(rail32 'git push --force origin main' "$R32")"
-  case "$out" in
-    *"the --force flag"*) ok "a flag refusal names the flag it read and keeps the lease as its remedy" ;;
-    *)                    bad "a flag refusal names the flag it read and keeps the lease as its remedy (said: $out)" ;;
-  esac
-
-  # The intersection of the two tables above, which neither drove on its own: a flag cluster written
-  # inside each shell context the inherited set enumerates. Measured to hold before it was asserted.
-  refuse32 "a flag cluster is still read inside every recorded shell context" "$R32" \
-    'sudo git push -fu origin main' \
-    'GIT_TRACE=1 git push -fu origin main' \
-    'for i in 1 2; do git push -fu origin main; done' \
-    '(git push -fu origin main)' \
-    "echo 'git push -fu origin main' | bash" \
-    'echo main | xargs -I{} git push -fu origin {}' \
-    'cd /tmp/x && git push -fu origin main'
-
-  # A deletion refspec can be injected through configuration exactly as a force one can, and the same
-  # collection now carries it to the deletion reader.
-  refuse32 "a deletion refspec injected through -c is refused" "$R32" \
-    'git -c remote.origin.push=:main push origin' \
-    'git -c remote.origin.push=:refs/heads/main push origin'
-
-  out="$(rail32 'git push origin --delete main' "$R32")"
-  case "$out" in
-    *delet*) case "$out" in
-               *force-push*) bad "a refused deletion says deletion, not force (said: $out)" ;;
-               *)            ok "a refused deletion says deletion, not force" ;;
-             esac ;;
-    *)       bad "a refused deletion says deletion, not force (said: $out)" ;;
-  esac
-
-  # --- A8, A9, A13: the allowed side, which is where the whole change lives -
-  # Without these the refused tables above are all satisfied by a rail that refuses everything.
-  allow32 "the destination decides, not the word: the trunk on the source side is allowed" "$R32" \
-    'git push --force origin main:feature' \
-    'git push origin +main:feature' \
-    'git push --force origin HEAD:feature'
-  allow32 "a branch whose name contains the trunk word is not the trunk" "$R32" \
-    'git push --force origin feature/main-menu' \
-    'git push --force origin fix/main-nav' \
-    'git push origin +feature/main-menu' \
-    'git push --force origin feature/domain-model' \
-    'git push --force origin docs/maintenance'
-  allow32 "an explicit non-trunk destination is allowed, and a bare force falls back to the checkout" "$R32" \
-    'git push --force origin feature' \
-    'git push origin +feature' \
-    'git push --force origin' \
-    'git push --force-with-lease origin main'
-
-  # --- A11: a + that is not a refspec is not a force signal ---------------
-  # The over-block trap of this whole change, and the realistic one: commit messages carry plus signs.
-  allow32 "a + outside a refspec is not a force signal" "$R32" \
-    "echo 'a+b' && git push origin main" \
-    "git commit -m 'fix: 1+1' && git push origin main" \
-    'git push origin main # 1+1'
-
-  # --- A13, second half: the fallback's refusing direction -----------------
-  # Every table above runs from a feature checkout, which proves only that the no-refspec fallback
-  # *allows*. Its refusing direction — a bare force typed while standing on the trunk, which is the
-  # commonest dangerous shape there is — was guarded by nothing: the branch lookup could be emptied and
-  # no assertion went red, on the force half and the deletion half alike. A second fixture is what makes
-  # that impossible, and it carries its own allow row so it cannot be met by a rail that refuses
-  # everything from the trunk.
-  T32="$T11/rail32main"; mkproj "$T32" main
-  refuse32 "a command naming no refspec is judged on the checkout it runs in" "$T32" \
-    'git push --force origin' \
-    'git push -f' \
-    'git push --force' \
-    'git push origin --delete'
-  allow32 "the trunk checkout still allows an ordinary push and an explicit feature target" "$T32" \
-    'git push origin' \
-    'git push --force origin feature' \
-    'git push origin --delete feature'
-  # The other half of the configured-value fix, and it only discriminates from here. Collecting every
-  # `-c` value would put an unrelated one into the destination list; the reader would then answer "a
-  # destination, and not the trunk" where it should answer "none named" — and the checkout fallback that
-  # refuses a bare force on the trunk would never run. From a feature checkout both readings allow, so
-  # an assertion placed there proves nothing about it.
-  refuse32 "an unrelated -c value does not silence the checkout fallback" "$T32" \
-    'git -c user.email=t@t push --force origin' \
-    'git -c core.pager=cat push -f origin'
-
-  # --- A5, allowed side: the wideners widen, they never force --------------
-  # Without this the widener list reads as a force signal, and nothing above would notice: sending every
-  # branch with no force flag is an ordinary fast-forward push.
-  allow32 "sending every ref without a force flag stays allowed" "$R32" \
-    'git push --all origin' \
-    'git push --branches origin' \
-    'git push --all --force-with-lease origin'
-
-  # --- A10: deleting anything that is not the trunk -----------------------
-  allow32 "deleting a non-trunk branch stays allowed, name collisions included" "$R32" \
-    'git push origin --delete feature' \
-    'git push origin :feature' \
-    'git push origin -d release/2.0' \
-    'git push origin --delete feature/main-menu' \
-    'git branch -D main'
-else
-  echo "  [skip] target-reading checks (python3 unavailable)"
-fi
+# C32 is retired here, in the same change that removes the matcher it tested. Its rows are not dropped:
+# every shape in both of its tables lives on in C33 and C34, migrated from matching a command's spelling
+# to executing the operation and letting git compute the effect. The migration is recorded in the task's
+# conformance manifest rather than left to be reconstructed from this diff.
 
 echo "== C33: the trunk is defended from what git reports, not from what a command says =="
 # The whole section drives REAL operations against a real bare remote rather than feeding strings to a
@@ -5498,7 +5245,9 @@ if command -v git >/dev/null 2>&1; then
     for q in 'main' "'main'" '"main"'; do
       cmd="${w//%C/git push --force origin $q}"
       out="$(sh33 prod "$cmd")"; rc=$?; nd33=$((nd33+1))
-      { [ "$rc" != 0 ] && [ "$b33" = "$(ref33 prod main)" ]; } || why33="$why33 [$cmd -> exit $rc]"
+      case "$out" in *"BLOCKED:"*) mine=1 ;; *) mine=0 ;; esac
+      { [ "$rc" != 0 ] && [ "$mine" = 1 ] && [ "$b33" = "$(ref33 prod main)" ]; } \
+        || why33="$why33 [$cmd -> exit $rc, guard spoke: $mine]"
     done
   done
   for extra in "git -c alias.p=push p --force origin main" \
@@ -5506,7 +5255,9 @@ if command -v git >/dev/null 2>&1; then
                "git push --force origin HEAD:main" \
                "git push origin +HEAD:refs/heads/main"; do
     out="$(sh33 prod "$extra")"; rc=$?; nd33=$((nd33+1))
-    { [ "$rc" != 0 ] && [ "$b33" = "$(ref33 prod main)" ]; } || why33="$why33 [$extra -> exit $rc]"
+    case "$out" in *"BLOCKED:"*) mine=1 ;; *) mine=0 ;; esac
+    { [ "$rc" != 0 ] && [ "$mine" = 1 ] && [ "$b33" = "$(ref33 prod main)" ]; } \
+      || why33="$why33 [$extra -> exit $rc, guard spoke: $mine]"
   done
   nh33=0
   i33=0
@@ -5524,15 +5275,46 @@ if command -v git >/dev/null 2>&1; then
   echo "         ($nd33 dangerous forms refused, $nh33 harmless forms allowed)"
 
   # --- rows 8 and 9: the inherited tables, executed rather than matched ----
+  # A second trunk-named branch, because several inherited shapes name it and the remote must hold one
+  # for the operation to be a rewrite rather than a create.
   mkpair33 inh main; diverge33 inh
+  # It has to be behind on the remote, not level with it: a branch the remote already holds at the same
+  # commit is up to date, the operation is a no-op, and the row would pass without the hook running at
+  # all. Landed at the commit the remote holds and then moved onto the rewritten one.
+  # A source branch for the refspec shapes that name one. Without it git errors before the hook is
+  # ever consulted, and the row reads as a refusal that this guard never made.
+  git -C "$T33/inh/work" branch -q feature main
+  git -C "$T33/inh/work" branch -q master "$(ref33 inh main)"
+  free33 inh push -q origin master
+  git -C "$T33/inh/work" branch -qf master main
   b33="$(ref33 inh main)"; why33=""
   while IFS= read -r shape; do
     [ -n "$shape" ] || continue
     out="$(sh33 inh "$shape")"; rc=$?
-    { [ "$rc" != 0 ] && [ "$b33" = "$(ref33 inh main)" ]; } || why33="$why33 [$shape -> exit $rc]"
+    case "$out" in *"BLOCKED:"*) mine=1 ;; *) mine=0 ;; esac
+    { [ "$rc" != 0 ] && [ "$mine" = 1 ] && [ "$b33" = "$(ref33 inh main)" ]; } \
+      || why33="$why33 [$shape -> exit $rc, guard spoke: $mine, said: $out]"
   done <<'SHAPES'
 git push --force origin main
 git push -f origin main
+git push origin +master
+git push origin :refs/heads/main
+git push origin --delete master
+git push origin +feature:main
+git -c remote.origin.push=:main push origin
+git -c remote.origin.push=:refs/heads/main push origin
+git -c "remote.origin.push=+refs/heads/main" push origin
+git -c remote.origin.push="+refs/heads/main" push origin
+git -c remote.origin.push='+refs/heads/main' push origin
+cd .. && git -C work push --force origin main
+cd .. && git --git-dir=work/.git --work-tree=work push --force origin main
+( git push -fu origin main )
+for i in 1 2; do git push -fu origin main; done
+echo 'git push -fu origin main' | bash
+echo main | xargs -I{} git push -fu origin {}
+cd /tmp && git -C "$OLDPWD" push -fu origin main
+git -c core.pager=cat push -f origin
+git -c user.email=t@t.t push --force origin
 git push -uf origin main
 git push -fu origin main
 git push -qf origin main
@@ -5591,6 +5373,10 @@ git -c user.email=t@t.t push --force origin feature
 git push origin --delete gone1
 git push origin :gone2
 git push origin -d gone3
+git push origin -d release/2.0
+git -c core.pager=cat push --force origin feature
+git -c user.email=t@t.t push --force origin feature
+git branch -D docs/maintenance
 SHAPES
   # The nested names need a fixture of their own: git cannot hold a branch and a directory of the same
   # name at once, so `feature` and `feature/main-menu` cannot both be real branches in one repository.
@@ -5606,6 +5392,8 @@ SHAPES
 git push --force origin feature/main-menu
 git push origin +feature/main-menu
 git push --force origin feature/domain-model
+git push origin --delete feature/main-menu
+git push origin :feature/domain-model
 SHAPES
   [ -z "$why33" ] && ok "every recorded allowed shape is still allowed" \
                   || bad "every recorded allowed shape is still allowed ($why33)"
@@ -5818,16 +5606,174 @@ else
 fi
 
 echo "== C35: the rail reports whether the protection is here, and judges nothing else =="
-# The rail's new job. Its trigger may be as imprecise as it likes: a false trigger costs a stat, and a
-# missed one costs nothing, because git's own hook is the protection. That is what makes this section
-# small where the matcher it replaces needed forty-six rows.
-bad "no command that fails to invoke git is refused"
-bad "a repository without the protection is told, and told how"
-bad "a plus sign beside a push is not read as an order to force"
-bad "the rail judges the directory the session declares"
-bad "an existing global hook path is reported and left alone"
-bad "the installed git hooks are executable however they arrived"
-bad "the drift guard sees the new hooks"
+# The rail's new job, and the whole reason this section is short where the matcher it replaces needed
+# forty-six rows: the rail no longer decides anything about a command. Its trigger is a crude text test
+# and is allowed to be one, because a shape it misses is a reminder that does not fire in a repository
+# git's own hooks are not guarding either way. What it must never do again is refuse work.
+if [ "$PY3" = 1 ] && command -v git >/dev/null 2>&1; then
+  GS35="$HK/git-safety.py"
+  T35="$T11/c35"; mkdir -p "$T35"
+  ENG35="$T35/enginehooks"; mkdir -p "$ENG35"
+  printf '#!/bin/sh\nexit 0\n' > "$ENG35/pre-push"; chmod 755 "$ENG35/pre-push"
+  printf '#!/bin/sh\nexit 0\n' > "$ENG35/pre-commit"; chmod 755 "$ENG35/pre-commit"
+
+  rail35() {  # $1 = declared cwd, $2 = command -> combined output, returns the rail's exit code
+    printf '%s' "$(python3 -c 'import json,sys; print(json.dumps({"cwd": sys.argv[1], "tool_input": {"command": sys.argv[2]}}))' "$1" "$2")" \
+      | ( cd "$3" && HOME="$T35/home" python3 "$GS35" 2>&1 )
+  }
+  # A sandboxed HOME whose engine hooks are the throwaway pair above, so the section never depends on
+  # what is installed on the machine running it.
+  mkdir -p "$T35/home/.claude/hooks/git"
+  cp "$ENG35/pre-push" "$ENG35/pre-commit" "$T35/home/.claude/hooks/git/"
+
+  UNPROT="$T35/unprotected"; mkproj "$UNPROT" main
+  PROT="$T35/protected";     mkproj "$PROT" main
+  git -C "$PROT" config core.hooksPath "$T35/home/.claude/hooks/git"
+  DISP="$T35/displaced";     mkproj "$DISP" main
+  mkdir -p "$DISP/.myhooks";  git -C "$DISP" config core.hooksPath .myhooks
+  ACKED="$T35/acknowledged";  mkproj "$ACKED" main
+  git -C "$ACKED" config aiflow.protection acknowledged
+  PLAIN="$T35/notarepo";      mkdir -p "$PLAIN"
+  # Present but not runnable. This is the quietest way the protection fails — git skips a hook without
+  # its executable bit with a hint and nothing else — and no fixture here could reach it until a
+  # mutation that reads presence instead of runnability survived for want of a witness.
+  INERT="$T35/inert";         mkproj "$INERT" main
+  cp "$ENG35/pre-push" "$ENG35/pre-commit" "$INERT/.git/hooks/"
+  chmod 644 "$INERT/.git/hooks/pre-push" "$INERT/.git/hooks/pre-commit"
+  # A repository with no working tree: nothing is recorded or published from one, so reporting on it
+  # would be a nag with no subject. Found the same way.
+  BARE="$T35/bare.git";       git init -q --bare "$BARE"
+
+  # --- the reported defect, entire ----------------------------------------
+  # The nine shapes measured as refused by the matcher, plus the six that refused this task's own work
+  # while it was being understood. Driven from a PROTECTED fixture, and the scoping is the honest claim
+  # rather than a convenience: what this change delivers is that in a repository where the protection is
+  # in place — every repository, once the installer has run — no command is refused for what its text
+  # says. In a repository where it is NOT in place the crude trigger will fire on some of these, and
+  # that firing is the reminder itself. Because nothing is refused here whatever the trigger does, this
+  # row cannot test the trigger; the row below owns that, through its leg for a command that records
+  # nothing.
+  why35=""; n35=0
+  while IFS= read -r shape; do
+    [ -n "$shape" ] || continue
+    out="$(rail35 "$PROT" "$shape" "$PROT")"; rc=$?; n35=$((n35+1))
+    [ "$rc" = 0 ] || why35="$why35 [$shape -> exit $rc, said: $out]"
+  done <<'SHAPES'
+echo "git push --force origin main"
+git commit -m "docs: forbid git push --force origin main"
+grep -n 'push --force origin main' notes.md
+kubectl push --force origin main
+npm run push -- -f --branch main
+echo "git add .env" >> notes.md
+git commit -m "add .env to gitignore"
+grep -rn "git add .env" docs/
+python3 -c 'print("git push --force origin main")'
+EXAMPLE='git push --force origin main'; echo "$EXAMPLE" >> notes.md
+cat > notes.md <<'EOF'
+Forbidden: git push --force origin main
+EOF
+echo 'clean' # push
+rm -rf build && echo 'push to main later'
+git status && echo 'do not add .env'
+echo 'never commit .env' >> /repos/git/README.md
+SHAPES
+  [ -z "$why35" ] && ok "no command that fails to invoke git is refused" \
+                  || bad "no command that fails to invoke git is refused ($why35)"
+
+  # --- the new job, in all five states it can report ----------------------
+  why35=""
+  out="$(rail35 "$UNPROT" "git push origin main" "$UNPROT")"; rc=$?
+  case "$out" in *"core.hooksPath"*) named=1 ;; *) named=0 ;; esac
+  case "$out" in *"aiflow.protection"*) ;; *) named=0 ;; esac
+  { [ "$rc" = 2 ] && [ "$named" = 1 ]; } || why35="$why35 [absent -> exit $rc, said: $out]"
+  out="$(rail35 "$DISP" "git commit -m x" "$DISP")"; rc=$?
+  case "$out" in *".myhooks"*) ;; *) why35="$why35 [displaced -> does not name what displaced it: $out]" ;; esac
+  [ "$rc" = 2 ] || why35="$why35 [displaced -> exit $rc]"
+  out="$(rail35 "$PROT" "git push origin main" "$PROT")"; rc=$?
+  { [ "$rc" = 0 ] && [ -z "$out" ]; } || why35="$why35 [active -> exit $rc, said: $out]"
+  out="$(rail35 "$ACKED" "git push origin main" "$ACKED")"; rc=$?
+  { [ "$rc" = 0 ] && [ -z "$out" ]; } || why35="$why35 [acknowledged -> exit $rc, said: $out]"
+  out="$(rail35 "$PLAIN" "git push origin main" "$PLAIN")"; rc=$?
+  { [ "$rc" = 0 ] && [ -z "$out" ]; } || why35="$why35 [not a repository -> exit $rc, said: $out]"
+  out="$(rail35 "$BARE" "git push origin main" "$BARE")"; rc=$?
+  { [ "$rc" = 0 ] && [ -z "$out" ]; } || why35="$why35 [a repository with no working tree -> exit $rc, said: $out]"
+  out="$(rail35 "$INERT" "git push origin main" "$INERT")"; rc=$?
+  { [ "$rc" = 2 ]; } || why35="$why35 [hooks present but not runnable -> exit $rc, said: $out]"
+  out="$(rail35 "$UNPROT" "git status" "$UNPROT")"; rc=$?
+  { [ "$rc" = 0 ] && [ -z "$out" ]; } || why35="$why35 [a command that records nothing -> exit $rc, said: $out]"
+  [ -z "$why35" ] && ok "a repository without the protection is told, and told how" \
+                  || bad "a repository without the protection is told, and told how ($why35)"
+
+  # --- the three classes the previous change introduced -------------------
+  why35=""
+  for shape in "git push origin main && chmod +x a.sh" \
+               "git push origin main; echo '+added' >> notes.log" \
+               "git push origin main && grep +3 report.txt" \
+               "echo 'a+b' && git push origin main" \
+               "git commit -m 'fix: 1+1' && git push origin main" \
+               "git push origin main # 1+1" \
+               "git branch -D main"; do
+    out="$(rail35 "$PROT" "$shape" "$PROT")"; rc=$?
+    [ "$rc" = 0 ] || why35="$why35 [$shape -> exit $rc, said: $out]"
+  done
+  [ -z "$why35" ] && ok "a plus sign beside a push is not read as an order to force" \
+                  || bad "a plus sign beside a push is not read as an order to force ($why35)"
+
+  # --- the declared directory, not the process's own ----------------------
+  # Both legs, and the second is the one that matters: standing in a protected repository while the
+  # session declares an unprotected one must still refuse. A rail reading its own directory answers
+  # about the wrong repository, and this pair is what makes that impossible.
+  why35=""
+  out="$(rail35 "$UNPROT" "git push origin main" "$PROT")"; rc=$?
+  [ "$rc" = 2 ] || why35="$why35 [declared unprotected, standing in protected -> exit $rc]"
+  out="$(rail35 "$PROT" "git push origin main" "$UNPROT")"; rc=$?
+  [ "$rc" = 0 ] || why35="$why35 [declared protected, standing in unprotected -> exit $rc, said: $out]"
+  [ -z "$why35" ] && ok "the rail judges the directory the session declares" \
+                  || bad "the rail judges the directory the session declares ($why35)"
+
+  # --- the installer -------------------------------------------------------
+  # A sandboxed HOME and a sandboxed git configuration; the machine's own global config is never read
+  # or written by this section.
+  IH="$T35/ihome"; IT="$T35/itarget"; IW="$T35/iwork"
+  mkdir -p "$IH" "$IT/.ai-flow" "$IW"
+  printf '[user]\n\tname = t\n' > "$IH/.gitconfig"
+  git config --file "$IH/.gitconfig" core.hooksPath "/somewhere/of/my/own"
+  ( cd "$IW" && HOME="$IH" GIT_CONFIG_GLOBAL="$IH/.gitconfig" bash "$ROOT/install.sh" update "$IT" </dev/null >"$T35/ilog" 2>&1 ) || true
+  keptv="$(git config --file "$IH/.gitconfig" --get core.hooksPath)"
+  if [ "$keptv" = "/somewhere/of/my/own" ] && grep -q "already set" "$T35/ilog"; then
+    ok "an existing global hook path is reported and left alone"
+  else
+    bad "an existing global hook path is reported and left alone (value now '$keptv')"
+  fi
+
+  why35=""
+  for h in pre-push pre-commit; do
+    [ -f "$IH/.claude/hooks/git/$h" ] || why35="$why35 [$h not installed]"
+    [ -x "$IH/.claude/hooks/git/$h" ] || why35="$why35 [$h installed without its executable bit]"
+  done
+  # The same on the path that has no executable bit to carry: a copy stripped of it must be repaired by
+  # the installer, which is the only thing standing between a download and a hook git silently skips.
+  chmod 644 "$IH/.claude/hooks/git/pre-push" 2>/dev/null || true
+  ( cd "$IW" && HOME="$IH" GIT_CONFIG_GLOBAL="$IH/.gitconfig" bash "$ROOT/install.sh" update "$IT" </dev/null >/dev/null 2>&1 ) || true
+  [ -x "$IH/.claude/hooks/git/pre-push" ] || why35="$why35 [a copy arriving without the bit keeps arriving without it]"
+  [ -z "$why35" ] && ok "the installed git hooks are executable however they arrived" \
+                  || bad "the installed git hooks are executable however they arrived ($why35)"
+
+  # --- the drift guard, which must cover them with no change to itself -----
+  why35=""
+  for h in pre-push pre-commit; do
+    grep -q "global/hooks/\*" "$HK/drift-check.sh" || why35="$why35 [the guard has no prefix map for the hooks directory]"
+    git -C "$ROOT" ls-files --error-unmatch "global/hooks/git/$h" >/dev/null 2>&1 \
+      || why35="$why35 [global/hooks/git/$h is not tracked, so the guard's listing never reaches it]"
+    git -C "$ROOT" ls-files -s "global/hooks/git/$h" | grep -q '^100755' \
+      || why35="$why35 [global/hooks/git/$h is tracked without its executable bit]"
+  done
+  [ -z "$why35" ] && ok "the drift guard sees the new hooks" \
+                  || bad "the drift guard sees the new hooks ($why35)"
+  echo "         ($n35 shapes that name the operation without invoking it, all allowed)"
+else
+  echo "  [skip] protection-reporting checks (python3 or git unavailable)"
+fi
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"

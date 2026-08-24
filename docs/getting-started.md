@@ -52,6 +52,9 @@ mkdir -p ~/.claude/skills ~/.claude/workflows ~/.claude/hooks
 cp -R /tmp/ai-flow/global/skills/* ~/.claude/skills/
 cp /tmp/ai-flow/global/workflows/verify-review.js ~/.claude/workflows/
 cp /tmp/ai-flow/global/hooks/*.sh /tmp/ai-flow/global/hooks/*.py ~/.claude/hooks/
+mkdir -p ~/.claude/hooks/git
+cp /tmp/ai-flow/global/hooks/git/pre-* ~/.claude/hooks/git/ && chmod +x ~/.claude/hooks/git/pre-*
+git config --global core.hooksPath ~/.claude/hooks/git   # skip if you already set one
 ```
 
 The installer **registers the hooks for you** — it merges `global/hooks/settings.hooks.json` into the `hooks` key of `~/.claude/settings.json` idempotently (python3), preserving your other settings and your own hooks. The manual `cp` above is only needed if you skipped the tooling step or python3 is unavailable. See [`global/hooks/README.md`](../global/hooks/README.md). The skills give you `/understand`, `/plan`, `/verify`, and `/discover`.
