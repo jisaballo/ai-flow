@@ -6194,8 +6194,7 @@ else
 fi
 
 # C37 — a capability the engine installs but names no way to start is indistinguishable from a dead one.
-# Generated in the Conform phase of T-047 from understand.md's Verifiable Criteria A3 and A6. The four rows that guard the retirement land
-# with the retirement itself: a row is committed with the change it can tell a pass from a fail on.
+# Generated in the Conform phase of T-047 from understand.md's Verifiable Criteria A1-A6.
 #
 # The task arrived asserting both capabilities were dead. Measurement falsified half of it: the unattended
 # loop had run and produced a merged commit, and its silence began the day it was centralised and its only
@@ -6223,10 +6222,53 @@ if [ -r "$MAN37" ] && [ -s "$MAN37" ] && [ -r "$INS37" ] && [ -s "$INS37" ] \
   # The Quick Commands block, extracted by its own heading, so a launcher mentioned in a comment three
   # sections away cannot answer for a line the reader of that block would actually find.
   QC37="$(awk '/^### Quick Commands$/{f=1;next} /^### /{f=0} f' "$MAN37")"
+  # The installer's data skeleton line — the one that decides which directories a target receives.
+  MKD37="$(grep -E 'mkdir -p "\$TARGET/\.ai-flow"' "$INS37" | head -1)"
 
   r37=""
   [ -n "$QC37" ] || r37="$r37 [the Quick Commands block did not extract — heading renamed?]"
-  [ -z "$r37" ] && ok "C37's region extracts" || bad "C37's region extracts ($r37)"
+  [ -n "$MKD37" ] || r37="$r37 [the installer's data-skeleton line did not extract]"
+  [ -z "$r37" ] && ok "C37's two regions all extract" || bad "C37's two regions all extract ($r37)"
+
+  # A1 — the protocol set, asserted in BOTH directions. The check this replaces (C-era EXPECTED_PROTOS)
+  # reported a protocol that was EXTRA and was blind to one that was MISSING, so a deletion — including
+  # this task's own — passed it green. Read before being retired: everything it covered is the `extra`
+  # leg below, and the `missing` leg is what it never had.
+  EXPECT37="backlog.md discover.md execute.md plan.md quick-path.md understand.md verify.md"
+  ACTUAL37="$(ls global/protocols 2>/dev/null | sort | tr '\n' ' ')"
+  c1_37=""
+  # The extractor proves it found the class before any verdict is drawn from it: an empty listing would
+  # otherwise satisfy the `extra` leg and report a clean engine.
+  if [ -z "$ACTUAL37" ]; then
+    c1_37="$c1_37 [the protocol directory listed nothing]"
+  else
+    x37=""; m37=""
+    for f37 in $ACTUAL37; do
+      case " $EXPECT37 " in *" $f37 "*) ;; *) x37="$x37 $f37" ;; esac
+    done
+    for f37 in $EXPECT37; do
+      case " $ACTUAL37 " in *" $f37 "*) ;; *) m37="$m37 $f37" ;; esac
+    done
+    [ -z "$x37" ] || c1_37="$c1_37 [extra:$x37]"
+    [ -z "$m37" ] || c1_37="$c1_37 [missing:$m37]"
+  fi
+  [ -z "$c1_37" ] && ok "A1 the engine ships exactly the protocol set it declares" \
+                  || bad "A1 the engine ships exactly the protocol set it declares ($c1_37)"
+
+  # A2 — the analysis capability is named nowhere the engine ships. The ledger under .ai-flow/ is the
+  # project's own record and is not shipped; test/ is excluded because this very row names the tokens.
+  # Bare `codebase` is deliberately NOT a token: the word is ordinary English throughout the protocols
+  # ("parts of the codebase a front declared"), and a row that pins it cannot tell a pass from a fail.
+  c2_37=""
+  SURF37="$(find global template docs README.md install.sh -type f 2>/dev/null | sort)"
+  if [ -z "$SURF37" ]; then
+    c2_37="$c2_37 [the shipped surface listed no file]"
+  else
+    hits37="$(printf '%s\n' "$SURF37" | tr '\n' '\0' | xargs -0 grep -lE 'codebase-mapping|map codebase|Codebase Mapping|codebase/|CONCERNS\.md|TESTING\.md|DRIFT\.md' 2>/dev/null | sort | tr '\n' ' ')"
+    [ -z "$hits37" ] || c2_37="$c2_37 [named in:$hits37]"
+  fi
+  [ -z "$c2_37" ] && ok "A2 the analysis capability is named nowhere the engine ships" \
+                  || bad "A2 the analysis capability is named nowhere the engine ships ($c2_37)"
 
   # A3 — the manual names how the unattended loop is started. Two legs: the launcher's installed path
   # somewhere in the manual, AND a mention inside the block a reader looking for commands would read.
@@ -6236,6 +6278,29 @@ if [ -r "$MAN37" ] && [ -s "$MAN37" ] && [ -r "$INS37" ] && [ -s "$INS37" ] \
   [ "$(n37 "$QC37" 'ralph')" -ge 1 ] || c3_37="$c3_37 [the commands block does not name the loop]"
   [ -z "$c3_37" ] && ok "A3 the manual names how the unattended loop is started" \
                   || bad "A3 the manual names how the unattended loop is started ($c3_37)"
+
+  # A4 — the pattern files carry the four data paths and no analysis path, in both directions and in both
+  # copies. Absence alone is satisfied by emptying the file; presence alone by leaving the retired line in.
+  c4_37=""
+  for pf37 in "$WTI37" "$WTT37"; do
+    pt37="$(cat "$pf37")"
+    for want37 in '^\.ai-flow/project\.yml$' '^\.ai-flow/product\.md$' '^\.ai-flow/steering/$' '^\.ai-flow/artifacts/$'; do
+      [ "$(n37 "$pt37" "$want37")" -ge 1 ] || c4_37="$c4_37 [$pf37 lost $want37]"
+    done
+    [ "$(n37 "$pt37" 'codebase')" -eq 0 ] || c4_37="$c4_37 [$pf37 still names the analysis path]"
+  done
+  [ -z "$c4_37" ] && ok "A4 the pattern file carries the four data paths and no analysis path" \
+                  || bad "A4 the pattern file carries the four data paths and no analysis path ($c4_37)"
+
+  # A5 — the installer creates no analysis directory. Both legs on the SAME extracted line, so the row
+  # cannot go green because the line vanished: the three surviving directories must still be named there.
+  c5_37=""
+  for want37 in steering artifacts archive; do
+    [ "$(n37 "$MKD37" "$want37")" -ge 1 ] || c5_37="$c5_37 [the data skeleton no longer creates $want37]"
+  done
+  [ "$(n37 "$MKD37" 'codebase')" -eq 0 ] || c5_37="$c5_37 [the data skeleton still creates an analysis directory]"
+  [ -z "$c5_37" ] && ok "A5 the installer creates no analysis directory" \
+                  || bad "A5 the installer creates no analysis directory ($c5_37)"
 
   # A6 — FROZEN ROW, green before this task's work and after it. What it guards is the half of the ticket
   # that measurement refuted: the loop stays distributed and stays under drift comparison. The mutation

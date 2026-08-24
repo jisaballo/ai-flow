@@ -636,16 +636,12 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
 ├── artifacts/              # ONLY open task folders
 │   └── T-XXX/              # One folder per open task
 │       └── state.md        # That task's phase, step, autonomy and decisions
-├── archive/                # Completed work
-│   ├── CHANGELOG.md        # Session-close entries (newest first)
-│   ├── EPICS.md            # Closed epics index (rows moved from BACKLOG.md)
-│   ├── EXECUTION-ORDERS.md # Execution Order blocks of closed epics
-│   ├── T-XXX/summary.md
-│   └── E-XXX-slug.md
-└── codebase/               # Analysis files (optional)
-    ├── CONCERNS.md
-    ├── TESTING.md
-    └── DRIFT.md
+└── archive/                # Completed work
+    ├── CHANGELOG.md        # Session-close entries (newest first)
+    ├── EPICS.md            # Closed epics index (rows moved from BACKLOG.md)
+    ├── EXECUTION-ORDERS.md # Execution Order blocks of closed epics
+    ├── T-XXX/summary.md
+    └── E-XXX-slug.md
 ```
 
 **The phase protocols are not in this tree.** They live centrally at `~/.claude/ai-flow/protocols/`,

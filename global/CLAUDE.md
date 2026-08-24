@@ -20,7 +20,6 @@ All task management lives in `.ai-flow/`. No external todo files.
 | `archive/T-XXX/` | Completed tasks with all artifacts, decisions, and summary.md |
 | `product.md` | Product context: users, roles, apps, core business flows (read at start of new epics) |
 | `steering/` | Domain-specific rules, patterns, and pitfalls (loaded per-task based on affected domains) |
-| `codebase/` | Lightweight codebase analysis (concerns, testing patterns, drift detection) |
 
 ### Task Lifecycle
 
@@ -81,7 +80,6 @@ At task activation, classify the task into an autonomy level. User confirms or a
 | Verify | `~/.claude/ai-flow/protocols/verify.md` |
 | Quick Path | `~/.claude/ai-flow/protocols/quick-path.md` |
 | Backlog/Archive/Epics | `~/.claude/ai-flow/protocols/backlog.md` |
-| Codebase Mapping | `~/.claude/ai-flow/protocols/codebase-mapping.md` |
 
 ### Phase Orchestration
 
@@ -104,7 +102,6 @@ At task activation, classify the task into an autonomy level. User confirms or a
 - **Check status**: "status"
 - **Understand**: "understand" -> run Understanding phase for active task
 - **More questions**: "more questions" -> gather additional context during Understanding
-- **Map codebase**: "map codebase" -> run lightweight codebase analysis (read codebase-mapping protocol)
 - **Discover project**: "discover" -> derive `.ai-flow/project.yml` for an existing repo (read discover protocol)
 - **Unattended run**: `bash ~/.claude/ai-flow/ralph/ralph.sh` -> work every `[afk]`-tagged backlog task, one disposable session each, serial, on a dedicated `afk/YYYY-MM-DD` branch. It never pushes and never touches the trunk; review the branch before merging it.
 

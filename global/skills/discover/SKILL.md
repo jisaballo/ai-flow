@@ -21,4 +21,3 @@ Derives the **project layer** (`.ai-flow/project.yml`) for an existing codebase,
 
 ## Notes
 - Detection is done by reading config files — no parser/tooling is added.
-- Complementary to `map codebase` (codebase-mapping), which analyzes tech debt/testing/drift into `.ai-flow/codebase/`. Discover derives *configuration*; they don't overlap.

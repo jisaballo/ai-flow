@@ -94,7 +94,6 @@ set carries project **data** and deliberately leaves the ledger behind:
 .ai-flow/project.yml
 .ai-flow/product.md
 .ai-flow/steering/
-.ai-flow/codebase/
 .ai-flow/artifacts/
 ```
 

@@ -97,7 +97,6 @@ Talk to Claude Code naturally. These commands are recognized:
 | `"execute"` | Run execution phase |
 | `"verify"` | Run verification phase |
 | `"pause"` | Save session state |
-| `"map codebase"` | Run lightweight codebase analysis |
 
 ## Project Structure
 
@@ -111,8 +110,7 @@ your-project/
 │   ├── product.md               # Product context (users, roles, flows)
 │   ├── steering/                # Domain-specific rules and patterns
 │   ├── artifacts/               # One folder per open task (state.md, understand.md, plan.md)
-│   ├── archive/                 # Completed task summaries
-│   └── codebase/                # Codebase analysis (concerns, testing, drift)
+│   └── archive/                 # Completed task summaries
 
 ~/.claude/                       # The engine — installed once, shared by every project
 ├── ai-flow/

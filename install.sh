@@ -90,7 +90,7 @@ fetch_file() {
   mv "$tmp" "$dest"
 }
 
-PROTOCOLS="understand plan execute verify quick-path backlog codebase-mapping discover"
+PROTOCOLS="understand plan execute verify quick-path backlog discover"
 SKILLS="understand plan verify discover"
 HOOKS="check-state-size.sh diff-size-guard.py git-safety.py understand-write-guard.py drift-check.sh"
 # Git's own hooks, which carry the two Never rules. They live under a subdirectory because that is
@@ -130,7 +130,7 @@ install_engine() {
 
 # Project data: fresh install only — the only thing that lives in the project
 install_data() {
-  mkdir -p "$TARGET/.ai-flow"/{steering,artifacts,archive,codebase}
+  mkdir -p "$TARGET/.ai-flow"/{steering,artifacts,archive}
   for f in BACKLOG STATE decisions-global product; do
     fetch_file "template/.ai-flow/$f.md" "$TARGET/.ai-flow/$f.md"
   done
