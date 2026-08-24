@@ -95,13 +95,17 @@ If no steering file exists for the affected domain, proceed without one. Each co
 
 **Unknowns list — the mandatory, written output of the scoping pass.** The scoping pass is not done until it produces a `## Unknowns` list presented in chat: every open question about the code, one line each ("who else consumes X?", "does flow Y survive Z?"). "No unknowns" is a valid outcome but must be stated explicitly with its source ("Unknowns: none — files pinned by the epic ficha"). The decision inline-vs-agents is never mental: it is derived from this list, and the list lands in understand.md (see template). An unknown that is really a business decision goes to Contextual Questions, not to investigation.
 
+**Altitude — what the first measurement must be able to break.** The first measurement must be able to falsify the framing of the question, not merely answer it. When the task arrives with a diagnosis already attached — named in the task's own text, or recorded by an earlier phase — measure the whole and locate the part; do not inspect the named suspect first. A confirmed suspect proves nothing, because it was named before anything was measured; a falsified frame saves the phase. The artifact records that first measurement and what it could have falsified. Where no diagnosis arrived attached, the field is not written: a note that fires on every run is how a check stops being read.
+
 **Resolution — one Decision per unknown:**
-- Every unknown closes with a **Decision + evidence (file:line or agent finding)** — never a global feeling of "enough context".
+- Every unknown closes with a **Decision + evidence** — never a global feeling of "enough context". The evidence names its provenance, because a fact read first-hand and an agent finding are not one standing: the first carries its `file:line`, the second carries whose answer it was. Both close an unknown; only the first was checked by the one who is about to plan on it. An agent's answer to a question that had not yet survived a round of measurement is a lead, not evidence.
 - **Unknowns spanning 2+ areas**, or 1 area whose flow crosses layers/files you have not read -> launch Explore agents in parallel, one per area.
 - **Single-area unknowns with affected files already identified** -> resolve inline, tracing the flow end-to-end (see Investigation Closure below).
 - **Scope still unclear after the scoping pass** -> that IS the signal to launch agents. Unclear scope is never a reason to guess and move on.
 
-The cost asymmetry rules the decision: an unnecessary Explore agent costs minutes; a missed area invalidates the plan during Execute.
+What rules the decision is the area left unmeasured: a missed area invalidates the plan during Execute, and it does so long after the phase that could have read it cheaply. Delegating is not a price paid for prudence — the resolution rules above say when a fan-out is the right shape, and the skip rules below say where it is refused. Pricing the fan-out as an expense is not what decides it.
+
+**The convergence is never delegated.** An agent answers the question it was given, confidently, including when the question is wrong — so a fan-out launched over a question that is still moving buys a confident answer to the wrong question, and buys it in the shape of a finding. Delegate a fan-out whose question has survived one round of measurement — the scoping pass above is that round, so scope still unclear *after* it is a measured question and the fan-out there is the rule above, not an exception to this one. While the question is still moving, investigate inline. Settling what the question is stays here, in every case.
 
 **Example:** Task affects auth + payments + notifications ->
 - Agent 1: Explore auth domain (models, services, state)
@@ -172,7 +176,7 @@ This gate is symmetric to Investigation Closure below: the technical gate proves
 
 Do not write understand.md until all four hold:
 
-1. **Every Unknown closed** — each entry in the Unknowns list has a Decision + evidence (file:line or agent finding); none resolved by assumption.
+1. **Every Unknown closed** — each entry in the Unknowns list has a Decision + evidence whose provenance is named (see Resolution above); none resolved by assumption, and none closed by an agent's answer to a question that had not survived a round of measurement.
 2. **file:line for every expected change** — verified by reading the file, not inferred from naming or convention.
 3. **Flow traced end-to-end** — entry point -> affected behavior -> its consumers, and you can state what each hop actually does (no assumptions; see CLAUDE.md debugging rule).
 4. **Blind spots named** — you can list what you did NOT read and say why it cannot change the plan.
@@ -206,11 +210,16 @@ Write `artifacts/T-XXX/understand.md` with:
 - **Active Scope**: [What we're solving now]
 - **Deferred to Backlog**: [List of new task IDs, if decomposed]
 
+## Altitude
+<!-- Only where the task arrived with a diagnosis already attached — omitted otherwise. -->
+- **First measurement**: [what was measured first, and what it could have falsified]
+
 ## Unknowns & Resolution
 <!-- Copied from the scoping pass — or the explicit line "Unknowns: none — [source]" -->
 | # | Unknown | Resolved via | Decision + evidence |
 |---|---------|--------------|---------------------|
-| 1 | [open question about the code] | inline / Explore agent | [decision] — `file:line` |
+| 1 | [open question about the code] | inline | [decision] — `file:line`, read first-hand |
+| 2 | [open question about the code] | Explore agent | [decision] — reported by [which agent, over what] |
 
 ## Context Gathered
 [Answers from user questions]
