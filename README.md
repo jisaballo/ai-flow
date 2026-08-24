@@ -97,6 +97,7 @@ Talk to Claude Code naturally. These commands are recognized:
 | `"execute"` | Run execution phase |
 | `"verify"` | Run verification phase |
 | `"pause"` | Save session state |
+| `bash ~/.claude/ai-flow/ralph/ralph.sh` | Unattended run of the `[afk]`-tagged tasks (up to 5), on a dedicated `afk/` branch — review it before merging |
 
 ## Project Structure
 

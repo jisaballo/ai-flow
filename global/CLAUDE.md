@@ -103,7 +103,11 @@ At task activation, classify the task into an autonomy level. User confirms or a
 - **Understand**: "understand" -> run Understanding phase for active task
 - **More questions**: "more questions" -> gather additional context during Understanding
 - **Discover project**: "discover" -> derive `.ai-flow/project.yml` for an existing repo (read discover protocol)
-- **Unattended run**: `bash ~/.claude/ai-flow/ralph/ralph.sh` -> work every `[afk]`-tagged backlog task, one disposable session each, serial, on a dedicated `afk/YYYY-MM-DD` branch. It never pushes and never touches the trunk; review the branch before merging it.
+- **Unattended run**: `bash ~/.claude/ai-flow/ralph/ralph.sh` -> work `[afk]`-tagged backlog tasks, one
+  disposable session each, serial, on a dedicated `afk/YYYY-MM-DD` branch, **up to 5 per run**. Push and
+  the destructive git verbs are denied to the agent by permission patterns — a rail against mistakes,
+  not a sandbox: review the branch before merging, and never run it with permissions bypassed. It aborts
+  on a dirty tree, and a parked iteration discards uncommitted work with `reset --hard` and `clean -fd`.
 
 ### Commit Protocol
 
