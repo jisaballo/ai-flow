@@ -631,12 +631,12 @@ if [ -r "$WTI" ] && [ -s "$WTI" ]; then
   # red at the same time. The classification is executed through wti_classify, so an assertion can
   # reach the arm that counts that answer instead of grepping for the message it would print.
   r12="$(wti_classify "$EV" "$WTI" in .ai-flow/project.yml .ai-flow/product.md \
-         .ai-flow/steering/payments.md .ai-flow/codebase/CONCERNS.md \
+         .ai-flow/steering/payments.md \
          .ai-flow/artifacts/current-task/plan.md)"
   case "$r12" in
     clean)       ok  "worktreeinclude selects the project data" ;;
-    unanswered*) bad "worktreeinclude selects the project data (the probe could not answer for ${r12#unanswered } of 5 paths)" ;;
-    *)           bad "worktreeinclude selects the project data (${r12#wrong } of 5 missing)" ;;
+    unanswered*) bad "worktreeinclude selects the project data (the probe could not answer for ${r12#unanswered } of 4 paths)" ;;
+    *)           bad "worktreeinclude selects the project data (${r12#wrong } of 4 missing)" ;;
   esac
 
   r12l="$(wti_classify "$EV" "$WTI" out .ai-flow/BACKLOG.md .ai-flow/STATE.md \
@@ -1123,15 +1123,9 @@ else
   bad "the pruning step names what it deletes (no section)"
 fi
 
-# the ceremony lands beside the checklists it mirrors: the engine grows no protocol file.
-# Named set, not a count: a failure has to say which file appeared.
-EXPECTED_PROTOS="backlog.md codebase-mapping.md discover.md execute.md plan.md quick-path.md understand.md verify.md"
-extra=""
-for f in $(ls global/protocols); do
-  case " $EXPECTED_PROTOS " in *" $f "*) ;; *) extra="$extra $f" ;; esac
-done
-[ -z "$extra" ] && ok "the engine gains no new protocol file" \
-                || bad "the engine gains no new protocol file (unexpected:$extra)"
+# The one-directional protocol check that stood here is retired, absorbed whole by C37's A1. It was read
+# before being retired rather than matched by shape: what it covered was a protocol that had APPEARED,
+# which is A1's `extra` leg; a protocol that had DISAPPEARED it could not see, and that is the leg A1 adds.
 
 # the column the check reads, in the shipped roster and in the protocol's own skeleton.
 # The migration region is bounded at the next heading: unbounded, it ran to EOF and read the
@@ -6197,6 +6191,66 @@ if [ -r "$UND36" ] && [ -r "$SKL36" ] && [ -s "$UND36" ] && [ -s "$SKL36" ]; the
                    || bad "A10 the skill and the protocol agree on what closes an unknown ($c10_36)"
 else
   bad "C36 cannot run: the understand protocol or its phase skill is missing, unreadable or empty"
+fi
+
+# C37 — a capability the engine installs but names no way to start is indistinguishable from a dead one.
+# Generated in the Conform phase of T-047 from understand.md's Verifiable Criteria A3 and A6. The four rows that guard the retirement land
+# with the retirement itself: a row is committed with the change it can tell a pass from a fail on.
+#
+# The task arrived asserting both capabilities were dead. Measurement falsified half of it: the unattended
+# loop had run and produced a merged commit, and its silence began the day it was centralised and its only
+# documented launcher was left pointing at the old path. So these rows guard TWO OPPOSITE outcomes — the
+# analysis capability must be gone, and the loop must still be here. A6 is FROZEN and green from the start:
+# the mutation that kills it is this task over-reaching into the retirement it was told not to make.
+#
+# Every verdict is derived from a COUNT, never from a `grep -v` inside an `if`: on BSD grep an empty input
+# exits 0, so that shape reports the same verdict either way.
+echo "== C37: what the engine ships, it can say how to start ==" 
+MAN37="global/CLAUDE.md"
+INS37="install.sh"
+WTI37=".worktreeinclude"
+WTT37="template/.worktreeinclude"
+DRF37="global/hooks/drift-check.sh"
+
+if [ -r "$MAN37" ] && [ -s "$MAN37" ] && [ -r "$INS37" ] && [ -s "$INS37" ] \
+   && [ -r "$WTI37" ] && [ -s "$WTI37" ] && [ -r "$WTT37" ] && [ -s "$WTT37" ] \
+   && [ -r "$DRF37" ] && [ -s "$DRF37" ] && [ -d global/protocols ]; then
+  MANT37="$(cat "$MAN37")"
+  INST37="$(cat "$INS37")"
+
+  n37() { printf '%s' "$1" | grep -ciE "$2" | tr -d ' '; }
+
+  # The Quick Commands block, extracted by its own heading, so a launcher mentioned in a comment three
+  # sections away cannot answer for a line the reader of that block would actually find.
+  QC37="$(awk '/^### Quick Commands$/{f=1;next} /^### /{f=0} f' "$MAN37")"
+
+  r37=""
+  [ -n "$QC37" ] || r37="$r37 [the Quick Commands block did not extract — heading renamed?]"
+  [ -z "$r37" ] && ok "C37's region extracts" || bad "C37's region extracts ($r37)"
+
+  # A3 — the manual names how the unattended loop is started. Two legs: the launcher's installed path
+  # somewhere in the manual, AND a mention inside the block a reader looking for commands would read.
+  # One leg alone passes on a stray path in a directory table, which is what the manual had before.
+  c3_37=""
+  [ "$(n37 "$MANT37" 'ai-flow/ralph/ralph\.sh')" -ge 1 ] || c3_37="$c3_37 [the manual names no path that starts the loop]"
+  [ "$(n37 "$QC37" 'ralph')" -ge 1 ] || c3_37="$c3_37 [the commands block does not name the loop]"
+  [ -z "$c3_37" ] && ok "A3 the manual names how the unattended loop is started" \
+                  || bad "A3 the manual names how the unattended loop is started ($c3_37)"
+
+  # A6 — FROZEN ROW, green before this task's work and after it. What it guards is the half of the ticket
+  # that measurement refuted: the loop stays distributed and stays under drift comparison. The mutation
+  # that kills it is retiring `global/ralph/` — the change this task was told not to make.
+  c6_37=""
+  for f37 in ralph.sh ralph-prompt.md review-prompt.md; do
+    [ -s "global/ralph/$f37" ] || c6_37="$c6_37 [global/ralph/$f37 is gone or empty]"
+    [ "$(n37 "$INST37" "$f37")" -ge 1 ] || c6_37="$c6_37 [the installer no longer distributes $f37]"
+  done
+  [ "$(n37 "$INST37" 'ai-flow/ralph')" -ge 1 ] || c6_37="$c6_37 [the installer names no destination for the loop]"
+  [ "$(grep -cE 'global/ralph/\*' "$DRF37" | tr -d ' ')" -ge 1 ] || c6_37="$c6_37 [the drift guard no longer maps the loop]"
+  [ -z "$c6_37" ] && ok "A6 the unattended loop is still distributed and still watched" \
+                  || bad "A6 the unattended loop is still distributed and still watched ($c6_37)"
+else
+  bad "C37 cannot run: the manual, the installer, a pattern file, the drift guard or the protocol directory is missing, unreadable or empty"
 fi
 
 echo ""

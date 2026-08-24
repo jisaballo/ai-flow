@@ -106,6 +106,7 @@ At task activation, classify the task into an autonomy level. User confirms or a
 - **More questions**: "more questions" -> gather additional context during Understanding
 - **Map codebase**: "map codebase" -> run lightweight codebase analysis (read codebase-mapping protocol)
 - **Discover project**: "discover" -> derive `.ai-flow/project.yml` for an existing repo (read discover protocol)
+- **Unattended run**: `bash ~/.claude/ai-flow/ralph/ralph.sh` -> work every `[afk]`-tagged backlog task, one disposable session each, serial, on a dedicated `afk/YYYY-MM-DD` branch. It never pushes and never touches the trunk; review the branch before merging it.
 
 ### Commit Protocol
 
