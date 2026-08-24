@@ -5332,6 +5332,332 @@ else
   echo "  [skip] target-reading checks (python3 unavailable)"
 fi
 
+echo "== C33: the trunk is defended from what git reports, not from what a command says =="
+# The whole section drives REAL operations against a real bare remote rather than feeding strings to a
+# matcher. That is the point and not a stylistic preference: a shape stops being a spelling somebody had
+# to think of and becomes an operation whose effect git computes, so the coverage no longer depends on
+# anyone having imagined the wrapping.
+#
+# Two traps are designed against here, both met during this work rather than anticipated:
+#
+#   * A fixture that never lets an operation land measures a stale remote. An early measurement reported
+#     an ordinary advance for what was a rewrite, because its hook refused everything and the remote
+#     therefore never moved. Every allow-side row below asserts the remote actually changed.
+#   * Git protects the branch a remote's HEAD points at from deletion all by itself. A deletion row
+#     driven against such a remote would pass without this guard existing. The deletion fixture points
+#     its remote's HEAD elsewhere, and a control proves the deletion really does succeed once the guard
+#     is out of the way.
+if command -v git >/dev/null 2>&1; then
+  GHK="$ROOT/global/hooks/git"
+  T33="$T11/c33"; mkdir -p "$T33"
+  NOHOOK="$T33/nohook"; mkdir -p "$NOHOOK"   # an empty hook path: setup work bypasses the guard
+
+  mkpair33() {  # $1 = fixture name, $2 = the branch the remote's HEAD names -> remote.git + work
+    d33="$T33/$1"; rm -rf "$d33"; mkdir -p "$d33"
+    git init -q --bare "$d33/remote.git"
+    git -C "$d33/remote.git" symbolic-ref HEAD "refs/heads/$2"
+    git init -q "$d33/work"
+    git -C "$d33/work" symbolic-ref HEAD refs/heads/main
+    git -C "$d33/work" config user.email t@t.t
+    git -C "$d33/work" config user.name t
+    git -C "$d33/work" config commit.gpgsign false
+    git -C "$d33/work" config push.default current
+    printf 'a\n' > "$d33/work/f.txt"
+    git -C "$d33/work" add -A >/dev/null 2>&1
+    git -C "$d33/work" commit -q -m one
+    git -C "$d33/work" remote add origin "$d33/remote.git"
+    git -C "$d33/work" -c core.hooksPath="$NOHOOK" push -q origin main
+    git -C "$d33/work" config core.hooksPath "$GHK"
+  }
+  free33()  { git -C "$T33/$1/work" -c core.hooksPath="$NOHOOK" "${@:2}"; }  # the guard stood down
+  ref33()   { git -C "$T33/$1/remote.git" rev-parse -q --verify "refs/heads/$2" 2>/dev/null || echo none; }
+  run33()   { ( cd "$T33/$1/work" && shift && git "$@" 2>&1 ); }
+  sh33()    { ( cd "$T33/$1/work" && bash -c "$2" 2>&1 ); }
+  rewritable33() {  # $1 = fixture, $2 = branch -> exists on the remote AND diverges from it locally
+    git -C "$T33/$1/work" checkout -q -B "$2" main
+    printf 'x\n' >> "$T33/$1/work/f.txt"
+    git -C "$T33/$1/work" commit -qam "$2"
+    free33 "$1" push -q origin "$2"
+    git -C "$T33/$1/work" commit -q --amend -m "$2 rewritten"
+    git -C "$T33/$1/work" checkout -q main
+  }
+  diverge33() {  # $1 = fixture -> remote trunk at one commit, local trunk at a different one
+    printf 'b\n' >> "$T33/$1/work/f.txt"
+    git -C "$T33/$1/work" commit -qam two
+    free33 "$1" push -q origin main
+    git -C "$T33/$1/work" commit -q --amend -m two-rewritten
+  }
+
+  # --- row 1: a rewrite, refused, with the remote proven untouched ---------
+  mkpair33 rw main; diverge33 rw
+  b33="$(ref33 rw main)"; out="$(run33 rw push --force origin main)"; rc=$?; a33="$(ref33 rw main)"
+  case "$out" in *"rewriting refs/heads/main"*) named=1 ;; *) named=0 ;; esac
+  if [ "$rc" != 0 ] && [ "$b33" = "$a33" ] && [ "$named" = 1 ]; then
+    ok "a rewrite of the trunk on the remote is refused"
+  else
+    bad "a rewrite of the trunk on the remote is refused (exit $rc, remote $b33 -> $a33, said: $out)"
+  fi
+
+  # --- row 5: the lease is not an exemption --------------------------------
+  # The refusal's own wording is asserted, not merely its exit code: a stale lease makes git refuse on
+  # its own, and a row reading only the code would pass without this guard existing.
+  out="$(run33 rw push --force-with-lease origin main)"; rc=$?; a33="$(ref33 rw main)"
+  case "$out" in *"rewriting refs/heads/main"*) named=1 ;; *) named=0 ;; esac
+  if [ "$rc" != 0 ] && [ "$b33" = "$a33" ] && [ "$named" = 1 ]; then
+    ok "a lease does not exempt a rewrite of the trunk"
+  else
+    bad "a lease does not exempt a rewrite of the trunk (exit $rc, remote $b33 -> $a33, said: $out)"
+  fi
+
+  # --- row 6: an operation that sends every ref still has the trunk judged --
+  why33=""
+  for wide in "push --mirror origin" "push --all --force origin" "push --branches --force origin"; do
+    out="$(run33 rw $wide)"; rc=$?; a33="$(ref33 rw main)"
+    { [ "$rc" != 0 ] && [ "$b33" = "$a33" ]; } || why33="$why33 [$wide -> exit $rc, remote $b33 -> $a33]"
+  done
+  [ -z "$why33" ] && ok "a push that sends every ref still has the trunk judged among them" \
+                  || bad "a push that sends every ref still has the trunk judged among them ($why33)"
+
+  # --- row 2: a deletion, on a remote where git itself would allow it ------
+  mkpair33 del keep
+  git -C "$T33/del/work" branch -q keep
+  free33 del push -q origin keep
+  why33=""
+  for spell in "push origin --delete main" "push origin :main" "push origin -d main" "push origin +:main"; do
+    out="$(run33 del $spell)"; rc=$?
+    { [ "$rc" != 0 ] && [ "$(ref33 del main)" != none ]; } || why33="$why33 [$spell -> exit $rc]"
+    case "$out" in *"deleting refs/heads/main"*) ;; *) why33="$why33 [$spell -> not named: $out]" ;; esac
+  done
+  [ -z "$why33" ] && ok "a deletion of the trunk on the remote is refused" \
+                  || bad "a deletion of the trunk on the remote is refused ($why33)"
+  # The control for that row: with the guard stood down the same deletion really does succeed, so the
+  # refusals above are this hook's and not git's own protection of a remote's HEAD branch.
+  free33 del push -q origin :main >/dev/null 2>&1
+  [ "$(ref33 del main)" = none ] && ok "the deletion the guard refused is one git itself would allow" \
+    || bad "the deletion the guard refused is one git itself would allow (it survived the unguarded attempt too)"
+
+  # --- row 3: an ordinary advance, allowed, with the remote proven to move --
+  mkpair33 ff main
+  b33="$(ref33 ff main)"
+  printf 'c\n' >> "$T33/ff/work/f.txt"; git -C "$T33/ff/work" commit -qam three
+  out="$(run33 ff push origin main)"; rc=$?; a33="$(ref33 ff main)"
+  if [ "$rc" = 0 ] && [ "$b33" != "$a33" ] && [ "$a33" != none ]; then
+    ok "an ordinary advance of the trunk is allowed"
+  else
+    bad "an ordinary advance of the trunk is allowed (exit $rc, remote $b33 -> $a33, said: $out)"
+  fi
+
+  # --- row 4: every other ref, whatever its shape --------------------------
+  mkpair33 other main
+  why33=""
+  for br in feat release/2.0 fix/main-nav docs/maintenance feature/main-menu; do
+    rewritable33 other "$br"
+    out="$(run33 other push --force origin "$br")"; rc=$?
+    [ "$rc" = 0 ] || why33="$why33 [$br -> exit $rc, said: $out]"
+  done
+  # A tag, moved rather than created, for the same reason the branches are rewritten above.
+  git -C "$T33/other/work" tag -f v1 main >/dev/null 2>&1
+  free33 other push -q --force origin v1
+  printf 'y\n' >> "$T33/other/work/f.txt"
+  git -C "$T33/other/work" commit -qam tagmove
+  git -C "$T33/other/work" tag -f v1 >/dev/null 2>&1
+  out="$(run33 other push --force origin v1)"; rc=$?
+  [ "$rc" = 0 ] || why33="$why33 [tag v1 -> exit $rc, said: $out]"
+  [ -z "$why33" ] && ok "a push to any other ref is allowed whatever its shape" \
+                  || bad "a push to any other ref is allowed whatever its shape ($why33)"
+
+  # --- row 22: a ref that merely ends in the trunk's word ------------------
+  # The withdrawn rule read the trunk from a ref's trailing segment. Git accepts these as ordinary
+  # branches and reports them whole, so that rule refused work while protecting nothing extra.
+  # Each branch is landed and then rewritten, never merely created: a create is allowed by an arm of
+  # its own, so a row that only creates never reaches the test it claims to guard. Written after the
+  # mutation round proved exactly that — this row and the one above survived the two mutations they
+  # exist to catch, and the fault was here, not in the hook.
+  why33=""
+  for br in hotfix/main team/master archive/2019/main; do
+    rewritable33 other "$br"
+    out="$(run33 other push --force origin "$br")"; rc=$?
+    [ "$rc" = 0 ] || why33="$why33 [$br -> exit $rc, said: $out]"
+  done
+  # The same question from its other side: an operation reaching only remote-tracking refs, which never
+  # touches the remote's trunk.
+  out="$(run33 other push --mirror origin)"; rc=$?
+  [ "$rc" = 0 ] || why33="$why33 [remote-tracking-only mirror -> exit $rc, said: $out]"
+  [ -z "$why33" ] && ok "a ref that merely ends in the trunk's word is not the trunk" \
+                  || bad "a ref that merely ends in the trunk's word is not the trunk ($why33)"
+
+  # --- row 7: the verdict does not depend on how the command was written ---
+  # Built as a PRODUCT over wrapper and quoting rather than as a list of composed rows: the shapes that
+  # defeated every earlier version of this protection were the ones no list contained. Both halves are
+  # here because either alone is satisfied by one direction of behaviour — refuse-everything kills the
+  # harmless half, allow-everything kills the dangerous half, and no single reading satisfies both.
+  mkpair33 prod main; diverge33 prod
+  WRAP33=('%C' 'env GIT_TRACE=0 %C' '( %C )' 'for i in 1; do %C; done' 'true && %C' 'x=1; %C' 'if true; then %C; fi')
+  b33="$(ref33 prod main)"; why33=""; nd33=0
+  for w in "${WRAP33[@]}"; do
+    for q in 'main' "'main'" '"main"'; do
+      cmd="${w//%C/git push --force origin $q}"
+      out="$(sh33 prod "$cmd")"; rc=$?; nd33=$((nd33+1))
+      { [ "$rc" != 0 ] && [ "$b33" = "$(ref33 prod main)" ]; } || why33="$why33 [$cmd -> exit $rc]"
+    done
+  done
+  for extra in "git -c alias.p=push p --force origin main" \
+               "git -c remote.origin.push=+refs/heads/main:refs/heads/main push origin" \
+               "git push --force origin HEAD:main" \
+               "git push origin +HEAD:refs/heads/main"; do
+    out="$(sh33 prod "$extra")"; rc=$?; nd33=$((nd33+1))
+    { [ "$rc" != 0 ] && [ "$b33" = "$(ref33 prod main)" ]; } || why33="$why33 [$extra -> exit $rc]"
+  done
+  nh33=0
+  i33=0
+  for w in "${WRAP33[@]}"; do
+    for q in "p$i33" "'p$i33'" "\"p$i33\""; do
+      br="p$i33"; i33=$((i33+1))
+      git -C "$T33/prod/work" branch -q "$br" 2>/dev/null
+      cmd="${w//%C/git push --force origin $q}"
+      out="$(sh33 prod "$cmd")"; rc=$?; nh33=$((nh33+1))
+      [ "$rc" = 0 ] || why33="$why33 [harmless: $cmd -> exit $rc, said: $out]"
+    done
+  done
+  [ -z "$why33" ] && ok "every generated wrapping of one push reaches the same verdict" \
+    || bad "every generated wrapping of one push reaches the same verdict ($why33)"
+  echo "         ($nd33 dangerous forms refused, $nh33 harmless forms allowed)"
+
+  # --- rows 8 and 9: the inherited tables, executed rather than matched ----
+  mkpair33 inh main; diverge33 inh
+  b33="$(ref33 inh main)"; why33=""
+  while IFS= read -r shape; do
+    [ -n "$shape" ] || continue
+    out="$(sh33 inh "$shape")"; rc=$?
+    { [ "$rc" != 0 ] && [ "$b33" = "$(ref33 inh main)" ]; } || why33="$why33 [$shape -> exit $rc]"
+  done <<'SHAPES'
+git push --force origin main
+git push -f origin main
+git push -uf origin main
+git push -fu origin main
+git push -qf origin main
+git push -fq origin main
+git push origin +main
+git push origin +HEAD:main
+git push origin +refs/heads/main
+git push origin +HEAD:refs/heads/main
+git push origin +main:main
+git push origin "+main"
+git push origin '+main'
+git push --force-with-lease origin +main
+git push --force-with-lease origin +HEAD:main
+git push --all --force origin
+git push --branches --force origin
+git push --all -f origin
+git push --mirror origin
+git -c remote.origin.push=+refs/heads/main:refs/heads/main push origin
+git -c remote.origin.push=+main push origin
+git -c remote.origin.push=refs/heads/main:refs/heads/main push --force origin
+git -c remote.origin.push=refs/heads/main push -f origin
+git -c 'remote.origin.push=+refs/heads/main' push origin
+git -c core.pager=cat push --force origin main
+env GIT_TRACE=0 git push --force origin main
+time git push --force origin main
+( git push --force origin main )
+for i in 1 2; do git push --force origin main; done
+echo 'git push --force origin main' | bash
+echo main | xargs -I{} git push --force origin {}
+SHAPES
+  [ -z "$why33" ] && ok "every recorded dangerous shape is still refused" \
+                  || bad "every recorded dangerous shape is still refused ($why33)"
+
+  mkpair33 inha main
+  for br in feature release/2.0 fix/main-nav docs/maintenance gone1 gone2 gone3; do
+    git -C "$T33/inha/work" branch -q "$br"
+  done
+  free33 inha push -q origin gone1 gone2 gone3
+  why33=""
+  while IFS= read -r shape; do
+    [ -n "$shape" ] || continue
+    out="$(sh33 inha "$shape")"; rc=$?
+    [ "$rc" = 0 ] || why33="$why33 [$shape -> exit $rc, said: $out]"
+  done <<'SHAPES'
+git push --force origin main:feature
+git push origin +main:feature
+git push --force origin HEAD:feature
+git push --force origin fix/main-nav
+git push --force origin docs/maintenance
+git push --force origin feature
+git push origin +feature
+git push --all origin
+git push --branches origin
+git push --all --force-with-lease origin
+git -c user.email=t@t.t push --force origin feature
+git push origin --delete gone1
+git push origin :gone2
+git push origin -d gone3
+SHAPES
+  # The nested names need a fixture of their own: git cannot hold a branch and a directory of the same
+  # name at once, so `feature` and `feature/main-menu` cannot both be real branches in one repository.
+  # The table this set descends from never met that constraint, because it fed strings to a matcher
+  # instead of pushing anything — the first thing executing found that matching could not.
+  mkpair33 inhb main
+  for br in feature/main-menu feature/domain-model; do git -C "$T33/inhb/work" branch -q "$br"; done
+  while IFS= read -r shape; do
+    [ -n "$shape" ] || continue
+    out="$(sh33 inhb "$shape")"; rc=$?
+    [ "$rc" = 0 ] || why33="$why33 [$shape -> exit $rc, said: $out]"
+  done <<'SHAPES'
+git push --force origin feature/main-menu
+git push origin +feature/main-menu
+git push --force origin feature/domain-model
+SHAPES
+  [ -z "$why33" ] && ok "every recorded allowed shape is still allowed" \
+                  || bad "every recorded allowed shape is still allowed ($why33)"
+
+  # --- row 10: a repository that already had a hook of its own -------------
+  # Two things at once, and both matter: the engine's hook must reach the repository's own copy, and it
+  # must reach it exactly once. Resolving "this repository's own hook" through the redirected path hands
+  # the hook itself back and recurses without end — measured, so the counter here is the guard against a
+  # regression that has already happened once.
+  mkpair33 chain main
+  mkdir -p "$T33/chain/work/.git/hooks"
+  cat > "$T33/chain/work/.git/hooks/pre-push" <<'OWN'
+#!/bin/sh
+echo x >> "$(git rev-parse --git-common-dir)/own-hook-ran"
+echo "the repository's own hook refuses this" >&2
+exit 9
+OWN
+  chmod +x "$T33/chain/work/.git/hooks/pre-push"
+  printf 'd\n' >> "$T33/chain/work/f.txt"; git -C "$T33/chain/work" commit -qam four
+  out="$(run33 chain push origin main)"; rc=$?
+  runs="$(wc -l < "$T33/chain/work/.git/own-hook-ran" 2>/dev/null | tr -d ' ')"
+  case "$out" in *"own hook refuses"*) heard=1 ;; *) heard=0 ;; esac
+  if [ "$rc" != 0 ] && [ "$runs" = "1" ] && [ "$heard" = 1 ]; then
+    ok "a repository's own hook is run once and its refusal stands"
+  else
+    bad "a repository's own hook is run once and its refusal stands (exit $rc, own hook ran ${runs:-0}x, heard=$heard, said: $out)"
+  fi
+else
+  echo "  [skip] trunk-defence checks (git unavailable)"
+fi
+
+echo "== C34: a commit is judged by what it would record =="
+# The staging protection's substrate. What decides is the index, so a name that appears only in the
+# message or in an unstaged file is not a staging — which is where three of the nine measured false
+# refusals came from.
+bad "a commit that would record a secret is refused"
+bad "a secret named but not recorded does not refuse the commit"
+bad "every recorded staging shape is still refused"
+bad "every recorded harmless staging shape is still allowed"
+
+echo "== C35: the rail reports whether the protection is here, and judges nothing else =="
+# The rail's new job. Its trigger may be as imprecise as it likes: a false trigger costs a stat, and a
+# missed one costs nothing, because git's own hook is the protection. That is what makes this section
+# small where the matcher it replaces needed forty-six rows.
+bad "no command that fails to invoke git is refused"
+bad "a repository without the protection is told, and told how"
+bad "a plus sign beside a push is not read as an order to force"
+bad "the rail judges the directory the session declares"
+bad "an existing global hook path is reported and left alone"
+bad "the installed git hooks are executable however they arrived"
+bad "the drift guard sees the new hooks"
+
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

@@ -1,0 +1,93 @@
+#!/bin/sh
+# pre-push: the trunk on a remote is never rewritten and never deleted.
+#
+# What decides is what git reports on standard input — one line per ref it is about to update:
+#
+#     <local ref> <local sha> <remote ref> <remote sha>
+#
+# and nothing else is available here. There is no command text to read, so the question that defeated
+# every earlier version of this protection — is git being invoked, or merely written about? — cannot be
+# asked here and does not need to be. A document that quotes a forbidden operation is a document; it
+# reaches no hook at all. The same silence is why the quote splits that defeated the text guard are
+# gone: git resolves the command long before this line runs, and reports what it resolved.
+#
+# Three facts settle every case, each read rather than inferred:
+#
+#   * the destination is the trunk — the remote ref is exactly refs/heads/main or refs/heads/master.
+#     Exact, not a substring and not a trailing segment: git accepts refs/heads/hotfix/main as an
+#     ordinary branch and reports it whole, and an update reaching only refs/remotes/origin/main never
+#     touches the remote's trunk. A widening operation does not hide behind either — when it genuinely
+#     rewrites the trunk, git reports the exact ref like any other update. All three measured.
+#
+#   * a deletion — the local sha is all zeros. Deleting the trunk destroys it for everyone. Git refuses
+#     this on its own for the branch a remote's HEAD points at, but NOT for a trunk-named branch
+#     standing beside it; one such branch was removed from a test remote with exit 0 while the other
+#     survived the same operation. That measurement is why this arm is not redundant.
+#
+#   * a rewrite — the commit the remote holds is not an ancestor of the one being sent, so it would stop
+#     being reachable. This is the effect and not the order that produced it: a lease-guarded rewrite
+#     arrives here byte-identically to an unguarded one, and both are refused, because a lease guards
+#     against overwriting someone else's work rather than against rewriting the trunk.
+#
+# A remote sha of all zeros is the trunk being created on that remote, which destroys nothing.
+#
+# The escape is git's own --no-verify, and the refusal names it. A guard that hides its escape teaches
+# people to route around it, and this one has never been a boundary against a deliberate bypass: it is a
+# rail against a mistake, and it is sized accordingly.
+
+set -u
+
+ZERO=0000000000000000000000000000000000000000
+
+# The input is read twice — once here and once by whatever hook this repository had before the engine's
+# arrived — so it is buffered rather than consumed. A stream cannot be rewound, and a chained hook
+# handed an empty stdin would allow everything while appearing to run.
+BUF="$(mktemp "${TMPDIR:-/tmp}/aiflow-prepush.XXXXXX" 2>/dev/null)" || exit 0
+trap 'rm -f "$BUF"' EXIT
+cat > "$BUF"
+
+verdict=""
+held=""
+while read -r lref lsha rref rsha; do
+  case "${rref:-}" in
+    refs/heads/main|refs/heads/master|main|master) ;;
+    *) continue ;;
+  esac
+  if [ "${lsha:-}" = "$ZERO" ]; then
+    verdict="deleting $rref on the remote"
+    break
+  fi
+  [ "${rsha:-}" = "$ZERO" ] && continue
+  if ! git merge-base --is-ancestor "$rsha" "${lsha:-}" >/dev/null 2>&1; then
+    verdict="rewriting $rref on the remote"
+    held="$rsha"
+    break
+  fi
+done < "$BUF"
+
+if [ -n "$verdict" ]; then
+  {
+    echo "BLOCKED: $verdict is forbidden (your 'Never' rule)."
+    [ -n "$held" ] && echo "  The commit it holds ($(echo "$held" | cut -c1-9)) would stop being reachable."
+    echo "  Send a branch instead. If you truly intend this, add --no-verify."
+  } >&2
+  exit 1
+fi
+
+# A repository that had a pre-push of its own keeps it: the engine's runs first and, having nothing to
+# refuse, hands the same input on and adopts its verdict.
+#
+# Its copy is resolved through --git-common-dir and not through --git-path. With a hook path configured,
+# --git-path resolves hooks/* to that configured directory — so a hook asking git for "this repository's
+# own" would be handed itself and re-invoke without end. Measured: the naive form ran until it was
+# killed. The path comparison below is the second half of the same guard, for the case where this file
+# IS the repository's own copy.
+common="$(git rev-parse --git-common-dir 2>/dev/null)" || common=""
+[ -n "$common" ] || exit 0
+own="$common/hooks/pre-push"
+[ -x "$own" ] || exit 0
+
+abspath() { ( cd "$(dirname "$1")" 2>/dev/null && printf '%s/%s\n' "$(pwd -P)" "$(basename "$1")" ); }
+[ "$(abspath "$own")" = "$(abspath "$0")" ] && exit 0
+
+"$own" "$@" < "$BUF"
