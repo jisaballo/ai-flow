@@ -86,6 +86,10 @@ autonomy: Guided
 - next action: [the next thing to do]
 ```
 
+The block above is a sheet **in flight**. A sheet the opening ceremony has just written carries
+`phase: **ACTIVATE**` and no step yet — the position is stated below, and this is the one thing a reader
+copying this block must not take from the illustration.
+
 **The `phase:` line is machine-read, and the declaration is a line — not a shape found anywhere in the
 document.** What is read is the **first** line that declares the field, and two things about that line
 are load-bearing: it begins with the label, and the label is followed by a colon. Write it as
@@ -100,6 +104,21 @@ Two legacy labels are accepted in the same position — `Current phase:` and its
 That rule is the authority, and the Understand read-only rail's pattern is a note about the enforcer:
 where the two disagree the rule is what the writers of the sheet and the readers with no parser go by,
 and the pattern is the thing to correct.
+
+**The first position is `ACTIVATE`.** Activation writes `phase: **ACTIVATE**` on the machine-read line
+above — the field is never left absent, because a sheet declaring no phase is read exactly as one that
+has none. What it writes is a position and not a phase: it records that the task is open and in none
+yet, and every phase after it is recorded by the command that enters it (see
+`### The phase precondition`). Stated here, once, because a value each session picks is a value that
+drifts — measured across 41 sheets it had taken four, and the read-only rail therefore stood raised over
+some tasks and lowered over others, decided by nothing. Two failures come from the two wrong answers,
+and naming the position is what closes both: written as `UNDERSTAND`, the rail is up from the instant
+the task exists — before any investigation, and on a path that runs no phase command, for good, so the
+task can never be written. Written as a phase further along, the rail stays down through the whole
+investigation and the read-only discipline is unenforced in silence, and the audit's own leg would
+accept a task nobody had planned. What the position costs is the gap between opening a task and
+entering its first phase: writes there are not refused, which is accepted because no part of the
+lifecycle asks for code inside it.
 
 **A checkout holds at most one sheet claiming its branch.** The `branch:` line is a claim, and the
 resolution below reads it as one: two sheets claiming the branch a checkout is on have no unique owner,
@@ -190,8 +209,9 @@ phase's work. Both are read from the task's own sheet and its papers, never from
 remembers.
 
 - **Accepted positions.** `understand` runs on any position not later than its own: open below on
-  purpose, because what the opening ceremony writes as a task's first position is undefined, and a
-  precondition depending on it would refuse the ordinary path. `plan` runs on UNDERSTAND or PLAN.
+  purpose, because the first position the opening ceremony writes sits beneath it, and a leg that
+  accepted only its own position would refuse the ordinary path — the one every task takes, straight
+  from being opened into being understood. `plan` runs on UNDERSTAND or PLAN.
   `verify` runs on EXECUTE or VERIFY.
 - **The material leg.** A phase that consumes what an earlier one produced checks it is there: `plan`
   needs `understand.md`; `verify` needs `plan.md` and the Criteria Coverage table inside it, which is
@@ -216,7 +236,7 @@ remembers.
 
 | Moment | Roster (`STATE.md`) | Sheet (`artifacts/T-XXX/state.md`) |
 |---|---|---|
-| **Activation** | the coordinator adds the workstream row, with the front's declared areas | created, with branch, phase, step and autonomy — plus any collision acknowledged at the opening (see Opening a Workstream) |
+| **Activation** | the coordinator adds the workstream row, with the front's declared areas | created, with branch, the first position, step and autonomy — plus any collision acknowledged at the opening (see Opening a Workstream) |
 | **During the phases** | untouched | the phase command writes the phase when it enters one (see The phase precondition above); step, decisions and the resume block kept current by whoever works the task |
 | **Pause** | untouched | carries everything needed to resume — it IS the handoff |
 | **Archive** | the coordinator removes the row, last | collected into the coordinator first, then deleted with the rest of `artifacts/T-XXX/` — in every checkout that holds it, not only the coordinator's |
@@ -480,8 +500,10 @@ what activation has always been, plus the declaration in step 2.
 
 7. **Write the roster row and the task's sheet.** The row carries workstream, checkout, branch, task,
    epic, the declared areas, **what created the checkout** — the tool identified in move 5, which is
-   what the dismantling move reads — and the date. The sheet carries the branch that owns the task, the phase,
-   the step, the autonomy level, and any acknowledgement from step 3. The row is the coordinator's; the
+   what the dismantling move reads — and the date. The sheet carries the branch that owns the task, the first
+   position, the step, the autonomy level, and any acknowledgement from step 3. The position is the one
+   named in `## State Files` and is not chosen here: this move writes a task that is open and in no
+   phase, and the phase commands record every position after it. The row is the coordinator's; the
    sheet is written **in the checkout where the task is worked** — the coordinator's when the task stays
    there, the front's when this ceremony created one — which is the rule the sheet already lives by
    (`## State Files`). It is written there rather than copied across afterwards because the seeding move
