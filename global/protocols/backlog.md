@@ -17,6 +17,17 @@ One row per open workstream and nothing task-specific. Only the **coordinator** 
 and only at ceremonies — a workstream opens, a task closes and merges. A linked worktree never
 receives it and never edits it.
 
+**Two records in this file are history and are meant to be**: the roster table, and `## Quick Tasks
+Completed`, which is the only trace a quick task leaves anywhere. Everything else is the present — a
+closed epic's or task's narrative belongs in `archive/`, and the ledger guardian reports it wherever in
+the file it sits. The exemption is named rather than left implicit because a rule forbidding history
+outright would contradict this very skeleton, and a guard written to such a rule's literal words would
+flag the template's own section. The guard implements the pair by reading narrative prose and never a
+table row: a record kept as a table is exempt by its shape, so there is no region boundary to place
+wrongly — an earlier form of it exempted from the quick-task heading to the next heading, and since that
+section is last here, the exemption ran to end of file and a narrative appended at the bottom was
+invisible.
+
 **Areas** names the parts of the codebase a front declared when it opened, in the project's own
 `area_kind`. It is what the next opening weighs its own declaration against (see Opening a
 Workstream) — front-scoped, decided once, never a running account of what the task turned out to
@@ -237,7 +248,7 @@ A capture that cannot state its business line yet is captured with what is known
 
 ## BACKLOG.md Size Budget (CRITICAL)
 
-BACKLOG.md is loaded at session start — it must contain **only pending work**. Everything closed lives in `archive/`. Closing a task must make the file SMALLER, never bigger.
+BACKLOG.md must contain **only pending work**. Everything closed lives in `archive/`. Closing a task must make the file SMALLER, never bigger.
 
 **Hard rules:**
 - **Soft cap ~300 lines.** If BACKLOG.md exceeds it, something closed is being duplicated there — move it to `archive/`.
@@ -622,7 +633,9 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
 - No empty directories anywhere in `.ai-flow/`
 - BACKLOG.md Done section is **transient** — tasks stay there only until archived, not permanently
 - BACKLOG.md stays under ~300 lines and contains only pending work (see Size Budget)
-- STATE.md is an index of open workstreams — one row per front, no per-task context and no historical summaries (see State Files)
+- STATE.md is an index of open workstreams — one row per front, no per-task context, and **no historical
+  narrative outside its two sanctioned records**: the roster table and `## Quick Tasks Completed`. Closed
+  work's narrative belongs in `archive/` wherever in the file it is written (see State Files)
 
 ### Allowed structure
 
