@@ -1,0 +1,83 @@
+#!/bin/sh
+# pre-commit: a commit never records a secret.
+#
+# What decides is the index — the paths this commit would actually record — and nothing else. Not the
+# command that produced it, not the message attached to it, not what happens to be lying in the working
+# tree. That is the whole change: the guard this replaces read the command's text, so a message
+# mentioning a secrets file and a search through the documentation for one were refused as stagings,
+# while the index itself was never consulted.
+#
+# The classification below is carried over unchanged in meaning from that guard. No rule about what
+# counts as a secret is invented here; only where the question is asked has moved.
+#
+# Written in POSIX shell rather than in python3 deliberately. The guard this replaces stands aside when
+# python3 is missing, which is tolerable for something that only ever declines to judge — but a commit
+# hook that cannot start makes git refuse the commit, so an interpreter this file does not need would
+# turn a missing dependency into a machine that cannot commit at all.
+#
+# The escape is git's own --no-verify, and the refusal names it: a guard that hides its escape teaches
+# people to route around it, and this one is a rail against a mistake rather than a boundary against a
+# deliberate bypass.
+
+set -u
+
+is_secret() {  # $1 = a path as git records it -> 0 when it must not be committed
+  p="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
+  # The example forms come first: they exist to be committed, and they end in the same word the rule
+  # below matches.
+  case "$p" in
+    *.env.example|*.env.template|*.env.sample|*.env.dist|*.env.local.example) return 1 ;;
+  esac
+  case "$p" in
+    .env|.env.*|*/.env|*/.env.*) return 0 ;;
+    *.pem|*.p12|*.pfx|*.jks|*.keystore) return 0 ;;
+    id_rsa|id_dsa|id_ecdsa|id_ed25519) return 0 ;;
+    */id_rsa|*/id_dsa|*/id_ecdsa|*/id_ed25519) return 0 ;;
+    *service-account*.json|*service_account*.json|*serviceaccount*.json) return 0 ;;
+  esac
+  return 1
+}
+
+# Only what the commit would add or change is read: a deletion records no content, so removing a secret
+# that was committed by mistake must stay possible — refusing that would trap the repository in the
+# state the guard exists to prevent.
+#
+# The listing is asked for without quoting and then split on newlines. A path containing a newline —
+# pathological, and no earlier version of this guard handled one either — splits into two candidates and
+# is classified twice, so the error falls on the side of a refusal with a stated escape rather than a
+# miss.
+danger=""
+staged="$(git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR -z 2>/dev/null | tr '\0' '\n')"
+OIFS="$IFS"; IFS='
+'
+for path in $staged; do
+  [ -n "$path" ] || continue
+  if is_secret "$path"; then
+    danger="$danger  $path
+"
+  fi
+done
+IFS="$OIFS"
+
+if [ -n "$danger" ]; then
+  {
+    echo "BLOCKED: this commit would record a secret or credential file:"
+    printf '%s' "$danger"
+    echo "  Unstage it and add it to .gitignore. If it truly belongs in the repository, add --no-verify."
+  } >&2
+  exit 1
+fi
+
+# A repository that had a pre-commit of its own keeps it, on the same terms as the push guard: the
+# engine's runs first and, having nothing to refuse, hands over and adopts its verdict. Its copy is
+# resolved through --git-common-dir and not --git-path, because with a hook path configured the latter
+# resolves hooks/* to that configured directory and would hand this file back to itself.
+common="$(git rev-parse --git-common-dir 2>/dev/null)" || common=""
+[ -n "$common" ] || exit 0
+own="$common/hooks/pre-commit"
+[ -x "$own" ] || exit 0
+
+abspath() { ( cd "$(dirname "$1")" 2>/dev/null && printf '%s/%s\n' "$(pwd -P)" "$(basename "$1")" ); }
+[ "$(abspath "$own")" = "$(abspath "$0")" ] && exit 0
+
+"$own" "$@"

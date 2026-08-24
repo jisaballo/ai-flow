@@ -5638,13 +5638,184 @@ else
 fi
 
 echo "== C34: a commit is judged by what it would record =="
-# The staging protection's substrate. What decides is the index, so a name that appears only in the
-# message or in an unstaged file is not a staging — which is where three of the nine measured false
-# refusals came from.
-bad "a commit that would record a secret is refused"
-bad "a secret named but not recorded does not refuse the commit"
-bad "every recorded staging shape is still refused"
-bad "every recorded harmless staging shape is still allowed"
+# The staging protection's substrate. What decides is the index — the paths a commit would actually
+# record — so a name that appears only in the message, or only in the working tree, is not a staging.
+# Three of the nine false refusals measured against the guard this replaces came from exactly there.
+#
+# The shell wrappings the inherited table enumerated collapse to almost nothing here, and that is the
+# point rather than a gap: the index does not vary with how the command that filled it was written. What
+# remains worth driving is the small product below, which proves that.
+if command -v git >/dev/null 2>&1; then
+  GHK34="$ROOT/global/hooks/git"
+  T34="$T11/c34"; mkdir -p "$T34"
+  NOHOOK34="$T34/nohook"; mkdir -p "$NOHOOK34"
+
+  mkrepo34() {  # $1 = fixture name -> a repository with one commit and the guard active
+    d34="$T34/$1"; rm -rf "$d34"; mkdir -p "$d34"
+    git init -q "$d34"
+    git -C "$d34" symbolic-ref HEAD refs/heads/main
+    git -C "$d34" config user.email t@t.t
+    git -C "$d34" config user.name t
+    git -C "$d34" config commit.gpgsign false
+    printf 'a\n' > "$d34/app.txt"
+    git -C "$d34" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+    git -C "$d34" -c core.hooksPath="$NOHOOK34" commit -q -m init
+    git -C "$d34" config core.hooksPath "$GHK34"
+  }
+  head34() { git -C "$T34/$1" rev-parse HEAD 2>/dev/null || echo none; }
+  sh34()   { ( cd "$T34/$1" && bash -c "$2" 2>&1 ); }
+
+  # --- row 11: what the commit would record ------------------------------
+  mkrepo34 secret
+  why34=""
+  for f in ".env" ".env.local" "config/.env" "certs/server.pem" "keys/store.p12" \
+           "keys/bundle.pfx" "keys/app.jks" "keys/app.keystore" "id_rsa" "home/.ssh/id_ed25519" \
+           "svc/service-account-abc123.json" "svc/service_account.json"; do
+    mkdir -p "$(dirname "$T34/secret/$f")" 2>/dev/null
+    printf 'K=1\n' > "$T34/secret/$f"
+    git -C "$T34/secret" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+    b34="$(head34 secret)"
+    out="$(sh34 secret "git commit -m recorded")"; rc=$?
+    { [ "$rc" != 0 ] && [ "$b34" = "$(head34 secret)" ]; } || why34="$why34 [$f -> exit $rc]"
+    case "$out" in *"would record a secret"*) ;; *) why34="$why34 [$f -> not named: $out]" ;; esac
+    git -C "$T34/secret" -c core.hooksPath="$NOHOOK34" rm -q -f --cached "$f" >/dev/null 2>&1
+    rm -f "$T34/secret/$f"
+  done
+  [ -z "$why34" ] && ok "a commit that would record a secret is refused" \
+                  || bad "a commit that would record a secret is refused ($why34)"
+
+  # --- row 12: named but not recorded -------------------------------------
+  # The row this whole task exists for. Each leg is a shape the guard being replaced refuses today.
+  mkrepo34 named
+  why34=""
+  printf 'x\n' >> "$T34/named/app.txt"
+  git -C "$T34/named" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+  b34="$(head34 named)"
+  out="$(sh34 named "git commit -m 'docs: never commit .env or server.pem'")"; rc=$?
+  { [ "$rc" = 0 ] && [ "$b34" != "$(head34 named)" ]; } || why34="$why34 [message names it -> exit $rc, said: $out]"
+  # present in the working tree, deliberately not staged
+  printf 'K=1\n' > "$T34/named/.env"
+  printf 'y\n' >> "$T34/named/app.txt"
+  git -C "$T34/named" -c core.hooksPath="$NOHOOK34" add app.txt >/dev/null 2>&1
+  b34="$(head34 named)"
+  out="$(sh34 named "git commit -m unrelated")"; rc=$?
+  { [ "$rc" = 0 ] && [ "$b34" != "$(head34 named)" ]; } || why34="$why34 [unstaged secret -> exit $rc, said: $out]"
+  rm -f "$T34/named/.env"
+  # the example forms, which exist to be committed
+  for f in ".env.example" ".env.template" ".env.sample" ".env.dist" ".env.local.example"; do
+    printf 'K=\n' > "$T34/named/$f"
+    git -C "$T34/named" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+    b34="$(head34 named)"
+    out="$(sh34 named "git commit -m example")"; rc=$?
+    { [ "$rc" = 0 ] && [ "$b34" != "$(head34 named)" ]; } || why34="$why34 [$f -> exit $rc, said: $out]"
+  done
+  # removing a secret committed by mistake must stay possible
+  git -C "$T34/named" -c core.hooksPath="$NOHOOK34" -c core.excludesFile=/dev/null add -f -A >/dev/null 2>&1
+  printf 'K=1\n' > "$T34/named/.env"
+  git -C "$T34/named" -c core.hooksPath="$NOHOOK34" add -f .env >/dev/null 2>&1
+  git -C "$T34/named" -c core.hooksPath="$NOHOOK34" commit -q -m "mistake"
+  git -C "$T34/named" -c core.hooksPath="$NOHOOK34" rm -q -f .env >/dev/null 2>&1
+  b34="$(head34 named)"
+  out="$(sh34 named "git commit -m 'remove the secret'")"; rc=$?
+  { [ "$rc" = 0 ] && [ "$b34" != "$(head34 named)" ]; } || why34="$why34 [removing a committed secret -> exit $rc, said: $out]"
+  [ -z "$why34" ] && ok "a secret named but not recorded does not refuse the commit" \
+                  || bad "a secret named but not recorded does not refuse the commit ($why34)"
+
+  # --- row 13: the recorded shapes, staged for real -----------------------
+  # The wrappings the inherited table carried are driven as a product here. They must all reach the same
+  # verdict, because the index they fill is the same whichever way it was filled — including the form
+  # that stages at commit time, which was measured to have a complete index by the time the hook runs.
+  mkrepo34 shapes
+  why34=""; ns34=0
+  for w in '%C' 'env GIT_TRACE=0 %C' '( %C )' 'true && %C' 'x=1; %C'; do
+    printf 'K=1\n' > "$T34/shapes/.env"
+    git -C "$T34/shapes" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+    b34="$(head34 shapes)"
+    cmd="${w//%C/git commit -m staged}"
+    out="$(sh34 shapes "$cmd")"; rc=$?; ns34=$((ns34+1))
+    { [ "$rc" != 0 ] && [ "$b34" = "$(head34 shapes)" ]; } || why34="$why34 [$cmd -> exit $rc]"
+    git -C "$T34/shapes" -c core.hooksPath="$NOHOOK34" rm -q -f --cached .env >/dev/null 2>&1
+  done
+  # the form that stages tracked changes at commit time
+  printf 'K=1\n' > "$T34/shapes/.env"
+  git -C "$T34/shapes" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+  git -C "$T34/shapes" -c core.hooksPath="$NOHOOK34" commit -q -m "carry it in"
+  printf 'K=2\n' > "$T34/shapes/.env"
+  b34="$(head34 shapes)"
+  out="$(sh34 shapes "git commit -am touched")"; rc=$?; ns34=$((ns34+1))
+  { [ "$rc" != 0 ] && [ "$b34" = "$(head34 shapes)" ]; } || why34="$why34 [commit -a -> exit $rc]"
+  # and amending, which is the form where the question changes: what a commit records is what it adds
+  # over the commit it replaces, so an amend that ADDS a secret is refused...
+  git -C "$T34/shapes" -c core.hooksPath="$NOHOOK34" rm -q -f --cached .env >/dev/null 2>&1
+  git -C "$T34/shapes" -c core.hooksPath="$NOHOOK34" commit -q -m "clean again"
+  printf 'K=3\n' > "$T34/shapes/.env"
+  git -C "$T34/shapes" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+  b34="$(head34 shapes)"
+  out="$(sh34 shapes "git commit --amend --no-edit")"; rc=$?; ns34=$((ns34+1))
+  { [ "$rc" != 0 ] && [ "$b34" = "$(head34 shapes)" ]; } || why34="$why34 [amend adding a secret -> exit $rc]"
+  [ -z "$why34" ] && ok "every recorded staging shape is still refused" \
+                  || bad "every recorded staging shape is still refused ($why34)"
+
+  # ...while an amend that merely carries a secret already in the history forward is NOT judged, and
+  # that is a decision rather than a gap. What a commit records is what it adds; a secret already in
+  # HEAD was recorded when this guard was bypassed or absent, and judging the whole tree instead would
+  # refuse every commit in a repository that already contains one — trapping it in exactly the state
+  # the guard exists to prevent, which is the same reason a deletion is not judged either.
+  git -C "$T34/shapes" -c core.hooksPath="$NOHOOK34" commit -q --amend --no-edit
+  printf 'unrelated\n' >> "$T34/shapes/app.txt"
+  git -C "$T34/shapes" -c core.hooksPath="$NOHOOK34" add app.txt >/dev/null 2>&1
+  b34="$(head34 shapes)"
+  out="$(sh34 shapes "git commit --amend --no-edit")"; rc=$?
+  if [ "$rc" = 0 ] && [ "$b34" != "$(head34 shapes)" ]; then
+    ok "a secret already in the history is not re-judged when a commit is amended, as declared"
+  else
+    bad "a secret already in the history is not re-judged when a commit is amended, as declared (exit $rc, said: $out)"
+  fi
+
+  # --- row 14: the harmless side of the same product ----------------------
+  # Without this the row above is satisfied by a guard that refuses every commit.
+  mkrepo34 harmless
+  why34=""; nh34=0
+  for w in '%C' 'env GIT_TRACE=0 %C' '( %C )' 'true && %C' 'x=1; %C'; do
+    printf 'ok\n' >> "$T34/harmless/app.txt"
+    git -C "$T34/harmless" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+    b34="$(head34 harmless)"
+    cmd="${w//%C/git commit -m ordinary}"
+    out="$(sh34 harmless "$cmd")"; rc=$?; nh34=$((nh34+1))
+    { [ "$rc" = 0 ] && [ "$b34" != "$(head34 harmless)" ]; } || why34="$why34 [$cmd -> exit $rc, said: $out]"
+  done
+  printf 'ok\n' >> "$T34/harmless/app.txt"
+  b34="$(head34 harmless)"
+  out="$(sh34 harmless "git commit -am ordinary")"; rc=$?; nh34=$((nh34+1))
+  { [ "$rc" = 0 ] && [ "$b34" != "$(head34 harmless)" ]; } || why34="$why34 [commit -a -> exit $rc, said: $out]"
+  [ -z "$why34" ] && ok "every recorded harmless staging shape is still allowed" \
+                  || bad "every recorded harmless staging shape is still allowed ($why34)"
+  echo "         ($ns34 recording forms refused, $nh34 harmless forms allowed)"
+
+  # --- the repository's own commit hook, on the terms the push guard uses --
+  mkrepo34 chain34
+  mkdir -p "$T34/chain34/.git/hooks"
+  cat > "$T34/chain34/.git/hooks/pre-commit" <<'OWN34'
+#!/bin/sh
+echo x >> "$(git rev-parse --git-common-dir)/own-commit-hook-ran"
+echo "the repository's own commit hook refuses this" >&2
+exit 9
+OWN34
+  chmod +x "$T34/chain34/.git/hooks/pre-commit"
+  printf 'z\n' >> "$T34/chain34/app.txt"
+  git -C "$T34/chain34" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+  b34="$(head34 chain34)"
+  out="$(sh34 chain34 "git commit -m chained")"; rc=$?
+  runs34="$(wc -l < "$T34/chain34/.git/own-commit-hook-ran" 2>/dev/null | tr -d ' ')"
+  case "$out" in *"own commit hook refuses"*) heard34=1 ;; *) heard34=0 ;; esac
+  if [ "$rc" != 0 ] && [ "$runs34" = "1" ] && [ "$heard34" = 1 ] && [ "$b34" = "$(head34 chain34)" ]; then
+    ok "a repository's own commit hook is run once and its refusal stands"
+  else
+    bad "a repository's own commit hook is run once and its refusal stands (exit $rc, ran ${runs34:-0}x, heard=$heard34, said: $out)"
+  fi
+else
+  echo "  [skip] commit-recording checks (git unavailable)"
+fi
 
 echo "== C35: the rail reports whether the protection is here, and judges nothing else =="
 # The rail's new job. Its trigger may be as imprecise as it likes: a false trigger costs a stat, and a
