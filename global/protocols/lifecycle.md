@@ -1,8 +1,24 @@
-# Task Lifecycle Deep Dive
+# Task Lifecycle Protocol
 
 ## Overview
 
 Every task in ai-flow follows a structured lifecycle. Each phase has a specific purpose, defined inputs/outputs, and gates that prevent premature progression.
+
+**This is the map's single home.** The phase chain, the execution paths and the autonomy levels are
+stated here and nowhere else: a second copy drifts against the one the phases actually read, and the
+copies that used to exist had already drifted — one described archiving as bookkeeping and omitted the
+move that puts the work into effect, two dropped half the criteria for the strictest autonomy level.
+Documents that need the map **cite this file**; they do not restate it.
+
+It lives with the protocols rather than with the published documentation for a reason that is not
+editorial: **the documentation directory is never installed.** What an operator needs in order to *run*
+the engine has to reach their machine, and only the engine's own surface does — so the file a session can
+open and the file a reader browses before installing are deliberately the same file. What is needed only
+to *evaluate* ai-flow may stay on the website.
+
+Unlike its sibling protocols, no phase command reads this one: it is read at activation, alongside the
+backlog protocol, to choose the execution path and the autonomy level, and by whoever wants the whole
+chain in one place. The global manual routes to it and states none of it.
 
 ```
 CAPTURE → PRIORITIZE → ACTIVATE → UNDERSTAND → PLAN → CONFORM → EXECUTE → VERIFY → ARCHIVE
@@ -31,7 +47,16 @@ No analysis happens here — just capture. The description can be rough.
 **Purpose**: Make the task the focus of its workstream.
 
 **Input**: A ready task
-**Output**: `artifacts/T-XXX/state.md` created with the task's branch, phase, step and autonomy; one workstream row added to STATE.md; status set to `active`
+**Output**: `artifacts/T-XXX/state.md` created with the task's branch, phase, step and autonomy; one row added to the roster in STATE.md; status set to `active`
+
+Activation is the **opening ceremony**, and the backlog protocol owns its moves. Three of them are the
+ones a summary drops, and they are why the ceremony exists rather than being a step called "start":
+the front **declares the areas** it expects to touch, in the project's own vocabulary; that declaration
+is **weighed against every open front**, returning clear, collision, or cannot-compare — and a collision
+is acknowledged in writing on the task's own sheet rather than waved through; and the default branch is
+checked to be **published**, because a front cut from it cannot see work that was committed and never
+pushed. With a single front open the weighing and the checkout moves have nothing to do. The declaration,
+the sheet and the roster row always do.
 
 **Rule**: One active task per workstream. Two fronts is the working parallelism, three the ceiling. This prevents context dilution without pinning the whole repository to one job.
 
@@ -147,18 +172,36 @@ Not every task needs the full ceremony:
 
 | Path | When to use | Phases |
 |------|-------------|--------|
-| **Full** | >2 files, ambiguous scope, new features | All phases |
-| **Quick** | <=2 files, unambiguous, small fixes | Plan (inline) → Execute |
+| **Full** | >2 files, ambiguous scope, new features | understand → plan → conform → execute → verify |
+| **Quick** | <=2 files, unambiguous, small fixes | plan (inline) → execute |
+
+The path names what runs **between** activation and archive; capture, prioritize, activate and archive
+happen on both. Understanding is mandatory on the full path — the quick path skips the formal
+understanding, conform and verify phases, which is the whole of what makes it quick.
 
 ## Autonomy Levels
 
 Different tasks need different supervision:
 
-| Level | Behavior | Best for |
-|-------|----------|----------|
-| **Auto** | Minimal gates, auto-commit | Bug fixes, renames, dep bumps |
-| **Guided** | All gates, user approves plan | Features, domain changes |
-| **Supervised** | Per-step approval in Execute | Schema changes, new domains |
+The level is classified at activation; the user confirms or adjusts it.
+
+| Level | Criteria | What changes |
+|-------|----------|--------------|
+| **Auto** | Bug fix with a reproducible test, mechanical refactor, tests already green | Plan inline (no artifact), no understand→plan gate, no plan→execute gate, auto-commit if all tests pass. User validates post-commit. |
+| **Guided** (default) | New features, domain changes, moderate scope | All gates as defined in the full path. Default behavior. |
+| **Supervised** | Schema changes, new domain or library, **>5 files**, **architectural decisions** | All gates + step-by-step approval during Execute (show the diff per step, wait for the user before the next one) |
+
+**Classification triggers:**
+- `auto` keywords: "fix", "bug", "refactor", "rename", "update dep", "bump"
+- `supervised` keywords: "new domain", "schema", "migration", "architecture", "new lib"
+- When ambiguous → default to **Guided**
+
+**Auto level constraints:**
+- Still runs conformance tests (if criteria exist) or existing tests
+- Still respects Bounded Retry (3 attempts max)
+- Still respects the diff guardrail (>150 LOC uncommitted in a step, or >400 LOC on the branch since its base → pause)
+- Commit message includes an `[auto]` tag: `type(scope): [auto] description`
+- If anything unexpected happens (test failure after 3 retries, >3 files needed, a design decision required) → **escalate to Guided**
 
 ## Why This Structure Works
 

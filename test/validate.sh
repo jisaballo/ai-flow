@@ -90,6 +90,10 @@ echo "SENTINEL-KEEP-ME" > "$TT/.ai-flow/BACKLOG.md"
 ( cd "$TW" && HOME="$TH" bash "$ROOT/install.sh" update "$TT" </dev/null >/dev/null 2>&1 ) || true
 grep -q "SENTINEL-KEEP-ME" "$TT/.ai-flow/BACKLOG.md" 2>/dev/null && ok "update preserves project data" || bad "update clobbered/missed project data"
 test -f "$TH/.claude/ai-flow/protocols/discover.md" && ok "update delivers discover.md centrally" || bad "update did not deliver discover.md centrally"
+# The map is the one protocol a reader is sent to rather than one a phase command reads, so its delivery
+# is asserted on the run itself and not inferred from the declared set agreeing with the tree: those two
+# can agree perfectly about a file the installer never writes.
+test -f "$TH/.claude/ai-flow/protocols/lifecycle.md" && ok "update delivers the lifecycle map centrally" || bad "update did not deliver the lifecycle map centrally"
 ( cd "$TW" && HOME="$TH" bash "$ROOT/install.sh" update "$TT" </dev/null >/dev/null 2>&1 ) || true
 SJ="$TH/.claude/settings.json"
 if [ -f "$SJ" ] && command -v python3 >/dev/null 2>&1; then
@@ -1168,15 +1172,22 @@ awk '/^## Epic-Scoped Understanding/{f=1;next} /^## /{f=0} f' "$UND" | tr '\n' '
   && ok "an unreachable contract blocks the Understand instead of vanishing" \
   || bad "an unreachable contract blocks the Understand instead of vanishing"
 
-# documented and reachable: the phase table routes activation and the lifecycle bullet names the
-# ceremony — in the repo copy and in the live twin, which no drift check covers
+# documented and reachable, and now in two files on purpose. The manual owes the ROUTE — its phase table
+# sends activation to the backlog protocol — and it owes that route in the repo copy and in the live twin
+# that no drift check covers. The bullet that also NAMED the ceremony left with the phase descriptions;
+# the map owes that half, and owes it in the one document that describes phases. Asserting the route
+# against the manual and the naming against the map is the split itself: a manual that routes and a map
+# that describes cannot both go stale from one edit in one place.
 ACT_RE='^\|[[:space:]]*Activate[^|]*\|[^|]*backlog\.md[^|]*\|'
-ACT_BULLET_RE='\*\*ACTIVATE\*\*.*ceremony'
+LC_MAP='global/protocols/lifecycle.md'
+# Scoped to the ACTIVATE section and terminated at the next heading of any depth: a file-wide grep for
+# the ceremony finds the ARCHIVE phase's own mention and reports activation documented on its strength.
+ACT_CEREMONY="$(awk '/^### 3\. ACTIVATE/{f=1;next} f && /^#+ /{exit} f' "$LC_MAP" 2>/dev/null)"
 twin2="$HOME/.claude/CLAUDE.md"
-if grep -qE "$ACT_RE" global/CLAUDE.md && grep -qE "$ACT_BULLET_RE" global/CLAUDE.md; then
+if grep -qE "$ACT_RE" global/CLAUDE.md; then
   ok "the global instructions route activation to the backlog protocol"
   if [ -f "$twin2" ]; then
-    grep -qE "$ACT_RE" "$twin2" && grep -qE "$ACT_BULLET_RE" "$twin2" \
+    grep -qE "$ACT_RE" "$twin2" \
       && ok "the live twin routes activation to the backlog protocol" \
       || bad "the live twin routes activation to the backlog protocol (stale — port the edit by hand, nothing distributes ~/.claude/CLAUDE.md)"
   else
@@ -1185,6 +1196,11 @@ if grep -qE "$ACT_RE" global/CLAUDE.md && grep -qE "$ACT_BULLET_RE" global/CLAUD
 else
   bad "the global instructions route activation to the backlog protocol"
   bad "the live twin routes activation to the backlog protocol (shipped copy is stale)"
+fi
+if [ -n "$ACT_CEREMONY" ] && printf '%s' "$ACT_CEREMONY" | grep -qi 'opening ceremony'; then
+  ok "the map names the ceremony activation runs"
+else
+  bad "the map names the ceremony activation runs"
 fi
 
 echo "== C14: the audit judges the branch, not the working tree =="
@@ -1553,25 +1569,28 @@ else
   bad "the two halves of the workstream ceremony name each other"
 fi
 
-# The lifecycle route, in the repo copy and in the live twin that no drift check covers.
-ARCH_BULLET_RE='\*\*ARCHIVE\*\*.*(closing ceremony|Closing a Workstream)'
-# Two routes, not one: the lifecycle step AND the post-commit rule. Routing only the first leaves the
-# rule the operator actually reads after committing pointing past moves 1-3 of the ceremony.
+# The post-commit route, in the repo copy and in the live twin that no drift check covers. The other
+# half of this pair — the phase step naming the closing ceremony — left the manual with the phase
+# descriptions and is asserted on the map instead, by the archive row of the paper-trail block. Narrowing
+# this check is therefore not a coverage loss but a relocation: the fact moved from a file nothing
+# distributes to one the installer delivers and the drift guard compares.
+# What stays here is the rule the operator actually reads after committing; routing the phase step alone
+# would leave that rule pointing past moves 1-3 of the ceremony.
 POST_ROUTE_RE='immediately\*\* run the closing ceremony'
-manroutes() { grep -qE "$ARCH_BULLET_RE" "$1" && grep -qE "$POST_ROUTE_RE" "$1"; }
+manroutes() { grep -qE "$POST_ROUTE_RE" "$1"; }
 twin3="$HOME/.claude/CLAUDE.md"
 if manroutes global/CLAUDE.md; then
-  ok "the shipped manual routes ARCHIVE to the closing ceremony"
+  ok "the shipped manual routes the post-commit rule to the closing ceremony"
   if [ -f "$twin3" ]; then
     manroutes "$twin3" \
-      && ok "the live twin routes ARCHIVE to the closing ceremony" \
-      || bad "the live twin routes ARCHIVE to the closing ceremony (stale — port the edit by hand, nothing distributes ~/.claude/CLAUDE.md)"
+      && ok "the live twin routes the post-commit rule to the closing ceremony" \
+      || bad "the live twin routes the post-commit rule to the closing ceremony (stale — port the edit by hand, nothing distributes ~/.claude/CLAUDE.md)"
   else
-    echo "  [skip] live CLAUDE.md twin absent — the shipped one routes ARCHIVE"
+    echo "  [skip] live CLAUDE.md twin absent — the shipped one routes the post-commit rule"
   fi
 else
-  bad "the shipped manual routes ARCHIVE to the closing ceremony"
-  bad "the live twin routes ARCHIVE to the closing ceremony (shipped copy is stale)"
+  bad "the shipped manual routes the post-commit rule to the closing ceremony"
+  bad "the live twin routes the post-commit rule to the closing ceremony (shipped copy is stale)"
 fi
 
 echo "== C16: a phase command resolves the task its own checkout owns =="
@@ -3707,10 +3726,17 @@ echo "== The paper trail names the model the engine runs =="
 # comment answer for the activation row and vice versa, so the criterion's two halves could both be
 # satisfied by one edit in one place.
 RD24="README.md"
-ACT24="$(grep '^| \*\*Activate\*\* |' "$RD24")"
+LC24="global/protocols/lifecycle.md"
+
+# The two halves now live in two files, and that is the point of the split rather than an accident of it:
+# the front door keeps the claim its own structure line makes, and the claim about what activation writes
+# follows the phase description to the one document that describes phases. Scoped to the ACTIVATE section
+# and terminated at the next heading of ANY depth — the sibling A3 extractor exits on `## ` alone, which
+# is correct only because ARCHIVE is the last phase and is not correct here.
+ACT24="$(awk '/^### 3\. ACTIVATE/{f=1;next} f && /^#+ /{exit} f' "$LC24" 2>/dev/null)"
 RST24="$(grep '── STATE.md' "$RD24")"
 a1=""
-[ -n "$ACT24" ] || a1="$a1 activate-row-absent"
+[ -n "$ACT24" ] || a1="$a1 activate-section-absent"
 [ -n "$RST24" ] || a1="$a1 structure-line-absent"
 printf '%s' "$RST24" | grep -qi 'roster of open workstreams' || a1="$a1 roster-name"
 printf '%s' "$ACT24" | grep -q  'artifacts/T-XXX/state.md'   || a1="$a1 task-sheet"
@@ -3718,10 +3744,9 @@ printf '%s' "$ACT24" | grep -qi 'roster'                     || a1="$a1 roster-r
 printf '%s' "$RST24" | grep -qi 'Current session context'    && a1="$a1 stale-session-context"
 printf '%s' "$ACT24" | grep -qi 'as the active task'         && a1="$a1 stale-activation"
 [ -z "$a1" ] \
-  && ok "the front door names the roster and the task's own sheet" \
-  || bad "the front door names the roster and the task's own sheet (missing:$a1)"
+  && ok "the front door names the roster and the map names the task's own sheet" \
+  || bad "the front door names the roster and the map names the task's own sheet (missing:$a1)"
 
-LC24="docs/lifecycle.md"
 
 # A2 — the audit runs four auditors. The count is asserted by naming all four, not by matching a numeral:
 # a document that says "four" and lists three is the same defect with the arithmetic corrected. The stale
@@ -3914,13 +3939,13 @@ printf '%s' "$ARC24" | grep -qiE 'moves? [0-9], |moves? [0-9] and'   && a14="$a1
 # guard the next person deletes.
 PUR24='\bisn\b|residents|gate-manager|zoomin|esp32|firestore|ionic|angular|haiku|/architect|/ngrx|/data-access|/frontend-design'
 p1=""
-for f in backlog execute plan quick-path understand verify; do
+for f in backlog execute lifecycle plan quick-path understand verify; do
   grep -qiE "$PUR24" "global/protocols/$f.md"                     && p1="$p1 $f:identifier"
   grep -qiE 'E-099|T-7[0-9][0-9]|T-9[0-9][0-9]' "global/protocols/$f.md" && p1="$p1 $f:foreign-task-id"
 done
 [ -z "$p1" ] \
-  && ok "the six phase protocols carry no origin-project identifier" \
-  || bad "the six phase protocols carry no origin-project identifier (found:$p1)"
+  && ok "the swept phase protocols carry no origin-project identifier" \
+  || bad "the swept phase protocols carry no origin-project identifier (found:$p1)"
 
 p2="$(grep -rniE 'residents|gate-manager|zoomin|esp32|/Users/[a-z]' global/ 2>/dev/null | wc -l | tr -d ' ')"
 [ "$p2" = "0" ] \
@@ -6257,7 +6282,7 @@ if [ -r "$MAN37" ] && [ -s "$MAN37" ] && [ -r "$INS37" ] && [ -s "$INS37" ] \
   # reported a protocol that was EXTRA and was blind to one that was MISSING, so a deletion — including
   # this task's own — passed it green. Read before being retired: everything it covered is the `extra`
   # leg below, and the `missing` leg is what it never had.
-  EXPECT37="backlog.md discover.md execute.md plan.md quick-path.md understand.md verify.md"
+  EXPECT37="backlog.md discover.md execute.md lifecycle.md plan.md quick-path.md understand.md verify.md"
   ACTUAL37="$(ls global/protocols 2>/dev/null | sort | tr '\n' ' ')"
   c1_37=""
   # The extractor proves it found the class before any verdict is drawn from it: an empty listing would
@@ -7171,6 +7196,84 @@ if [ -n "$DOCD42" ]; then
 else
   bad "the adopter guide carries the same two-layout rationale as the ceremony (data condition not found)"
 fi
+
+echo "== C43: the lifecycle map has one home, and the home is one an adopter receives =="
+MAP43="global/protocols/lifecycle.md"
+# The nine phases, named once. Every check below derives its patterns from this list rather than
+# restating them, so a phase renamed in the engine cannot leave a guard quietly matching nothing.
+PH43='CAPTURE|PRIORITIZE|ACTIVATE|UNDERSTAND|PLAN|CONFORM|EXECUTE|VERIFY|ARCHIVE'
+
+# --- the map has exactly one home ------------------------------------------
+# A1. Counted, not merely found — the same shape the phase precondition's home guard uses, and for the
+# same reason: the whole anti-drift design is that a second statement cannot exist, and a check that
+# only asks whether the rule is present anywhere is satisfied by every copy at once. Anchored at line
+# start on the first phase's own heading: a document that CITES the map names it inline ("see the
+# lifecycle protocol"), which is how every cross-reference in this engine is written, and an unanchored
+# count would read each citer as another home. A real second home carries the phase headings itself.
+HOME43="$(grep -rliE '^#{2,4} *(1\. *)?CAPTURE\b' global/ 2>/dev/null | wc -l | tr -d ' ')"
+ELSE43="$(grep -rliE '^#{2,4} *(1\. *)?CAPTURE\b' template/ docs/ README.md 2>/dev/null | wc -l | tr -d ' ')"
+if [ "$HOME43" -eq 1 ] && [ "$ELSE43" -eq 0 ] && [ -f "$MAP43" ]; then
+  ok "the lifecycle map is stated in exactly one document, and it is a distributed one"
+else
+  bad "the lifecycle map is stated in exactly one document, and it is a distributed one (global/: $HOME43, elsewhere: $ELSE43, map present: $([ -f "$MAP43" ] && echo yes || echo no))"
+fi
+
+# A2. The direction the count cannot see. A home is recognised by the first phase's heading; a copy that
+# describes the phases under any other wording is a second description the count reports as zero. What
+# selects one here is a phase name LEADING a heading, a table row or a numbered item — the shape a
+# per-phase description has and a mention does not. The lead is what makes the pattern safe on the
+# renderings that stay: the front door's execution-paths row names five phases on one line and leads
+# with none of them, and a worked transcript names them mid-sentence. Three is the threshold because
+# one or two leads is a document explaining a phase it owns; three is the map, copied.
+# Case-insensitively, because the copies do not agree on case and the guard must not depend on which
+# one it is reading: the front door writes `| **Capture** |` in title case and the deep dive writes
+# `### 1. CAPTURE`. A case-sensitive count read the front door's whole phase table as zero — the guard
+# was blind to one of the two copies it exists to remove, which is the failure it was written against.
+# The manual is in the scanned set although it IS distributed, and it is the reason the two guards are
+# not one: the count above recognises a home by a phase HEADING, and the manual writes its phases as
+# numbered list items, so a full copy of the map sat there invisible to it. That copy is also the most
+# expensive one in the engine — the manual is loaded on every turn of every project, where the map is
+# read on demand — so the document that could least afford it was the one nothing watched.
+who43=""
+for f43 in README.md docs/*.md global/CLAUDE.md; do
+  [ -f "$f43" ] || continue
+  # A routing row is not a description, and the manual's route is the half it must KEEP: `| Activate |
+  # ~/.claude/ai-flow/protocols/backlog.md |` leads with a phase name and says nothing about the phase.
+  # Selecting on `protocols/` rather than on any `.md` keeps the exclusion narrow — the front door's own
+  # activation row names `artifacts/T-XXX/state.md` and is a description, so a bare `.md` filter would
+  # have quietly forgiven one of the nine rows this guard exists to count.
+  n43="$(grep -iE "^(#{1,6} *([0-9]+\. *)?|\| *\*{0,2}|[0-9]+\. *\*{0,2})($PH43)\b" "$f43" 2>/dev/null \
+          | grep -cv 'protocols/' || true)"
+  if [ "$n43" -ge 3 ]; then who43="$who43 ${f43##*/}:$n43"; fi
+done
+[ -z "$who43" ] \
+  && ok "no document outside the map carries the phase-by-phase description" \
+  || bad "no document outside the map carries the phase-by-phase description (:$who43)"
+
+# --- the map is delivered, not merely written ------------------------------
+# A3. The front door sends a reader to the map, and sends them to the copy that ships. A link into
+# `docs/` would point at a file no install produces, which is the whole defect this task removes.
+if grep -qF "$MAP43" README.md 2>/dev/null; then
+  ok "the front door points at the map an adopter receives"
+else
+  bad "the front door points at the map an adopter receives"
+fi
+
+# --- the drift that misclassified a real task ------------------------------
+# A4. The Supervised row, scoped to the section that owns the autonomy table. Both triggers, separately:
+# the two renderings that drifted kept "schema changes" and lost exactly these, and losing one of the two
+# is the same defect as losing both. This is the one criterion here with a live failure behind it — the
+# task that wrote this guard was classified by the leg the other copies had already dropped.
+AUT43="$(awk '/^## Autonomy Levels/{f=1;next} f && /^## /{exit} f' "$MAP43" 2>/dev/null)"
+SUP43="$(printf '%s' "$AUT43" | grep -m1 -iE '^\| *\*{0,2}Supervised')"
+a43=""
+[ -n "$AUT43" ] || a43="$a43 section-absent"
+[ -n "$SUP43" ] || a43="$a43 supervised-row-absent"
+printf '%s' "$SUP43" | grep -qiE '> *5 files|more than five files' || a43="$a43 file-count-trigger"
+printf '%s' "$SUP43" | grep -qi  'architectural'                   || a43="$a43 architecture-trigger"
+[ -z "$a43" ] \
+  && ok "the map's Supervised row keeps both triggers the other copies dropped" \
+  || bad "the map's Supervised row keeps both triggers the other copies dropped (missing:$a43)"
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
