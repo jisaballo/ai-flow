@@ -2,9 +2,9 @@
 
 ## Workstreams
 
-| Workstream | Checkout | Branch | Task | Epic | Areas | Tool | Opened |
-|---|---|---|---|---|---|---|---|
-| coordinator | . | main | — | — | — | — | — |
+| Workstream | Checkout | Task | Epic | Areas | Tool | Opened |
+|---|---|---|---|---|---|---|
+| coordinator | . | — | — | — | — | — |
 
 > Per-task phase, step, autonomy and decisions live in `artifacts/T-XXX/state.md`.
 > This file is a roster: the coordinator writes it, only at ceremonies.

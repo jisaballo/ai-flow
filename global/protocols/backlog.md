@@ -53,10 +53,10 @@ row has nothing to name — nothing created it.
 
 ## Workstreams
 
-| Workstream | Checkout | Branch | Task | Epic | Areas | Tool | Opened |
-|---|---|---|---|---|---|---|---|
-| coordinator | . | main | T-XXX | E-XXX | auth, billing | — | 2026-08-19 |
-| ws-b | ../proj-wt-b | you/t-yyy-slug | T-YYY | E-XXX | notifications | <tool> | 2026-08-19 |
+| Workstream | Checkout | Task | Epic | Areas | Tool | Opened |
+|---|---|---|---|---|---|---|
+| coordinator | . | T-XXX | E-XXX | auth, billing | — | 2026-08-19 |
+| ws-b | ../proj-wt-b | T-YYY | E-XXX | notifications | <tool> | 2026-08-19 |
 
 > Per-task phase, step, autonomy and decisions live in `artifacts/T-XXX/state.md`.
 > This file is a roster: the coordinator writes it, only at ceremonies.
@@ -266,6 +266,11 @@ itself can always perform. Naming it is what lets the move reach for the tool's 
 A roster that predates the **Areas** column is not broken: a front that declares no areas simply
 reads as *cannot compare* at the next opening, which is exactly the verdict the ceremony defines for
 it. Adding the column costs one edit and turns that verdict into a real comparison.
+
+A roster that still carries a **Branch** column is not broken: nothing consults it. The close reads a
+front's branch from the checkout it has just located, never from the roster, so the column is a value
+nobody keeps current and nobody asks for. Dropping it costs one edit; leaving it costs a field that is
+wrong from each front's second task onward, for whoever reads the roster rather than the ceremony.
 
 ## Task Entry Format (business-first)
 
@@ -508,8 +513,8 @@ what activation has always been, plus the declaration in step 2.
    decision log and the archive are never copied in. What the front must read there but must not own —
    its epic's Scope Contract — it reads from the coordinator, read-only (see the Understand protocol).
 
-7. **Write the roster row and the task's sheet.** The row carries workstream, checkout, branch, task,
-   epic, the declared areas, **what created the checkout** — the tool identified in move 5, which is
+7. **Write the roster row and the task's sheet.** The row carries workstream, checkout, task, epic,
+   the declared areas, **what created the checkout** — the tool identified in move 5, which is
    what the dismantling move reads — and the date. The sheet carries the branch that owns the task, the first
    position, the step, the autonomy level, and any acknowledgement from step 3. The position is the one
    named in `## State Files` and is not chosen here: this move writes a task that is open and in no

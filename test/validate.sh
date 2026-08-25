@@ -407,9 +407,9 @@ fi
 mkviolstate() {  # $1 = the project's .ai-flow directory
   {
     printf '# Session State\n\n## Workstreams\n\n'
-    printf '| Workstream | Checkout | Branch | Task | Epic | Areas | Tool | Opened |\n'
-    printf '|---|---|---|---|---|---|---|---|\n'
-    printf '| coordinator | . | main | T-100 | E-009 | auth | - | 2026-08-01 |\n\n'
+    printf '| Workstream | Checkout | Task | Epic | Areas | Tool | Opened |\n'
+    printf '|---|---|---|---|---|---|---|\n'
+    printf '| coordinator | . | T-100 | E-009 | auth | - | 2026-08-01 |\n\n'
     printf '## Notes\n\n'
     printf '**Epic E-007 (payments overhaul) CLOSED 2026-07-30.** Sealed decisions: `archive/E-007-payments.md`.\n\n'
     printf '## Quick Tasks Completed\n\n| Date | Description | Commit |\n|------|-------------|--------|\n'
@@ -782,7 +782,7 @@ BLG="global/protocols/backlog.md"
 
 # --- the two shapes, written down ----------------------------------------
 if grep -q '^## Workstreams' "$TSTATE" \
-   && grep -qiE '^\|[^|]*workstream[^|]*\|[^|]*checkout[^|]*\|[^|]*branch[^|]*\|[^|]*task[^|]*\|' "$TSTATE" \
+   && grep -qiE '^\|[^|]*workstream[^|]*\|[^|]*checkout[^|]*\|[^|]*task[^|]*\|' "$TSTATE" \
    && grep -q '^## Quick Tasks Completed' "$TSTATE"; then
   ok "the shipped session file is a workstream roster"
 else
@@ -1145,7 +1145,7 @@ fi
 # the column the check reads, in the shipped roster and in the protocol's own skeleton.
 # The migration region is bounded at the next heading: unbounded, it ran to EOF and read the
 # ceremony's own text, which made this assertion incapable of failing.
-ROSTER_RE='^\|[^|]*[Ww]orkstream[^|]*\|[^|]*[Cc]heckout[^|]*\|[^|]*[Bb]ranch[^|]*\|[^|]*[Tt]ask[^|]*\|[^|]*[Ee]pic[^|]*\|[^|]*[Aa]reas[^|]*\|'
+ROSTER_RE='^\|[^|]*[Ww]orkstream[^|]*\|[^|]*[Cc]heckout[^|]*\|[^|]*[Tt]ask[^|]*\|[^|]*[Ee]pic[^|]*\|[^|]*[Aa]reas[^|]*\|'
 if grep -qE "$ROSTER_RE" "template/.ai-flow/STATE.md" \
    && grep -qE "$ROSTER_RE" "$BLG3" \
    && awk '/^### Migrating an existing ledger/{f=1;next} /^#+ /{f=0} f' "$BLG3" | grep -qi 'areas'; then
@@ -6433,9 +6433,9 @@ else
     mkdir -p "$1/.ai-flow"
     {
       printf '# Session State\n\n## Workstreams\n\n'
-      printf '| Workstream | Checkout | Branch | Task | Epic | Areas | Tool | Opened |\n'
-      printf '|---|---|---|---|---|---|---|---|\n'
-      printf '| coordinator | . | main | T-100 | E-009 | auth | - | 2026-08-01 |\n'
+      printf '| Workstream | Checkout | Task | Epic | Areas | Tool | Opened |\n'
+      printf '|---|---|---|---|---|---|---|\n'
+      printf '| coordinator | . | T-100 | E-009 | auth | - | 2026-08-01 |\n'
       [ -n "${5:-}" ] && printf '%s\n' "${5:-}"
       printf '\n## Notes\n\nCross-workstream context only - nothing that belongs to a single task.\n\n'
       [ -n "${2:-}" ] && [ "${4:-notes}" = notes ] && printf '%s\n\n' "$2"
