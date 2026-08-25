@@ -166,7 +166,10 @@ arrived.
    replaces nothing and **refuses** (both below).
    The pruning half is run on every path regardless: a copy taken at creation is a snapshot, and it can
    arrive holding papers of tasks this front does not own — and, being a snapshot, it can also arrive
-   holding a version of the papers that has since moved on.
+   holding a version of the papers that has since moved on. It is also run whichever way your project
+   keeps `.ai-flow/`: where you **ignore** it the patterns above are what carry the papers in, and where
+   you **commit** it git carried the whole directory with the checkout and the patterns select nothing —
+   so there the pruning is the only thing standing between that front and another task's papers.
 3. **Visibility** — the coordinator's audit cannot see the checkout. Outside your project folder that
    holds by itself; inside it, only where your ignore rules cover the path. This one is **per-tool** —
    which of the two cases you are in depends on where your tool puts the checkout.

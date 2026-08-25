@@ -79,11 +79,12 @@ def phase_source(root: Path, cwd: Path):
     State Files > "Resolving the task", which the phase commands follow too; rungs 1 and 2 are
     implemented here and this file wins if the two ever read differently.
 
-    Task artifacts travel as a whole, so a working copy can hold several state sheets; the one that
-    declares the branch currently checked out is the task actually being worked here. Failing that,
-    the older rule still answers: exactly one sheet means "this checkout is working that task", and
-    zero or several hand the phase question back to the ledger STATE.md — the coordinator's, and the
-    only state a project that has not migrated yet has."""
+    A working copy can hold several state sheets — the coordinator holds every open task's by
+    construction, and a front takes on its next task while the paused one keeps its papers — and the
+    one that declares the branch currently checked out is the task actually being worked here. Failing
+    that, the older rule still answers: exactly one sheet means "this checkout is working that task",
+    and zero or several hand the phase question back to the ledger STATE.md — the coordinator's, and
+    the only state a project that has not migrated yet has."""
     per_task = sorted((root / '.ai-flow' / 'artifacts').glob('*/state.md'))
     branch = current_branch(cwd)
     if branch:

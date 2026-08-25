@@ -180,8 +180,11 @@ worked. That is allowed and unchanged; what the paused one gives up is the claim
 ### Resolving the task
 
 **The `branch:` line is how a checkout recognises its own task.** A working copy can hold several
-sheets — artifacts travel as a whole — so whoever opens a workstream writes that line, and every
-reader that needs to know which task a checkout is on follows the same four rungs, in order.
+sheets — the coordinator holds every open task's by construction, and a front takes on its next task
+while the paused one keeps its papers — so whoever opens a workstream writes that line, and every
+reader that needs to know which task a checkout is on follows the same four rungs, in order. What a
+front receives when it is created is pruned by the ceremony that created it; neither of those two
+producers is, so the situation the ladder answers to is the one no ceremony removes.
 
 Two readers follow them. The read-only rail wants a phase, and `phase_source` in
 `~/.claude/hooks/understand-write-guard.py` is the implementation of rungs 1 and 2 — the file that
@@ -496,11 +499,16 @@ what activation has always been, plus the declaration in step 2.
    decided, and there is no silent path past a decision. What is
    never acceptable is a checkout nobody checked.
 
-6. **Seed the task's artifacts and prune the rest.** The pattern file carries `artifacts/` wholesale,
-   so the new checkout arrives holding the papers of every open task, and the read-only rail cannot
-   tell which task is its own from a pile: the checkout must hold only the artifacts of the task it
-   owns, so prune every folder this front does not own. What is deleted there are copies — the
-   coordinator keeps the originals. The engine ships the mechanism —
+6. **Seed the task's artifacts and prune the rest.** The new checkout arrives holding the papers of
+   every open task, and the read-only rail cannot tell which task is its own from a pile: the checkout
+   must hold only the artifacts of the task it owns, so prune every folder this front does not own — on
+   **either** layout, because what put the pile there differs and the prune does not. Where the project
+   **ignores** its data directory the pattern file carries `artifacts/` wholesale and the copy is what
+   brings it; where the project **commits** it, git carried the whole directory in with the checkout and
+   the pattern file selects nothing among the ignored paths, so there the prune is the only work left. A
+   data directory neither ignored nor tracked is not a third layout but the documented precondition
+   failing, which the mechanism below names rather than seeding a front with no project data. What is
+   deleted there are copies — the coordinator keeps the originals. The engine ships the mechanism —
    `~/.claude/ai-flow/scripts/seed-front.sh <checkout> <T-XXX>` — which is what satisfies the data
    condition for a front-end that does not: it selects by the project's own pattern file, copies what
    that selects, and prunes what this front does not own. On the native path the copy has already
