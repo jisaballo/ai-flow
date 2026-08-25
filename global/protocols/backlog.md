@@ -28,6 +28,16 @@ wrongly — an earlier form of it exempted from the quick-task heading to the ne
 section is last here, the exemption ran to end of file and a narrative appended at the bottom was
 invisible.
 
+**Checkout** names where that front's working copy lives, and it is what locates the front: the
+collection move of the closing ceremony and the deletion step of the archive checklist both match this
+column against the repository's own worktree listing. Front-scoped and decided once, like Areas and
+Tool — and unlike a branch, which a front changes with every task in its chain, so a column carrying one
+would be stale from that front's second task onward, at precisely the moments those two readers fire.
+The comparison is made on resolved paths: the listing answers in absolute ones, a row may record a
+relative one, and `~/.claude/ai-flow/scripts/seed-front.sh` already resolves both sides the same way.
+The coordinator's own row names its own checkout, which neither reader ever looks for — a task worked
+there has its papers there already.
+
 **Areas** names the parts of the codebase a front declared when it opened, in the project's own
 `area_kind`. It is what the next opening weighs its own declaration against (see Opening a
 Workstream) — front-scoped, decided once, never a running account of what the task turned out to
@@ -545,14 +555,21 @@ sheet is where an interrupted close is written down, and the roster is the queue
 2. **The coordinator collects the task's papers.** `artifacts/T-XXX/` is written in the checkout where
    the task is worked and lives outside version control, so it does not travel with the branch and the
    merge carries none of it. The coordinator locates the front's checkout in the repository's own
-   worktree listing, matched by the branch on that front's roster row — git is the authority, the row can
-   be stale. If the listing does not name it, stop: the papers may already be gone, and no later move
-   reconstructs them. The collection **replaces** whatever the coordinator holds for that task, and it is
+   worktree listing, matched by the checkout path on that front's roster row — git is the authority, and
+   that path is the one field on the row no chain of tasks changes: a front takes a new branch with every
+   task it works and the roster records the branch it opened on, so a locator keyed there stops from that
+   front's second task onward, while the same row was never wrong about where the front lives. The
+   comparison is made on resolved paths (see the roster's own section). If the listing does not name that
+   path, stop: the checkout is gone, so the papers may be gone with it, and no later move reconstructs
+   them. The collection **replaces** whatever the coordinator holds for that task, and it is
    the one sanctioned exception to never overwriting a task's papers — the copy from the checkout where
    the task was worked is the authoritative one, while the coordinator's is a snapshot from the moment
    the front opened. The coordinator pulls; a linked worktree still never writes here.
 
-3. **The merge lands in the coordinator**, one front at a time. If it cannot complete, the ceremony stops
+3. **The merge lands in the coordinator**, one front at a time. The branch to merge is read from the
+   checkout move 2 just located, by asking its own git what it is on — never from the roster, which
+   carries no branch at all: a front's branch changes with every task in its chain, and the checkout is
+   the only thing that knows the current one. If it cannot complete, the ceremony stops
    here: the front stays open and the record is not written, because a task recorded as done that is not
    in the trunk is a lie in the record. The papers are already safe — that is what collecting first
    bought.
@@ -610,13 +627,12 @@ reaches into the checkout where the task was worked to delete a copy of what it 
    worked in a linked worktree leaves a copy there, and the ceremony's tail removes that checkout only
    when the front has no next task: a front continuing its chain keeps the copy, the next task's sheet
    claims the same branch, and the checkout is left with two claims and no way to say which task it is
-   on. Locate the front's checkout the way move 2 of the closing ceremony locates it — the repository's
-   own worktree listing, matched by the branch on that front's roster row. What makes this safe is that
-   the record is already written: step 3 generated the summary, so what is deleted is a copy of what the
-   archive holds. Which is also why it happens **here and not earlier — never before the collection, and
-   never at collection time**: move 3 can still stop the ceremony, and a front whose merge failed is a
-   front still working that task, with the papers it needs gone and git unable to restore what it never
-   tracked.
+   on. Locate the front's checkout the way move 2 of the closing ceremony locates it, which is the one
+   place that rule is written. What makes this safe is that the record is already written: step 3
+   generated the summary, so what is deleted is a copy of what the archive holds. Which is also why it
+   happens **here and not earlier — never before the collection, and never at collection time**: move 3
+   can still stop the ceremony, and a front whose merge failed is a front still working that task, with
+   the papers it needs gone and git unable to restore what it never tracked.
 5. Remove task from BACKLOG.md (move from Done to nowhere — it's in the archive now)
 6. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
 7. Leave the workstream row to move 7 of `## Closing a Workstream`, its sole owner: the row is removed

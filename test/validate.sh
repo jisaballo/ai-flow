@@ -6867,6 +6867,121 @@ else
   trap 'rm -rf "$T12" "$T13" "$T25"' EXIT   # handed back to the section that owned it
 fi
 
+echo "== C41: a front is located by the one field a chain of tasks does not change =="
+BLG41="global/protocols/backlog.md"
+TPL41="template/.ai-flow/STATE.md"
+
+# Extractors re-declared rather than inherited: a criterion reading another section's extractor changes
+# verdict when that one is re-scoped. Each is asserted non-empty before any verdict is trusted — an
+# assertion that fails because its extractor found nothing passes on anything once the file is edited.
+CLO41="$(awk '/^## Closing a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG41")"
+OPN41="$(awk '/^## Opening a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG41")"
+c41() { printf '%s\n' "$CLO41" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
+o41() { printf '%s\n' "$OPN41" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
+sec41() { awk -v h="$1" '$0 ~ h {f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^#+ /){f=0} f' "$BLG41" | tr '\n' ' ' | tr -s ' '; }
+# The checklist's items one at a time. The deletion step is item 4 and its neighbours talk about the same
+# papers in the same words, so a section-wide grep passes on a neighbour's sentence.
+ARCH41="$(awk '/^### After ARCHIVE/{f=1;next} /^#+ /{if(f) exit} f' "$BLG41")"
+a41() { printf '%s\n' "$ARCH41" | awk -v s="^$1\. " -v e="^$(($1 + 1))\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' | tr '\n' ' ' | tr -s ' '; }
+
+M2_41="$(c41 2)"
+if [ -n "$M2_41" ]; then
+  # The field AND the absence of the one it replaces, as a pair: the new spelling can be added beside the
+  # old one and read as done, while what makes the locator stable is that only one field is named.
+  m41a=""
+  printf '%s' "$M2_41" | grep -qiE 'checkout path|path on that front|by the checkout' || m41a="$m41a the-path-is-not-the-key"
+  printf '%s' "$M2_41" | grep -qiE 'matched by the branch|by the branch on'           && m41a="$m41a the-branch-is-still-a-key"
+  [ -z "$m41a" ] && ok "the collection move locates the front by the checkout path on its roster row" \
+                 || bad "the collection move locates the front by the checkout path on its roster row (:$m41a)"
+
+  # The rationale, guarded because this epic has already watched an unguarded one go: a reason nothing
+  # asserts is deletable with the suite green, and this one is the whole reason the field changed.
+  printf '%s' "$M2_41" | grep -qiE 'does not (move|change)|no chain of tasks|never moves|outlives' \
+    && ok "the field the locator keys on is the one no chain of tasks changes" \
+    || bad "the field the locator keys on is the one no chain of tasks changes"
+
+  # C15 pins that this move reads the listing and stops. What is unpinned there is WHICH absence stops
+  # it — and after this change that absence means one thing, so it is worth saying which one.
+  m41b=""
+  printf '%s' "$M2_41" | grep -qiE 'worktree list|listing'  || m41b="$m41b reads-no-listing"
+  printf '%s' "$M2_41" | grep -qiE 'stop'                   || m41b="$m41b does-not-stop"
+  printf '%s' "$M2_41" | grep -qiE 'checkout path|path on that front|by the checkout' || m41b="$m41b absence-is-not-the-path"
+  [ -z "$m41b" ] && ok "an unlocatable front still stops the closing, on the absence of that path" \
+                 || bad "an unlocatable front still stops the closing, on the absence of that path (:$m41b)"
+
+  # The hole the removed column opens. The merge needs a branch and the roster was the only field that
+  # could have been read for it, so the ceremony must name a source or the removal strands a consumer.
+  FLAT41="$(printf '%s' "$CLO41" | tr '\n' ' ' | tr -s ' ')"
+  m41c=""
+  printf '%s' "$FLAT41" | grep -qiE "branch[^.]*(read|comes) from[^.]*(checkout|git)|git[^.]*that checkout" \
+    || m41c="$m41c no-source-named"
+  printf '%s' "$FLAT41" | grep -qiE 'never from the roster|not from the roster|never the roster' \
+    || m41c="$m41c roster-not-excluded"
+  [ -z "$m41c" ] && ok "the branch the merge needs is read from the located checkout, never from the roster" \
+                 || bad "the branch the merge needs is read from the located checkout, never from the roster (:$m41c)"
+else
+  bad "the collection move locates the front by the checkout path on its roster row (move not found)"
+  bad "the field the locator keys on is the one no chain of tasks changes (move not found)"
+  bad "an unlocatable front still stops the closing, on the absence of that path (move not found)"
+  bad "the branch the merge needs is read from the located checkout, never from the roster (move not found)"
+fi
+
+A4_41="$(a41 4)"
+if [ -n "$A4_41" ]; then
+  # One home for the rule. This step both delegates to the collection move and restates its field, so
+  # the restatement is the second copy — and a second copy is what the repository's own rule refuses.
+  m41d=""
+  printf '%s' "$A4_41" | grep -qiE 'the way move 2|as move 2|the way the collection move' || m41d="$m41d no-delegation"
+  printf '%s' "$A4_41" | grep -qiE 'matched by the'                                        && m41d="$m41d restates-the-field"
+  [ -z "$m41d" ] && ok "the deletion step locates the front the way the collection move does, and states it once" \
+                 || bad "the deletion step locates the front the way the collection move does, and states it once (:$m41d)"
+else
+  bad "the deletion step locates the front the way the collection move does, and states it once (no step)"
+fi
+
+ROS41="$(sec41 '^### .STATE.md. — the roster')"
+if [ -n "$ROS41" ]; then
+  # The column the locator now keys on, defined the way its two siblings are — what it is, and what reads
+  # it. Areas and Tool each earned a paragraph because a reader needed them; this one has two readers and
+  # until now had a table header and nothing else.
+  m41e=""
+  printf '%s' "$ROS41" | grep -qE '\*\*Checkout\*\*'                        || m41e="$m41e undefined"
+  printf '%s' "$ROS41" | grep -qiE 'collect|deletion|closing ceremony'      || m41e="$m41e readers-unnamed"
+  [ -z "$m41e" ] && ok "the roster section defines the checkout column and names its readers" \
+                 || bad "the roster section defines the checkout column and names its readers (:$m41e)"
+else
+  bad "the roster section defines the checkout column and names its readers (no section)"
+fi
+
+# All three places a branch column is declared: the protocol's skeleton, the skeleton adopters receive,
+# and the move that writes a row. Pinned together because two of them passing is not the fact — a column
+# the opening still writes comes back into every roster the next time a front opens.
+m41f=""
+grep -qE '^\| *Workstream *\|.*\| *Branch *\|' "$BLG41" && m41f="$m41f skeleton"
+grep -qE '^\| *Workstream *\|.*\| *Branch *\|' "$TPL41" && m41f="$m41f shipped-template"
+M7_41="$(o41 7)"
+CARRIES41="$(printf '%s' "$M7_41" | sed -n 's/.*[Tt]he row carries \([^.]*\)\..*/\1/p')"
+if [ -z "$CARRIES41" ]; then
+  m41f="$m41f row-carries-clause-not-found"
+else
+  printf '%s' "$CARRIES41" | grep -qi 'branch' && m41f="$m41f the-opening-still-writes-it"
+fi
+[ -z "$m41f" ] && ok "no roster declares a branch column — not the skeleton, not the shipped template, not the move that writes the row" \
+               || bad "no roster declares a branch column — not the skeleton, not the shipped template, not the move that writes the row (still declared:$m41f)"
+
+MIG41="$(sec41 '^### Migrating an existing ledger')"
+if [ -n "$MIG41" ]; then
+  # The paragraph that keeps an adopter's extra column from reading as a defect, in the shape of the two
+  # already beside it. Without it the removal looks like a break in every ledger written before it.
+  m41g=""
+  printf '%s' "$MIG41" | grep -qiE 'branch[^ ]* column'          || m41g="$m41g column-unmentioned"
+  printf '%s' "$MIG41" | grep -qiE 'not broken|nothing (consults|reads) it' || m41g="$m41g verdict-unstated"
+  [ -z "$m41g" ] && ok "a roster that still carries the branch column is not broken" \
+                 || bad "a roster that still carries the branch column is not broken (:$m41g)"
+else
+  bad "a roster that still carries the branch column is not broken (no section)"
+fi
+
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
