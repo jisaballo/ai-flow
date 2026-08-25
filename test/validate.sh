@@ -7220,52 +7220,122 @@ fi
 
 # A2. The direction the count cannot see. A home is recognised by the first phase's heading; a copy that
 # describes the phases under any other wording is a second description the count reports as zero. What
-# selects one here is a phase name LEADING a heading, a table row or a numbered item — the shape a
-# per-phase description has and a mention does not. The lead is what makes the pattern safe on the
-# renderings that stay: the front door's execution-paths row names five phases on one line and leads
-# with none of them, and a worked transcript names them mid-sentence. Three is the threshold because
-# one or two leads is a document explaining a phase it owns; three is the map, copied.
-# Case-insensitively, because the copies do not agree on case and the guard must not depend on which
-# one it is reading: the front door writes `| **Capture** |` in title case and the deep dive writes
-# `### 1. CAPTURE`. A case-sensitive count read the front door's whole phase table as zero — the guard
-# was blind to one of the two copies it exists to remove, which is the failure it was written against.
-# The manual is in the scanned set although it IS distributed, and it is the reason the two guards are
-# not one: the count above recognises a home by a phase HEADING, and the manual writes its phases as
-# numbered list items, so a full copy of the map sat there invisible to it. That copy is also the most
-# expensive one in the engine — the manual is loaded on every turn of every project, where the map is
-# read on demand — so the document that could least afford it was the one nothing watched.
+# selects one here is a map element LEADING a heading, a table row or a numbered item — the shape a
+# description has and a mention does not.
+#
+# THREE dimensions, not one, and each judged on itself. The map is the phase chain, the execution paths
+# AND the autonomy levels, and a guard keyed on phase names alone let two thirds of it be copied back
+# with the suite green — proven, not suspected: the pre-change paths and autonomy tables were appended
+# to the front door and every row of this block stayed green. That is the drift this task exists to end,
+# re-openable in the dimension the one live drift actually sat in, since it was the Supervised row that
+# had lost `>5 files` and `architectural decisions` in two copies.
+#
+# The paths and autonomy legs select TABLE ROWS only, never headings: `### Full path (most tasks)` heads
+# a worked transcript in the adopter guide, which is an example and not the criteria, and every copy this
+# task removed stated those two dimensions as a table.
+PATH43='Full|Quick'
+AUTO43='Auto|Guided|Supervised'
+# A route row is excluded — the manual MUST keep one — and the exclusion is the narrowest shape that
+# describes a route: a two-cell row whose second cell is nothing but a protocol path. The first form of
+# it dropped any line containing `protocols/` anywhere, which forgives a restored description that
+# happens to cite one (`| **Activate** | Run the opening ceremony (see protocols/backlog.md) |`) —
+# the likeliest shape a re-add takes, since a copy written today would cite its source.
+ROUTE43='^\|[^|]*\|[[:space:]]*`?[~./A-Za-z0-9_-]*protocols/[a-z-]+\.md`?[[:space:]]*\|[[:space:]]*$'
+# Every document a reader meets outside the map itself, the sibling protocols included: a copy grown in
+# one of those ships to every adopter and is drift-guarded into being permanent. The map is excluded by
+# name rather than by directory, so a second protocol carrying the map is caught rather than exempted.
+SET43="README.md $(ls docs/*.md 2>/dev/null) global/CLAUDE.md global/hooks/README.md template/CLAUDE.md $(ls template/.ai-flow/*.md 2>/dev/null) $(ls global/protocols/*.md 2>/dev/null | grep -v 'lifecycle\.md')"
+mapcount43() {  # $1 = file, $2 = lead alternation, $3 = 'rows-only' to skip headings and list items
+  if [ "${3:-}" = "rows-only" ]; then
+    grep -icE "^\| *\*{0,2}($2)\b" "$1" 2>/dev/null | tr -d ' '
+  else
+    # Three shapes, because a phase name leading a line is not yet a phase being described, and the
+    # looser pattern this replaces reported four sibling protocols: a document TITLED `# Plan Phase
+    # Protocol`, a section called `## Verify vs Done`, a checklist item `3. **Verify** that ...` and a
+    # three-column table row about who writes what. Each shape below is the one an actual copy took —
+    # a NUMBERED phase heading (`### 1. CAPTURE`), a TWO-cell table row (`| **Capture** | Add task ... |`),
+    # or a numbered item whose bold lead is closed by a colon (`1. **CAPTURE**: Add task ...`). The three
+    # copies this task removed used one each, which is why all three are here and none is a guess.
+    grep -iE "^(#{1,6} *[0-9]+\. *\*{0,2}($2)\b|\| *\*{0,2}($2)\*{0,2} *\|[^|]*\|[[:space:]]*$|[0-9]+\. *\*{0,2}($2)\*{0,2}:)" "$1" 2>/dev/null \
+      | grep -cvE "$ROUTE43" || true
+  fi
+}
 who43=""
-for f43 in README.md docs/*.md global/CLAUDE.md; do
+for f43 in $SET43; do
   [ -f "$f43" ] || continue
-  # A routing row is not a description, and the manual's route is the half it must KEEP: `| Activate |
-  # ~/.claude/ai-flow/protocols/backlog.md |` leads with a phase name and says nothing about the phase.
-  # Selecting on `protocols/` rather than on any `.md` keeps the exclusion narrow — the front door's own
-  # activation row names `artifacts/T-XXX/state.md` and is a description, so a bare `.md` filter would
-  # have quietly forgiven one of the nine rows this guard exists to count.
-  n43="$(grep -iE "^(#{1,6} *([0-9]+\. *)?|\| *\*{0,2}|[0-9]+\. *\*{0,2})($PH43)\b" "$f43" 2>/dev/null \
-          | grep -cv 'protocols/' || true)"
-  if [ "$n43" -ge 3 ]; then who43="$who43 ${f43##*/}:$n43"; fi
+  np43="$(mapcount43 "$f43" "$PH43")"
+  nx43="$(mapcount43 "$f43" "$PATH43" rows-only)"
+  na43="$(mapcount43 "$f43" "$AUTO43" rows-only)"
+  # Three is the threshold for the phase chain — one or two leads is a document explaining a phase it
+  # owns. The paths table has only two rows and the autonomy table three, so those tie at two: a single
+  # `| **Quick** |` row is a mention, both of them together is the table.
+  [ "$np43" -ge 3 ] && who43="$who43 ${f43##*/}:phases=$np43"
+  [ "$nx43" -ge 2 ] && who43="$who43 ${f43##*/}:paths=$nx43"
+  [ "$na43" -ge 2 ] && who43="$who43 ${f43##*/}:autonomy=$na43"
 done
 [ -z "$who43" ] \
-  && ok "no document outside the map carries the phase-by-phase description" \
-  || bad "no document outside the map carries the phase-by-phase description (:$who43)"
+  && ok "no document outside the map carries the phase chain, the paths table or the autonomy table" \
+  || bad "no document outside the map carries the phase chain, the paths table or the autonomy table (:$who43)"
 
-# A2b — the live twin, judged on the same count and named separately. It is the copy that governs real
-# sessions and the only one nothing distributes: the installer writes it solely when absent and the drift
-# guard excludes it as user-owned, so a description removed from the shipped manual survives here until
-# somebody ports the edit. The other twin legs in this suite cannot report it — they ask whether the
-# manual ROUTES, and a twin still carrying the whole map routes perfectly well. Without this row the
+# A2b — the live twin, judged on the same three counts and named separately. It is the copy that governs
+# real sessions and the only one nothing distributes: the installer writes it solely when absent and the
+# drift guard excludes it as user-owned, so a description removed from the shipped manual survives here
+# until somebody ports the edit. The other twin legs in this suite cannot report it — they ask whether
+# the manual ROUTES, and a twin still carrying the whole map routes perfectly well. Without this row the
 # hand-merge is an intention with nothing behind it, which is the shape of drift this task exists to end.
 TWIN43="${HOME:-}/.claude/CLAUDE.md"
 if [ -f "$TWIN43" ]; then
-  n43t="$(grep -iE "^(#{1,6} *([0-9]+\. *)?|\| *\*{0,2}|[0-9]+\. *\*{0,2})($PH43)\b" "$TWIN43" 2>/dev/null \
-           | grep -cv 'protocols/' || true)"
-  [ "$n43t" -lt 3 ] \
-    && ok "the live twin carries no phase-by-phase description either" \
-    || bad "the live twin carries no phase-by-phase description either ($n43t lines — port the edit by hand, nothing distributes ~/.claude/CLAUDE.md)"
+  t43=""
+  [ "$(mapcount43 "$TWIN43" "$PH43")" -ge 3 ]              && t43="$t43 phases"
+  [ "$(mapcount43 "$TWIN43" "$PATH43" rows-only)" -ge 2 ]  && t43="$t43 paths"
+  [ "$(mapcount43 "$TWIN43" "$AUTO43" rows-only)" -ge 2 ]  && t43="$t43 autonomy"
+  [ -z "$t43" ] \
+    && ok "the live twin carries no copy of the map either" \
+    || bad "the live twin carries no copy of the map either (:$t43 — port the edit by hand, nothing distributes ~/.claude/CLAUDE.md)"
 else
   echo "  [skip] live CLAUDE.md twin absent — the shipped manual carries the count"
 fi
+
+# A2c — the route itself, which every removal above depends on and nothing guarded. The map is only
+# reachable because the manual's phase table names it: delete that one row and the protocol still ships,
+# is still drift-guarded and still counts as the single home, while no document the engine loads points
+# a session at it. Proven by mutation rather than argued — the row was deleted and the suite stayed at
+# 548/0. Asserted on both copies, because the twin is the one that governs real sessions.
+manmap43() { grep -qE '^\|[^|]*\|[^|]*protocols/lifecycle\.md[^|]*\|' "$1"; }
+if manmap43 global/CLAUDE.md; then
+  ok "the manual's phase table routes a session to the map"
+  if [ -f "$TWIN43" ]; then
+    manmap43 "$TWIN43" \
+      && ok "the live twin routes a session to the map" \
+      || bad "the live twin routes a session to the map (port the edit by hand, nothing distributes ~/.claude/CLAUDE.md)"
+  else
+    echo "  [skip] live CLAUDE.md twin absent — the shipped manual carries the route"
+  fi
+else
+  bad "the manual's phase table routes a session to the map"
+  bad "the live twin routes a session to the map (shipped copy is stale)"
+fi
+
+# --- the map is whole -------------------------------------------------------
+# A5. Every dimension the map claims, present. This matters here in a way it would not in a document
+# with siblings: the map is now the ONLY copy, so a section deleted from it is a section the engine no
+# longer has anywhere. Every other row in this block guards against the map being COPIED; this is the
+# one that guards against it being emptied, and without it the single-home design converts an edit
+# slip into an unrecoverable loss. Counted rather than spot-checked — a check naming three phases
+# passes on a document that lost the other six.
+np5="$(grep -cE '^### [0-9]+\. ' "$MAP43" 2>/dev/null || true)"
+a5=""
+[ "$np5" = "9" ] || a5="$a5 phase-sections=$np5(want 9)"
+grep -qE '^## Execution Paths'  "$MAP43" 2>/dev/null || a5="$a5 paths-section"
+grep -qE '^## Autonomy Levels'  "$MAP43" 2>/dev/null || a5="$a5 autonomy-section"
+grep -qiE '^\| *\*{0,2}Full\b'  "$MAP43" 2>/dev/null || a5="$a5 full-row"
+grep -qiE '^\| *\*{0,2}Quick\b' "$MAP43" 2>/dev/null || a5="$a5 quick-row"
+for lv5 in Auto Guided Supervised; do
+  grep -qiE "^\| *\*{0,2}$lv5\b" "$MAP43" 2>/dev/null || a5="$a5 ${lv5}-row"
+done
+[ -z "$a5" ] \
+  && ok "the map carries all nine phases, both paths and all three autonomy levels" \
+  || bad "the map carries all nine phases, both paths and all three autonomy levels (missing:$a5)"
 
 # --- the map is delivered, not merely written ------------------------------
 # A3. The front door sends a reader to the map, and sends them to the copy that ships. A link into

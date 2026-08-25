@@ -27,10 +27,9 @@ All task management lives in `.ai-flow/`. No external todo files.
 CAPTURE → PRIORITIZE → ACTIVATE → UNDERSTAND → PLAN → CONFORM → EXECUTE → VERIFY → ARCHIVE
 ```
 
-**What each phase does, which path a task takes, and how the autonomy levels differ are stated in the
-lifecycle protocol below and are not restated here.** This file is read on every turn of every project;
-the map is read when a task is activated. A copy kept here would be the most expensive copy in the
-engine and the one that drifts first — which is what happened to the three copies it replaces.
+**What each phase does, which path a task takes, how the autonomy levels differ and which gates each
+one runs are stated in the lifecycle protocol below, and are not restated here** — this file is read on
+every turn of every project, so a copy kept here is the engine's most expensive copy and the first to drift.
 
 ### Phase Protocols (MANDATORY)
 
@@ -150,9 +149,6 @@ After every successful task commit, **immediately** run the closing ceremony (re
 - **Ask contextual questions** — gather all necessary context to produce polished code
 - **Update the task's state sheet** (`artifacts/T-XXX/state.md`) with step progress during execution
 - **Atomic commits**: `type(scope): description`
-- **Phase gates (Guided)**: understand -> plan (user approves), plan -> conform (automatic), conform -> execute (user approves plan), execute -> spec sync (automatic), execute -> verify (automatic), verify -> archive (user approves)
-- **Phase gates (Auto)**: plan inline -> conform/execute (automatic), verify via tests -> auto-commit -> user validates post-commit
-- **Phase gates (Supervised)**: same as Guided + user approves each execute step individually
 - **Max 3 steps per plan** — split larger work into sub-plans
 - **Test validation REQUIRED** in Execute phase (TDD compliance)
 
