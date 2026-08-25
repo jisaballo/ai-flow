@@ -7250,6 +7250,23 @@ done
   && ok "no document outside the map carries the phase-by-phase description" \
   || bad "no document outside the map carries the phase-by-phase description (:$who43)"
 
+# A2b — the live twin, judged on the same count and named separately. It is the copy that governs real
+# sessions and the only one nothing distributes: the installer writes it solely when absent and the drift
+# guard excludes it as user-owned, so a description removed from the shipped manual survives here until
+# somebody ports the edit. The other twin legs in this suite cannot report it — they ask whether the
+# manual ROUTES, and a twin still carrying the whole map routes perfectly well. Without this row the
+# hand-merge is an intention with nothing behind it, which is the shape of drift this task exists to end.
+TWIN43="${HOME:-}/.claude/CLAUDE.md"
+if [ -f "$TWIN43" ]; then
+  n43t="$(grep -iE "^(#{1,6} *([0-9]+\. *)?|\| *\*{0,2}|[0-9]+\. *\*{0,2})($PH43)\b" "$TWIN43" 2>/dev/null \
+           | grep -cv 'protocols/' || true)"
+  [ "$n43t" -lt 3 ] \
+    && ok "the live twin carries no phase-by-phase description either" \
+    || bad "the live twin carries no phase-by-phase description either ($n43t lines — port the edit by hand, nothing distributes ~/.claude/CLAUDE.md)"
+else
+  echo "  [skip] live CLAUDE.md twin absent — the shipped manual carries the count"
+fi
+
 # --- the map is delivered, not merely written ------------------------------
 # A3. The front door sends a reader to the map, and sends them to the copy that ships. A link into
 # `docs/` would point at a file no install produces, which is the whole defect this task removes.

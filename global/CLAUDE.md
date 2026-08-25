@@ -24,48 +24,13 @@ All task management lives in `.ai-flow/`. No external todo files.
 ### Task Lifecycle
 
 ```
-CAPTURE → BACKLOG.md (backlog) → PRIORITIZE (ready) → ACTIVATE (active + STATE.md) → UNDERSTAND → PLAN → CONFORM → EXECUTE → VERIFY → ARCHIVE
+CAPTURE → PRIORITIZE → ACTIVATE → UNDERSTAND → PLAN → CONFORM → EXECUTE → VERIFY → ARCHIVE
 ```
 
-**Phases:**
-1. **CAPTURE**: Add task to BACKLOG.md with initial description
-2. **PRIORITIZE**: Set priority (critical/high/medium/low) and status (ready)
-3. **ACTIVATE**: Run the opening ceremony (backlog protocol) — mint the ID, declare the front's areas, weigh them against every open front, create the worktree if this is a second front, then create `artifacts/T-XXX/state.md`, add the workstream row to STATE.md, mark as active
-4. **UNDERSTAND**: Decompose if composite, ask contextual questions, write understand.md
-5. **PLAN**: Create execution plan (max 3 steps), write plan.md
-6. **CONFORM**: Generate failing test stubs from Verifiable Criteria (see plan protocol)
-7. **EXECUTE**: Implement with TDD validation (make conformance tests pass), spec sync post-execute
-8. **VERIFY**: Audit criteria against understand.md, write verify.md
-9. **ARCHIVE**: Run the closing ceremony (backlog protocol) — the user validates the branch, the coordinator collects the task's artifacts, the merge lands there, the ledger is written (archive checklist), the work is put into effect (the project's distribution command), then the front's checkout is dismantled and its roster row removed
-
-### Execution Paths
-
-**Full Path** (>2 files or ambiguous requirements): `understand → plan → conform → execute → verify`
-**Quick Path** (<=2 files, clear scope, no design decisions): `plan (inline) → execute`
-
-**CRITICAL:** Understanding phase is **MANDATORY** for Full Path. Quick Path skips formal understanding, conform, and verify phases.
-
-### Autonomy Levels
-
-At task activation, classify the task into an autonomy level. User confirms or adjusts.
-
-| Level | Criteria | What changes |
-|-------|----------|-------------|
-| **Auto** | Bug fix with reproducible test, mechanical refactor, tests already green | Plan inline (no artifact), no understand->plan gate, no plan->execute gate, auto-commit if all tests pass. User validates post-commit. |
-| **Guided** (default) | New features, domain changes, moderate scope | All gates as defined in Full Path. Default behavior. |
-| **Supervised** | Schema changes, new domain/lib, >5 files, architectural decisions | All gates + step-by-step approval during Execute (show diff per step, wait for user OK before next step) |
-
-**Classification triggers:**
-- `auto` keywords: "fix", "bug", "refactor", "rename", "update dep", "bump"
-- `supervised` keywords: "new domain", "schema", "migration", "architecture", "new lib"
-- When ambiguous -> default to **Guided**
-
-**Auto level constraints:**
-- Still runs conformance tests (if criteria exist) or existing tests
-- Still respects Bounded Retry (3 attempts max)
-- Still respects Diff Size Guardrail (>150 LOC uncommitted in a step, or >400 LOC on the branch since its base -> pause)
-- Commit message includes `[auto]` tag: `type(scope): [auto] description`
-- If anything unexpected happens (test failure after 3 retries, >3 files needed, design decision required) -> **escalate to Guided**
+**What each phase does, which path a task takes, and how the autonomy levels differ are stated in the
+lifecycle protocol below and are not restated here.** This file is read on every turn of every project;
+the map is read when a task is activated. A copy kept here would be the most expensive copy in the
+engine and the one that drifts first — which is what happened to the three copies it replaces.
 
 ### Phase Protocols (MANDATORY)
 
@@ -73,6 +38,7 @@ At task activation, classify the task into an autonomy level. User confirms or a
 
 | Phase | Protocol file |
 |-------|--------------|
+| The whole chain, the paths, the autonomy levels | `~/.claude/ai-flow/protocols/lifecycle.md` |
 | Activate | `~/.claude/ai-flow/protocols/backlog.md` |
 | Understand | `~/.claude/ai-flow/protocols/understand.md` |
 | Plan + Conform | `~/.claude/ai-flow/protocols/plan.md` |
