@@ -1426,8 +1426,14 @@ if [ -n "$CLO" ]; then
     | grep -qiE '(does not|do not|never) (travel|reach)[^.]*branch|branch carries (none|nothing)|merge carries none' \
     && ok "the papers are collected before the merge, and never travel with the branch" \
     || bad "the papers are collected before the merge, and never travel with the branch"
-  mpair 2 'worktree list' 'stop' \
-    "an unlocatable front checkout stops the closing"
+  # Was an either-or pair, and a rationale clause added to this move using the word 'stops' made it
+  # passable with the stop rule deleted — a working guard disabled without its line being touched. Both
+  # halves occur elsewhere in the move on their own, so what is asserted is the RELATION: the absence of
+  # that path is what halts the ceremony.
+  printf '%s' "$(clomove 2)" \
+    | grep -qiE 'listing does not name that path[^.]*stop|does not name that path, stop' \
+    && ok "an unlocatable front checkout stops the closing" \
+    || bad "an unlocatable front checkout stops the closing"
   mpair 3 'stays open|remains open|front stays|front remains' 'not written|unwritten|never written' \
     "a merge that cannot complete leaves the front open and the ledger unwritten"
 
@@ -6900,14 +6906,12 @@ if [ -n "$M2_41" ]; then
     && ok "the field the locator keys on is the one no chain of tasks changes" \
     || bad "the field the locator keys on is the one no chain of tasks changes"
 
-  # C15 pins that this move reads the listing and stops. What is unpinned there is WHICH absence stops
-  # it — and after this change that absence means one thing, so it is worth saying which one.
-  m41b=""
-  printf '%s' "$M2_41" | grep -qiE 'worktree list|listing'  || m41b="$m41b reads-no-listing"
-  printf '%s' "$M2_41" | grep -qiE 'stop'                   || m41b="$m41b does-not-stop"
-  printf '%s' "$M2_41" | grep -qiE 'checkout path|path on that front|by the checkout' || m41b="$m41b absence-is-not-the-path"
-  [ -z "$m41b" ] && ok "an unlocatable front still stops the closing, on the absence of that path" \
-                 || bad "an unlocatable front still stops the closing, on the absence of that path (:$m41b)"
+  # One anchored pattern, not three presences. As three, each leg was satisfiable by unrelated text in
+  # this same move: the listing by the locator sentence, the halt by any word containing 'stop', the path
+  # by m41a's own leg three lines above. The fact is that the absence OF THAT PATH is what halts it.
+  printf '%s' "$M2_41" | grep -qiE 'listing does not name that path[^.]*stop|does not name that path, stop' \
+    && ok "an unlocatable front still stops the closing, on the absence of that path" \
+    || bad "an unlocatable front still stops the closing, on the absence of that path"
 
   # The hole the removed column opens. The merge needs a branch and the roster was the only field that
   # could have been read for it, so the ceremony must name a source or the removal strands a consumer.
@@ -6932,33 +6936,56 @@ if [ -n "$A4_41" ]; then
   # the restatement is the second copy — and a second copy is what the repository's own rule refuses.
   m41d=""
   printf '%s' "$A4_41" | grep -qiE 'the way move 2|as move 2|the way the collection move' || m41d="$m41d no-delegation"
-  printf '%s' "$A4_41" | grep -qiE 'matched by the'                                        && m41d="$m41d restates-the-field"
+  # Not the literal phrase this diff deleted: a restatement in different words ("keyed on the path its
+  # roster row records") would pass while the rule has two homes again, which is what the label denies.
+  printf '%s' "$A4_41" | grep -qiE 'worktree listing|checkout path|roster row'             && m41d="$m41d restates-the-rule"
   [ -z "$m41d" ] && ok "the deletion step locates the front the way the collection move does, and states it once" \
                  || bad "the deletion step locates the front the way the collection move does, and states it once (:$m41d)"
 else
   bad "the deletion step locates the front the way the collection move does, and states it once (no step)"
 fi
 
-ROS41="$(sec41 '^### .STATE.md. — the roster')"
-if [ -n "$ROS41" ]; then
-  # The column the locator now keys on, defined the way its two siblings are — what it is, and what reads
-  # it. Areas and Tool each earned a paragraph because a reader needed them; this one has two readers and
-  # until now had a table header and nothing else.
+# Scoped to the Checkout paragraph, NOT to the roster section: over the whole section a readers leg is
+# carried by the pre-existing Tool sentence ("read by the closing ceremony's dismantling move"), which is
+# a different column and a different reader — it was already green before this change, so the half of the
+# criterion that matters ("and name what reads it") was inert. Bounded at the sibling that follows.
+CHK41="$(awk '/^\*\*Checkout\*\*/{f=1} f&&/^\*\*Areas\*\*/{exit} f' "$BLG41" | tr '\n' ' ' | tr -s ' ')"
+if [ -n "$CHK41" ]; then
+  # All four readers, because the count is the fact: a definition naming half the readership is what the
+  # next person prices a change to this column from, and two of the four unlisted sites act destructively.
   m41e=""
-  printf '%s' "$ROS41" | grep -qE '\*\*Checkout\*\*'                        || m41e="$m41e undefined"
-  printf '%s' "$ROS41" | grep -qiE 'collect|deletion|closing ceremony'      || m41e="$m41e readers-unnamed"
-  [ -z "$m41e" ] && ok "the roster section defines the checkout column and names its readers" \
-                 || bad "the roster section defines the checkout column and names its readers (:$m41e)"
+  printf '%s' "$CHK41" | grep -qE '\*\*Checkout\*\*'                     || m41e="$m41e undefined"
+  printf '%s' "$CHK41" | grep -qiE 'four'                                 || m41e="$m41e reader-count-unstated"
+  printf '%s' "$CHK41" | grep -qiE 'collection move'                      || m41e="$m41e collection-unnamed"
+  printf '%s' "$CHK41" | grep -qiE 'dismantl'                             || m41e="$m41e dismantling-unnamed"
+  printf '%s' "$CHK41" | grep -qiE 'last move'                            || m41e="$m41e last-move-unnamed"
+  printf '%s' "$CHK41" | grep -qiE 'deletion step|archive checklist'      || m41e="$m41e deletion-unnamed"
+  [ -z "$m41e" ] && ok "the checkout column is defined where it lives, and names all four sites that read it" \
+                 || bad "the checkout column is defined where it lives, and names all four sites that read it (:$m41e)"
+
+  # The mechanism the whole re-key rests on, and it was deletable from both its sites with the suite fully
+  # green — proven by mutation, not suspected. Three legs because the rule has three parts and each was
+  # separately absent from the text this replaces: resolution, the base a relative row resolves against,
+  # and the empty-equals-empty case that would read an unresolvable path as a match.
+  m41h=""
+  printf '%s' "$CHK41" | grep -qiE 'resolved|resolve'                        || m41h="$m41h no-resolution-rule"
+  printf '%s' "$CHK41" | grep -qiE "coordinator's own checkout root|against the coordinator" || m41h="$m41h no-resolution-base"
+  printf '%s' "$CHK41" | grep -qiE 'does not resolve is not a match'         || m41h="$m41h unresolvable-reads-as-located"
+  [ -z "$m41h" ] && ok "the column says how it is compared: resolved, against the coordinator's root, and an unresolvable path is no match" \
+                 || bad "the column says how it is compared: resolved, against the coordinator's root, and an unresolvable path is no match (:$m41h)"
 else
-  bad "the roster section defines the checkout column and names its readers (no section)"
+  bad "the checkout column is defined where it lives, and names all four sites that read it (no paragraph)"
+  bad "the column says how it is compared: resolved, against the coordinator's root, and an unresolvable path is no match (no paragraph)"
 fi
 
 # All three places a branch column is declared: the protocol's skeleton, the skeleton adopters receive,
 # and the move that writes a row. Pinned together because two of them passing is not the fact — a column
 # the opening still writes comes back into every roster the next time a front opens.
 m41f=""
-grep -qE '^\| *Workstream *\|.*\| *Branch *\|' "$BLG41" && m41f="$m41f skeleton"
-grep -qE '^\| *Workstream *\|.*\| *Branch *\|' "$TPL41" && m41f="$m41f shipped-template"
+# Case-insensitive and space-tolerant: every other roster pattern in this suite is written that way, and
+# the sweep that priced this task's blast radius missed two assertions for exactly this reason.
+grep -qiE '^\| *workstream *\|.*\| *branch *\|' "$BLG41" && m41f="$m41f skeleton"
+grep -qiE '^\| *workstream *\|.*\| *branch *\|' "$TPL41" && m41f="$m41f shipped-template"
 M7_41="$(o41 7)"
 CARRIES41="$(printf '%s' "$M7_41" | sed -n 's/.*[Tt]he row carries \([^.]*\)\..*/\1/p')"
 if [ -z "$CARRIES41" ]; then
@@ -6968,6 +6995,26 @@ else
 fi
 [ -z "$m41f" ] && ok "no roster declares a branch column — not the skeleton, not the shipped template, not the move that writes the row" \
                || bad "no roster declares a branch column — not the skeleton, not the shipped template, not the move that writes the row (still declared:$m41f)"
+
+# Counted, not matched. Every other roster assertion in this suite reads the HEADER row alone, and the
+# ledger guardian drops table lines by design (`awk '!/^\|/'`), so a stale separator group or a leftover
+# cell ships a malformed roster into every adopting project with the suite at zero failures. Column-shape
+# edits are the class of change this area attracts, and the first pass of this very task got the separator
+# wrong — six hand-edited rows across two shipped files is where a count earns its keep.
+rostercols41() {  # $1 = file -> the cell count of every line of the roster table, one per line
+  awk -F'|' '/^\| *[Ww]orkstream *\|/{f=1} f&&!/^\|/{exit} f{print NF-2}' "$1"
+}
+m41i=""
+for f41 in "$BLG41" "$TPL41"; do
+  counts41="$(rostercols41 "$f41")"
+  if [ -z "$counts41" ]; then
+    m41i="$m41i ${f41##*/}=no-table"
+  elif [ "$(printf '%s\n' "$counts41" | sort -u | wc -l | tr -d ' ')" != 1 ]; then
+    m41i="$m41i ${f41##*/}=($(printf '%s\n' "$counts41" | tr '\n' ',' | sed 's/,$//'))"
+  fi
+done
+[ -z "$m41i" ] && ok "every line of a shipped roster agrees with its header on the column count" \
+              || bad "every line of a shipped roster agrees with its header on the column count (counts:$m41i)"
 
 MIG41="$(sec41 '^### Migrating an existing ledger')"
 if [ -n "$MIG41" ]; then

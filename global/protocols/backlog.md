@@ -28,15 +28,27 @@ wrongly — an earlier form of it exempted from the quick-task heading to the ne
 section is last here, the exemption ran to end of file and a narrative appended at the bottom was
 invisible.
 
-**Checkout** names where that front's working copy lives, and it is what locates the front: the
-collection move of the closing ceremony and the deletion step of the archive checklist both match this
-column against the repository's own worktree listing. Front-scoped and decided once, like Areas and
-Tool — and unlike a branch, which a front changes with every task in its chain, so a column carrying one
-would be stale from that front's second task onward, at precisely the moments those two readers fire.
-The comparison is made on resolved paths: the listing answers in absolute ones, a row may record a
-relative one, and `~/.claude/ai-flow/scripts/seed-front.sh` already resolves both sides the same way.
-The coordinator's own row names its own checkout, which neither reader ever looks for — a task worked
-there has its papers there already.
+**Checkout** names where that front's working copy lives, and it is what locates the front. **Four**
+sites match it against the repository's own worktree listing: the collection move of the closing
+ceremony, that ceremony's dismantling move and its last move, and the deletion step of the archive
+checklist. Front-scoped and decided once, like Areas and Tool — and unlike a branch, which a front
+changes with every task in its chain, so a branch could never key this row: it would name the front's
+first task forever. The coordinator's own row names its own checkout and none of the four looks for it —
+a task worked there has its papers there already, nothing of it is dismantled, and its row is not a
+front's.
+
+**How the column is compared — stated here once, for all four readers**, because a rule each site
+restates is a rule they can come to disagree about. Both sides are resolved before they are compared:
+the listing answers in absolute paths and a row may record a relative one. A relative row is read
+against **the coordinator's own checkout root** and never against whatever directory the session happens
+to sit in — two levels down, `../proj-wt-b` otherwise resolves to a sibling of that subdirectory and
+matches nothing, which is the wrong-meaning stop this key was chosen to remove, reintroduced through the
+base. And **a path that does not resolve is not a match**: two unresolvable sides each answer with
+nothing, and nothing equals nothing, so a checkout deleted by hand — still listed, because git has not
+pruned it — would otherwise read as located and let the collection report success over papers that are
+gone. `~/.claude/ai-flow/scripts/seed-front.sh` performs this same comparison for the opening's seeding
+move, so a reader wanting it in code has one; the rule above is the protocol's own and does not depend on
+that script keeping its present shape.
 
 **Areas** names the parts of the codebase a front declared when it opened, in the project's own
 `area_kind`. It is what the next opening weighs its own declaration against (see Opening a
@@ -562,12 +574,12 @@ sheet is where an interrupted close is written down, and the roster is the queue
    merge carries none of it. The coordinator locates the front's checkout in the repository's own
    worktree listing, matched by the checkout path on that front's roster row — git is the authority, and
    that path is the one field on the row no chain of tasks changes: a front takes a new branch with every
-   task it works and the roster records the branch it opened on, so a locator keyed there stops from that
-   front's second task onward, while the same row was never wrong about where the front lives. The
-   comparison is made on resolved paths (see the roster's own section). If the listing does not name that
-   path, stop: the checkout is gone, so the papers may be gone with it, and no later move reconstructs
-   them. The collection **replaces** whatever the coordinator holds for that task, and it is
-   the one sanctioned exception to never overwriting a task's papers — the copy from the checkout where
+   task in its chain, so a branch could never have keyed this row, while the path was never wrong about
+   where the front lives. How the two sides are compared is the column's own rule, stated with the
+   column (see `## State Files`). If the listing does not name that path, stop: the checkout is gone, so
+   the papers may be gone with it, and no later move reconstructs them. The collection **replaces**
+   whatever the coordinator holds for that task, and it is the one sanctioned exception to never
+   overwriting a task's papers — the copy from the checkout where
    the task was worked is the authoritative one, while the coordinator's is a snapshot from the moment
    the front opened. The coordinator pulls; a linked worktree still never writes here.
 
