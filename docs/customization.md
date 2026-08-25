@@ -236,7 +236,11 @@ The protocols installed at `~/.claude/ai-flow/protocols/` are the framework core
 
 ### Lifecycle phases
 
-The phase order (understand → plan → conform → execute → verify) is intentional. Each phase depends on the previous one's output. Skipping phases leads to the same problems ai-flow was designed to prevent.
+The phase order is intentional: each phase depends on the previous one's output, and skipping phases
+leads to the same problems ai-flow was designed to prevent. The order itself, the two execution paths
+and the three autonomy levels are stated in
+[the lifecycle protocol](../global/protocols/lifecycle.md) and are not repeated here — it is installed
+alongside the ones above, at `~/.claude/ai-flow/protocols/lifecycle.md`.
 
 ## Adapting Commands
 

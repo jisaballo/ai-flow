@@ -54,32 +54,17 @@ cd ai-flow
 CAPTURE → PRIORITIZE → ACTIVATE → UNDERSTAND → PLAN → CONFORM → EXECUTE → VERIFY → ARCHIVE
 ```
 
-| Phase | What happens |
-|-------|-------------|
-| **Capture** | Add task to backlog with description |
-| **Prioritize** | Set priority and mark ready |
-| **Activate** | Write the task's own sheet (`artifacts/T-XXX/state.md`) and add its row to the roster of open workstreams |
-| **Understand** | Decompose, investigate, ask questions, write requirements |
-| **Plan** | Create max 3-step execution plan with verify commands |
-| **Conform** | Generate failing test stubs from requirements (TDD red phase) |
-| **Execute** | Implement changes, make tests pass (TDD green phase) |
-| **Verify** | Criterion-by-criterion audit with evidence |
-| **Archive** | Store summary, clean up artifacts |
+Nine phases, two execution paths and three autonomy levels, described one by one in
+[the lifecycle protocol](global/protocols/lifecycle.md) — the same file the installer puts on your
+machine, so what you read here before adopting is what a session reads afterwards.
 
-### Execution Paths
+What the discipline buys you:
 
-| Path | When | Phases |
-|------|------|--------|
-| **Full** | >2 files or ambiguous scope | understand → plan → conform → execute → verify |
-| **Quick** | ≤2 files, clear scope | inline plan → execute |
-
-### Autonomy Levels
-
-| Level | When | Behavior |
-|-------|------|----------|
-| **Auto** | Bug fixes, mechanical refactors | Minimal gates, auto-commit if tests pass |
-| **Guided** | New features, moderate scope | All gates, user approves plan before execution |
-| **Supervised** | Schema changes, new domains | All gates + per-step approval during execution |
+| | |
+|---|---|
+| **Understanding before code** | Questions asked and requirements written down before a line changes |
+| **A plan you approved** | Three steps at most, each with the command that proves it |
+| **Evidence, not opinion** | Every criterion audited against a file, a line, or a test name |
 
 ## Commands
 
@@ -176,7 +161,7 @@ The framework ships optional global tooling under `global/`, installed to `~/.cl
 ## Documentation
 
 - [Getting Started](docs/getting-started.md) — Step-by-step setup guide
-- [Lifecycle Deep Dive](docs/lifecycle.md) — Detailed explanation of each phase
+- [Lifecycle Protocol](global/protocols/lifecycle.md) — Every phase, the execution paths and the autonomy levels
 - [Customization Guide](docs/customization.md) — Adapting ai-flow to your workflow
 
 ## Related

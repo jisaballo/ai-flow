@@ -59,7 +59,7 @@ git config --global core.hooksPath ~/.claude/hooks/git   # skip if you already s
 
 The installer **registers the hooks for you** — it merges `global/hooks/settings.hooks.json` into the `hooks` key of `~/.claude/settings.json` idempotently (python3), preserving your other settings and your own hooks. The manual `cp` above is only needed if you skipped the tooling step or python3 is unavailable. See [`global/hooks/README.md`](../global/hooks/README.md). The skills give you `/understand`, `/plan`, `/verify`, and `/discover`.
 
-### 3. Customize for your project
+### 4. Customize for your project
 
 **Edit `CLAUDE.md`** in your project root:
 - Fill in your stack (framework, language, database, etc.)
@@ -82,7 +82,7 @@ The installer **registers the hooks for you** — it merges `global/hooks/settin
 - Document core business flows
 - Define key domain terms
 
-### 4. (Optional) Create steering files
+### 5. (Optional) Create steering files
 
 If your project has distinct domains with specific rules, create steering files:
 
@@ -124,7 +124,11 @@ Claude will:
 4. Write an understand.md with requirements and verifiable criteria
 5. Ask for your approval before planning
 
-## Understanding the Flow
+## What a Session Looks Like
+
+Two worked transcripts. Which path a task takes, and what each phase actually does, are in
+[the lifecycle protocol](../global/protocols/lifecycle.md) — installed on your machine at
+`~/.claude/ai-flow/protocols/lifecycle.md` once you have run the installer.
 
 ### Full path (most tasks)
 
