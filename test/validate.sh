@@ -1326,6 +1326,54 @@ printf '%s' "$S5" | grep -q 'diff-size-guard' \
   && ok "the skill's base resolution cites the diff brake it copies" \
   || bad "the skill's base resolution cites the diff brake it copies"
 
+# The protocol states the same resolution in prose, and nothing watched it. The skill's copy above is
+# derived from the brake; this paragraph was the one statement of the three that could drift in silence.
+# It keeps stating the rule in full rather than being reduced to a pointer, because the protocol is what
+# a run follows when the skill is not installed -- so the fix is a watcher, not a deletion.
+#
+# Cut TIGHT, from the bolded opening to the blank line that closes it. The degradation sentence later in
+# the same section also carries `main` and `master`, so a section-wide grep is satisfied by the wrong
+# paragraph -- the same hazard the DEF extractor above exists for.
+BP="$(awk '/^\*\*The base is resolved/{f=1} f{print} f && /^$/{exit}' "$VP" | tr '\n' ' ')"
+[ -n "$BP" ] \
+  && ok "the base paragraph extracted" \
+  || bad "the base paragraph extracted (was the opening bold renamed?)"
+
+# When the paragraph does not extract, the three rows below have not read their facts -- and reporting
+# those facts as ABSENT sends a reader hunting for prose that is still on disk. One renaming is one
+# report: each row names the extraction as its reason and makes no claim about a fact it never saw.
+NOBP=" (not judged: the paragraph did not extract)"
+
+# Derived from the brake's own source, exactly as the skill's row is: change the hook's candidate list
+# and this row fails. A list restated beside the original drifts; a list read out of it cannot.
+missp=""
+for c in $cands; do printf '%s' "$BP" | grep -q "\`$c\`" || missp="$missp $c"; done
+if [ -z "$BP" ]; then
+  bad "the verify protocol's base paragraph names every candidate the diff brake actually tries$NOBP"
+elif [ -n "$cands" ] && [ -z "$missp" ]; then
+  ok "the verify protocol's base paragraph names every candidate the diff brake actually tries"
+else
+  bad "the verify protocol's base paragraph names every candidate the diff brake actually tries (missing:$missp)"
+fi
+
+# Which candidate WINS is the fact, and presence greps are satisfied in any order.
+bo1="$(off "$BP" 'origin/HEAD')"; bo2="$(off "$BP" '`main`')"; bo3="$(off "$BP" '`master`')"
+if [ -z "$BP" ]; then
+  bad "the protocol states the base precedence in the brake's order$NOBP"
+elif [ -n "$bo1" ] && [ -n "$bo2" ] && [ -n "$bo3" ] && [ "$bo1" -lt "$bo2" ] && [ "$bo2" -lt "$bo3" ]; then
+  ok "the protocol states the base precedence in the brake's order"
+else
+  bad "the protocol states the base precedence in the brake's order (offsets: $bo1/$bo2/$bo3)"
+fi
+
+if [ -z "$BP" ]; then
+  bad "the protocol's base resolution cites the diff brake it copies$NOBP"
+elif printf '%s' "$BP" | grep -q 'diff-size-guard'; then
+  ok "the protocol's base resolution cites the diff brake it copies"
+else
+  bad "the protocol's base resolution cites the diff brake it copies"
+fi
+
 CF="$([ -n "$NG14" ] && sbullet "$VS" "$NG14" 'changedFiles')"
 if printf '%s' "$CF" | grep -qiE 'base-scoped|that same' \
    && printf '%s' "$CF" | grep -qi 'untracked' \
@@ -3947,10 +3995,47 @@ done
   && ok "the swept phase protocols carry no origin-project identifier" \
   || bad "the swept phase protocols carry no origin-project identifier (found:$p1)"
 
-p2="$(grep -rniE 'residents|gate-manager|zoomin|esp32|/Users/[a-z]' global/ 2>/dev/null | wc -l | tr -d ' ')"
-[ "$p2" = "0" ] \
-  && ok "the shipped engine carries no private project name and no author home path" \
-  || bad "the shipped engine carries no private project name and no author home path ($p2 line(s))"
+# What ships is what the installer fetches out of version control, which is what git can name: tracked
+# files, plus untracked ones git is not ignoring. A recursive walk of the directory reads more than
+# that. Running the hooks in place leaves Python bytecode under `global/hooks/__pycache__/`, and that
+# bytecode carries the absolute path it was compiled from -- so an ignored directory the installer
+# never distributes turned this row red, accusing the shipped engine of carrying an author home path
+# it does not carry. Neither probe the working-copy comparison uses reaches an ignored file, so the run
+# reported the tree left as found while this verdict had already changed. The failure was also
+# intermittent: the system grep announces a binary match and the row fails, ugrep suppresses it and the
+# row passes, so the same tree answered differently on different machines.
+purity_sweep() { # repo root, subpath -- one `file:line:text` per hit among the files that could ship
+  local root="$1" sub="$2" list
+  # Reading the file list from git buys precision and brings git's own failure modes with it. A tree
+  # that is not a repository, or a git that cannot answer, yields an empty list -- and an empty list
+  # grepped for a leak finds none, so the row would report a clean engine on the strength of having
+  # read nothing. The walk this replaced could not fail that way, so the guard is part of the
+  # replacement: every input a verdict concludes from is proven usable before it is concluded from.
+  # Non-zero here means "could not run", which the caller reports as such and never as a pass.
+  git -C "$root" rev-parse --git-dir >/dev/null 2>&1 || return 2
+  list="$(git -C "$root" ls-files --cached --others --exclude-standard -- "$sub" 2>/dev/null)" || return 2
+  # Selecting nothing is the same defect wearing a mistyped path: the seeder's empty-selection case.
+  [ -n "$list" ] || return 2
+  # `-H` because grep omits the filename when it is handed exactly one file, and a hit that cannot say
+  # which file carries it is a hit nobody can act on.
+  # The subshell's own status is grep's, and grep answers 1 for "found nothing" -- which is the passing
+  # case here, not a failure. So the only status this function forwards is the one that means the files
+  # could not be reached; everything else is a completed sweep whose hits are its output.
+  ( cd "$root" 2>/dev/null || exit 9
+    printf '%s\n' "$list" | tr '\n' '\0' \
+      | xargs -0 grep -HniEI 'residents|gate-manager|zoomin|esp32|/Users/[a-z]' 2>/dev/null )
+  [ $? -eq 9 ] && return 2
+  return 0
+}
+P2OUT="$(purity_sweep . global)"; P2RC=$?
+p2="$(printf '%s' "$P2OUT" | grep -c . | tr -d ' ')"
+if [ "$P2RC" -ne 0 ]; then
+  bad "the shipped engine carries no private project name and no author home path (the sweep could not run: not a repository, or it selected no file)"
+elif [ "$p2" = "0" ]; then
+  ok "the shipped engine carries no private project name and no author home path"
+else
+  bad "the shipped engine carries no private project name and no author home path ($p2 line(s))"
+fi
 
 echo "== C28: opening a front is satisfying conditions, not using a brand =="
 BLG25="global/protocols/backlog.md"
@@ -7361,6 +7446,128 @@ printf '%s' "$SUP43" | grep -qi  'architectural'                   || a43="$a43 
 [ -z "$a43" ] \
   && ok "the map's Supervised row keeps both triggers the other copies dropped" \
   || bad "the map's Supervised row keeps both triggers the other copies dropped (missing:$a43)"
+
+echo "== C44: the audit's base rule is watched everywhere it is stated, and the purity sweep reads only what ships =="
+
+# --- the purity sweep reads what ships, not what the disk holds -------------
+# GIVEN an engine tree that carries both a file which will be distributed and a file git ignores,
+# WHEN the purity sweep runs,
+# THEN it reports the first and never the second.
+#
+# The fixture is a throwaway repository, never this one: a sweep proven by littering the tree it audits
+# is the mutation the engine's own rule forbids, and an ignored file left behind would silently change
+# the next run's verdict — which is the very defect this pair exists to close.
+# Extended, never replaced -- the rule this file states at C21 and again at C25. The trap live at this
+# point carries $T12, $T13 and $T25; a trap that named only $T44 would silently drop all three and leak
+# them on every run, which is exactly what it did until this row's own review measured five surviving
+# directories. And the sandbox is guarded: `mktemp -d` can fail, and `rm -rf "$T44"` with $T44 empty is
+# a delete against the filesystem root.
+if ! T44="$(mktemp -d 2>/dev/null)" || [ ! -d "$T44" ]; then
+  T44=""
+  bad "the purity sweep ignores what git ignores (no sandbox: mktemp -d failed)"
+  bad "the purity sweep still catches a real leak in a file that ships (no sandbox: mktemp -d failed)"
+  bad "the sweep refuses to answer when it cannot read, instead of answering clean (no sandbox: mktemp -d failed)"
+else
+trap 'rm -rf "$T12" "$T13" "$T25" "$T44"' EXIT
+mkdir -p "$T44/global/hooks/__pycache__"
+printf '__pycache__/\n' > "$T44/.gitignore"
+# The file that ships, carrying the leak the sweep must still catch.
+printf 'HOME_HINT = "/Users/someone/projects/thing"\n' > "$T44/global/hooks/real.py"
+# The byte-compiled twin, carrying the identical string. `install.sh` fetches named files and never
+# this one, so it is not the shipped engine and must not be read as if it were.
+printf 'X/Users/someone/projects/thing/global/hooks/real.py\n' > "$T44/global/hooks/__pycache__/real.cpython-310.pyc"
+git -C "$T44" init -q 2>/dev/null
+git -C "$T44" add -A >/dev/null 2>&1
+git -C "$T44" -c user.email=t@t -c user.name=t commit -qm base >/dev/null 2>&1
+# The sweep's contract is tracked files PLUS untracked ones git is not ignoring, and a fixture that
+# commits everything exercises only the first half -- so this one arrives after the commit and stays
+# untracked. Without it, dropping `--others` from the sweep would leave every row green.
+printf 'NOTE = "/Users/someone/projects/thing"\n' > "$T44/global/hooks/fresh.py"
+# The fixture proves itself before anything concludes from it: `git init` can fail, and a sandbox that
+# was never built produces no hits, which reads exactly like a clean sweep.
+FIX44=""
+git -C "$T44" rev-parse --git-dir >/dev/null 2>&1 || FIX44="$FIX44 fixture-is-not-a-repository"
+[ -f "$T44/global/hooks/real.py" ] || FIX44="$FIX44 fixture-missing-the-tracked-file"
+[ -f "$T44/global/hooks/__pycache__/real.cpython-310.pyc" ] || FIX44="$FIX44 fixture-missing-the-ignored-file"
+[ -f "$T44/global/hooks/fresh.py" ] || FIX44="$FIX44 fixture-missing-the-untracked-file"
+
+# `purity_sweep <repo-root> <subpath>` prints one `file:line:text` per hit over the files that could
+# actually ship — tracked, plus untracked that git does not ignore. It is defined beside the live sweep
+# it serves; the absence branch below is what keeps these rows from passing vacuously if it is ever
+# deleted or renamed, since an absent function returns no output and no output names no ignored file.
+if command -v purity_sweep >/dev/null 2>&1 || type purity_sweep 2>/dev/null | grep -q function; then
+  OUT44="$(purity_sweep "$T44" global 2>/dev/null)"; RC44=$?
+  # A sweep that refused to run also returns no output, and no output names no ignored file -- so the
+  # row below would read a refusal as a pass. The status separates the two.
+  [ "$RC44" -eq 0 ] || SWEEP44_ABSENT=1
+else
+  OUT44=""
+  SWEEP44_ABSENT=1
+fi
+
+r44a="$FIX44"
+[ -n "${SWEEP44_ABSENT:-}" ] && r44a="$r44a sweep-absent-or-refused"
+printf '%s' "$OUT44" | grep -q '__pycache__' && r44a="$r44a reads-an-ignored-file"
+[ -z "$r44a" ] \
+  && ok "the purity sweep ignores what git ignores" \
+  || bad "the purity sweep ignores what git ignores (missing:$r44a)"
+
+# The other direction, and it is the one that costs money to get wrong: a sweep narrowed until it reads
+# nothing passes the row above for the wrong reason. Asserted on the file's name in the output, not on a
+# count, so a sweep that reports a hit in some other file cannot stand in for this one.
+r44b="$FIX44"
+[ -n "${SWEEP44_ABSENT:-}" ] && r44b="$r44b sweep-absent-or-refused"
+printf '%s' "$OUT44" | grep -q 'real\.py'  || r44b="$r44b misses-a-tracked-file-that-ships"
+printf '%s' "$OUT44" | grep -q 'fresh\.py' || r44b="$r44b misses-an-untracked-file-that-ships"
+[ -z "$r44b" ] \
+  && ok "the purity sweep still catches a real leak in a file that ships" \
+  || bad "the purity sweep still catches a real leak in a file that ships (missing:$r44b)"
+
+# --- the working-copy comparison states its own reach -----------------------
+# GIVEN the step that compares the working copy against the snapshot,
+# WHEN it reports the tree left as found,
+# THEN the step says what that verdict does not cover — files git ignores, which neither probe reaches.
+#
+# Scoped to the compare bullet of the snapshot-comparison step, resolved by content rather than by
+# number: the word `ignore` appears elsewhere in the skill (`--exclude-standard` prose, the untracked
+# listing), so a file-wide grep would be green before the clause is written.
+VS44="global/skills/verify/SKILL.md"
+NC44="$(grep -nE '^[0-9]+\. \*\*Compare the working copy' "$VS44" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/')"
+# The COMPARE BULLET, not the whole step. An earlier form of this row sliced from step 8 to step 9 and
+# so read the Precondition, Identical and Different bullets too -- any of which can feed a vocabulary
+# leg in a future edit. `sbullet` is the helper this file already uses for exactly that reason.
+CMP44="$([ -n "$NC44" ] && sbullet "$VS44" "$NC44" 'Compare[.]')"
+# The FACT, not two vocabulary hits. Both legs of the earlier form were satisfied by the bullet's own
+# opening clause -- `not ignoring` fed one and `reach of` fed the other -- so the sentence that carries
+# the criterion was deletable with the suite green, and prose asserting the OPPOSITE passed as well.
+# Leg 1 binds an ignored file to being outside the probes, within one sentence. Leg 2 is what kills the
+# inversion: a passage claiming the probes cover everything cannot state this consequence.
+r44c=""
+[ -n "$CMP44" ] || r44c="$r44c compare-bullet-did-not-extract"
+printf '%s' "$CMP44" | grep -qE 'ignore[sd]?[^.]{0,40}outside' || r44c="$r44c ignored-not-bound-to-outside"
+printf '%s' "$CMP44" | grep -qE 'verdict about that reach|never about the whole directory' || r44c="$r44c consequence-not-stated"
+[ -z "$r44c" ] \
+  && ok "the comparison names the reach it does not cover" \
+  || bad "the comparison names the reach it does not cover (missing:$r44c)"
+
+# --- the refusal that makes the git-scoped narrowing safe -------------------
+# Added at Verify: the review proved this uncovered by flipping the sweep's `return 2` to `return 0`
+# with the suite green, so a sweep that concludes from nothing could be reintroduced in silence. Both
+# refusals, because they are different branches -- a selection naming no file, and a tree that is not a
+# repository at all -- and the second is the one that turns a missing `.git` into a clean purity verdict.
+r44d=""
+purity_sweep "$T44" nosuchpath >/dev/null 2>&1 && r44d="$r44d empty-selection-read-as-clean"
+if ! NR44="$(mktemp -d 2>/dev/null)" || [ ! -d "$NR44" ]; then
+  r44d="$r44d no-sandbox-for-the-non-repository-leg"
+else
+  mkdir -p "$NR44/global"; printf 'x\n' > "$NR44/global/f.txt"
+  purity_sweep "$NR44" global >/dev/null 2>&1 && r44d="$r44d non-repository-read-as-clean"
+  rm -rf "$NR44"
+fi
+[ -z "$r44d" ] \
+  && ok "the sweep refuses to answer when it cannot read, instead of answering clean" \
+  || bad "the sweep refuses to answer when it cannot read, instead of answering clean (missing:$r44d)"
+fi
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"

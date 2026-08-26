@@ -82,7 +82,9 @@ thing it guards untrue and watching the suite stay green. Where that is so:
 - **The change is taken back before the run ends**, each one restored before the next is applied, so the
   working copy never carries two at once.
 - **The run proves the working copy was left as it was found**, byte-exact, against a copy taken before
-  it started. That proof is executed by the phase that invokes the run, never by the actor that mutates:
+  it started — byte-exact over what version control can see, which is where the proof's reach ends: a
+  file the project ignores is outside it, and a check that reads the tree rather than asking git is
+  reading through that gap. That proof is executed by the phase that invokes the run, never by the actor that mutates:
   an actor killed mid-change restores nothing, which is precisely how the discipline has failed before.
 - **A run that cannot prove it clean says so**, rather than staying silent. In a report, silence and a
   clean working copy read identically, and there is no third source to settle which one happened.
