@@ -822,12 +822,51 @@ if [ -n "$sec" ]; then
   printf '%s' "$sec" | grep -qi 'quick' \
     && ok "the protocol states a quick task gets no sheet" \
     || bad "the protocol states a quick task gets no sheet"
+
+  # The Tool column, on the same terms the Checkout paragraph is held to: the COUNT is the fact, because
+  # a definition naming half the readership is what the next person prices a change to this column from.
+  # It named one reader while a second had just been added — the archive checklist's label rewrite, which
+  # runs in the coordinator and has nothing but this column to learn the front's tool from.
+  tsec="$(printf '%s\n' "$sec" | awk '/^\*\*Tool\*\*/{f=1} f&&/^## Workstreams/{exit} f' | tr '\n' ' ' | tr -s ' ')"
+  m37t=""
+  printf '%s' "$tsec" | grep -qE '\*\*Tool\*\*'                  || m37t="$m37t undefined"
+  printf '%s' "$tsec" | grep -qiE '\btwo\b'                        || m37t="$m37t reader-count-unstated"
+  printf '%s' "$tsec" | grep -qiE 'dismantl'                       || m37t="$m37t dismantling-unnamed"
+  printf '%s' "$tsec" | grep -qiE 'step 7|archive checklist'       || m37t="$m37t label-rewrite-unnamed"
+  [ -z "$m37t" ] && ok "the tool column is defined where it lives, and names both sites that read it" \
+                 || bad "the tool column is defined where it lives, and names both sites that read it (:$m37t)"
+
+  # The skeleton's own front example is the naming rule's first reader, and the bare-letter form it used
+  # to carry ("ws-b" at "../proj-wt-b") is a name that says nothing at a glance. What is read is what the
+  # rule states and nothing else: NEITHER durable cell carries a task identifier ("no task identifier in
+  # either" — so the path is read too, not only the name), and the name is a subject rather than a
+  # positional label, which is a word and not an initial. What is deliberately NOT read is whether the
+  # path contains the name: the rule never says the roster name is the path's basename, and an earlier
+  # form of this check required exactly that — it failed a skeleton that obeyed the prose
+  # (`digest-emails` at `../proj-wt-email-digest`) while passing `b` at `../proj-wt-b`, the very letter
+  # form the rule exists to retire, because a single character is a substring of almost any path.
+  # The id pattern tolerates both spellings a front has actually worn (`t-028-…`, `ai-flow-T-013`) and is
+  # anchored at a token boundary so an ordinary subject carrying digits (`sunset-2026`) is not read as one.
+  # The row read is the first table row that is neither the header, the separator, nor the coordinator's —
+  # the coordinator names its own checkout and is not a front, so the rule does not reach it.
+  frow="$(printf '%s\n' "$sec" | awk -F'|' '/^\|/ && $2 !~ /Workstream/ && $2 !~ /^[[:space:]]*-+[[:space:]]*$/ && $2 !~ /coordinator/ {print $2 "|" $3; exit}')"
+  fname="$(printf '%s' "$frow" | cut -d'|' -f1 | tr -d '[:space:]')"
+  fpath="$(printf '%s' "$frow" | cut -d'|' -f2 | tr -d '[:space:]')"
+  if [ -n "$fname" ] && [ -n "$fpath" ] \
+     && ! printf '%s\n%s\n' "$fname" "$fpath" | grep -qiE '(^|[^a-z0-9])[te]-?[0-9]{3}' \
+     && printf '%s' "$fname" | grep -qiE '(^|-)[a-z]{3,}(-|$)'; then
+    ok "the roster skeleton names its front by subject"
+  else
+    bad "the roster skeleton names its front by subject"
+  fi
 else
   bad "the protocol has a State Files section"
   bad "the protocol defines both state files and their writers (no section)"
   bad "the protocol mandates the sheet at activation (no section)"
   bad "the protocol states a paused task keeps its sheet (no section)"
   bad "the protocol states a quick task gets no sheet (no section)"
+  bad "the roster skeleton names its front by subject (no section)"
+  bad "the tool column is defined where it lives, and names both sites that read it (no section)"
 fi
 
 if grep -q 'index of open workstreams' "$BLG" \
@@ -1131,6 +1170,29 @@ if [ -n "$CER" ]; then
   pair 6 'prune' 'own|owns' "the ceremony prunes the new checkout to the task it owns"
   pair 6 'BACKLOG|ledger' 'never copied|not copied|stays with|read-only' "the ceremony never copies the ledger into a worktree"
   pair 6 'copies' 'originals' "the pruning step names what it deletes"
+
+  # The naming rule. Move 5 settled which tool creates the checkout and the four conditions it must
+  # satisfy, and said nothing about the one job the checkout does at a glance — so the name came from
+  # whatever the tool asked for at creation. Measured across the nine named fronts this operator has
+  # opened: three competing conventions, and four of the six named for a task outlived that task.
+  # Each pair reads a DIFFERENT clause on purpose: a pair whose two patterns are fed by one sentence
+  # dies only when that sentence goes, and approves any prose that keeps its vocabulary.
+  pair 5 'chosen once|never rewritten' 'mutable label' "the ceremony says what a front is called"
+  pair 5 'subject' 'no task identifier|no task id' "a front's durable name carries its subject and no task id"
+  # The branch is the field the ticket wanted to bundle with the path and the one field that cannot be:
+  # it changes with every task in a front's chain, which is why the roster was never keyed on it.
+  pair 5 'never the branch' 'task-scoped' "the naming rule leaves the branch task-scoped"
+  # The floor, said out loud. A silence here reads as a missing step rather than as a deliberate one.
+  pair 5 'offers no|offers none' 'roster is the glance' "with no mutable label the roster is the glance"
+  # WHICH two fields are durable is the rule's load-bearing content, and it was deletable with every
+  # assertion above green: strike the clause naming them and the sentence still says two fields are
+  # chosen once and carry the subject, while no longer saying which two. The roster-row half is the
+  # column where a task id was actually found sitting.
+  pair 5 'checkout.s own path' 'name on its roster row' "the durable identity names both of its surfaces"
+  # The forward citation, by NUMBER. The suite already treats an unpinned numeric cross-reference as a
+  # defect one section down — a half-renumber leaves a citation pointing at the wrong move while the
+  # section title still matches — and this rule mints two such citations, one in each direction.
+  pair 5 'step 7' 'After ARCHIVE' "the label rewrite cites the step that performs it"
 else
   bad "the protocol defines the ceremony that opens a workstream"
   bad "a single open front has nothing to weigh and nothing to create (no section)"
@@ -1140,6 +1202,12 @@ else
   bad "the ceremony prunes the new checkout to the task it owns (no section)"
   bad "the ceremony never copies the ledger into a worktree (no section)"
   bad "the pruning step names what it deletes (no section)"
+  bad "the ceremony says what a front is called (no section)"
+  bad "a front's durable name carries its subject and no task id (no section)"
+  bad "the naming rule leaves the branch task-scoped (no section)"
+  bad "with no mutable label the roster is the glance (no section)"
+  bad "the durable identity names both of its surfaces (no section)"
+  bad "the label rewrite cites the step that performs it (no section)"
 fi
 
 # The one-directional protocol check that stood here is retired, absorbed whole by C37's A1. It was read
@@ -1606,6 +1674,22 @@ if printf '%s' "$ARC7" | grep -qiE 'no next task' \
   ok "both checklists leave the roster row to the ceremony's last move"
 else
   bad "both checklists leave the roster row to the ceremony's last move"
+fi
+
+# One act, two fields. Step 7 is the ONLY place the continuing case is stated — the ceremony's own move 7
+# speaks of removal alone — so this is where the tool's mutable label has to ride along with the task
+# field, or the label is left to a second act nobody would ever run. The coupling leg is an ORDERED
+# co-occurrence and not a second bare word: two independent greps prove only that both phrases appear
+# somewhere in the step, and prose that explicitly DECOUPLES them ("a separate later act rewrites the
+# front's mutable label") keeps both and stays green — which is the exact failure the clause was added to
+# prevent, measured by mutation rather than suspected. The third leg pins the back-citation by number,
+# the counterpart of the forward one asserted on move 5.
+if printf '%s' "$ARC7" | grep -qiE 'task field advanced' \
+   && printf '%s' "$ARC7" | grep -qiE 'same act[^.]{0,80}mutable label' \
+   && printf '%s' "$ARC7" | grep -qiE 'move 5'; then
+  ok "the act that advances the task also rewrites the label"
+else
+  bad "the act that advances the task also rewrites the label"
 fi
 
 # The two halves must name each other, and the heading every extractor above depends on must exist as a

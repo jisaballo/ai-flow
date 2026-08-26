@@ -41,7 +41,7 @@ front's.
 restates is a rule they can come to disagree about. Both sides are resolved before they are compared:
 the listing answers in absolute paths and a row may record a relative one. A relative row is read
 against **the coordinator's own checkout root** and never against whatever directory the session happens
-to sit in — two levels down, `../proj-wt-b` otherwise resolves to a sibling of that subdirectory and
+to sit in — two levels down, `../proj-wt-digest-emails` otherwise resolves to a sibling of that subdirectory and
 matches nothing, which is the wrong-meaning stop this key was chosen to remove, reintroduced through the
 base. And **a path that does not resolve is not a match**: two unresolvable sides each answer with
 nothing, and nothing equals nothing, so a checkout deleted by hand — still listed, because git has not
@@ -55,10 +55,13 @@ that script keeping its present shape.
 Workstream) — front-scoped, decided once, never a running account of what the task turned out to
 touch.
 
-**Tool** names what created that front's checkout. Front-scoped and decided once, like Areas, and read
-by the closing ceremony's dismantling move: the ownership condition says the checkout is removed by
-whatever created it, and this column is the only thing that says what that was. The coordinator's own
-row has nothing to name — nothing created it.
+**Tool** names what created that front's checkout. Front-scoped and decided once, like Areas, and read by
+**two** sites — the count is the fact, for the reason **Checkout** above gives about its own four. The
+closing ceremony's **dismantling** move: the ownership condition says the checkout is removed by whatever
+created it, and this column is the only thing that says what that was. And the archive checklist's
+**step 7**, whose label rewrite has first to ask whether that tool offers a mutable label at all; it runs
+in the coordinator, which has nothing else to learn the front's tool from. The coordinator's own row has
+nothing to name — nothing created it.
 
 ```markdown
 # Session State
@@ -68,7 +71,7 @@ row has nothing to name — nothing created it.
 | Workstream | Checkout | Task | Epic | Areas | Tool | Opened |
 |---|---|---|---|---|---|---|
 | coordinator | . | T-XXX | E-XXX | auth, billing | — | 2026-08-19 |
-| ws-b | ../proj-wt-b | T-YYY | E-XXX | notifications | <tool> | 2026-08-19 |
+| digest-emails | ../proj-wt-digest-emails | T-YYY | E-XXX | notifications | <tool> | 2026-08-19 |
 
 > Per-task phase, step, autonomy and decisions live in `artifacts/T-XXX/state.md`.
 > This file is a roster: the coordinator writes it, only at ceremonies.
@@ -499,6 +502,21 @@ what activation has always been, plus the declaration in step 2.
    decided, and there is no silent path past a decision. What is
    never acceptable is a checkout nobody checked.
 
+   **What the front is called** is settled here, and it is the last thing this move does because nothing
+   later settles it cheaply. Of the fields a creation-time name touches, two are **chosen once and never
+   rewritten** — the checkout's own path, and the front's name on its roster row — and those two carry the
+   front's **subject**, with **no task identifier** in either. Its granularity is *inherited* from the
+   front rather than chosen: what the front is about where it is one task, its epic or its grouping
+   concept where it is broader. There is no discriminator to apply, which is the point — a classification
+   made at every opening yields inconsistent names, and inconsistency reads worse at a glance than a
+   boring uniform scheme. The **current task** goes on whatever **mutable label** the tool offers, and is
+   rewritten there by the act that already advances the roster's task field (`### After ARCHIVE (single
+   task)`, step 7) rather than by an act of its own. Where the tool **offers no** such label, nothing is
+   added and the **roster is the glance** — said out loud, because a silence here reads as a step somebody
+   forgot rather than as the floor it is. And a creation-time name that seeds several fields at once names
+   the **path**, **never the branch**: a front's branch is **task-scoped** for the reason `## State Files`
+   above already gives, and a durable name would be wrong on it from that front's second task onward.
+
 6. **Seed the task's artifacts and prune the rest.** The new checkout arrives holding the papers of
    every open task, and the read-only rail cannot tell which task is its own from a pile: the checkout
    must hold only the artifacts of the task it owns, so prune every folder this front does not own — on
@@ -662,8 +680,12 @@ reaches into the checkout where the task was worked to delete a copy of what it 
 6. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
 7. Leave the workstream row to move 7 of `## Closing a Workstream`, its sole owner: the row is removed
    only when the front has no next task, and a front continuing its chain keeps its row with the task
-   field advanced (coordinator only — other open fronts keep theirs). The task's `state.md` went with
-   `artifacts/T-XXX/` in step 4.
+   field advanced (coordinator only — other open fronts keep theirs). **The same act rewrites the front's
+   mutable label** where its tool offers one, to the task the row now names — this is the only statement
+   of the continuing case, so a label left to an act of its own is a label nobody would ever rewrite, and
+   the front would go on announcing a task that closed here. Where the tool offers none there is nothing
+   to rewrite and the row is the whole of it (see move 5 of `## Opening a Workstream`). The task's
+   `state.md` went with `artifacts/T-XXX/` in step 4.
 
 ### Business-Miss Rule
 
