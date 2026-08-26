@@ -64,7 +64,39 @@ if [ ! -r "$SRC_FILE" ]; then
   exit 2
 fi
 CLONE="$(cat "$SRC_FILE")"
-[ -d "$CLONE/global" ] || exit 0
+# The record was readable; that does not make its CONTENTS usable, and the silence below is reserved for
+# one fact only: no clone is recorded. Four different facts used to leave by it, each of them "the clone
+# IS recorded and cannot be reached" — the sentence the readability test above exists for — and each
+# exited 0 over genuinely drifted files:
+#   an empty or truncated record (a half-finished install), where the path is '';
+#   a record spanning several lines, where the path cannot exist;
+#   a recorded checkout that has been moved or deleted, the commonest real case, after which the guard
+#     goes silent forever over an install nobody is checking;
+#   a recorded directory that exists but cannot be entered — `-d` answers on such a directory, exactly as
+#     it does for the ledger, so `-d` is not what separates them and search is the bit that does.
+unusable=""
+if [ "$(wc -l < "$SRC_FILE" | tr -d ' ')" -gt 1 ]; then
+  unusable="it names more than one line"
+elif [ -z "$CLONE" ]; then
+  unusable="it is empty — an interrupted install writes this"
+elif [ ! -d "$CLONE" ]; then
+  unusable="'$CLONE' is not a directory (moved or deleted?)"
+elif [ ! -x "$CLONE" ]; then
+  unusable="'$CLONE' cannot be entered"
+elif [ ! -d "$CLONE/global" ]; then
+  unusable="'$CLONE' holds no global/, so it is not an engine checkout"
+fi
+if [ -n "$unusable" ]; then
+  {
+    echo "ai-flow engine drift — NOT CHECKED: $SRC_FILE records the engine clone, and $unusable."
+    echo "This is not a clean verdict, it is the absence of one: the installed engine may or may not"
+    echo "match its clone, and this guard could not look. Silence here is reserved for an install that"
+    echo "records no clone at all, which is a different fact."
+    echo "Fix: reinstall from the engine checkout whose commits you want installed, which rewrites the"
+    echo "record: bash <path-to-engine-checkout>/install.sh update"
+  } >&2
+  exit 2
+fi
 command -v git >/dev/null 2>&1 || exit 0
 git -C "$CLONE" rev-parse HEAD >/dev/null 2>&1 || exit 0
 

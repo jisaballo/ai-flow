@@ -101,13 +101,28 @@ def phase_source(root: Path, cwd: Path):
     readable claim on the current branch settles it, and an unreadable sibling cannot outrank a claim
     the ladder already found. Refusing on any unreadable sheet anywhere under artifacts/ would let one
     stale sheet block every code write, which is a worse rail than the one being repaired."""
-    per_task = sorted((root / '.ai-flow' / 'artifacts').glob('*/state.md'))
+    aiflow = root / '.ai-flow'
+    try:
+        per_task = sorted((aiflow / 'artifacts').glob('*/state.md'))
+    except OSError:
+        # The ledger directory cannot be listed. pathlib raises here instead of answering, and an
+        # uncaught raise leaves the hook on exit 1 — which PreToolUse treats as a non-blocking error, so
+        # the write this rail could not judge was allowed and a traceback was printed over every write
+        # in that state. It is the same directory-level fault the ledger guardian's own gate closes, and
+        # it needs the same answer: the ledger exists and could not be read, so the phase is unknown.
+        # Caught rather than pre-tested with an access check, because the raise is the authority — a
+        # readability test in front of it would still be a guess about what the next call will do.
+        return None, aiflow
     branch = current_branch(cwd)
     if branch:
         owned = [sheet for sheet in per_task if sheet_branch(sheet) == branch]
         if len(owned) == 1:
             return owned[0], None
-        unreadable = [sheet for sheet in per_task if sheet_branch(sheet) is None]
+        # Consulted only where NO readable sheet claims the branch, which is what the rule above says: an
+        # unreadable sibling cannot change an answer a readable claim already settled. Two readable
+        # claimants is a different stall — one this rung must not answer for, or the refusal would name a
+        # sheet that is not the reason the ladder stopped — so it keeps falling through as it did before.
+        unreadable = [] if owned else [sheet for sheet in per_task if sheet_branch(sheet) is None]
         if unreadable:
             # No sheet claims this branch and one of them could not be read: it may be the claimant, so
             # the task is not resolved. Rung 4 of the ladder — stop and name what was looked for — and
@@ -180,21 +195,13 @@ def main():
     if root is None:
         sys.exit(0)  # not an ai-flow project
 
-    source, unread = phase_source(root, cwd)
-    if unread is not None:
-        refuse_unread(unread, root)
-    if source is None:
-        sys.exit(0)  # no state to read: no rail to enforce
-
-    phase = declared_phase(source)
-    if phase is None:
-        # The ladder resolved this file and its contents are unavailable, so the phase is unknown — not
-        # absent. Waving the write through here is how an unreadable sheet lifted the rail: the write
-        # was allowed on the strength of having read nothing.
-        refuse_unread(source, root)
-    if phase != 'UNDERSTAND':
-        sys.exit(0)  # any phase other than UNDERSTAND, or none declared: no restriction
-
+    # Jurisdiction is settled before any verdict, including a refusal. A write this rail never judges —
+    # outside the repository, or under .ai-flow/ — is not judged differently because the phase could not
+    # be read: an unknown phase cannot change an answer that never depended on the phase. Ordering the
+    # refusal first blocked every artifact write while the refusal's own text named correcting the sheet
+    # as the way out, so the guard denied the remedy it advertised, and during UNDERSTAND that is the
+    # whole output of the phase. This is the same rule the resolution below states for itself: refuse
+    # only where reading the unreadable thing could have changed the outcome.
     try:
         # Against the directory the session declares, the same source the ledger root came from — never
         # this process's own, which is nothing the payload describes: a relative path resolved there
@@ -212,7 +219,23 @@ def main():
         sys.exit(0)
 
     if rel.parts and rel.parts[0] == '.ai-flow':
-        sys.exit(0)  # artifacts, STATE.md, BACKLOG.md: fine
+        sys.exit(0)  # artifacts, STATE.md, BACKLOG.md: fine — and fine whatever the phase turns out to be
+
+    # Only now, with a repo file this rail is entitled to judge, is the phase worth resolving.
+    source, unread = phase_source(root, cwd)
+    if unread is not None:
+        refuse_unread(unread, root)
+    if source is None:
+        sys.exit(0)  # no state to read: no rail to enforce
+
+    phase = declared_phase(source)
+    if phase is None:
+        # The ladder resolved this file and its contents are unavailable, so the phase is unknown — not
+        # absent. Waving the write through here is how an unreadable sheet lifted the rail: the write
+        # was allowed on the strength of having read nothing.
+        refuse_unread(source, root)
+    if phase != 'UNDERSTAND':
+        sys.exit(0)  # any phase other than UNDERSTAND, or none declared: no restriction
 
     print(
         f"BLOCKED: the active ai-flow phase is UNDERSTAND (read-only for code), per "

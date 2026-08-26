@@ -29,16 +29,26 @@ $1"; else problems="$1"; fi; }
 root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 [ -n "$root" ] || root="."
 
-# The ledger's own directory is proven readable before either file is looked for. An unreadable
-# directory makes both files test as *absent*, and absent is this guard's designed no-op for a project
+# The ledger's own directory is proven usable before either file is looked for. A directory that cannot
+# be entered makes both files test as *absent*, and absent is this guard's designed no-op for a project
 # that has no .ai-flow at all — so without this check the fail-open below simply moves up one level,
 # reachable by exactly the same permission fault and reported identically to a clean ledger. `-d` still
-# answers on a directory that cannot be read, and `-r` is what separates that from one that is not there.
-# Nothing is skipped explicitly: with the directory unreadable both `-f` tests below are false anyway,
-# so the two blocks fall through on their own and the report written here is what the exit is built from.
+# answers on such a directory, so it is not what separates them.
+#
+# The bit that matters is **search** (`-x`), not read (`-r`), and getting that wrong breaks the check in
+# both directions — measured, both:
+#   mode 0400 (r, no x): `-r` is true so an `-r` gate says nothing, yet neither `-f` below can stat its
+#     file, so both blocks skip and the guard exits 0. The exact fail-open this gate exists to close,
+#     surviving one permission bit away from it.
+#   mode 0100 (x, no r): the guard reads both files by name perfectly and a real verdict is available,
+#     yet an `-r` gate refuses the session close claiming nothing was checked — a false report standing
+#     in front of a true one.
+# This guard opens two files by name and never lists the directory, so search is the whole of what it
+# needs and read is irrelevant to it. A guard that DOES list a directory needs both, and in Python the
+# listing raises rather than answering — see the hooks README.
 AIFLOW="$root/.ai-flow"
-if [ -d "$AIFLOW" ] && [ ! -r "$AIFLOW" ]; then
-  add_problem "Cannot read $AIFLOW, so neither STATE.md nor BACKLOG.md was checked. This is not a clean verdict — it is the absence of one. Fix the permission (chmod u+rx '$AIFLOW') and finish again."
+if [ -d "$AIFLOW" ] && [ ! -x "$AIFLOW" ]; then
+  add_problem "Cannot enter $AIFLOW, so neither STATE.md nor BACKLOG.md was checked. This is not a clean verdict — it is the absence of one. Fix the permission (chmod u+rx '$AIFLOW') and finish again."
 fi
 
 STATE="$root/.ai-flow/STATE.md"
@@ -93,8 +103,16 @@ elif [ -f "$STATE" ]; then
   # Derived from a count, never from a `grep -v` inside an `if`: on BSD grep an empty input exits 0, so
   # that shape reports the same verdict either way.
   n=$(printf '%s\n' "$policed" | grep -cE '(E|T)-[0-9]{3}.*CLOSED|CLOSED.*(E|T)-[0-9]{3}|archive/[A-Za-z0-9]' | tr -d ' ')
+  # The count's shape, checked because the gate above covers exactly one cause of failure. grep can fail
+  # for others — an invalid byte for the current locale is the reachable one — and its status is spent
+  # inside the pipeline above. A non-numeric count then reaches `-gt` and raises `integer expression
+  # expected`, which SKIPS the closed-work check rather than answering it: the identical shape documented
+  # for the two budget counts below, in the one branch that had no gate.
+  case "$n" in ''|*[!0-9]*) n_broken=1 ;; *) n_broken=0 ;; esac
   if [ "$extraction" -ne 0 ]; then
-    add_problem "Could not read $STATE while extracting the lines to police, so the roster was not checked. This is not a clean verdict — it is the absence of one. Confirm the file is readable, then finish again."
+    add_problem "Could not read $STATE while extracting the lines to police, so the roster was not checked. This is not a clean verdict — it is the absence of one. Fix the permission (chmod u+r '$STATE') and finish again."
+  elif [ "$n_broken" -eq 1 ]; then
+    add_problem "Could not count the closed-work lines in $STATE — the search failed and produced no number, so the roster was not checked. This is not a clean verdict — it is the absence of one."
   elif [ "$n" -gt 0 ]; then
     add_problem "STATE.md carries $n line(s) of closed-work narrative. Its home is archive/E-XXX-*.md (or archive/T-XXX/summary.md); trim STATE.md down to the roster — one row per open front — before finishing. Neither the roster nor the Quick Tasks Completed table is policed — both stay where they are."
   fi
