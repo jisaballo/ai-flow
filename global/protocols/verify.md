@@ -88,6 +88,17 @@ thing it guards untrue and watching the suite stay green. Where that is so:
   an actor killed mid-change restores nothing, which is precisely how the discipline has failed before.
 - **A run that cannot prove it clean says so**, rather than staying silent. In a report, silence and a
   clean working copy read identically, and there is no third source to settle which one happened.
+- **An auditor reading beside other auditors reports what it read, never what it ran.** A finding
+  resting on the outcome of a run — a suite's failures, a command's exit — is an account nobody else can
+  check: the run happened inside one actor while the others were reading the same copy, and the report is
+  the only trace it leaves. **Three of four** auditors once reported the same four failures against a
+  suite that had none, with the rule above already stated to each of them and already guarded — which is
+  why these are two rules and not one. The first governs the damage; this one governs the evidence, and
+  forbidding the act never forbade the account. The scope is the parallel readers and only them: the
+  phase that invokes them runs alone, and what it reports under Test Results is its own — so the closing
+  sentence below, which binds every actor the lifecycle appoints, reaches this bullet's siblings and not
+  this bullet. A suspicion only a run can settle is handed over as a proposed mutation, and the actor
+  appointed to run it is the one whose outcome the report may carry.
 
 The rule binds every actor the lifecycle appoints, not the review's alone: a Conform sweep that mutates
 to size its own assertions is the same act with a different author.

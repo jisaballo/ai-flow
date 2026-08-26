@@ -1985,6 +1985,32 @@ else
   bad "the rule requires a run that cannot prove it clean to say so"
 fi
 
+# Fact 1e — the evidence half of the rule, at its canonical home. Every other bullet in this section has
+# a leg asserted on the `RULE` region; this one had none, and the review proved the gap by deleting the
+# whole bullet with the suite green. What that leaves behind is worse than an unguarded sentence: the
+# workflow header is REQUIRED to cite this section by name, so the citation would survive pointing at a
+# section that no longer contains the rule it cites.
+#
+# Two legs, because two clauses are load-bearing and they fail differently. The prohibition is what the
+# rule says; the exemption is what keeps the actor appointed to run from reading the prohibition as its
+# own, and a rule that swallowed its own prover would return every proposed mutation unproven while
+# reading, in a report, exactly like a review that proved them.
+r1e=""
+[ -n "$RULE" ] || r1e="$r1e rule-region-empty"
+printf '%s' "$RULE" | grep -qiE 'never what it ran' || r1e="$r1e prohibition-absent"
+printf '%s' "$RULE" | grep -qiE 'appointed to run it is the one whose outcome' || r1e="$r1e exemption-absent"
+[ -z "$r1e" ] \
+  && ok "the rule states what an auditor may report, and exempts the actor appointed to run" \
+  || bad "the rule states what an auditor may report, and exempts the actor appointed to run (missing:$r1e)"
+
+# Fact 1f — and it has one home, like its sibling. The canary is the third-person wording, which the
+# workflow's second-person instruction deliberately does not match: the prompt is required to CITE this
+# section, never to restate it, and a second copy is the one that drifts.
+NEW_RULE_HOMES="$(grep -rlie 'never what it ran' global/ 2>/dev/null | wc -l | tr -d ' ')"
+[ "$NEW_RULE_HOMES" = "1" ] \
+  && ok "the evidence rule is stated in exactly one engine file (found in $NEW_RULE_HOMES)" \
+  || bad "the evidence rule is stated in exactly one engine file (found in $NEW_RULE_HOMES)"
+
 # The workflow's shared prompt header, bounded by the join that closes it: the four auditors and the
 # refuter all inherit it, so a fact placed here is a fact every worker reads — and a fact asserted on
 # the whole file would pass on the schema, the comments, or a dimension that no longer includes it.
@@ -2077,6 +2103,84 @@ printf '%s' "$TRIAGE" | grep -qiE 'discard|false positive' || t3e="$t3e no-disca
 grep -qE '^const proposals = confirmed\.filter' "$VW" \
   && ok "the prover's proposals come only from adjudicated survivors" \
   || bad "the prover's proposals come only from adjudicated survivors"
+
+# Fact 3g — what a worker may REPORT, which is the half that governs evidence rather than damage. The
+# header already forbids an auditor from CHANGING the copy; nothing forbade it from telling the phase
+# what it RAN. Three of four auditors once reported the same four failures against a suite that had none,
+# with the read-only sentence already in place and already guarded — so the prohibition on the act and
+# the prohibition on the account are two rules, and only the first existed.
+#
+# Scoped to the single bullet that carries it, never to the header: `proposedMutation` occurs in the
+# bullet above this one, so a header-wide grep for the route stays green with this whole bullet deleted.
+# That is the hollow shape an assertion takes when it pins a noun its rule shares with the rule's
+# negation, and it is why the region is extracted per claim rather than asserted on the header.
+#
+# The selector IS the presence claim, deliberately: the bullet is found by its prohibition, so an empty
+# region and a deleted rule are the same verdict. A bullet reworded in place to PERMIT the report no
+# longer carries the prohibition and is no longer found — but that reasoning covers only an edit in
+# place, so the permissive-sibling leg below covers the other way in.
+REPORT_BULLET="$(awk '/^const ctx = \[/{f=1;next} /^\]\.join/{f=0} f' "$VW" | grep -iE 'never what (you|it) ran' | head -1)"
+[ -n "$REPORT_BULLET" ] \
+  && ok "the shared review header forbids reporting what a worker ran" \
+  || bad "the shared review header forbids reporting what a worker ran"
+
+# Fact 3h — and no sibling bullet gives back what this one takes away. A permission added ALONGSIDE the
+# prohibition leaves the prohibition intact, so the selector above still finds it and reports green over
+# a header that now contradicts itself — with the permissive line the one a worker reads last. Asserted
+# over the whole header, which is the region a contradiction can hide anywhere in, and derived from a
+# count rather than a bare grep so an empty region cannot read as a pass.
+PERMIT_N="$(printf '%s' "$CTX" | grep -ciE 'may report[^.]{0,60}(ran|run)|you may run|permitted to run' | tr -d ' ')"
+[ "$PERMIT_N" = "0" ] \
+  && ok "no header bullet permits what the prohibition forbids (found $PERMIT_N)" \
+  || bad "no header bullet permits what the prohibition forbids (found $PERMIT_N)"
+
+# Fact 3i — and the prohibition carries its route. A rule that forbids the only way a worker could settle
+# a suspicion, without naming what to do instead, is the rule people route around: the suspicion still
+# needs settling, and the report is still where it lands. Asserted INSIDE the bullet, which is what makes
+# it a different fact from 3g rather than the same grep twice.
+r3i=""
+[ -n "$REPORT_BULLET" ] || r3i="$r3i bullet-absent"
+printf '%s' "$REPORT_BULLET" | grep -q 'proposedMutation' || r3i="$r3i route-absent"
+printf '%s' "$REPORT_BULLET" | grep -qF "$RULE_SECTION" || r3i="$r3i citation-absent"
+[ -z "$r3i" ] \
+  && ok "the prohibition names the route a run-dependent suspicion takes" \
+  || bad "the prohibition names the route a run-dependent suspicion takes (missing:$r3i)"
+
+# Fact 3j — the fence stops at the prover, and that boundary is load-bearing in the OTHER direction.
+# The prover is the one actor appointed to run and to mutate; a prohibition that reached it would leave
+# every proposed mutation unproven while reading, in a report, exactly like a review that proved them.
+# It cannot inherit the header by construction — its prompt is built from scratch — and this row is what
+# keeps that construction from being "simplified" into sharing `ctx`.
+#
+# Its own name and the anchored pattern the other extractor of this region uses: a second binding of a
+# name already bound further down shadows it in one flat scope, and two extractors over one region that
+# disagree on anchoring do not fail together — the one left behind then guards nothing, in green.
+PROVE_PROMPT="$(awk '/^  const provePrompt = \[/{f=1;next} /^  \]\.join/{f=0} f' "$VW")"
+r3j=""
+[ -n "$PROVE_PROMPT" ] || r3j="$r3j prover-prompt-absent"
+printf '%s' "$PROVE_PROMPT" | grep -q 'a.testCommand' || r3j="$r3j run-instruction-absent"
+printf '%s\n' "$PROVE_PROMPT" | grep -qE '^[[:space:]]+ctx,' && r3j="$r3j inherits-header"
+[ -z "$r3j" ] \
+  && ok "the prover keeps its run instruction and does not inherit the header" \
+  || bad "the prover keeps its run instruction and does not inherit the header (missing:$r3j)"
+
+# Fact 3k — and the remedy this task DECLINED stays declined. The Scope Contract that produced this work
+# named a read-only agent type on the auditor calls as the fix; measured, no available read-only type
+# removes the ability to RUN a command, and the incident was an account of a run — so the named fix would
+# not have prevented a word of it, and the one type that is read-only declares in its own definition that
+# it does not audit. Asserting the ABSENCE is what makes that refusal durable: a paragraph explaining why
+# it was declined is deletable with the suite green, and the next reader meets a plausible fix with no
+# record of its measure.
+#
+# Scoped to the option objects of the review's own agent calls, and widened past one spelling: the
+# refusal is about a capability restriction, which four different keys express, and a count over the
+# whole file would forbid the file from ever explaining the refusal in a comment — which is the one place
+# the next reader would look. Derived from a count, never a `grep -v` inside an `if`: on BSD grep an empty
+# input exits 0 and reports the same verdict either way.
+RESTRICT_N="$(grep -oE 'agent\([^)]*\{[^}]*\}' "$VW" | grep -cE 'agentType|allowedTools|disallowedTools|subagent_type|tools[[:space:]]*:' | tr -d ' ')"
+[ "$RESTRICT_N" = "0" ] \
+  && ok "no review agent call carries a capability restriction (found $RESTRICT_N)" \
+  || bad "no review agent call carries a capability restriction (found $RESTRICT_N)"
 
 # Fact 4a — the mutation instinct becomes a structured proposal the worker hands over.
 FSCHEMA="$(awk '/^const FINDINGS_SCHEMA = \{/{f=1} f&&/^\}$/{print;exit} f' "$VW" | tr '\n' ' ')"
