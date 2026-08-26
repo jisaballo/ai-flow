@@ -8,23 +8,53 @@ set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
+PASS=0
+FAIL=0
+ok()   { echo "  [ok]   $1"; PASS=$((PASS+1)); }
+bad()  { echo "  [FAIL] $1"; FAIL=$((FAIL+1)); }
+
+# A usable sandbox, or a named cause and a stopped run. `mktemp -d` failing is a broken environment, not
+# a failing test: the substitution yields an empty string, every fixture path under it collapses to the
+# filesystem root, and the section then scores whatever the greps make of files that were never written.
+#
+# Two things about the shape are load-bearing. The diagnostic goes to **stderr**, because this is called
+# inside a command substitution and anything on stdout becomes the sandbox path. And the **caller**
+# performs the exit, because a command substitution runs in a subshell: an `exit` here would end only
+# that subshell and leave the caller running with the empty path this exists to prevent.
+#
+# The sections guarded when they were written wrap their whole body in an `else` instead. That shape was
+# not retrofitted here: doing so re-indents 1,532 lines across nine sections, and a whitespace diff that
+# size buries whatever change it arrives with.
+mkbox() {  # a sandbox on stdout, or nothing and a non-zero status
+  local d
+  d="$(mktemp -d 2>/dev/null)" || d=""
+  [ -n "$d" ] && [ -d "$d" ] || return 1
+  printf '%s' "$d"
+}
+fatal() {  # $1 = what cannot run without a sandbox
+  # Called from the CALLER, never from inside the substitution, and that placement is the whole point:
+  # here it runs in the parent shell, so `bad` really counts and the `Result:` line below is the run's
+  # own tail rather than a second copy. Reporting from inside `mkbox` would increment a counter in a
+  # subshell that is about to vanish, and would put the message on stdout, where it becomes the path.
+  bad "$1 (no sandbox: mktemp -d failed)"
+  echo ""
+  echo "Result: $PASS passed, $FAIL failed"
+  echo "  run stopped here: a section cannot build its fixtures, so every verdict after it would be about nothing"
+  exit 1
+}
+
 # Git's global configuration is sandboxed for the whole run, and this is a guard rather than tidiness.
 # The installer this suite exercises writes `core.hooksPath` with `git config --global`; a sandbox that
 # only redirects HOME does not contain that, because git writes its global config to
 # $XDG_CONFIG_HOME/git/config when that file exists. On a developer who sets XDG_CONFIG_HOME, running
 # this suite rewrote their real global hook path. Both variables are set here, at the top, so no call
 # site can be added later that escapes it.
-GITSANDBOX="$(mktemp -d)"
+GITSANDBOX="$(mkbox)" || fatal 'the git sandbox for the whole run'
 mkdir -p "$GITSANDBOX/git"
 : > "$GITSANDBOX/gitconfig"
 export GIT_CONFIG_GLOBAL="$GITSANDBOX/gitconfig"
 export XDG_CONFIG_HOME="$GITSANDBOX"
 trap 'rm -rf "$GITSANDBOX"' EXIT
-
-PASS=0
-FAIL=0
-ok()   { echo "  [ok]   $1"; PASS=$((PASS+1)); }
-bad()  { echo "  [FAIL] $1"; FAIL=$((FAIL+1)); }
 
 PY="template/.ai-flow/project.yml"
 
@@ -83,7 +113,7 @@ grep -qE '(init|update)\)' install.sh && ok "install.sh has init/update dispatch
 grep -A3 '^PROTOCOLS=' install.sh | grep -q discover && ok "PROTOCOLS includes discover" || bad "PROTOCOLS missing discover"
 grep -q "python3" install.sh && ok "install.sh uses python3 (hook merge)" || bad "no python3 hook merge"
 # --- functional (sandboxed HOME + temp target; NEVER touches the real ~/.claude) ---
-TH="$(mktemp -d)"; TT="$(mktemp -d)"; TW="$(mktemp -d)"
+TH="$(mkbox)" || fatal 'C9 fixtures'; TT="$(mkbox)" || fatal 'C9 fixtures'; TW="$(mkbox)" || fatal 'C9 fixtures'
 trap 'rm -rf "$TH" "$TT" "$TW"' EXIT
 mkdir -p "$TT/.ai-flow/protocols"
 echo "SENTINEL-KEEP-ME" > "$TT/.ai-flow/BACKLOG.md"
@@ -108,7 +138,7 @@ rm -rf "$TH" "$TT" "$TW"
 
 echo "== C11: worktree-aware hooks =="
 HK="$ROOT/global/hooks"
-T11="$(mktemp -d)"
+T11="$(mkbox)" || fatal 'C11 fixtures'
 trap 'rm -rf "$T11"' EXIT
 GIT="git -c user.email=t@t.t -c user.name=t -c commit.gpgsign=false"
 PY3=1
@@ -570,7 +600,7 @@ echo "== C12: worktree provisioning — data in, ledger out =="
 # the one whose select/reject contract matters to an adopting project. The root copy exists only so
 # this repo dogfoods its own mechanism, and the parity check keeps the two from drifting apart.
 WTI="$ROOT/template/.worktreeinclude"
-T12="$(mktemp -d)"
+T12="$(mkbox)" || fatal 'C12 fixtures'
 trap 'rm -rf "$T12"' EXIT
 
 # git stands in for the pattern engine the product uses: same gitignore specification, no package
@@ -779,7 +809,7 @@ after_tree="$( treecksum "$C12" )"
                                   || bad "update still touches no project (the project tree changed)"
 
 echo "== C13: per-task state sheet + workstream roster =="
-T13="$(mktemp -d)"
+T13="$(mkbox)" || fatal 'C13 fixtures'
 trap 'rm -rf "$T12" "$T13"' EXIT
 TSTATE="template/.ai-flow/STATE.md"
 BLG="global/protocols/backlog.md"
@@ -1535,8 +1565,14 @@ if [ -n "$CLO" ]; then
   # guards: a collection written after the merge changes the sequence while every presence grep in
   # this section stays green. Distribution sits between the record and the tail: earlier it could block
   # the ledger, later it would trail a tail that runs only on a front's last task.
+  # The count is READ from the protocol, never enumerated here: a literal list stops at its last index,
+  # so a move appended after the roster row is never looked at and the order check stays green over a
+  # ceremony that grew. The expected sequence below still encodes the ceremony this engine ships; what
+  # is derived is how far to look, which is the half a hardcoded range cannot see past.
+  nclo="$(printf '%s\n' "$CLO" | grep -cE '^[0-9]+\. ')"
   seq=""
-  for i in 1 2 3 4 5 6 7; do
+  i=1
+  while [ "$i" -le "$nclo" ]; do
     case "$(clohead "$i" | tr 'A-Z' 'a-z')" in
       *valid*)               seq="$seq V" ;;
       *collect*|*harvest*)   seq="$seq C" ;;
@@ -1547,6 +1583,7 @@ if [ -n "$CLO" ]; then
       *roster*|*row*)        seq="$seq R" ;;
       *)                     seq="$seq ?" ;;
     esac
+    i=$((i+1))
   done
   [ "$seq" = " V C M L X D R" ] \
     && ok "the protocol defines the ceremony that closes a front" \
@@ -2259,8 +2296,10 @@ printf '%s\n' "$PROVE_PROMPT" | grep -qE '^[[:space:]]+ctx,' && r3j="$r3j inheri
 # Scoped to the option objects of the review's own agent calls, and widened past one spelling: the
 # refusal is about a capability restriction, which four different keys express, and a count over the
 # whole file would forbid the file from ever explaining the refusal in a comment — which is the one place
-# the next reader would look. Derived from a count, never a `grep -v` inside an `if`: on BSD grep an empty
-# input exits 0 and reports the same verdict either way.
+# the next reader would look. Derived from a count, never a `grep -v` inside an `if`. The hazard is NOT
+# BSD grep, which exits 1 on empty input: it is the search tool a session substitutes into its shell,
+# which exits 0. This file is run as a child script and gets the system grep; a command an agent types
+# does not, which is the surface where the shape has actually cost a verdict.
 RESTRICT_N="$(grep -oE 'agent\([^)]*\{[^}]*\}' "$VW" | grep -cE 'agentType|allowedTools|disallowedTools|subagent_type|tools[[:space:]]*:' | tr -d ' ')"
 [ "$RESTRICT_N" = "0" ] \
   && ok "no review agent call carries a capability restriction (found $RESTRICT_N)" \
@@ -2661,11 +2700,17 @@ fi
 # The tail is not a literal here: it is whichever moves carry the condition, read from the moves.
 CLOI6="$(printf '%s\n' "$CLO6" | awk '/^1\. /{exit} {print}' | tr '\n' ' ' | tr -s ' ')"
 TAIL6=""; DIS6=""; MRG6=""
-for i in 1 2 3 4 5 6 7; do
+# The range is read from the moves too, not only which of them carry the condition: a literal list ends
+# at its last index, so a move appended to the ceremony is never offered to any of the three tests below
+# and the preamble could name a tail that had grown.
+nclo6="$(printf '%s\n' "$CLO6" | grep -cE '^[0-9]+\. ')"
+i=1
+while [ "$i" -le "$nclo6" ]; do
   m="$(dmove "$i")"
   printf '%s' "$m" | grep -qiE 'no next task|has no next|last task' && TAIL6="$TAIL6 $i"
   printf '%s' "$m" | grep -qi 'dismantl' && DIS6="$i"
   printf '%s' "$m" | grep -qi 'merge lands' && MRG6="$i"
+  i=$((i+1))
 done
 set -- $TAIL6
 if [ -n "$CLOI6" ] && [ "$#" -eq 2 ] && [ -n "$DIS6" ] && [ -n "$MRG6" ]; then
@@ -2696,7 +2741,7 @@ fi
 
 # The installer's own report, in update mode. Functional and sandboxed: a fake HOME and a path that
 # must not exist afterwards. Structural greps cannot see a mkdir that runs before the dispatch.
-TH19="$(mktemp -d)"; TW19="$(mktemp -d)"
+TH19="$(mkbox)" || fatal 'C19 fixtures'; TW19="$(mkbox)" || fatal 'C19 fixtures'
 # A trap is global state, and setting one REPLACES what an earlier section installed: this block used to
 # drop T12/T13 from the teardown, so two sandboxes leaked on every run, clean or interrupted. Carry the
 # live trap's paths, and hand it back below rather than clearing it.
@@ -2787,7 +2832,8 @@ echo "== C21: a failed download leaves nothing behind =="
 if ! command -v curl >/dev/null 2>&1; then
   echo "  [skip] C21 needs curl to exercise the download path"
 else
-TH21="$(mktemp -d)"; TH21B="$(mktemp -d)"; TH21C="$(mktemp -d)"; TH21D="$(mktemp -d)"; TH21E="$(mktemp -d)"; TW21="$(mktemp -d)"
+TH21="$(mkbox)" || fatal 'C21 fixtures'; TH21B="$(mkbox)" || fatal 'C21 fixtures'; TH21C="$(mkbox)" || fatal 'C21 fixtures'
+TH21D="$(mkbox)" || fatal 'C21 fixtures'; TH21E="$(mkbox)" || fatal 'C21 fixtures'; TW21="$(mkbox)" || fatal 'C21 fixtures'
 # The trap carries the sandboxes still live from earlier blocks: replacing it instead of extending it
 # leaked two sandboxes per run once already, so it is extended here and handed back below, not cleared.
 trap 'rm -rf "$TH21" "$TH21B" "$TH21C" "$TH21D" "$TH21E" "$TW21" "$T12" "$T13"' EXIT
@@ -3314,8 +3360,11 @@ else
 fi
 
 # The writers table names who writes the phase field — the field a mechanism now refuses on, which is
-# exactly the kind of datum that keeps firing while nothing is obliged to act on it.
-if grep -nE '^\| \*\*During the phases\*\*' "$PB22" | head -1 | grep -qiE 'command|written by'; then
+# exactly the kind of datum that keeps firing while nothing is obliged to act on it. Anchored to the
+# RELATION (an actor, the act of writing, the phase) and bounded to one clause by `[^|;]`: a bare
+# alternation over the whole row is answered by the word `command` occurring anywhere in it for any
+# reason, so the row would certify the fact while the clause carrying it was gone.
+if grep -nE '^\| \*\*During the phases\*\*' "$PB22" | head -1 | grep -qiE 'command[^|;]{0,30}writes[^|;]{0,20}phase|phase[^|;]{0,30}(is )?written by[^|;]{0,20}command'; then
   ok "the writers table names the phase field's writer"
 else
   bad "the writers table names the phase field's writer"
@@ -3570,7 +3619,7 @@ echo "== C25: a guard tells a failed probe from a clean answer =="
 # Three guards of this harness reported success in the situations they were written to catch. Each
 # assertion below states the fact it establishes; a guard whose probe cannot answer must fail naming
 # the probe, because in a report a clean verdict and an unanswered question read identically.
-T25="$(mktemp -d)"
+T25="$(mkbox)" || fatal 'C25 fixtures'
 trap 'rm -rf "$T12" "$T13" "$T25"' EXIT   # extended, never replaced — see C21's note on the leak
 
 # --- the probe answers three ways ----------------------------------------
@@ -4336,7 +4385,9 @@ x25=""
 # that was there all along and pins nothing.
 printf '%s' "$(o25 6)" | grep -qiE 'replaced from|replaces? (them|the front)|come from the (coordinator|primary)' \
   || x25="$x25 no-exception"
-printf '%s' "$(o25 6)" | grep -qiE 'stops|refus'                  || x25="$x25 no-stop-on-live-work"
+# The relation, not the words naming it: `stops|refus` is answered by any neighbouring sentence that
+# happens to carry either word — which is how this leg was green once with the rule itself deleted.
+printf '%s' "$(o25 6)" | grep -qiE 'replaces? none[^.]{0,30}(stops|refus)' || x25="$x25 no-stop-on-live-work"
 printf '%s' "$(o25 6)" | grep -qiE 'never overwrites a file the checkout already holds' \
   && x25="$x25 unconditional-promise-still-there"
 [ -z "$x25" ] \
@@ -5296,8 +5347,12 @@ fi
 # Narrowed on purpose: the decision log is legitimately named by a directory tree and an installer note
 # in files this task does not touch, so a repo-wide ban would go red on content that is not the defect.
 # What is refused is a refusal that defers its reason to a file nobody else can open. Counted rather than
-# piped into a verdict: grep on empty input reports success on this platform, so a status-derived verdict
-# would read the same whether or not a citation was there.
+# piped into a verdict, and NOT for the reason this line used to give: `git grep` exits 1 when it matches
+# nothing — an ordinary answer here, as this section says 29 lines above — so a status-derived verdict
+# would spend one exit code that means two different things. The empty-input hazard named elsewhere in
+# this file is a different thing and does not apply here twice over: it is the search tool a Claude Code
+# session substitutes into its shell, not this platform's grep, and it is the `-v` cell alone, while the
+# count below is a `-c`, which exits 1 on empty input on either tool.
 cit30="$($GIT grep -nF "$NG30" -- "$MAN30" README.md 2>/dev/null | grep -cF "decisions-global")"
 [ "${cit30:-0}" = 0 ] \
   && ok "no refusal defers its reason to the unversioned decision log" \
@@ -6369,8 +6424,9 @@ fi
 # Generated in the Conform phase from understand.md's Verifiable Criteria A1-A9; A10 was added in Verify,
 # after inspection alone had already missed the clause it guards once, in the very task that introduced it.
 #
-# Every verdict is derived from a COUNT inside an extracted region, never from a `grep -v` inside an `if`:
-# on BSD grep an empty input exits 0, so the pipeline shape reports the same verdict either way.
+# Every verdict is derived from a COUNT inside an extracted region, never from a `grep -v` inside an `if`.
+# The hazard is NOT BSD grep, which exits 1 on empty input: it is the search tool a session substitutes
+# into its shell, which exits 0 — so the shape is safe here and unsafe in a command an agent types.
 #
 # THE ROWS BELOW WERE SIZED BY MUTATION, not by reading, and seven of them were rewritten because the
 # first draft survived the mutation it existed to catch. What each row pins is therefore the IMPERATIVE or
@@ -6521,8 +6577,9 @@ fi
 # analysis capability must be gone, and the loop must still be here. A6 is FROZEN and green from the start:
 # the mutation that kills it is this task over-reaching into the retirement it was told not to make.
 #
-# Every verdict is derived from a COUNT, never from a `grep -v` inside an `if`: on BSD grep an empty input
-# exits 0, so that shape reports the same verdict either way.
+# Every verdict is derived from a COUNT, never from a `grep -v` inside an `if`. The hazard is NOT BSD
+# grep, which exits 1 on empty input: it is the search tool a session substitutes into its shell, which
+# exits 0 — so the shape is safe here and unsafe in a command an agent types.
 echo "== C37: what the engine ships, it can say how to start ==" 
 MAN37="global/CLAUDE.md"
 INS37="install.sh"
@@ -6666,7 +6723,7 @@ if [ -r "$MAN37" ] && [ -s "$MAN37" ] && [ -r "$INS37" ] && [ -s "$INS37" ] \
   # coupling to another section's ordering and cleanup is exactly the fragility this row exists to catch,
   # so the row owns its sandbox. HOME and GIT_CONFIG_GLOBAL are both redirected: the installer writes a
   # global git config, and an assertion must never reach the operator's real one.
-  H6_37="$(mktemp -d)"; T6_37="$(mktemp -d)"; W6_37="$(mktemp -d)"
+  H6_37="$(mkbox)" || fatal 'C37 fixtures'; T6_37="$(mkbox)" || fatal 'C37 fixtures'; W6_37="$(mkbox)" || fatal 'C37 fixtures'
   ( cd "$W6_37" && HOME="$H6_37" GIT_CONFIG_GLOBAL="$H6_37/.gitconfig" \
       bash "$ROOT/install.sh" update "$T6_37" </dev/null >/dev/null 2>&1 ) || true
   if [ -d "$H6_37/.claude" ]; then
@@ -6705,8 +6762,9 @@ fi
 # "first release shipped (v1)", which the phrase list matches — a real false positive of the code being
 # replaced, not a contrivance. The sanctioned table must never be counted.
 #
-# Every verdict is derived from an exact exit code or a COUNT, never from a `grep -v` inside an `if`: on
-# BSD grep an empty input exits 0, so that shape reports the same verdict either way.
+# Every verdict is derived from an exact exit code or a COUNT, never from a `grep -v` inside an `if`. The
+# hazard is NOT BSD grep, which exits 1 on empty input: it is the search tool a session substitutes into
+# its shell, which exits 0 — so the shape is safe here and unsafe in a command an agent types.
 echo "== C38: the ledger guardian judges the narrative a ledger accumulates =="
 HK38="global/hooks/check-state-size.sh"
 BLG38="global/protocols/backlog.md"
@@ -8113,6 +8171,193 @@ else
                   || bad "no declared phase leaves the rail silent (exit $rc45)"
   chmod -R u+rwX "$T45R" 2>/dev/null
   rm -rf "$T45R"
+fi
+
+echo "== C46: a guard tells a pass from a fail, and says so when it cannot run =="
+# Each row here is written against BOTH answers: the fact as the engine states it,
+# and the same region with the fact removed and the guard's own matched word planted in a neighbour.
+# A row that only ever sees the input that made it necessary passes for a reason unrelated to the fact.
+BLG46="global/protocols/backlog.md"
+VS46="test/validate.sh"
+
+# The region extractors this section concludes from are asserted usable before any verdict: an extractor
+# that returns nothing passes every pattern test made of it.
+CLO46="$(awk '/^## Closing a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG46")"
+OPN46="$(awk '/^## Opening a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG46")"
+mv46() { printf '%s\n' "$1" | awk -v n="$2" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
+
+if [ -z "$CLO46" ] || [ -z "$OPN46" ]; then
+  bad "the writers table's phase-field guard survives a reword of its own row (no section)"
+  bad "the closing ceremony's move count is read, not assumed (no section)"
+  bad "closing move 1 states the coordinator's per-commit exception (no section)"
+  bad "the seed-and-prune move's stop on live work survives a reword of move 6 (no section)"
+  bad "the opening ceremony names its single runner (no section)"
+  bad "a section that cannot create its sandbox says so (no section)"
+else
+
+# Row 1 (A1) — the writers-table guard, applied to its own row with the fact removed and the matched
+# word planted next door. The pattern is READ FROM THE HARNESS at run time, never restated here: a
+# restated pattern tests this section's copy and goes green while the live guard stays blind.
+# Located by the guard's own subject, never by an offset from a comment: a comment that gains a line
+# moves the guard out of a fixed window, and the row then reports "not found" instead of a verdict.
+PAT46A="$(grep -m1 'During the phases' "$VS46" | grep -oE "grep -qiE '[^']*'" | sed "s/grep -qiE '//; s/'$//")"
+ROW46="$(grep -E '^\| \*\*During the phases\*\*' "$BLG46" | head -1)"
+if [ -z "$PAT46A" ] || [ -z "$ROW46" ]; then
+  bad "the writers table's phase-field guard survives a reword of its own row (pattern or row not found)"
+else
+  # The decoy goes in the SAME cell the fact was removed from. Planted in a neighbouring cell it was
+  # unreachable behind the pattern's own `[^|;]` fence, so the arm passed whatever the guard read — a
+  # negative arm that cannot fail is not a second answer, it is the first one written twice.
+  MUT46A="$(printf '%s' "$ROW46" \
+    | sed 's/the phase command writes the phase when it enters one[^;]*; /a command is named here but writes nothing; /')"
+  # The positive arm answers FIRST. Asking "did the mutation apply?" before "is the fact there?" reports
+  # a protocol that lost the rule as a broken harness, and sends the reader to the wrong file.
+  if ! printf '%s' "$ROW46" | grep -qiE "$PAT46A"; then
+    bad "the writers table's phase-field guard survives a reword of its own row (the row no longer names the phase field's writer)"
+  elif [ "$MUT46A" = "$ROW46" ] || ! printf '%s' "$MUT46A" | grep -q 'writes nothing'; then
+    bad "the writers table's phase-field guard survives a reword of its own row (mutation did not apply)"
+  elif ! printf '%s' "$MUT46A" | grep -qiE "$PAT46A"; then
+    ok "the writers table's phase-field guard survives a reword of its own row"
+  else
+    bad "the writers table's phase-field guard survives a reword of its own row (matches a neighbour's word)"
+  fi
+fi
+
+# Row 2 (A2) — the move count is read from the protocol, never enumerated in the check. A literal list
+# stops at its last index, so a move appended after the roster row is never looked at.
+NMOV46="$(printf '%s\n' "$CLO46" | grep -cE '^[0-9]+\. ')"
+# Counted outside THIS BLOCK only, and the exclusion reopens at the next section header. Skipping to end
+# of file instead — which the first form of this row did — exempts every section appended after this one,
+# which is exactly where the next one gets written. And the input is proved readable before any verdict:
+# `END{print n+0}` prints 0 for a file that cannot be read, and 0 is this row's value for a pass.
+# Emits the harness OUTSIDE this block; the matching is left to grep. A dynamic regex handed to awk
+# arrives with the shell's escaping already spent, so `\]` and `\$\(` reached it as bare `]` and `$(`
+# and awk refused the program — after which the count was empty, `[ "$x" -ne 0 ]` errored, and this row
+# fell through to its own `ok`. A row that passes because its extractor broke is the defect it audits.
+RNG46() { awk '/^echo "== C46:/{skip=1; next} /^echo "== C[0-9]+:/{skip=0} skip==0' "$VS46"; }
+LINES46="$(wc -l < "$VS46" 2>/dev/null | tr -d ' ')"
+OUT46="$(RNG46 | wc -l | tr -d ' ')"
+# Any spelling of an assumed range, not the one the defect happened to wear: a literal list, a bare
+# numeric bound, or a seq. Pinning the single string this task deleted leaves `while [ "$i" -le 7 ]`
+# reinstating it with the row green.
+# Scoped to the two loops that actually iterate ceremony moves, found by the call each makes rather than
+# by a range spelling: a bare hunt for `for i in N N` also flags `for i in 1 2; do git push ...`, an
+# ordinary fixture, and a row that fires on those is one the next person deletes. For each marker, the
+# six lines above it must bound the loop on a value derived from the protocol — which refuses a literal
+# list, a bare numeric bound and a `seq` alike, without naming any of them.
+LOOPS46="$(RNG46 | grep -cE 'clohead "\$i"|dmove "\$i"' || true)"
+BOUND46="$(RNG46 | grep -B6 -E 'clohead "\$i"|dmove "\$i"' | grep -cE 'while \[ "\$i" -le "\$nclo6?" \]' || true)"
+DERIV46="$(RNG46 | grep -cE 'nclo6?="\$\(printf' || true)"
+if [ -z "$LINES46" ] || [ "$LINES46" -lt 100 ] || [ -z "$OUT46" ] || [ "$OUT46" -lt 100 ] \
+   || [ -z "$LOOPS46" ] || [ -z "$BOUND46" ] || [ -z "$DERIV46" ]; then
+  bad "the closing ceremony's move count is read, not assumed (the harness could not be read: ${LINES46:-?} lines, ${OUT46:-?} outside this block)"
+elif [ "$NMOV46" -lt 2 ]; then
+  bad "the closing ceremony's move count is read, not assumed (only $NMOV46 moves extracted)"
+elif [ "$LOOPS46" -lt 2 ]; then
+  bad "the closing ceremony's move count is read, not assumed (only $LOOPS46 ceremony loops found, expected 2)"
+elif [ "$BOUND46" -ne "$LOOPS46" ]; then
+  bad "the closing ceremony's move count is read, not assumed ($((LOOPS46 - BOUND46)) ceremony loops assume their range)"
+elif [ "$DERIV46" -lt 2 ]; then
+  # Both converted loops must derive their bound from the protocol, not merely avoid the old spelling.
+  bad "the closing ceremony's move count is read, not assumed (a ceremony loop does not derive its bound)"
+else
+  ok "the closing ceremony's move count is read, not assumed"
+fi
+
+# Row 3 (A3) — the coordinator's per-commit exception in closing move 1, which no assertion in this
+# harness read before this section existed: the fact was deletable with the suite green. Two-armed, like
+# rows 1 and 4 — the fact present must match, the fact removed with a decoy planted must not.
+M1_46="$(mv46 "$CLO46" 1)"
+PAT46C='coordinator[^.]{0,60}(per-commit|no branch to approve)'
+if [ -z "$M1_46" ]; then
+  bad "closing move 1 states the coordinator's per-commit exception (move not extracted)"
+else
+  # The mutation plants the matched word in a neighbouring sentence while removing the fact, so a guard
+  # answered by mere co-presence is caught here rather than years later by the edit that hollows it.
+  MUT46C="$(printf '%s' "$M1_46" \
+    | sed 's/ In the coordinator the per-commit rule[^.]*\.//' \
+    | sed 's/Inside a front commits are free/Inside a front per-commit approval is free/')"
+  if ! printf '%s' "$M1_46" | grep -qiE "$PAT46C"; then
+    bad "closing move 1 states the coordinator's per-commit exception (absent from the protocol)"
+  elif [ "$MUT46C" = "$M1_46" ] || ! printf '%s' "$MUT46C" | grep -q 'per-commit approval'; then
+    bad "closing move 1 states the coordinator's per-commit exception (mutation did not apply)"
+  elif ! printf '%s' "$MUT46C" | grep -qiE "$PAT46C"; then
+    ok "closing move 1 states the coordinator's per-commit exception"
+  else
+    bad "closing move 1 states the coordinator's per-commit exception (absent, or matched from a neighbour)"
+  fi
+fi
+
+# Row 4 (A4) — the move-6 anchor, same shape as row 1: pattern read from the harness, applied to move 6
+# with the live-work stop removed and a word naming a refusal planted in a neighbouring sentence.
+PAT46B="$(grep -m1 'no-stop-on-live-work' "$VS46" | grep -oE "grep -qiE '[^']*'" | sed "s/grep -qiE '//; s/'$//")"
+M6_46="$(mv46 "$OPN46" 6)"
+if [ -z "$PAT46B" ] || [ -z "$M6_46" ]; then
+  bad "the seed-and-prune move's stop on live work survives a reword of move 6 (pattern or move not found)"
+else
+  MUT46B="$(printf '%s' "$M6_46" \
+    | sed 's/ Where those papers were written \*after\* the coordinator[^.]*\.//' \
+    | sed 's/The ledger stays with the coordinator/The ledger refuses to travel and stays with the coordinator/')"
+  if ! printf '%s' "$M6_46" | grep -qiE "$PAT46B"; then
+    bad "the seed-and-prune move's stop on live work survives a reword of move 6 (the move no longer states the stop)"
+  elif [ "$MUT46B" = "$M6_46" ] || ! printf '%s' "$MUT46B" | grep -q 'refuses to travel'; then
+    bad "the seed-and-prune move's stop on live work survives a reword of move 6 (mutation did not apply)"
+  elif ! printf '%s' "$MUT46B" | grep -qiE "$PAT46B"; then
+    ok "the seed-and-prune move's stop on live work survives a reword of move 6"
+  else
+    bad "the seed-and-prune move's stop on live work survives a reword of move 6 (matches a neighbour's word)"
+  fi
+fi
+
+# Row 5 (A5) — the opening ceremony's single runner. Its closing twin has been pinned since the sheet
+# rules were written; this one was asserted nowhere, so a meaning-preserving deletion cost zero failing
+# assertions. Two-armed, as row 3.
+PRE46="$(printf '%s\n' "$OPN46" | awk '/^1\. /{exit} {print}' | tr '\n' ' ' | tr -s ' ')"
+PAT46D='only the coordinator runs it'
+if [ -z "$PRE46" ]; then
+  bad "the opening ceremony names its single runner (preamble not extracted)"
+else
+  MUT46D="$(printf '%s' "$PRE46" \
+    | sed 's/ Only the coordinator runs it\.//' \
+    | sed 's/ends in a verdict/ends in a verdict the coordinator records/')"
+  if ! printf '%s' "$PRE46" | grep -qiE "$PAT46D"; then
+    bad "the opening ceremony names its single runner (absent from the protocol)"
+  elif [ "$MUT46D" = "$PRE46" ] || ! printf '%s' "$MUT46D" | grep -q 'verdict the coordinator records'; then
+    bad "the opening ceremony names its single runner (mutation did not apply)"
+  elif ! printf '%s' "$MUT46D" | grep -qiE "$PAT46D"; then
+    ok "the opening ceremony names its single runner"
+  else
+    bad "the opening ceremony names its single runner (absent, or matched from a neighbour)"
+  fi
+fi
+
+# Row 6 (A6) — a sandbox that cannot be created is named as the reason. The engine already owns the
+# idiom at ten sites; the count is of call sites that reach for a sandbox without it.
+# The first form of this row counted a stderr REDIRECTION and called it a diagnostic, and the nineteen
+# converted sites carry no `mktemp` text at all, so the entry point this task built was invisible to the
+# row standing for it: deleting a caller's `|| fatal` reinstated the whole defect with the row green.
+# What is policed now is the entry point and the two properties that make it work.
+BOX46="$(grep -o -E '\$\(mkbox\)' "$VS46" 2>/dev/null | wc -l | tr -d ' ')"
+GRD46="$(grep -o -E '\$\(mkbox\)" \|\| fatal ' "$VS46" 2>/dev/null | wc -l | tr -d ' ')"
+RAW46="$(grep -o -E '\$\(mktemp -d' "$VS46" 2>/dev/null | wc -l | tr -d ' ')"
+RGD46="$(grep -o -E '\$\(mktemp -d 2>/dev/null' "$VS46" 2>/dev/null | wc -l | tr -d ' ')"
+if [ "$BOX46" -eq 0 ]; then
+  bad "a section that cannot create its sandbox says so (no sandbox call sites found — extractor is wrong)"
+elif [ "$BOX46" -ne "$GRD46" ]; then
+  bad "a section that cannot create its sandbox says so ($((BOX46 - GRD46)) call sites do not stop on failure)"
+elif [ "$((RAW46 - RGD46))" -ne 0 ]; then
+  bad "a section that cannot create its sandbox says so ($((RAW46 - RGD46)) sites bypass the helper entirely)"
+elif ! grep -qE '^\s*\[ -n "\$d" \] && \[ -d "\$d" \] \|\| return 1' "$VS46"; then
+  # The helper must RETURN, never exit: a command substitution runs in a subshell, so an exit inside it
+  # ends only that subshell and leaves the caller running with the empty path this exists to prevent.
+  bad "a section that cannot create its sandbox says so (the helper does not return a status to its caller)"
+elif ! printf '%s' "$(awk '/^fatal\(\) \{/{f=1} f{print} f && /^\}/{exit}' "$VS46")" | grep -q 'bad "'; then
+  # And the report must go through the run's own accounting, in the parent — not an open-coded echo.
+  bad "a section that cannot create its sandbox says so (the failure is reported outside the run accounting)"
+else
+  ok "a section that cannot create its sandbox says so"
+fi
+
 fi
 
 echo ""

@@ -100,8 +100,10 @@ elif [ -f "$STATE" ]; then
   # being readable after the test above passed — nothing between the two lines may touch `$?`.
   policed=$(awk '!/^\|/' "$STATE" 2>/dev/null)
   extraction=$?
-  # Derived from a count, never from a `grep -v` inside an `if`: on BSD grep an empty input exits 0, so
-  # that shape reports the same verdict either way.
+  # Derived from a count, never from a `grep -v` inside an `if`. The hazard is NOT BSD grep, which exits
+  # 1 on empty input and discriminates correctly: it is the search tool a Claude Code session substitutes
+  # into its shell, which exits 0 there. A child script like this one runs the system grep and is safe;
+  # a command an agent types is not, which is where the shape has actually cost a verdict.
   n=$(printf '%s\n' "$policed" | grep -cE '(E|T)-[0-9]{3}.*CLOSED|CLOSED.*(E|T)-[0-9]{3}|archive/[A-Za-z0-9]' | tr -d ' ')
   # The count's shape, checked because the gate above covers exactly one cause of failure. grep can fail
   # for others — an invalid byte for the current locale is the reachable one — and its status is spent
