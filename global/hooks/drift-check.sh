@@ -47,7 +47,22 @@ sys.exit(0 if isinstance(d, dict) and d.get("stop_hook_active") is True else 1)'
 fi
 
 SRC_FILE="$HOME/.claude/ai-flow/source.path"
+# Absent means no clone is known, which is the remote-install case and a designed silence. Unreadable is
+# not that: the clone IS recorded and the guard simply cannot reach the record. Without the second test
+# the two are answered identically — `cat` fails, `CLONE` comes back empty, the directory test below
+# fails on "/global" and the guard exits 0 over a genuinely drifted install. `-f` does not separate them,
+# because stat only needs the parent directory to answer for a file it cannot read.
 [ -f "$SRC_FILE" ] || exit 0
+if [ ! -r "$SRC_FILE" ]; then
+  {
+    echo "ai-flow engine drift — NOT CHECKED: cannot read $SRC_FILE, which records the engine clone."
+    echo "This is not a clean verdict, it is the absence of one: the installed engine may or may not"
+    echo "match its clone, and this guard could not look."
+    echo "Fix the permission, then finish again:"
+    echo "  chmod u+r '$SRC_FILE'"
+  } >&2
+  exit 2
+fi
 CLONE="$(cat "$SRC_FILE")"
 [ -d "$CLONE/global" ] || exit 0
 command -v git >/dev/null 2>&1 || exit 0

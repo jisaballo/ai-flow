@@ -18,14 +18,37 @@ if [ -n "$gitdir" ] && [ -n "$common" ] && [ "$(canon_dir "$gitdir")" != "$(cano
 fi
 
 problems=""
+# Appends one report, separating with a newline only when something is already there. Five sources can
+# now write here (the ledger directory, each ledger file, and each of the two budget checks), and the
+# plain assignment this replaces would have let whichever ran last silently discard the others.
+add_problem() { if [ -n "$problems" ]; then problems="$problems
+$1"; else problems="$1"; fi; }
 
 # Resolve the ledger from the checkout root, not from the cwd: a session sitting in a
 # subdirectory would otherwise silently find no ledger and pass.
 root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 [ -n "$root" ] || root="."
 
+# The ledger's own directory is proven readable before either file is looked for. An unreadable
+# directory makes both files test as *absent*, and absent is this guard's designed no-op for a project
+# that has no .ai-flow at all — so without this check the fail-open below simply moves up one level,
+# reachable by exactly the same permission fault and reported identically to a clean ledger. `-d` still
+# answers on a directory that cannot be read, and `-r` is what separates that from one that is not there.
+# Nothing is skipped explicitly: with the directory unreadable both `-f` tests below are false anyway,
+# so the two blocks fall through on their own and the report written here is what the exit is built from.
+AIFLOW="$root/.ai-flow"
+if [ -d "$AIFLOW" ] && [ ! -r "$AIFLOW" ]; then
+  add_problem "Cannot read $AIFLOW, so neither STATE.md nor BACKLOG.md was checked. This is not a clean verdict — it is the absence of one. Fix the permission (chmod u+rx '$AIFLOW') and finish again."
+fi
+
 STATE="$root/.ai-flow/STATE.md"
-if [ -f "$STATE" ]; then
+if [ -f "$STATE" ] && [ ! -r "$STATE" ]; then
+  # `-f` is true for a file whose contents cannot be read: stat only needs the parent directory. That is
+  # the whole defect this pair closes — the guard concluded "no closed-work narrative" from an extraction
+  # that never ran, and on exit 0 the harness discards a Stop hook's stderr, so the diagnostic the tools
+  # did print reached nobody. What the hook sells is that somebody looked.
+  add_problem "Cannot read $STATE, so the roster was not checked for closed-work narrative. This is not a clean verdict — it is the absence of one. Fix the permission (chmod u+r '$STATE') and finish again."
+elif [ -f "$STATE" ]; then
   # The signal is what a real ledger accumulated, measured: three closed-epic narratives an operator had
   # written into one, all three found, and a legitimate cross-front note beside them left alone. It is NOT
   # what the engine's prose emits — no ceremony writes either signal, `CLOSED` appears in no shipped
@@ -60,26 +83,39 @@ if [ -f "$STATE" ]; then
   # The bottom of the file is the most natural append point there is. Exempting only the notes region was
   # the mirror of it, blind to everything after the notes. A region named after where the violation was
   # last seen is a region the next violation sits outside of; the sanctioned *shape* has no such edge.
-  policed=$(awk '!/^\|/' "$STATE")
+  # The extraction's status is captured on the very next line, because the extracted text cannot carry
+  # the difference: a file that could not be read and a roster that is legitimately nothing but table
+  # rows both come back empty, and the status is 2 for the first and 0 for the second. Keying on
+  # emptiness would report this fail-open as repaired. It also closes the window where the file stops
+  # being readable after the test above passed — nothing between the two lines may touch `$?`.
+  policed=$(awk '!/^\|/' "$STATE" 2>/dev/null)
+  extraction=$?
   # Derived from a count, never from a `grep -v` inside an `if`: on BSD grep an empty input exits 0, so
   # that shape reports the same verdict either way.
   n=$(printf '%s\n' "$policed" | grep -cE '(E|T)-[0-9]{3}.*CLOSED|CLOSED.*(E|T)-[0-9]{3}|archive/[A-Za-z0-9]' | tr -d ' ')
-  if [ "$n" -gt 0 ]; then
-    problems="STATE.md carries $n line(s) of closed-work narrative. Its home is archive/E-XXX-*.md (or archive/T-XXX/summary.md); trim STATE.md down to the roster — one row per open front — before finishing. Neither the roster nor the Quick Tasks Completed table is policed — both stay where they are."
+  if [ "$extraction" -ne 0 ]; then
+    add_problem "Could not read $STATE while extracting the lines to police, so the roster was not checked. This is not a clean verdict — it is the absence of one. Confirm the file is readable, then finish again."
+  elif [ "$n" -gt 0 ]; then
+    add_problem "STATE.md carries $n line(s) of closed-work narrative. Its home is archive/E-XXX-*.md (or archive/T-XXX/summary.md); trim STATE.md down to the roster — one row per open front — before finishing. Neither the roster nor the Quick Tasks Completed table is policed — both stay where they are."
   fi
 fi
 
 BACKLOG="$root/.ai-flow/BACKLOG.md"
-if [ -f "$BACKLOG" ]; then
+if [ -f "$BACKLOG" ] && [ ! -r "$BACKLOG" ]; then
+  # Gated once, ahead of both counts, because neither count can report its own failure: on a failed read
+  # `wc -l <` and `grep -cE` each yield the empty string, `[ "" -gt N ]` raises `integer expression
+  # expected`, and both checks are then SKIPPED rather than mis-answered — so the guard passed a 400-line
+  # backlog. The counts cannot be made to carry it either: `grep -c` answers 1 for a legitimate "found
+  # none", which is the passing case, so its status alone cannot separate an error from a clean count.
+  add_problem "Cannot read $BACKLOG, so neither its size budget nor its changelog count was measured. This is not a clean verdict — it is the absence of one. Fix the permission (chmod u+r '$BACKLOG') and finish again."
+elif [ -f "$BACKLOG" ]; then
   lines=$(wc -l < "$BACKLOG" | tr -d ' ')
   if [ "$lines" -gt 300 ]; then
-    problems="$problems
-BACKLOG.md is $lines lines (budget ~300). It must contain only pending work — move closed content to archive/ (changelog entries -> archive/CHANGELOG.md, closed epic rows -> archive/EPICS.md, their Execution Order blocks -> archive/EXECUTION-ORDERS.md). See protocols/backlog.md > Size Budget."
+    add_problem "BACKLOG.md is $lines lines (budget ~300). It must contain only pending work — move closed content to archive/ (changelog entries -> archive/CHANGELOG.md, closed epic rows -> archive/EPICS.md, their Execution Order blocks -> archive/EXECUTION-ORDERS.md). See protocols/backlog.md > Size Budget."
   fi
   entries=$(grep -cE '^> 20[0-9]{2}-' "$BACKLOG")
   if [ "$entries" -gt 3 ]; then
-    problems="$problems
-BACKLOG.md holds $entries session-close changelog entries (max 3). Rotate the oldest into archive/CHANGELOG.md (newest first)."
+    add_problem "BACKLOG.md holds $entries session-close changelog entries (max 3). Rotate the oldest into archive/CHANGELOG.md (newest first)."
   fi
 fi
 

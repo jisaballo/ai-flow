@@ -44,16 +44,21 @@ def current_branch(cwd: Path) -> str:
     return '' if name in ('', 'HEAD') else name
 
 
-def sheet_branch(sheet: Path) -> str:
-    """The branch a state sheet declares as its own, or '' when it declares none. A sheet
-    without the line is nobody's: absence is never a match for every branch."""
+def sheet_branch(sheet: Path):
+    """The branch a state sheet declares as its own, '' when it declares none, and None when the sheet
+    cannot be read at all. A sheet without the line is nobody's: absence is never a match for every
+    branch. Unreadable is a third answer, not a second name for the second one — a sheet whose text is
+    unavailable can neither be claimed as this checkout's nor excluded as another workstream's, and
+    collapsing it into '' silently changed WHICH task the ladder resolves. Only the read is guarded, so
+    a genuine parse miss still answers ''."""
     try:
-        for line in sheet.read_text(encoding='utf-8').splitlines():
-            found = BRANCH_RE.match(line)
-            if found:
-                return found.group(1)
+        text = sheet.read_text(encoding='utf-8')
     except Exception:
-        return ''
+        return None
+    for line in text.splitlines():
+        found = BRANCH_RE.match(line)
+        if found:
+            return found.group(1)
     return ''
 
 
@@ -63,14 +68,19 @@ def declared_phase(source: Path) -> str:
     task's decisions and its resume block, so a task that discusses its own phases reproduces the field's
     syntax as a matter of course; scanning the whole text reads that mention and raises the rail over a
     task nobody is understanding. A later line that declares the field is a quoted example, not the
-    declaration. The accepted form is written down in the backlog protocol, State Files."""
+    declaration. The accepted form is written down in the backlog protocol, State Files.
+
+    None is the answer when the file cannot be read at all. That is not what a file declaring no phase
+    answers, and collapsing the two is what let an unreadable sheet lift this rail in silence: the
+    caller refuses on None instead of waving the write through."""
     try:
-        for line in source.read_text(encoding='utf-8').splitlines():
-            found = PHASE_RE.match(line)
-            if found:
-                return found.group(1).upper()
+        text = source.read_text(encoding='utf-8')
     except Exception:
-        return ''
+        return None
+    for line in text.splitlines():
+        found = PHASE_RE.match(line)
+        if found:
+            return found.group(1).upper()
     return ''
 
 
@@ -84,26 +94,61 @@ def phase_source(root: Path, cwd: Path):
     one that declares the branch currently checked out is the task actually being worked here. Failing
     that, the older rule still answers: exactly one sheet means "this checkout is working that task",
     and zero or several hand the phase question back to the ledger STATE.md — the coordinator's, and
-    the only state a project that has not migrated yet has."""
+    the only state a project that has not migrated yet has.
+
+    Answers a pair: the source to read the phase from, and the sheet that stopped the ladder from
+    answering. The second is set only where reading that sheet could have changed the outcome — a
+    readable claim on the current branch settles it, and an unreadable sibling cannot outrank a claim
+    the ladder already found. Refusing on any unreadable sheet anywhere under artifacts/ would let one
+    stale sheet block every code write, which is a worse rail than the one being repaired."""
     per_task = sorted((root / '.ai-flow' / 'artifacts').glob('*/state.md'))
     branch = current_branch(cwd)
     if branch:
         owned = [sheet for sheet in per_task if sheet_branch(sheet) == branch]
         if len(owned) == 1:
-            return owned[0]
+            return owned[0], None
+        unreadable = [sheet for sheet in per_task if sheet_branch(sheet) is None]
+        if unreadable:
+            # No sheet claims this branch and one of them could not be read: it may be the claimant, so
+            # the task is not resolved. Rung 4 of the ladder — stop and name what was looked for — and
+            # for a rail that can act, stopping is a refusal, not the silence a passing exit gives.
+            return None, unreadable[0]
         # A sheet that names another branch is another workstream's — reading it would judge this
         # checkout by a task it is not working, the very inversion this resolution exists to end.
         # Only a sheet claiming no branch at all can still be ours, for either of two reasons: a
         # project written before the field existed, or a task whose claim was released when this
         # checkout took on another one — `released-branch:`, which the anchored pattern above cannot
         # read as a claim.
-        unclaimed = [sheet for sheet in per_task if not sheet_branch(sheet)]
+        # `== ''` is now explicit: None is falsy too, so `not sheet_branch(...)` would sweep an
+        # unreadable sheet into the rung that must only ever answer for a sheet declaring no branch.
+        unclaimed = [sheet for sheet in per_task if sheet_branch(sheet) == '']
         if len(unclaimed) == 1:
-            return unclaimed[0]
+            return unclaimed[0], None
     elif len(per_task) == 1:
-        return per_task[0]  # no branch to speak of (detached HEAD, no git): the older rule answers
+        # No branch to speak of (detached HEAD, no git): the older rule answers, and the lone sheet
+        # answers whatever it declares — unless it cannot be read, which is the same stop as above.
+        if sheet_branch(per_task[0]) is None:
+            return None, per_task[0]
+        return per_task[0], None
     state = root / '.ai-flow' / 'STATE.md'
-    return state if state.exists() else None
+    return (state, None) if state.exists() else (None, None)
+
+
+def refuse_unread(path: Path, root: Path) -> None:
+    """A rail that can act says which state it read; it never goes quiet because a path failed to
+    resolve. Exits 2, which is the only channel a PreToolUse hook has to reach anyone."""
+    try:
+        shown = path.relative_to(root)
+    except ValueError:
+        shown = path
+    print(
+        f"BLOCKED: cannot read '{shown}', so the active ai-flow phase is unknown. This is not "
+        f"permission to write — it is the absence of a verdict, and while the phase may be UNDERSTAND "
+        f"this write would go unjudged. Fix the permission (chmod u+r on that file) and retry, or "
+        f"correct the sheet the rail should read (writes under .ai-flow/ are allowed) — or ask the user.",
+        file=sys.stderr,
+    )
+    sys.exit(2)
 
 
 def main():
@@ -135,11 +180,19 @@ def main():
     if root is None:
         sys.exit(0)  # not an ai-flow project
 
-    source = phase_source(root, cwd)
+    source, unread = phase_source(root, cwd)
+    if unread is not None:
+        refuse_unread(unread, root)
     if source is None:
         sys.exit(0)  # no state to read: no rail to enforce
 
-    if declared_phase(source) != 'UNDERSTAND':
+    phase = declared_phase(source)
+    if phase is None:
+        # The ladder resolved this file and its contents are unavailable, so the phase is unknown — not
+        # absent. Waving the write through here is how an unreadable sheet lifted the rail: the write
+        # was allowed on the strength of having read nothing.
+        refuse_unread(source, root)
+    if phase != 'UNDERSTAND':
         sys.exit(0)  # any phase other than UNDERSTAND, or none declared: no restriction
 
     try:

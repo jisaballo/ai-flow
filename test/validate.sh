@@ -7757,6 +7757,202 @@ fi
   || bad "the sweep refuses to answer when it cannot read, instead of answering clean (missing:$r44d)"
 fi
 
+echo "== C55: a guard proves its input usable before it concludes from it =="
+# Conformance rows for the fail-open class: a guard whose input cannot be read must refuse and name the
+# file, while an input that is merely ABSENT keeps the silence each guard documents as designed. The two
+# directions are asserted together on purpose — this class was found four times as a guard nothing
+# exercised, and a refusal row with no control beside it cannot tell a fixed guard from one that now
+# refuses everything.
+GRD55="$HK/check-state-size.sh"
+
+# chmod 000 is the entire method here and it does not work for a superuser: root reads a mode-000 file
+# regardless, so every row below would report the fail-open repaired while measuring nothing. Probed
+# once against a real file rather than inferred from a user id, because the capability is what matters
+# and a container may deny it to a non-root user too.
+UNREAD55=1
+if PRB55="$(mktemp 2>/dev/null)"; then
+  printf 'x\n' > "$PRB55"; chmod 000 "$PRB55"
+  cat "$PRB55" >/dev/null 2>&1 && UNREAD55=0
+  chmod 644 "$PRB55" 2>/dev/null; rm -f "$PRB55"
+else
+  UNREAD55=0
+fi
+
+# A roster whose only non-table lines are its own headings: readable, and carrying no closure narrative.
+# It is the control for the unreadable rows — the guard must pass it — and it is also what makes those
+# rows mean something, since a guard that refused everything would fail here.
+ros55() {
+  printf '# Session State\n\n## Workstreams\n\n'
+  printf '| Workstream | Checkout | Task | Epic | Areas | Tool | Opened |\n'
+  printf '|---|---|---|---|---|---|---|\n'
+  printf '| coordinator | . | T-100 | E-009 | auth | - | 2026-08-01 |\n'
+}
+# The one thing the invariant forbids, placed in the notes.
+vio55() { ros55; printf '\n## Notes\n\n**Epic E-007 CLOSED 2026-07-30.** Sealed: `archive/E-007.md`.\n'; }
+# Session-close changelog entries, the shape the guard counts.
+log55() { i=0; while [ "$i" -lt "$1" ]; do printf '> 2026-0%s-01 session close\n' "$((i+1))"; i=$((i+1)); done; }
+
+if ! T55="$(mktemp -d 2>/dev/null)" || [ ! -d "$T55" ]; then
+  bad "an unreadable STATE.md is refused, not reported clean (no sandbox: mktemp -d failed)"
+  bad "an unreadable BACKLOG.md is refused, not reported clean (no sandbox: mktemp -d failed)"
+  bad "a readable roster with no closed-work narrative still passes (no sandbox: mktemp -d failed)"
+  bad "a backlog over its size budget is refused (no sandbox: mktemp -d failed)"
+  bad "a backlog over its changelog ceiling is refused (no sandbox: mktemp -d failed)"
+  bad "a backlog within both budgets still passes (no sandbox: mktemp -d failed)"
+  bad "an unreadable recorded clone path is refused, not reported clean (no sandbox: mktemp -d failed)"
+  bad "no recorded clone path stays silent (no sandbox: mktemp -d failed)"
+elif [ ! -r "$GRD55" ] || [ ! -s "$GRD55" ]; then
+  bad "an unreadable STATE.md is refused, not reported clean (the guard is unreadable)"
+  bad "an unreadable BACKLOG.md is refused, not reported clean (the guard is unreadable)"
+  bad "a readable roster with no closed-work narrative still passes (the guard is unreadable)"
+  bad "a backlog over its size budget is refused (the guard is unreadable)"
+  bad "a backlog over its changelog ceiling is refused (the guard is unreadable)"
+  bad "a backlog within both budgets still passes (the guard is unreadable)"
+  bad "an unreadable recorded clone path is refused, not reported clean (the guard is unreadable)"
+  bad "no recorded clone path stays silent (the guard is unreadable)"
+  rm -rf "$T55"
+else
+
+# --- A1: the ledger's state half, unreadable ---------------------------------
+P55A="$T55/a"; mkproj "$P55A" main
+mkdir -p "$P55A/.ai-flow"; vio55 > "$P55A/.ai-flow/STATE.md"; printf '# Backlog\n' > "$P55A/.ai-flow/BACKLOG.md"
+a1_55=""
+if [ "$UNREAD55" = 0 ]; then
+  echo "  [skip] the unreadable-input rows (this user reads a mode-000 file; the fixture cannot be built)"
+else
+  chmod 000 "$P55A/.ai-flow/STATE.md"
+  out55="$( cd "$P55A" && bash "$GRD55" 2>&1 )"; rc55=$?
+  chmod 644 "$P55A/.ai-flow/STATE.md"
+  [ "$rc55" = 2 ] || a1_55="$a1_55 [an unreadable STATE.md did not refuse (exit $rc55)]"
+  case "$out55" in *STATE.md*) : ;; *) a1_55="$a1_55 [the refusal does not name STATE.md]" ;; esac
+  # D4: the same fault one level up. With the directory unreadable the ledger files test as ABSENT, which
+  # is the guard's designed no-op for a project that has no .ai-flow at all -- so the fail-open survives
+  # the file-level repair unless the directory is told from a missing one.
+  chmod 000 "$P55A/.ai-flow"
+  outd55="$( cd "$P55A" && bash "$GRD55" 2>&1 )"; rcd55=$?
+  chmod 755 "$P55A/.ai-flow"
+  [ "$rcd55" = 2 ] || a1_55="$a1_55 [an unreadable .ai-flow directory did not refuse (exit $rcd55)]"
+  case "$outd55" in *.ai-flow*) : ;; *) a1_55="$a1_55 [the refusal does not name the directory]" ;; esac
+  [ -z "$a1_55" ] && ok "an unreadable STATE.md is refused, not reported clean" \
+                  || bad "an unreadable STATE.md is refused, not reported clean:$a1_55"
+fi
+
+# --- A2: the ledger's backlog half, unreadable -------------------------------
+P55B="$T55/b"; mkproj "$P55B" main
+mkdir -p "$P55B/.ai-flow"; ros55 > "$P55B/.ai-flow/STATE.md"; nlines 400 > "$P55B/.ai-flow/BACKLOG.md"
+if [ "$UNREAD55" = 1 ]; then
+  a2_55=""
+  chmod 000 "$P55B/.ai-flow/BACKLOG.md"
+  out55="$( cd "$P55B" && bash "$GRD55" 2>&1 )"; rc55=$?
+  chmod 644 "$P55B/.ai-flow/BACKLOG.md"
+  [ "$rc55" = 2 ] || a2_55="$a2_55 [an unreadable BACKLOG.md did not refuse (exit $rc55)]"
+  case "$out55" in *BACKLOG.md*) : ;; *) a2_55="$a2_55 [the refusal does not name BACKLOG.md]" ;; esac
+  # The shape it fails in today: both counts yield the empty string and `[ "" -gt N ]` raises, so the two
+  # checks are SKIPPED rather than mis-answered. A repair that merely silenced the error would leave the
+  # verdict exactly as wrong, so the diagnostic must not be what the row keys on.
+  case "$out55" in *"integer expression expected"*) a2_55="$a2_55 [the counts still run on a failed read]" ;; esac
+  [ -z "$a2_55" ] && ok "an unreadable BACKLOG.md is refused, not reported clean" \
+                  || bad "an unreadable BACKLOG.md is refused, not reported clean:$a2_55"
+fi
+
+# --- A3: the readable control for A1 -----------------------------------------
+P55C="$T55/c"; mkproj "$P55C" main
+mkdir -p "$P55C/.ai-flow"; ros55 > "$P55C/.ai-flow/STATE.md"; printf '# Backlog\n' > "$P55C/.ai-flow/BACKLOG.md"
+( cd "$P55C" && bash "$GRD55" >/dev/null 2>&1 ); rc55=$?
+[ "$rc55" = 0 ] && ok "a readable roster with no closed-work narrative still passes" \
+                || bad "a readable roster with no closed-work narrative still passes (exit $rc55)"
+
+# --- A4: the size budget, exercised for the first time ------------------------
+P55D="$T55/d"; mkproj "$P55D" main
+mkdir -p "$P55D/.ai-flow"; ros55 > "$P55D/.ai-flow/STATE.md"; nlines 400 > "$P55D/.ai-flow/BACKLOG.md"
+out55="$( cd "$P55D" && bash "$GRD55" 2>&1 )"; rc55=$?
+a4_55=""
+[ "$rc55" = 2 ] || a4_55="$a4_55 [a 400-line backlog did not refuse (exit $rc55)]"
+case "$out55" in *"400 lines"*) : ;; *) a4_55="$a4_55 [the refusal does not state the measured size]" ;; esac
+[ -z "$a4_55" ] && ok "a backlog over its size budget is refused" \
+                || bad "a backlog over its size budget is refused:$a4_55"
+
+# --- A5: the changelog ceiling, exercised for the first time -------------------
+P55E="$T55/e"; mkproj "$P55E" main
+mkdir -p "$P55E/.ai-flow"; ros55 > "$P55E/.ai-flow/STATE.md"
+{ printf '# Backlog\n\n'; log55 5; } > "$P55E/.ai-flow/BACKLOG.md"
+out55="$( cd "$P55E" && bash "$GRD55" 2>&1 )"; rc55=$?
+a5_55=""
+[ "$rc55" = 2 ] || a5_55="$a5_55 [5 changelog entries did not refuse (exit $rc55)]"
+case "$out55" in *"5 session-close"*) : ;; *) a5_55="$a5_55 [the refusal does not state the measured count]" ;; esac
+[ -z "$a5_55" ] && ok "a backlog over its changelog ceiling is refused" \
+                || bad "a backlog over its changelog ceiling is refused:$a5_55"
+
+# --- A6: the readable control for A4 and A5 -----------------------------------
+P55F="$T55/f"; mkproj "$P55F" main
+mkdir -p "$P55F/.ai-flow"; ros55 > "$P55F/.ai-flow/STATE.md"
+{ printf '# Backlog\n\n'; nlines 100; log55 3; } > "$P55F/.ai-flow/BACKLOG.md"
+( cd "$P55F" && bash "$GRD55" >/dev/null 2>&1 ); rc55=$?
+[ "$rc55" = 0 ] && ok "a backlog within both budgets still passes" \
+                || bad "a backlog within both budgets still passes (exit $rc55)"
+
+# --- A7 / A8: the drift guard's recorded clone path ---------------------------
+E55="$T55/eng"; mkproj "$E55" main
+mkdir -p "$E55/global/hooks"; printf 'v1\n' > "$E55/global/hooks/x.sh"
+$GIT -C "$E55" add global >/dev/null 2>&1; $GIT -C "$E55" commit -q -m engine
+H55="$T55/home"; mkdir -p "$H55/.claude/ai-flow" "$H55/.claude/hooks"
+printf '%s\n' "$E55" > "$H55/.claude/ai-flow/source.path"
+printf 'v9\n' > "$H55/.claude/hooks/x.sh"     # installed matches nothing: real drift, so silence is wrong
+if [ "$UNREAD55" = 1 ]; then
+  a7_55=""
+  chmod 000 "$H55/.claude/ai-flow/source.path"
+  out55="$( cd "$E55" && HOME="$H55" bash "$HK/drift-check.sh" 2>&1 <<<'{}' )"; rc55=$?
+  chmod 644 "$H55/.claude/ai-flow/source.path"
+  [ "$rc55" = 2 ] || a7_55="$a7_55 [an unreadable recorded path did not refuse (exit $rc55)]"
+  case "$out55" in *source.path*) : ;; *) a7_55="$a7_55 [the refusal does not name source.path]" ;; esac
+  [ -z "$a7_55" ] && ok "an unreadable recorded clone path is refused, not reported clean" \
+                  || bad "an unreadable recorded clone path is refused, not reported clean:$a7_55"
+fi
+# Absent is the documented remote-install no-op and must survive the repair untouched.
+H55B="$T55/home-none"; mkdir -p "$H55B/.claude/hooks"
+( cd "$E55" && HOME="$H55B" bash "$HK/drift-check.sh" >/dev/null 2>&1 <<<'{}' ); rc55=$?
+[ "$rc55" = 0 ] && ok "no recorded clone path stays silent" \
+                || bad "no recorded clone path stays silent (exit $rc55)"
+
+chmod -R u+rwX "$T55" 2>/dev/null
+rm -rf "$T55"
+fi
+
+# --- A9 / A10: the read-only rail's state sheet -------------------------------
+if [ "$PY3" != 1 ]; then
+  echo "  [skip] the read-only rail's unreadable-sheet rows (python3 unavailable)"
+elif ! T55R="$(mktemp -d 2>/dev/null)" || [ ! -d "$T55R" ]; then
+  bad "an unreadable state sheet refuses the write (no sandbox: mktemp -d failed)"
+  bad "no declared phase leaves the rail silent (no sandbox: mktemp -d failed)"
+else
+  P55G="$T55R/g"; mkproj "$P55G" main
+  mkdir -p "$P55G/.ai-flow/artifacts/T-AAA"
+  printf 'branch: main\nphase: **UNDERSTAND**\n' > "$P55G/.ai-flow/artifacts/T-AAA/state.md"
+  if [ "$UNREAD55" = 1 ]; then
+    a9_55=""
+    # The sheet loses its `branch:` claim along with its phase, so WHICH task resolves changes silently --
+    # reproduced as a rail that went quiet where it must refuse. The row therefore asserts the refusal,
+    # not merely that a phase was read.
+    chmod 000 "$P55G/.ai-flow/artifacts/T-AAA/state.md"
+    out55="$(wguard "$P55G" "$P55G/app.txt")"; rc55=$?
+    chmod 644 "$P55G/.ai-flow/artifacts/T-AAA/state.md"
+    [ "$rc55" = 2 ] || a9_55="$a9_55 [an unreadable sheet did not refuse the write (exit $rc55)]"
+    case "$out55" in *state.md*) : ;; *) a9_55="$a9_55 [the refusal does not name the sheet it could not read]" ;; esac
+    [ -z "$a9_55" ] && ok "an unreadable state sheet refuses the write" \
+                    || bad "an unreadable state sheet refuses the write:$a9_55"
+  fi
+  # A sheet that declares no phase at all is the rail's designed silence, and it must survive the repair:
+  # absent is not unreadable.
+  P55H="$T55R/h"; mkproj "$P55H" main
+  mkdir -p "$P55H/.ai-flow/artifacts/T-BBB"
+  printf 'branch: main\n' > "$P55H/.ai-flow/artifacts/T-BBB/state.md"
+  out55="$(wguard "$P55H" "$P55H/app.txt")"; rc55=$?
+  [ "$rc55" = 0 ] && ok "no declared phase leaves the rail silent" \
+                  || bad "no declared phase leaves the rail silent (exit $rc55)"
+  chmod -R u+rwX "$T55R" 2>/dev/null
+  rm -rf "$T55R"
+fi
+
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
