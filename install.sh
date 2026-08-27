@@ -110,7 +110,62 @@ commit-msg post-commit pre-rebase post-checkout post-merge pre-auto-gc post-rewr
 post-index-change reference-transaction push-to-checkout proc-receive pre-receive update post-receive \
 post-update"
 RALPH="ralph.sh ralph-prompt.md review-prompt.md"
+# The operating documents. Configuring the engine is operating it, so the manual that says how travels
+# with the engine; the setup guide is read by someone who has not installed anything yet and stays where
+# a browser can reach it. Same rule that placed the lifecycle map: what is operated is distributed, what
+# is evaluated may live on the website.
+DOCS="customization.md"
 SCRIPTS="seed-front.sh"
+
+# The engine withdraws as well as it publishes. Before this, `update` fetched what the lists above name
+# and deleted nothing, so a file the engine retired survived on every machine that had ever installed it
+# -- and a retired protocol left on disk is read by a session as current, which is worse than one that was
+# never delivered. Counted across the run so the report below can tell a sweep that found nothing from a
+# sweep that never ran: a silence says "none is possible here" where a zero says "measured, found nothing".
+SWEPT=0
+SWEPT_FAILED=0
+
+# Scoped to the directories the engine owns outright. ~/.claude/skills and ~/.claude/workflows are shared
+# with whatever else the operator installs, and ~/.claude/hooks/git holds one pass-through copy per hook
+# name that THIS installer generates rather than fetches -- on a real machine 21 of the 24 files a naive
+# sweep would have found were written by this script. In none of those directories is "the trunk does not
+# name it" evidence of anything, so none of them is swept.
+sweep_dir() {  # $1 = a directory the engine owns outright, $2 = the files it publishes there
+  local dir="$1" keep="$2" f base
+  [ -d "$dir" ] || return 0
+  for f in "$dir"/*; do
+    [ -e "$f" ] || continue                       # an empty directory leaves the glob unexpanded
+    base="${f##*/}"
+    case " $keep " in *" $base "*) continue ;; esac
+    if ! rm -rf "$f"; then
+      # A removal that failed and said nothing would let the verdict below report a clean sweep over a
+      # file still on disk -- the same false all-clear the drift guard exists to prevent, produced by the
+      # mechanism meant to repair it.
+      echo "  [FAIL] could not retire $dir/$base — it is still installed" >&2
+      SWEPT_FAILED=$((SWEPT_FAILED+1))
+      continue
+    fi
+    SWEPT=$((SWEPT+1))
+    # Named, always. The loss of a file the operator had put there by hand was accepted on exactly this
+    # condition: a deletion nobody can see in the same output is indistinguishable from a file that was
+    # never there.
+    echo "  [retired] $dir/$base - no longer published by the engine"
+  done
+}
+
+# The run's own account of what it withdrew. Called by every subcommand that sweeps, not only by `update`:
+# `init` runs the same install units, so on a machine that already had an older engine it withdraws files
+# too -- and a deletion nobody sees in the output is the one thing the loss of a hand-placed file was NOT
+# accepted under.
+report_sweep() {
+  if [ "$SWEPT_FAILED" -gt 0 ]; then
+    echo "  [FAIL] Retirement sweep: $SWEPT_FAILED file(s) could not be withdrawn, each named above" >&2
+  elif [ "$SWEPT" -eq 0 ]; then
+    echo "  [ok] Retirement sweep: nothing to withdraw — every installed file is still published"
+  else
+    echo "  [ok] Retirement sweep: $SWEPT file(s) withdrawn, each named above"
+  fi
+}
 
 # --- Reusable install units ---
 
@@ -126,6 +181,16 @@ install_engine() {
     count=$((count+1))
   done
   echo "  [ok] Engine protocols installed to ~/.claude/ai-flow/protocols ($count files)"
+  local keep=""
+  for proto in $PROTOCOLS; do keep="$keep $proto.md"; done
+  sweep_dir "$HOME/.claude/ai-flow/protocols" "$keep"
+
+  mkdir -p "$HOME/.claude/ai-flow/docs"
+  for d in $DOCS; do
+    fetch_file "docs/$d" "$HOME/.claude/ai-flow/docs/$d"
+  done
+  echo "  [ok] Operating documents installed to ~/.claude/ai-flow/docs"
+  sweep_dir "$HOME/.claude/ai-flow/docs" "$DOCS"
 }
 
 # Project data: fresh install only — the only thing that lives in the project
@@ -154,7 +219,7 @@ install_worktree_entry() {
   if [ ! -f "$TARGET/.worktreeinclude" ]; then
     fetch_file "template/.worktreeinclude" "$TARGET/.worktreeinclude"
     echo "  [ok] .worktreeinclude created — lists the project data a linked worktree should receive"
-    echo "  [note] it only takes effect for paths your repo gitignores; see docs/customization.md"
+    echo "  [note] it only takes effect for paths your repo gitignores; see ~/.claude/ai-flow/docs/customization.md"
   else
     echo "  [skip] .worktreeinclude already exists"
   fi
@@ -288,6 +353,7 @@ install_tooling() {
   done
   chmod +x "$HOME/.claude/ai-flow/ralph/ralph.sh" 2>/dev/null || true
   echo "  [ok] Ralph AFK loop installed to ~/.claude/ai-flow/ralph"
+  sweep_dir "$HOME/.claude/ai-flow/ralph" "$RALPH"
 
   mkdir -p "$HOME/.claude/ai-flow/scripts"
   for f in $SCRIPTS; do
@@ -295,6 +361,7 @@ install_tooling() {
     chmod +x "$HOME/.claude/ai-flow/scripts/$f" 2>/dev/null || true
   done
   echo "  [ok] Ceremony scripts installed to ~/.claude/ai-flow/scripts"
+  sweep_dir "$HOME/.claude/ai-flow/scripts" "$SCRIPTS"
   merge_hooks
 }
 
@@ -333,6 +400,8 @@ cmd_init() {
   fi
 
   echo ""
+  report_sweep
+  echo ""
   echo "  Done! Next steps:"
   echo "    1. Edit CLAUDE.md — fill in your stack, apps, and commands"
   echo "       (or run 'discover' in Claude Code to derive .ai-flow/project.yml)"
@@ -347,6 +416,7 @@ cmd_update() {
   echo "  Updating the ai-flow engine + global tooling in ~/.claude (no project is touched)..."
   install_engine    # re-fetch protocols into ~/.claude/ai-flow
   install_tooling   # re-fetch skills/workflow/hooks/ralph + re-merge settings.json (unattended)
+  report_sweep
   echo ""
   echo "  [ok] Update complete. Projects hold only their own data — nothing there to touch."
   echo ""

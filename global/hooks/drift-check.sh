@@ -115,9 +115,9 @@ if [ -n "$here_repo" ] && [ "$here_repo" = "$(abs_git_common "$CLONE")" ]; then
 fi
 
 # Work in progress in any engine checkout -> stay quiet
-git -C "$CLONE" diff --quiet HEAD -- global 2>/dev/null || exit 0
+git -C "$CLONE" diff --quiet HEAD -- global docs 2>/dev/null || exit 0
 if [ -n "$SRC2" ]; then
-  git -C "$SRC2" diff --quiet HEAD -- global 2>/dev/null || exit 0
+  git -C "$SRC2" diff --quiet HEAD -- global docs 2>/dev/null || exit 0
 fi
 
 # An installed file is drifted only when it matches no engine checkout's HEAD
@@ -129,10 +129,25 @@ matches_a_source() {  # $1 = path in the repo, $2 = installed file
   return 1
 }
 
+# The directories the engine owns outright. Everything else it installs into is shared: ~/.claude/skills
+# and ~/.claude/workflows with whatever else the operator installs, and ~/.claude/hooks/git with the one
+# pass-through copy per hook name that the installer generates rather than fetches. In a shared directory
+# "the trunk does not name it" is not evidence of anything, so retirement never reaches one.
+#
+# Named here, once. The installer does not read this line -- it sweeps each directory from inside the unit
+# that already owns that directory's file list, so it never states an exclusivity set of its own. What
+# keeps the two in step is an assertion that the set named here and the set the installer sweeps are
+# equal, in both directions: a directory this guard calls exclusive and nothing sweeps would produce a
+# report every turn that no move is obliged to act on, and a directory swept that this guard does not
+# call exclusive would delete without anything watching where.
+AI_FLOW_EXCLUSIVE="protocols ralph scripts docs"
+
 # Map each engine file in the clone's HEAD to its installed location
 installed_path() {
   case "$1" in
     global/CLAUDE.md) echo "" ;;                                  # user-owned, never compared
+    docs/customization.md) echo "$HOME/.claude/ai-flow/docs/customization.md" ;;
+    docs/*) echo "" ;;                                            # read before anything is installed
     global/hooks/settings.hooks.json|global/hooks/README.md) echo "" ;;
     global/protocols/*) echo "$HOME/.claude/ai-flow/protocols/${1#global/protocols/}" ;;
     global/skills/*)    echo "$HOME/.claude/skills/${1#global/skills/}" ;;
@@ -155,7 +170,43 @@ while IFS= read -r rel; do
   if ! matches_a_source "$rel" "$dest"; then
     DRIFT="${DRIFT}  differs: ${dest}  (vs ${rel} @ HEAD)"$'\n'
   fi
-done < <(git -C "$CLONE" ls-tree -r --name-only HEAD -- global/)
+done < <(git -C "$CLONE" ls-tree -r --name-only HEAD -- global/ docs/)
+
+# The direction the comparison above cannot see. It enumerates the TRUNK, so a file the trunk no longer
+# names is absent from the enumeration and therefore absent from every verdict: the guard knew `missing`
+# and `differs` and had no way to say `orphaned`. Demonstrated by a protocol retired from the trunk that
+# survived on disk while this guard reported nothing about it, and would have indefinitely.
+#
+# Enumerated from the disk rather than from the trunk, which is why it is a second loop and not a branch
+# of the first: what is being looked for is precisely what the trunk does not contain.
+in_any_head() {  # $1 = path in the repo -> 0 when some engine checkout's HEAD carries it
+  git -C "$CLONE" cat-file -e "HEAD:$1" 2>/dev/null && return 0
+  if [ -n "$SRC2" ]; then
+    git -C "$SRC2" cat-file -e "HEAD:$1" 2>/dev/null && return 0
+  fi
+  return 1
+}
+for sub in $AI_FLOW_EXCLUSIVE; do
+  dir="$HOME/.claude/ai-flow/$sub"
+  [ -d "$dir" ] || continue
+  for f in "$dir"/*; do
+    [ -e "$f" ] || continue                       # an empty directory leaves the glob unexpanded
+    # The trunk prefix that feeds each exclusive directory. Every one of them is under global/ except the
+    # operating documents, which the engine ships from docs/ and installs beside the protocols.
+    case "$sub" in
+      docs) rel="docs/${f##*/}" ;;
+      *)    rel="global/$sub/${f##*/}" ;;
+    esac
+    # Two conditions, and the first is what keeps this verdict and the installer's sweep asking one question.
+    # The trunk carrying a file is not enough: the installer keeps only what its lists publish TO THIS
+    # DIRECTORY, and a document the trunk holds but the engine does not install is one the next update
+    # deletes. Judged on the trunk alone, this guard would vouch for exactly that file.
+    if [ -n "$(installed_path "$rel")" ] && in_any_head "$rel"; then
+      continue
+    fi
+    DRIFT="${DRIFT}  orphaned: ${f}  (no ${rel} @ HEAD)"$'\n'
+  done
+done
 
 [ -z "$DRIFT" ] && exit 0
 {
@@ -163,6 +214,18 @@ done < <(git -C "$CLONE" ls-tree -r --name-only HEAD -- global/)
   printf "%s" "$DRIFT"
   echo "Fix: reinstall from the engine checkout whose commits you want installed:"
   echo "  bash '$CLONE/install.sh' update"
+  case "$DRIFT" in
+    *orphaned:*)
+      # A remedy is only a remedy if it changes the thing the check names. Until the installer learned to
+      # withdraw, pointing an orphan at the update would have sent the operator to run a command that
+      # could not touch it, and to watch the report come back unchanged.
+      echo "An orphaned file is one no engine checkout still publishes; the update above withdraws it."
+      # The narrowing is announced rather than left silent: a guard that checks part of what it installs
+      # and reports like it checked all of it is the false all-clear this one must never give.
+      echo "Only the engine's own directories are checked for orphans ($AI_FLOW_EXCLUSIVE);"
+      echo "skills, workflows and hooks are shared with your own tools and are never swept."
+      ;;
+  esac
   if [ -n "$SRC2" ]; then
     # Not a second option, and it is not offered as one. install.sh writes the checkout it runs from
     # into source.path, so installing from a linked checkout repoints this guard at that checkout --

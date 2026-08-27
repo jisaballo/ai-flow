@@ -97,7 +97,7 @@ After every successful task commit, **immediately** run the closing ceremony (re
 
 - **On start**: Resolve which task this checkout owns by the ladder in the backlog protocol (`Resolving the task`), then read that task's `artifacts/T-XXX/state.md`; STATE.md is the roster of open fronts. If a task is active, also read the protocol for the current phase
 - **On pause**: Update the task's `artifacts/T-XXX/state.md` with last file, uncommitted changes, context — it is the handoff, and it survives the pause
-- **On compaction**: STATE.md and BACKLOG.md are re-read automatically
+- **On compaction**: re-read STATE.md and BACKLOG.md — nothing reloads them on its own
 
 ### Artifact Check Before Create (MANDATORY)
 

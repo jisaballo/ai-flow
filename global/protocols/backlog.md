@@ -487,7 +487,10 @@ what activation has always been, plus the declaration in step 2.
    an agent — is **the floor**: the yardstick the rest are measured against and what the ceremony falls
    back to, never the first choice and never a requirement. It honours `worktree.baseRef` and
    `.worktreeinclude`, so base holds without help and the data arrives without help — the prune is still
-   move 6's, on every path. It creates
+   move 6's, on every path. **How both are configured is documented in
+   `~/.claude/ai-flow/docs/customization.md`, which the engine installs beside these protocols** — named
+   as a path rather than as "the docs" because a reader who has to leave for a browser to find out what
+   `worktree.baseRef` accepts is a reader this move sent away mid-ceremony. It creates
    the checkout inside `.claude/worktrees/`, so there visibility is precisely what the project's ignore
    rules must cover — one line the ceremony **names and does not write**, because a project's ignore
    rules are the project's own. **No particular front-end is required**: any tool serves where the four

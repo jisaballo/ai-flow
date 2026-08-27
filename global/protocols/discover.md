@@ -44,4 +44,4 @@ Write `.ai-flow/project.yml` using the T-001 v1 schema. It must be valid YAML wi
 
 ## 5. Suggest steering — do not generate it
 
-List the candidate areas you detected (apps / domains / packages) and suggest creating `steering/<area>.md` for the high-value ones (domains with non-obvious rules, security/compliance, established patterns). **Do not generate steering skeletons** — empty files are noise. Point the user at the steering guidance in the customization docs.
+List the candidate areas you detected (apps / domains / packages) and suggest creating `steering/<area>.md` for the high-value ones (domains with non-obvious rules, security/compliance, established patterns). **Do not generate steering skeletons** — empty files are noise. Point the user at the steering guidance in `~/.claude/ai-flow/docs/customization.md`, which the engine installs beside these protocols — a reference that names no path sends the reader looking for a file they cannot find.
