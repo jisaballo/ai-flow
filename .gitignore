@@ -12,3 +12,8 @@ __pycache__/
 # keeps a front invisible to the coordinator's audit — the visibility condition of the opening
 # ceremony. Left tracked, a front would be untracked content the review copies and then compares.
 /.claude/worktrees/
+
+# Claude Code's local override file. Ignored globally on the author's machine, which is exactly why it
+# is named here: npm's packing falls back to THIS file and reads neither a personal global ignore nor
+# .git/info/exclude, so a file hidden only by those two ships in the published package in silence.
+/.claude/settings.local.json

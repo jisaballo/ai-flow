@@ -10,16 +10,36 @@
 ### 1. Install ai-flow in your project
 
 ```bash
-# Option A: Clone and install
+# Option A: npm — a release you can name, and go back to
+npx ai-flow@latest
+
+# Option B: Clone and install — the only route the drift guard can watch
 git clone https://github.com/jisaballo/ai-flow.git /tmp/ai-flow
 /tmp/ai-flow/install.sh /path/to/your/project
 
-# Option B: One-liner (once published)
+# Option C: One-liner — whatever is on the trunk right now, unversioned
 curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | bash
 
 # Update later (any device/dev): re-fetch the core + tooling, keep your data, no prompts
+npx ai-flow@latest update
 curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | bash -s update
 ./install.sh update
+```
+
+The three doors install the same engine and differ in what it is pinned to, which decides two things:
+what `~/.claude/ai-flow/version` reports afterwards, and whether the drift guard has anything to compare
+against. A clone records itself, and the guard then reports at session close whenever the installed
+engine differs from that clone's committed HEAD. A package and the one-liner record no such source — by
+design, and stated rather than assumed: an installation with nothing to compare against is one the guard
+deliberately says nothing about. Recording a location that can disappear would be worse than recording
+none, because the guard would then refuse every session close over a directory nobody can restore.
+
+**If a trunk update leaves the engine broken**, this is the way back — no checkout, and it does not go
+through the impaired engine:
+
+```bash
+npx ai-flow@1.0.0 update           # or whichever version you last had working
+cat ~/.claude/ai-flow/version      # confirm what is now in place
 ```
 
 The installer takes two subcommands: `init` (default — new or existing project, interactive; creates the project's `.ai-flow/` data skeleton and installs the engine) and `update` (unattended — refreshes the engine in `~/.claude`: protocols, skills, the verify workflow, hooks, the ceremony scripts, and the ralph runner; it never writes into a project). A bare path is treated as `init` for back-compat.

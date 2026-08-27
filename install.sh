@@ -169,12 +169,64 @@ report_sweep() {
 
 # --- Reusable install units ---
 
+# What this run installed, and where it came from. Two facts, written side by side because they answer
+# two different questions: the drift guard reads the source path to decide whether it can compare, and the
+# operator reads the version to decide what to put back.
+record_provenance() {
+  local src_file="$HOME/.claude/ai-flow/source.path"
+  local version_file="$HOME/.claude/ai-flow/version"
+  local pkg="" sha=""
+
+  if [ "$MODE" != "local" ]; then
+    # Fetched from the trunk: no directory to watch, and no version to name.
+    echo "trunk (one-line install)" > "$version_file"
+    return 0
+  fi
+
+  # "Is a checkout" means THIS directory is one, not that it sits somewhere inside one. `rev-parse` answers
+  # for any directory under any work tree, so a package unpacked into `node_modules/` inside the operator's
+  # own repository answered with THEIR commit — and the installer then recorded their project as the
+  # engine's source, after which the guard compares every engine file against a tree that has never held
+  # one and refuses every session close. `.git` beside this script is the fact itself rather than a proxy
+  # for it, and it needs no git binary, which is also what the git-absent case asks for.
+  if [ -e "$SCRIPT_DIR/.git" ]; then
+    echo "$SCRIPT_DIR" > "$src_file"
+    if command -v git >/dev/null 2>&1; then
+      sha="$(git -C "$SCRIPT_DIR" rev-parse --short HEAD 2>/dev/null || true)"
+    fi
+    if [ -n "$sha" ]; then
+      echo "checkout $sha — $SCRIPT_DIR" > "$version_file"
+    else
+      # A checkout whose commit cannot be read — git absent, or nothing committed yet. The route is named
+      # and the commit is not invented: the file exists to be trusted.
+      echo "checkout (commit unreadable) — $SCRIPT_DIR" > "$version_file"
+    fi
+    return 0
+  fi
+
+  # Not a checkout, so there is nothing here the guard could compare against and nothing is recorded.
+  # Nothing is REMOVED either. An existing record names a checkout that still exists, and the guard
+  # comparing this engine against it reports a difference — which is true, and is the direction that costs
+  # a report rather than a protection. Deleting would take the watch away in silence, which is the other
+  # one; that trade was made in the first draft of this function and it was the wrong way round.
+  if [ -f "$SCRIPT_DIR/package.json" ]; then
+    pkg="$(sed -n 's/.*"version"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' "$SCRIPT_DIR/package.json" | head -1)"
+  fi
+  # What is named is the manifest that was read and the directory it sat in — never a release identity.
+  # This repository now carries a package.json of its own, so a downloaded zip or a `cp -R` of the trunk
+  # finds one too, and stamping that "package 1.0.0" is a confident answer that is wrong in exactly the
+  # situation the version exists for: an operator trying to work out what they are running.
+  if [ -n "$pkg" ]; then
+    echo "package.json $pkg — $SCRIPT_DIR" > "$version_file"
+  else
+    echo "directory (unversioned) — $SCRIPT_DIR" > "$version_file"
+  fi
+}
+
 # Engine: phase protocols, installed centrally — never into a project
 install_engine() {
   mkdir -p "$HOME/.claude/ai-flow/protocols"
-  if [ "$MODE" = "local" ]; then
-    echo "$SCRIPT_DIR" > "$HOME/.claude/ai-flow/source.path"
-  fi
+  record_provenance
   local count=0
   for proto in $PROTOCOLS; do
     fetch_file "global/protocols/$proto.md" "$HOME/.claude/ai-flow/protocols/$proto.md"

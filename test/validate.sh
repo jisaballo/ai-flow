@@ -49,6 +49,14 @@ fatal() {  # $1 = what cannot run without a sandbox
 # $XDG_CONFIG_HOME/git/config when that file exists. On a developer who sets XDG_CONFIG_HOME, running
 # this suite rewrote their real global hook path. Both variables are set here, at the top, so no call
 # site can be added later that escapes it.
+# Captured before the sandbox below replaces them. One row has to ask git what a developer's REAL ignore
+# rules hide, because that set — a personal global ignore, .git/info/exclude — is precisely what npm cannot
+# see and therefore ships. Asked inside the sandbox the question is answered by an empty configuration, and
+# the row comes back clean over a package that leaks. Read-only: the sandbox exists to stop this suite
+# WRITING a developer's git configuration, and nothing here writes.
+REAL_XDG="${XDG_CONFIG_HOME-}"
+REAL_GCG="${GIT_CONFIG_GLOBAL-}"
+
 GITSANDBOX="$(mkbox)" || fatal 'the git sandbox for the whole run'
 mkdir -p "$GITSANDBOX/git"
 : > "$GITSANDBOX/gitconfig"
@@ -9136,6 +9144,263 @@ grep -q 'Ruled out' "$ROOT/global/hooks/context-cost-note.py" \
   || x48="$x48 [the note does not name the section it sends the operator to]"
 [ -z "$x48" ] && ok "the note and the template name the same section" \
               || bad "the note and the template name the same section ($x48)"
+
+# --- the engine records a source that outlives it, and a version anyone can read ----------------
+# Generated in the Conform phase from understand.md's Verifiable Criteria; each row names the criterion
+# it comes from. Two of them are CONTROLS in the sense the A6 row above already uses: they pin behaviour
+# the fix must not take away, so they are green from the start by construction rather than by achievement.
+
+CB="$(mkbox)" || fatal 'the engine-provenance rows'
+mkdir -p "$CB/h1" "$CB/h2" "$CB/h3" "$CB/h4" "$CB/h5"
+# An engine tree that is NOT a git checkout: what an installed package directory looks like on disk.
+mkdir -p "$CB/pkg"
+cp "$ROOT/install.sh" "$CB/pkg/"
+cp -R "$ROOT/global" "$ROOT/docs" "$ROOT/template" "$CB/pkg/" 2>/dev/null
+rm -rf "$CB/pkg/.git"
+cp -R "$CB/pkg" "$CB/pkg-gone"
+
+# B1 -- WHERE the installer runs from a directory that is not a git checkout, the installer shall record
+# no engine source path. Recording one is what turns the guard's designed silence into a permanent
+# refusal the moment a package cache is evicted.
+( cd "$CB/pkg" && HOME="$CB/h1" bash "$CB/pkg/install.sh" update </dev/null >/dev/null 2>&1 ) || true
+if [ -f "$CB/h1/.claude/ai-flow/source.path" ]; then
+  bad "an install from a directory that is not a checkout records no source path (it recorded '$(cat "$CB/h1/.claude/ai-flow/source.path" 2>/dev/null)')"
+else
+  ok "an install from a directory that is not a checkout records no source path"
+fi
+
+# B2 -- CONTROL for B1. WHERE the installer runs from a git checkout, it shall record that checkout.
+# Without this row the cheapest way to pass B1 is to stop recording the path at all, which would take the
+# drift guard away from the one install it is able to watch.
+( cd "$ROOT" && HOME="$CB/h2" bash "$ROOT/install.sh" update </dev/null >/dev/null 2>&1 ) || true
+if [ "$(cat "$CB/h2/.claude/ai-flow/source.path" 2>/dev/null)" = "$ROOT" ]; then
+  ok "an install from a checkout still records it as the engine source path"
+else
+  bad "an install from a checkout still records it as the engine source path (recorded '$(cat "$CB/h2/.claude/ai-flow/source.path" 2>/dev/null)')"
+fi
+
+# B3 -- WHEN an install completes, the installer shall record the installed engine version. Its CONTENT is
+# what is read, per route, and that is the whole point of the row: an earlier form asserted only that the
+# file was non-empty, so every route could have written the same wrong word and the row would have passed.
+# Four routes, four things the file must be able to say apart.
+mkdir -p "$CB/h6" "$CB/h7" "$CB/pkg-manifest"
+cp -R "$CB/pkg/." "$CB/pkg-manifest/"
+cp "$ROOT/package.json" "$CB/pkg-manifest/" 2>/dev/null || true
+( cd "$CB/pkg-manifest" && HOME="$CB/h6" bash "$CB/pkg-manifest/install.sh" update </dev/null >/dev/null 2>&1 ) || true
+( cd "$CB" && AI_FLOW_MODE=remote AI_FLOW_REPO_URL="file://$CB/absent" HOME="$CB/h7" \
+    bash "$ROOT/install.sh" update </dev/null >/dev/null 2>&1 ) || true
+v3=""
+case "$(cat "$CB/h2/.claude/ai-flow/version" 2>/dev/null)" in
+  "checkout "*" — $ROOT") : ;;
+  *) v3=" [a checkout did not name its commit and directory: '$(cat "$CB/h2/.claude/ai-flow/version" 2>/dev/null)']" ;;
+esac
+case "$(cat "$CB/h1/.claude/ai-flow/version" 2>/dev/null)" in
+  "directory (unversioned) — "*) : ;;
+  *) v3="$v3 [a tree that is neither a checkout nor a package did not say so: '$(cat "$CB/h1/.claude/ai-flow/version" 2>/dev/null)']" ;;
+esac
+# The manifest is named as a manifest that was read, never as a release identity. This repository carries a
+# package.json of its own, so a zip or a copy of the trunk finds one too — and the one thing this file must
+# never do is answer "which release is this?" confidently and wrongly.
+case "$(cat "$CB/h6/.claude/ai-flow/version" 2>/dev/null)" in
+  "package.json "*" — "*) : ;;
+  *) v3="$v3 [a tree carrying a manifest did not name it as one: '$(cat "$CB/h6/.claude/ai-flow/version" 2>/dev/null)']" ;;
+esac
+case "$(cat "$CB/h7/.claude/ai-flow/version" 2>/dev/null)" in
+  "trunk"*) : ;;
+  *) v3="$v3 [the one-line door did not name itself: '$(cat "$CB/h7/.claude/ai-flow/version" 2>/dev/null)']" ;;
+esac
+[ -z "$v3" ] && ok "the version names which of the four routes installed the engine, and never invents a release" \
+             || bad "the version names which of the four routes installed the engine, and never invents a release ($v3)"
+
+# B4 -- WHERE the installer ran from a directory that is not a git checkout, the drift guard shall exit
+# silently at session close. Both halves are asserted: while that directory still exists, and once it is
+# gone. The second half is the one an evicted package cache produces, and it is the failure this task exists for.
+( cd "$CB/pkg-gone" && HOME="$CB/h3" bash "$CB/pkg-gone/install.sh" update </dev/null >/dev/null 2>&1 ) || true
+rm -rf "$CB/pkg-gone"
+s4=""
+HOME="$CB/h1" bash "$ROOT/global/hooks/drift-check.sh" </dev/null >/dev/null 2>&1 \
+  || s4=" [it refuses while the install directory still exists]"
+HOME="$CB/h3" bash "$ROOT/global/hooks/drift-check.sh" </dev/null >/dev/null 2>&1 \
+  || s4="$s4 [it refuses once the install directory is gone]"
+[ -z "$s4" ] && ok "a checkout-less install closes a session in silence, before and after its directory is gone" \
+             || bad "a checkout-less install closes a session in silence, before and after its directory is gone ($s4)"
+
+# B5 -- CONTROL for B4. IF the recorded source path names a directory that no longer exists, THEN the
+# guard shall still refuse the close and name it. The cheapest way to pass B4 is to soften that refusal,
+# which trades a false refusal for a false all-clear over installs that really have drifted.
+mkdir -p "$CB/h4/.claude/ai-flow"
+printf '%s\n' "$CB/never-existed" > "$CB/h4/.claude/ai-flow/source.path"
+out5="$( HOME="$CB/h4" bash "$ROOT/global/hooks/drift-check.sh" </dev/null 2>&1 )" && rc5=0 || rc5=$?
+r5=""
+[ "${rc5:-0}" -eq 2 ] || r5=" [it did not refuse (exit ${rc5:-0})]"
+case "$out5" in *"$CB/never-existed"*) : ;; *) r5="$r5 [the refusal does not name the recorded path]" ;; esac
+[ -z "$r5" ] && ok "a recorded source path that has vanished still refuses the close and names it" \
+             || bad "a recorded source path that has vanished still refuses the close and names it ($r5)"
+
+# B6 -- WHEN the package entry point is invoked with a subcommand, it shall run the installer with that
+# same subcommand. Reported as NOT CHECKED rather than passed where node is absent: the row would
+# otherwise be green for the one reason that has nothing to do with the entry point.
+if ! command -v node >/dev/null 2>&1; then
+  bad "the entry point forwards its subcommand and its exit code to the installer — NOT CHECKED: node is not available"
+elif [ ! -f "$ROOT/bin/ai-flow.js" ]; then
+  bad "the entry point forwards its subcommand and its exit code to the installer (no bin/ai-flow.js)"
+else
+  HOME="$CB/h5" node "$ROOT/bin/ai-flow.js" update </dev/null >/dev/null 2>&1 && rc6=0 || rc6=$?
+  r6=""
+  [ "${rc6:-1}" -eq 0 ] || r6=" [it exited ${rc6:-1}]"
+  [ -s "$CB/h5/.claude/ai-flow/protocols/understand.md" ] || r6="$r6 [the update it forwarded installed nothing]"
+  # Everything above is equally true of an entry point that ignores its arguments and always runs `update`,
+  # so on its own the row cannot tell forwarding from a hardcoded subcommand. What separates them is an
+  # argument that must produce a DIFFERENT outcome. It is also this surface's own contract: the installer
+  # reads an unrecognised first argument as a project directory to create, which on the documented npm door
+  # turns `ai-flow updat` into a scaffolded project called `updat` reported as a success.
+  out6="$( cd "$CB" && HOME="$CB/h5x" node "$ROOT/bin/ai-flow.js" updat </dev/null 2>&1 )" && rcx6=0 || rcx6=$?
+  [ "${rcx6:-0}" -ne 0 ] || r6="$r6 [an unknown subcommand was accepted]"
+  [ -d "$CB/updat" ] && r6="$r6 [an unknown subcommand created the directory '$CB/updat']"
+  case "$out6" in *usage*) : ;; *) r6="$r6 [the refusal prints no usage line]" ;; esac
+  [ -z "$r6" ] && ok "the entry point forwards a real subcommand and refuses one it does not know" \
+               || bad "the entry point forwards a real subcommand and refuses one it does not know ($r6)"
+fi
+
+# B7 -- derived, and it closes a class rather than a case. npm's packing falls back to the package's OWN
+# .gitignore and reads neither a personal global ignore nor .git/info/exclude, so the set git hides on a
+# given machine and the set npm hides are not the same set -- a file hidden only by the first ships in
+# silence, which is how the author's local Claude Code overrides reached a published tarball. Measured
+# rather than remembered: every path the package would carry is put to git, which reads all three sources.
+real_hidden() {  # $1 = a path -> 0 when the developer's own ignore rules hide it
+  (
+    if [ -n "$REAL_XDG" ]; then export XDG_CONFIG_HOME="$REAL_XDG"; else unset XDG_CONFIG_HOME; fi
+    if [ -n "$REAL_GCG" ]; then export GIT_CONFIG_GLOBAL="$REAL_GCG"; else unset GIT_CONFIG_GLOBAL; fi
+    git -C "$ROOT" check-ignore -q "$1" 2>/dev/null
+  )
+}
+if ! command -v npm >/dev/null 2>&1; then
+  bad "the package ships nothing git hides — NOT CHECKED: npm is not available"
+else
+  L7="$CB/pack.list"
+  ( cd "$ROOT" && npm pack --dry-run --json 2>/dev/null ) \
+    | grep -o '"path": *"[^"]*"' | sed 's/.*"path": *"//; s/"$//' > "$L7"
+  if [ ! -s "$L7" ]; then
+    # An empty listing is not an empty package; it is a question that went unanswered, and scoring it
+    # green would be the false all-clear this row exists to prevent.
+    bad "the package ships nothing git hides — NOT CHECKED: npm listed no files"
+  else
+    leak7=""
+    while IFS= read -r p7; do
+      [ -n "$p7" ] || continue
+      real_hidden "$p7" && leak7="$leak7 [$p7]"
+    done < "$L7"
+    # A positive control, for the reason B2 and B5 exist. `real_hidden` returning false for every path is
+    # indistinguishable from a package with no leak, and its verdict depends on the machine: on a runner
+    # with no personal global ignore the loop finds nothing whatever the repository says. Something the
+    # repo's OWN .gitignore names must come back hidden, or this row is measuring nothing.
+    real_hidden ".ai-flow/BACKLOG.md" || leak7="$leak7 [the check cannot detect a path the repository itself ignores]"
+    # And the one concrete entry this change added, pinned by name: without this the line can be deleted
+    # and the row above stays green everywhere except the author's own machine.
+    grep -q '^/\.claude/settings\.local\.json$' "$ROOT/.gitignore" \
+      || leak7="$leak7 [.gitignore no longer names the local override file]"
+    [ -z "$leak7" ] && ok "the package ships nothing git hides, and the check can prove it sees hiding" \
+                    || bad "the package ships nothing git hides, and the check can prove it sees hiding ($leak7)"
+  fi
+fi
+
+# B8 -- an install that records nothing must not REMOVE what is already there. The two are indistinguishable
+# to every row above, because each installs into a fresh HOME where there was nothing to lose. An existing
+# record names a checkout that still exists, and the guard comparing this engine against it reports a
+# difference: true, and a report rather than a lost protection. The first draft of this function deleted,
+# and no fixture could tell.
+mkdir -p "$CB/h8/.claude/ai-flow" "$CB/h9/.claude/ai-flow"
+printf '%s\n' "$ROOT" > "$CB/h8/.claude/ai-flow/source.path"
+printf '%s\n' "$ROOT" > "$CB/h9/.claude/ai-flow/source.path"
+( cd "$CB/pkg" && HOME="$CB/h8" bash "$CB/pkg/install.sh" update </dev/null >/dev/null 2>&1 ) || true
+if [ "$(cat "$CB/h8/.claude/ai-flow/source.path" 2>/dev/null)" = "$ROOT" ]; then
+  ok "an install that is not a checkout leaves an existing source path alone"
+else
+  bad "an install that is not a checkout leaves an existing source path alone (it now reads '$(cat "$CB/h8/.claude/ai-flow/source.path" 2>/dev/null || echo DELETED)')"
+fi
+
+# B9 -- the same, for the one-line door, which had no coverage of this at all. It is the documented update
+# path, so an operator who installed from a clone and updates this way must not lose the watch in silence.
+( cd "$CB" && AI_FLOW_MODE=remote AI_FLOW_REPO_URL="file://$CB/absent" HOME="$CB/h9" \
+    bash "$ROOT/install.sh" update </dev/null >/dev/null 2>&1 ) || true
+if [ "$(cat "$CB/h9/.claude/ai-flow/source.path" 2>/dev/null)" = "$ROOT" ]; then
+  ok "the one-line door leaves an existing source path alone"
+else
+  bad "the one-line door leaves an existing source path alone (it now reads '$(cat "$CB/h9/.claude/ai-flow/source.path" 2>/dev/null || echo DELETED)')"
+fi
+
+# B10 -- where a package is actually installed: inside the operator's own repository. Asking git whether the
+# directory has a commit answers YES there, about THEIR project, so the engine recorded their repository as
+# its source and stamped their commit as its version. Everything the row above protects is undone by that
+# one, which is why the question has to be whether this directory IS a checkout, not whether it sits in one.
+mkdir -p "$CB/userrepo" "$CB/h10"
+( cd "$CB/userrepo" && git init -q . && git -c user.email=t@example.invalid -c user.name=t commit -q --allow-empty -m x ) >/dev/null 2>&1
+mkdir -p "$CB/userrepo/node_modules/ai-flow"
+cp -R "$CB/pkg/." "$CB/userrepo/node_modules/ai-flow/"
+( cd "$CB/userrepo/node_modules/ai-flow" && HOME="$CB/h10" bash ./install.sh update </dev/null >/dev/null 2>&1 ) || true
+n10=""
+[ -f "$CB/h10/.claude/ai-flow/source.path" ] \
+  && n10=" [it recorded '$(cat "$CB/h10/.claude/ai-flow/source.path" 2>/dev/null)']"
+case "$(cat "$CB/h10/.claude/ai-flow/version" 2>/dev/null)" in
+  "checkout "*) n10="$n10 [it stamped the host repository's commit: '$(cat "$CB/h10/.claude/ai-flow/version" 2>/dev/null)']" ;;
+esac
+[ -z "$n10" ] && ok "a package unpacked inside another repository records neither that repository nor its commit" \
+              || bad "a package unpacked inside another repository records neither that repository nor its commit ($n10)"
+
+# B11 -- the spec's named edge case: a checkout whose commit cannot be read. It must name the route and
+# invent nothing. Driven with a git that answers and then fails, which reaches the same branch as a git
+# that is absent and does not depend on reconstructing a PATH without one.
+mkdir -p "$CB/shim" "$CB/h11"
+printf '#!/bin/sh\nexit 1\n' > "$CB/shim/git"; chmod +x "$CB/shim/git"
+( cd "$ROOT" && PATH="$CB/shim:$PATH" HOME="$CB/h11" bash "$ROOT/install.sh" update </dev/null >/dev/null 2>&1 ) || true
+g11=""
+case "$(cat "$CB/h11/.claude/ai-flow/version" 2>/dev/null)" in
+  "checkout (commit unreadable) — "*) : ;;
+  *) g11=" [it wrote '$(cat "$CB/h11/.claude/ai-flow/version" 2>/dev/null)']" ;;
+esac
+[ -z "$g11" ] && ok "a checkout whose commit cannot be read names the route and invents no commit" \
+              || bad "a checkout whose commit cannot be read names the route and invents no commit ($g11)"
+
+# B12 -- the declared set, in the direction a declaration can be wrong. package.json now states what the
+# package carries; stating too LITTLE is invisible to every other row, because they all run the installer
+# from the repository, where every file is present whether or not it was declared. This one packs the
+# package as the registry would, unpacks only that, and installs from it -- the adopter's path, which the
+# author otherwise never walks again.
+if ! command -v npm >/dev/null 2>&1; then
+  bad "the packed package holds everything the installer needs — NOT CHECKED: npm is not available"
+else
+  mkdir -p "$CB/packed" "$CB/h12"
+  ( cd "$ROOT" && npm pack --pack-destination "$CB/packed" >/dev/null 2>&1 ) || true
+  TGZ12="$(ls "$CB/packed"/*.tgz 2>/dev/null | head -1)"
+  if [ -z "$TGZ12" ]; then
+    bad "the packed package holds everything the installer needs — NOT CHECKED: npm produced no tarball"
+  else
+    ( cd "$CB/packed" && tar xf "$TGZ12" ) 2>/dev/null
+    p12=""
+    [ -f "$CB/packed/package/install.sh" ] || p12=" [the tarball carries no installer]"
+    if [ -z "$p12" ]; then
+      # The download base is pointed at nothing that exists, and that is what makes this row measure the
+      # tarball. Without it a package missing `global/` fails the installer's own mode detection, falls
+      # back to REMOTE, and fetches the very files it failed to carry -- from the network, inside a suite
+      # that states it involves none. The row then reported a complete package because the internet
+      # completed it.
+      ( cd "$CB/packed/package" && AI_FLOW_REPO_URL="file://$CB/absent" HOME="$CB/h12" \
+          bash ./install.sh update </dev/null >/dev/null 2>&1 ) || true
+      for f12 in \
+        "ai-flow/protocols/understand.md" "ai-flow/protocols/lifecycle.md" "ai-flow/docs/customization.md" \
+        "skills/understand/SKILL.md" "workflows/verify-review.js" "hooks/drift-check.sh" \
+        "hooks/git/pre-push" "ai-flow/ralph/ralph.sh" "ai-flow/scripts/seed-front.sh"; do
+        [ -s "$CB/h12/.claude/$f12" ] || p12="$p12 [$f12 never arrived]"
+      done
+      [ -s "$CB/h12/.claude/ai-flow/version" ] || p12="$p12 [it recorded no version]"
+      [ -f "$CB/h12/.claude/ai-flow/source.path" ] && p12="$p12 [a package recorded a source path]"
+    fi
+    [ -z "$p12" ] && ok "the packed package holds everything the installer needs" \
+                  || bad "the packed package holds everything the installer needs ($p12)"
+  fi
+fi
+
+rm -rf "$CB"
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"

@@ -20,13 +20,34 @@ Two things it deliberately is **not**: enterprise coordination features, and mul
 
 ## Quick Start
 
-### Option 1: Install script
+Three doors, and they do not mean the same thing — pick by what you want the engine to be pinned to.
+
+### Option 1: npm — a version you can name
+
+```bash
+npx ai-flow@latest                 # set up the current release in your project
+```
+
+The version is the point. ai-flow drives the session you would otherwise use to repair it, so a trunk
+that leaves the engine in a bad state takes the repair tool with it. `npx ai-flow@1.0.0 update` puts a
+known-good engine back into `~/.claude` in one command, with no working copy involved.
+
+Ask any machine what it is running:
+
+```bash
+cat ~/.claude/ai-flow/version      # e.g. "package 1.0.0", or "checkout 843c09d — /path/to/clone"
+```
+
+### Option 2: Install script — trunk, unversioned
 
 ```bash
 curl -sL https://raw.githubusercontent.com/jisaballo/ai-flow/main/install.sh | bash
 ```
 
-Or clone and install locally:
+Whatever is on `main` right now. Convenient, and it names no version to go back to.
+
+Or clone and install locally — the only route the drift guard can watch, because it is the only one with
+commits to compare the installed engine against:
 
 ```bash
 git clone https://github.com/jisaballo/ai-flow.git
@@ -34,7 +55,7 @@ cd ai-flow
 ./install.sh /path/to/your/project
 ```
 
-### Option 2: Manual setup
+### Option 3: Manual setup
 
 1. Copy `template/.ai-flow/` into your project root
 2. Copy `template/CLAUDE.md` to your project root and customize for your stack

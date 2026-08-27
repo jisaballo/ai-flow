@@ -1,0 +1,33 @@
+{
+  "name": "ai-flow",
+  "version": "1.0.0",
+  "description": "A spec-driven task-execution framework for Claude Code: capture, understand, plan, execute, verify, archive.",
+  "files": [
+    "install.sh",
+    "bin/",
+    "global/",
+    "template/",
+    "docs/customization.md"
+  ],
+  "bin": {
+    "ai-flow": "bin/ai-flow.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jisaballo/ai-flow.git"
+  },
+  "homepage": "https://github.com/jisaballo/ai-flow#readme",
+  "bugs": {
+    "url": "https://github.com/jisaballo/ai-flow/issues"
+  },
+  "keywords": [
+    "claude-code",
+    "spec-driven-development",
+    "agentic",
+    "workflow"
+  ],
+  "license": "MIT"
+}
