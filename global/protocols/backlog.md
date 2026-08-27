@@ -282,12 +282,38 @@ remembers.
   around the rule. `plan` additionally advances the sheet to EXECUTE when Conform closes, because the
   phase after it has no command of its own and nothing else would ever record it.
 
+  **Where that write CHANGES the position to VERIFY, it carries the end of the session with it.** The
+  command writes the phase, writes the sheet's `next action:` naming what the next session runs, says that
+  this is where the session ends and why the cut is free here, and **ends the turn** — before any of the
+  phase's work. It **asks nothing**: no approval is sought, no option offered, and an operator who says to
+  carry on gets the phase in the same session with nothing refused and nothing recorded as an exception. It
+  is not a gate, and it is not a warning printed and walked past either, because the work has not begun.
+  The reason it rides on this write rather than on a step of its own is that a habit announced beside an
+  act that must happen anyway cannot be forgotten separately from that act; the reason it is *this* write
+  is that the phase behind it reads the sheet, `understand.md`, the plan's Criteria Coverage table and the
+  diff from git, and no conversation at all — measured, and the whole of what makes the cut free. What it
+  costs is the account of *why* something was done: the auditing session can answer only from what was
+  written, which is what `## Ruled out` above exists to catch.
+
+  **Where the sheet already declares VERIFY, nothing is announced** and the phase's work proceeds. That
+  branch is not tidiness, and it is written down because what it prevents is invisible in this prose: the
+  session the cut created re-runs the command, the precondition accepts VERIFY, the line is rewritten — and
+  unguarded the announcement fires **again**, on the very session it produced, and again after that. The
+  position the write is about to overwrite is the discriminator, and it is data the command already holds.
+  Nothing is needed for the out-of-phase confirmed run above: it leaves the line unchanged, so there is no
+  write and no announcement.
+
+  The quick and auto paths never reach it, by construction rather than by a predicate written to exclude
+  them: a quick task writes no sheet at all, and an auto task skips Understand, holds no criteria and
+  skips Verify — so the write never occurs on either. Said out loud because a silence is not a check that
+  happened; refused as a predicate because a rule with nothing to enforce is a rule that goes unread.
+
 ### Who writes what, when
 
 | Moment | Roster (`STATE.md`) | Sheet (`artifacts/T-XXX/state.md`) |
 |---|---|---|
 | **Activation** | the coordinator adds the workstream row, with the front's declared areas | created, with branch, the first position, step and autonomy — plus any collision acknowledged at the opening (see Opening a Workstream) |
-| **During the phases** | untouched | the phase command writes the phase when it enters one (see The phase precondition above); step, decisions and the resume block kept current by whoever works the task |
+| **During the phases** | untouched | the phase command writes the phase when it enters one, and the `next action:` line with it wherever that write ends the session (see The phase precondition above); step, decisions and the rest of the resume block kept current by whoever works the task |
 | **Pause** | untouched | carries everything needed to resume — it IS the handoff |
 | **Archive** | the coordinator removes the row, last | collected into the coordinator first, then deleted with the rest of `artifacts/T-XXX/` — in every checkout that holds it, not only the coordinator's |
 | **Quick task** | its row in Quick Tasks Completed, at close | none — a quick task writes no sheet, and states its 1-2 steps in the conversation |

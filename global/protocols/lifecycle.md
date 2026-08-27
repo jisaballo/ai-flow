@@ -179,6 +179,28 @@ The path names what runs **between** activation and archive; capture, prioritize
 happen on both. Understanding is mandatory on the full path — the quick path skips the formal
 understanding, conform and verify phases, which is the whole of what makes it quick.
 
+## Sessions
+
+**A full-path task is two sessions, and each task starts in a fresh one.** The cut falls on entering
+VERIFY, and it is stated here because it is a property of the chain rather than of any one phase.
+
+The reason is measured, on two independent populations and by segmenting each transcript on its own phase
+markers: VERIFY is 38–40% of a task's turns and **49–56% of its price-weighted bill**, and it enters
+carrying a median 224k of context that it never reads — every input that phase has is an artifact, listed
+in the backlog protocol beside the rule, and none of them is the conversation. Almost the whole bill
+is accumulated context being re-read every turn, so a phase that inherits a conversation it cannot use is
+paying for it twice. Cutting there saves roughly a fifth to a quarter of what the task would otherwise
+cost, against a turn-1 floor of about 42k that no cut removes.
+
+The cut is a **habit**, not a gate. What performs the announcement is the write that stamps the phase on
+the sheet, and what that write announces, obliges and refuses to ask is stated in the backlog protocol
+(`### The phase precondition`) and nowhere else — including the operator's way out of it. The quick and
+auto paths never reach that write.
+
+What the cut destroys is the only thing to guard against: a conversation ends and takes with it every
+hypothesis it killed and every route it rejected. Those go on the sheet before the cut, under
+`## Ruled out` — decisions taken are already recorded; those two are not.
+
 ## Autonomy Levels
 
 Different tasks need different supervision:
