@@ -104,12 +104,34 @@ autonomy: Guided
 
 - [decision taken during this task, with the why]
 
+## Ruled out
+
+- hypothesis: [what was tested, and what killed it]
+- alternative: [a route considered and not taken, with the reason it was rejected]
+
 ## Resume from here
 
 - last touched: `path/to/file`
 - uncommitted: [what sits in the working tree]
 - next action: [the next thing to do]
 ```
+
+**`## Ruled out` holds what a cut destroys.**
+Both its lines are written only when there is something to write.
+`## Decisions` above it records a decision *taken*, with its why; neither a hypothesis that
+was tested and died nor a route considered and rejected is a decision, so neither had anywhere to go —
+they lived in the session's context and nowhere else, and a session that ends takes them with it. That is
+not hypothetical: one interrupted task's sheet was a partial dump and its split proposal, with the
+alternatives it had rejected, was lost with the context. Each label is a **list item**, and a reader
+looks for the bullet and then the label: `- hypothesis:`, `- alternative:`. That is deliberately **not**
+the form `phase:` and `branch:` take — those two are declarations at the start of their line, and the
+patterns that read them are anchored to exactly that, so a pattern written for them finds nothing here.
+The distinction is stated because the difference is invisible in a rendered document and a guard written
+to the wrong one of the two reports "nothing ruled out" for every task, green and false. Repeated labels
+are the reason for the list: a task rules out several things, while the fields declared above are each
+written once. The section is omitted entirely when the task ruled nothing out. Omitted, not filled
+with "none": a field that almost always reads "none" is a field that stops being read, which is the
+engine's own lesson that an alarm nobody is obliged to act on is an alarm nobody acts on.
 
 The block above is a sheet **in flight**. A sheet the opening ceremony has just written carries
 `phase: **ACTIVATE**` and no step yet — the position is stated below, and this is the one thing a reader
