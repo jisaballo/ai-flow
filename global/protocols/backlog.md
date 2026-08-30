@@ -282,29 +282,53 @@ remembers.
   around the rule. `plan` additionally advances the sheet to EXECUTE when Conform closes, because the
   phase after it has no command of its own and nothing else would ever record it.
 
-  **Where that write CHANGES the position to VERIFY, it carries the end of the session with it.** The
-  command writes the phase, writes the sheet's `next action:` naming what the next session runs, says that
-  this is where the session ends and why the cut is free here, and **ends the turn** — before any of the
-  phase's work. It **asks nothing**: no approval is sought, no option offered, and an operator who says to
-  carry on gets the phase in the same session with nothing refused and nothing recorded as an exception. It
-  is not a gate, and it is not a warning printed and walked past either, because the work has not begun.
-  The reason it rides on this write rather than on a step of its own is that a habit announced beside an
-  act that must happen anyway cannot be forgotten separately from that act; the reason it is *this* write
-  is that the phase behind it reads the sheet, `understand.md`, the plan's Criteria Coverage table and the
-  diff from git, and no conversation at all — measured, and the whole of what makes the cut free. What it
-  costs is the account of *why* something was done: the auditing session can answer only from what was
-  written, which is what `## Ruled out` above exists to catch.
+  **Two closes carry the end of the session with them: the close of Understand and the close of Execute.**
+  Each writes the position the phase *after* it will declare — the close of Understand writes PLAN, the close
+  of Execute writes VERIFY — which is the shape `plan` already uses at Conform's close rather than a new one.
+  The close writes the phase, writes the sheet's `next action:` naming what the next session runs, announces
+  the cut, and **ends the turn**. It **asks nothing**: no approval is sought, no option offered, and an
+  operator who says to carry on gets the next phase in the same session with nothing refused and nothing
+  recorded as an exception. It is not a gate, and it is not a warning printed and walked past either, because
+  the work has not begun. The reason it rides on these writes rather than on steps of their own is that a
+  habit announced beside an act that must happen anyway cannot be forgotten separately from that act.
 
-  **Where the sheet already declares VERIFY, nothing is announced** and the phase's work proceeds. That
-  branch is not tidiness, and it is written down because what it prevents is invisible in this prose: the
-  session the cut created re-runs the command, the precondition accepts VERIFY, the line is rewritten — and
-  unguarded the announcement fires **again**, on the very session it produced, and again after that. The
-  position the write is about to overwrite is the discriminator, and it is data the command already holds.
-  Nothing is needed for the out-of-phase confirmed run above: it leaves the line unchanged, so there is no
-  write and no announcement.
+  **Why these two and not every boundary.** A cut point is chosen on what the phase ahead reads, never on what
+  it saves — measured across the chain the candidates worth taking sit within a few points of each other with
+  overlapping spreads, so the saving cannot separate them. What separates them is that Plan is drafted from
+  `understand.md`, and Verify reads the sheet, `understand.md`, the plan's Criteria Coverage table and the
+  diff from git, and no conversation at all; whereas the phase after Conform names prior conversation as an
+  input to the path it calls its default.
+  So the write that advances the sheet to EXECUTE when Conform closes **announces nothing**, and that
+  silence is a decision rather than an omission. What a cut costs is the account of *why* something was done: the next
+  session can answer only from what was written, which is what `## Ruled out` above exists to catch.
 
-  The quick and auto paths never reach it, by construction rather than by a predicate written to exclude
-  them: a quick task writes no sheet at all, and an auto task skips Understand, holds no criteria and
+  **Neither close announces on a session that is still cheap.** The announcement is owed only where this
+  session has already **become expensive**, which the engine measures and says out loud on its own: the
+  context-cost note fires at its thresholds and is delivered into the session, so the close reads a fact it
+  already holds instead of counting anything.
+  Where the session has not yet become expensive, the position is written and **nothing is announced**.
+  A cut there would pay the fixed cost of a fresh start to discard almost nothing, and advice that is wrong
+  on the cheap case is advice that stops being read on the expensive one.
+
+  **The form is fixed, and it is short.** The announcement carries three things and no more: the
+  **recommendation**, first; the **reason**, in one sentence — what this session is carrying that the phase
+  ahead will not read; and where the next session picks up, which is a pointer to the sheet's `next action:`
+  and never a copy of it. It **requests no input**. The precondition's own legs, the rung the task was
+  resolved by and the ladder are not part of it: those are the run's report, and a close that narrates them
+  buries its own reason under procedure. A turn ended with the operator's instruction unserved is itself a
+  request to repeat it, so a close given no form to end in is one the model fills with a question — which is
+  how a rule obliging it to ask nothing produced, in the field, *"tell me `continue` next time"*.
+
+  **Where the sheet already declares the position the write is about to set, nothing is announced** and the
+  phase's work proceeds. That branch is not tidiness, and it is written down because what it prevents is
+  invisible in this prose: the session the cut created re-runs the command, the precondition accepts the
+  position, the line is rewritten — and unguarded the announcement fires **again**, on the very session it
+  produced, and again after that. The position it is about to overwrite is the discriminator, and it is data
+  the command already holds. Nothing is needed for the out-of-phase confirmed run above: it leaves the line
+  unchanged, so there is no write and no announcement.
+
+  The quick and auto paths never reach either close, by construction rather than by a predicate written to
+  exclude them: a quick task writes no sheet at all, and an auto task skips Understand, holds no criteria and
   skips Verify — so the write never occurs on either. Said out loud because a silence is not a check that
   happened; refused as a predicate because a rule with nothing to enforce is a rule that goes unread.
 

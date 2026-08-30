@@ -181,21 +181,25 @@ understanding, conform and verify phases, which is the whole of what makes it qu
 
 ## Sessions
 
-**A full-path task is two sessions, and each task starts in a fresh one.** The cut falls on entering
-VERIFY, and it is stated here because it is a property of the chain rather than of any one phase.
+**A full-path task is three sittings, and each task starts in a fresh one.** The two cuts fall at the
+close of Understand and at the close of Execute, and they are stated here because they are a property of
+the chain rather than of any one phase.
 
 The reason is measured, on two independent populations and by segmenting each transcript on its own phase
-markers: VERIFY is 38–40% of a task's turns and **49–56% of its price-weighted bill**, and it enters
-carrying a median 224k of context that it never reads — every input that phase has is an artifact, listed
-in the backlog protocol beside the rule, and none of them is the conversation. Almost the whole bill
-is accumulated context being re-read every turn, so a phase that inherits a conversation it cannot use is
-paying for it twice. Cutting there saves roughly a fifth to a quarter of what the task would otherwise
-cost, against a turn-1 floor of about 42k that no cut removes.
+markers. Each of the two boundaries is worth roughly a quarter of what the rest of the task would otherwise
+cost, against a turn-1 floor of about 47k that no cut removes. The chain offers a third candidate of the same
+value, and it is not taken: the boundaries sit close enough together that the saving cannot choose between
+them, so what chooses is what the phase ahead reads. Plan is drafted from `understand.md`; VERIFY is 38–40%
+of a task's turns and 49–56% of its price-weighted bill and enters carrying a median 224k of context it never
+reads — every input that phase has is an artifact, listed in the backlog protocol beside the rule, and none
+of them is the conversation. A phase that inherits a conversation it cannot use is paying for it twice. The
+candidate that is refused is the one whose next phase names prior conversation among its own inputs.
 
-The cut is a **habit**, not a gate. What performs the announcement is the write that stamps the phase on
-the sheet, and what that write announces, obliges and refuses to ask is stated in the backlog protocol
-(`### The phase precondition`) and nowhere else — including the operator's way out of it. The quick and
-auto paths never reach that write.
+The cut is a **habit**, not a gate. What performs the announcement is the write that advances the sheet to
+the position the next phase will declare, and what those writes announce, oblige, refuse to ask, and when
+they stay silent — including on a sitting that never grew costly — is stated in the backlog protocol
+(`### The phase precondition`) and nowhere else, including the operator's way out of it. The quick and auto
+paths never reach those writes.
 
 What the cut destroys is the only thing to guard against: a conversation ends and takes with it every
 hypothesis it killed and every route it rejected. Those go on the sheet before the cut, under

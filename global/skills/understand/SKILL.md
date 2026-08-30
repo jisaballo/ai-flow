@@ -29,4 +29,4 @@ Runs the Understand phase of the ai-flow workflow. Works in any project that has
    - Close only when BOTH gates hold: **Business Closure** (restate the Business Frame — zero file paths — and the user corrects nothing) and Investigation Closure (per protocol).
    - Write `understand.md` with the Business Frame at the top (product language only) and Verifiable Criteria (Automated + Observable + Behavioral; Automated and Behavioral in EARS format per the protocol's Criteria Format section).
 
-6. Respect the phase gate: Understand → Plan requires user approval (Guided/Supervised).
+6. Respect the phase gate: Understand → Plan requires user approval (Guided/Supervised). Then **close the phase**: advance the sheet to the position Plan will declare, and where this sitting has grown costly, announce the cut and **end the turn** rather than running Plan in it. This is one of the chain's two cut points; the obligations are stated in `~/.claude/ai-flow/protocols/backlog.md` (`### The phase precondition`) and only there, so do not reproduce them here — a session told to carry on runs Plan as usual.

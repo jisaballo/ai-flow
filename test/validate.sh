@@ -9509,7 +9509,10 @@ fi
 # that a second statement cannot exist, and a check asking only whether the rule is present anywhere is
 # satisfied by every copy at once. What selects a statement rather than a citation is the fact itself --
 # how many sittings a full-path task is -- which a document that merely routes to the map never carries.
-HAB49='(two|2) *(sittings|sessions)'
+# Re-keyed by T-070 from two sittings to three when the cut gained its second boundary: the fact this row
+# counts is the one the map states, so a rule change that moves the fact moves this key with it or the row
+# starts guarding a sentence nobody writes any more.
+HAB49='(three|3) *(sittings|sessions)'
 HOME49="$(grep -rliE "$HAB49" "$ROOT/global/" 2>/dev/null | wc -l | tr -d ' ')"
 ELSE49="$(grep -rliE "$HAB49" "$ROOT/template/" "$ROOT/docs/" "$ROOT/README.md" 2>/dev/null | wc -l | tr -d ' ')"
 d49=""
@@ -9549,6 +9552,122 @@ grep -qiE 'overran|over-?ran' "$NOTE49" 2>/dev/null \
   && f49="$f49 [the note was demoted to reporting an overrun, which this task decided against]"
 [ -z "$f49" ] && ok "control: the note keeps its recommendation and was not demoted" \
               || bad "control: the note keeps its recommendation and was not demoted ($f49)"
+
+echo ""
+echo "== C50: the engine names the two places where stopping pays, and speaks only where it does =="
+# Conformance: the session cut rides the write that advances the sheet to the NEXT position at the close of
+# Understand and at the close of Execute, and announces only where this session has already become expensive.
+# Generated in the Conform phase from understand.md's Verifiable Criteria; each row names the criterion it
+# comes from. C49 remains T-068's guard over the same bullet and is re-keyed by this task's Step 1, not here.
+BL50="$ROOT/global/protocols/backlog.md"
+MAP50="$ROOT/global/protocols/lifecycle.md"
+
+# Same region as C49, and for the same reason: the obligation is a property of ONE act. A whole-file search
+# is satisfied by `## State Files` and by the out-of-phase bullet, both of which name positions and sittings,
+# so it would report the rule present before a word of it was written.
+CP50="$(awk '/^- \*\*A clean pass\.\*\*/{f=1} f&&/^### /{exit} f' "$BL50" 2>/dev/null)"
+if [ -z "$CP50" ]; then
+  bad "the clean-pass bullet can be located for the two-boundary rule (nothing extracted: every row below would be about an empty string)"
+else
+  # A1+A2 -- WHEN Understand closes, and WHEN Execute closes, on a session past the threshold, the engine
+  # shall write the NEXT position, its `next action:`, announce and end the turn. Both boundaries are read on
+  # ONE row and each names the position it writes, because a row satisfied by either alone passes over a rule
+  # that shipped half of it -- which is precisely the shape T-068 left behind, one boundary out of two.
+  a50=""
+  printf '%s' "$CP50" | grep -qiE 'close of Understand|Understand closes|closes Understand' \
+    || a50=" [the bullet does not name the close of Understand as a boundary that announces]"
+  printf '%s' "$CP50" | grep -qiE 'close of Execute|Execute closes|closes Execute' \
+    || a50="$a50 [it does not name the close of Execute as a boundary that announces]"
+  printf '%s' "$CP50" | grep -qiE 'PLAN' \
+    || a50="$a50 [it does not name PLAN as the position the close of Understand writes]"
+  printf '%s' "$CP50" | grep -q 'VERIFY' \
+    || a50="$a50 [it does not name VERIFY as the position the close of Execute writes]"
+  [ -z "$a50" ] && ok "both boundaries are named, each with the position its close writes" \
+                || bad "both boundaries are named, each with the position its close writes ($a50)"
+
+  # A3 -- WHILE the session has not crossed the context-cost threshold, the engine shall write the position
+  # and announce no cut. The gate and its negative are paired on one line for the reason C49's own b49 row
+  # records: read as two independent legs over the region, the negative is satisfied by the re-entry sentence
+  # ("nothing is announced") which is about a different condition entirely, so the gate could be inverted to
+  # announce on cheap sessions and the row would stay green on someone else's sentence.
+  b50=""
+  printf '%s' "$CP50" | grep -qiE 'expensive|cost note|context note|150|threshold' \
+    || b50=" [the bullet states no gate: the announcement is not conditioned on the session having become expensive]"
+  printf '%s' "$CP50" | grep -qiE '(has not|not yet|below|without having) [^.]*(crossed|become expensive|expensive|threshold)[^.]*(nothing is announced|no announcement|announces nothing|is silent|without announcing)' \
+    || b50="$b50 [the below-threshold branch does not itself carry the verdict that nothing is announced]"
+  [ -z "$b50" ] && ok "the announcement is gated on the session having become expensive, and the cheap branch carries its own verdict" \
+                || bad "the announcement is gated on the session having become expensive, and the cheap branch carries its own verdict ($b50)"
+
+  # A5 -- WHERE the write advances the sheet to EXECUTE at Conform's close, the engine shall announce no cut.
+  # Written down because it is the one boundary a reader would assume symmetric: three closes write a next
+  # position and only two of them speak. Without this row the third can start announcing and nothing objects.
+  c50=""
+  printf '%s' "$CP50" | grep -qiE 'EXECUTE' \
+    || c50=" [the bullet does not name the write that advances the sheet to EXECUTE]"
+  printf '%s' "$CP50" | grep -qiE 'EXECUTE[^.]*(does not announce|announces nothing|no announcement|is not a boundary|not a cut)|(does not announce|announces nothing|no announcement|not a cut point)[^.]*EXECUTE' \
+    || c50="$c50 [it does not say that the write closing Conform announces nothing]"
+  [ -z "$c50" ] && ok "the write that closes Conform is named as the boundary that does not announce" \
+                || bad "the write that closes Conform is named as the boundary that does not announce ($c50)"
+
+  # A6 -- The announcement shall carry the recommendation, its reason and the resume pointer, and shall
+  # request no input.
+  #
+  # Read over the FORM PARAGRAPH ALONE, not over the whole clean-pass region, and that narrowing is the row.
+  # Every one of these four legs has a second satisfier elsewhere in the region: "asks nothing" and "no
+  # approval is sought" sit in the first paragraph, and so does "the reason it rides on these writes" -- both
+  # inherited from T-068, both about a different sentence. Keyed on the region, this row was green with the
+  # form's own ban deleted, which a mutation caught and the row's first draft did not: the trap was named in
+  # this very comment and the code walked into it anyway. The narrowing is what makes the four legs be about
+  # the paragraph that must exist rather than about prose that already existed.
+  FORM50="$(printf '%s' "$CP50" | awk '/\*\*The form is fixed/{f=1} f&&/^[[:space:]]*$/{exit} f')"
+  d50=""
+  if [ -z "$FORM50" ]; then
+    d50=" [the bullet states no form paragraph for the announcement at all]"
+  else
+    printf '%s' "$FORM50" | grep -qiE 'recommend' \
+      || d50=" [the form does not name the recommendation as the announcement's first element]"
+    # Keyed on the reason BOUND TO its length, not on the bare word: the paragraph's own closing sentence
+    # says a narrating close "buries its own reason", so a leg reading `reason` alone stays green with the
+    # requirement deleted. Same disease as the no-input leg above, found by reading the paragraph rather
+    # than by the mutation, which is the cheaper of the two ways to find it.
+    printf '%s' "$FORM50" | grep -qiE 'reason[^.]*one sentence|one sentence[^.]*reason' \
+      || d50="$d50 [it does not require the announcement to give its reason in one sentence]"
+    # `one sentence` is deliberately NOT an alternative here -- it is the leg above. A shortness leg that
+    # accepts it is satisfied by its neighbour and guards nothing of its own.
+    printf '%s' "$FORM50" | grep -qiE 'short|brief|few lines' \
+      || d50="$d50 [it does not require the announcement to be short]"
+    printf '%s' "$FORM50" | grep -qiE 'requests? no input|no input is (requested|sought)' \
+      || d50="$d50 [it does not forbid the close from requesting an input]"
+  fi
+  [ -z "$d50" ] && ok "the announcement's form is named: recommendation, reason, resume pointer, and no request" \
+                || bad "the announcement's form is named: recommendation, reason, resume pointer, and no request ($d50)"
+fi
+
+# A7 -- IF a surface other than the backlog protocol states the rule, THEN it shall route to it and not
+# restate it. COUNTED for the reason C49's d49 row already gives: the anti-drift design is that a second
+# statement cannot exist, and a check asking only whether the rule is present anywhere is satisfied by every
+# copy at once. The gate is the fact that selects a STATEMENT rather than a citation -- a document that
+# merely routes to the rule never has to name what makes a session expensive.
+GATE50='(become|becomes|has become) expensive|crossed the (context-)?cost threshold'
+HOME50="$(grep -rliE "$GATE50" "$ROOT/global/protocols/" "$ROOT/global/skills/" 2>/dev/null | wc -l | tr -d ' ')"
+e50=""
+[ "$HOME50" -eq 1 ] || e50=" [the gate is stated in $HOME50 protocol/skill files, not exactly one]"
+grep -qiE "$GATE50" "$BL50" 2>/dev/null || e50="$e50 [the backlog protocol, which is its home, does not state it]"
+[ -z "$e50" ] && ok "the gate is stated in the backlog protocol and nowhere else" \
+              || bad "the gate is stated in the backlog protocol and nowhere else ($e50)"
+
+# O2 -- The lifecycle map shall name three sittings and both boundaries. Paired on one row: a map saying
+# "three sittings" without naming where they are divided sends the reader to count phases and guess, and
+# naming the boundaries while still saying two contradicts the rule it routes to.
+f50=""
+grep -qiE '(three|3) *(sittings|sessions)' "$MAP50" 2>/dev/null \
+  || f50=" [the map does not say a full-path task is three sittings]"
+grep -qiE 'close of Understand|Understand closes' "$MAP50" 2>/dev/null \
+  || f50="$f50 [it does not name the close of Understand as one of the boundaries]"
+grep -qiE 'close of Execute|Execute closes' "$MAP50" 2>/dev/null \
+  || f50="$f50 [it does not name the close of Execute as the other]"
+[ -z "$f50" ] && ok "the map names three sittings and both boundaries" \
+              || bad "the map names three sittings and both boundaries ($f50)"
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"

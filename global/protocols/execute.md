@@ -127,6 +127,18 @@ This keeps understand.md as the accurate source of truth for the Verify phase an
 
 **When to skip**: Quick path tasks (no understand.md exists).
 
+## The close of Execute
+
+**After Spec Sync, the phase closes**: advance the sheet to the position Verify will declare, and where this
+sitting has grown costly, announce the cut and end the turn. This is the second of the chain's two cut points
+(`lifecycle.md` > `## Sessions`); what the close writes, announces, and when it stays silent is stated in the
+backlog protocol's `### The phase precondition` and only there — route to it, never restate it.
+
+It hangs on the close of the phase and **not** on Spec Sync. Spec Sync's own conformant behaviour where there
+are no divergences is to skip and say nothing (step 3 above), so a close riding it would be indistinguishable
+from a close that was forgotten — and in the incident that produced this rule, no Spec Sync was visible in
+the sitting where Execute ended.
+
 ## Deviation Rules During Execution
 
 Follow **Action Boundaries** from CLAUDE.md (Always / Ask First / Never). In summary:
