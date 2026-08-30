@@ -9406,7 +9406,7 @@ fi
 rm -rf "$CB"
 
 echo ""
-echo "== C49: the entry to the audit announces itself as the end of the sitting =="
+echo "== C49: the cut's obligations, its single home, and the note that points at it =="
 # Conformance: the write that stamps VERIFY on the sheet carries the session cut with it -- and only where
 # that write CHANGES the position, so the announcement cannot fire on the sitting it created. Generated in
 # the Conform phase from understand.md's Verifiable Criteria; each row names the criterion it comes from.
@@ -9625,8 +9625,13 @@ else
   # Written down because it is the one boundary a reader would assume symmetric: three closes write a next
   # position and only two of them speak. Without this row the third can start announcing and nothing objects.
   c50=""
-  printf '%s' "$CP50" | grep -qiE 'EXECUTE' \
-    || c50=" [the bullet does not name the write that advances the sheet to EXECUTE]"
+  # NOT the bare presence of `EXECUTE`: the region carried it before this task ("`plan` additionally
+  # advances the sheet to EXECUTE when Conform closes"), so that leg was green on prose predating the
+  # requirement -- the same disease as a50's PLAN leg, and this row's own frozen direction already said
+  # bare presence "is not sufficient". Keyed instead on the fact only the new requirement supplies: that
+  # the silence at that boundary is chosen, which is what stops a later reader from repairing it.
+  printf '%s' "$CP50" | grep -qiE 'silence is a decision|decision rather than an omission' \
+    || c50=" [it does not say the silence at Conform's close is a decision rather than an omission]"
   printf '%s' "$CP50" | grep -qiE 'EXECUTE[^.]*(does not announce|announces nothing|no announcement|is not a boundary|not a cut)|(does not announce|announces nothing|no announcement|not a cut point)[^.]*EXECUTE' \
     || c50="$c50 [it does not say that the write closing Conform announces nothing]"
   [ -z "$c50" ] && ok "the write that closes Conform is named as the boundary that does not announce" \
