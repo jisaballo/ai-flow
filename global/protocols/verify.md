@@ -103,6 +103,30 @@ thing it guards untrue and watching the suite stay green. Where that is so:
 The rule binds every actor the lifecycle appoints, not the review's alone: a Conform sweep that mutates
 to size its own assertions is the same act with a different author.
 
+## What a Mutation Has To Prove
+
+**Where a row's legs are independent, each leg gets its own mutation.** One mutation per row proves the row
+is not vacuous — that something, somewhere in it, is load-bearing. It says nothing about whether the other
+legs are keyed on anything, and a row is only as strong as its weakest leg, because every leg has to hold for
+the row to be green and therefore any hollow one can be deleted from the source with the row none the wiser.
+
+This is written down because the cheaper battery reads as sufficient and is not. A block whose six rows were
+each killed by their own mutation, and reported proved on that basis, was then found to carry two legs green
+on prose that predated the requirement: one matched case-insensitively against a word the surrounding
+paragraph had always used, the other asserted the bare presence of a term the region already contained. Both
+survived the per-row battery untouched, because in each case a *different* leg of the same row was what the
+mutation killed. It was the third time the same defect had been found in that block and the first time the
+rule was stated.
+
+**The mutation deletes or falsifies the exact sentence the leg names — never a neighbour.** A leg that
+survives its own sentence being deleted is satisfied by something else in the region, and what that something
+is must be found before the row is called proved: the usual answer is a sibling leg, a heading, or prose the
+task never wrote. **A leg keyed on a word rather than on a claim is the shape to distrust first**, and
+case-insensitivity is how such a leg most often reaches text its author never considered.
+
+Where a row's legs genuinely stand or fall together, one mutation is the honest count and the report says
+which case it is. What is never acceptable is a count that leaves the reader unable to tell the two apart.
+
 ## verify.md Template
 
 ```markdown

@@ -9682,9 +9682,13 @@ fi
 # copy at once. The gate is the fact that selects a STATEMENT rather than a citation -- a document that
 # merely routes to the rule never has to name what makes a session expensive.
 GATE50='(become|becomes|has become) expensive|crossed the (context-)?cost threshold'
-HOME50="$(grep -rliE "$GATE50" "$ROOT/global/protocols/" "$ROOT/global/skills/" 2>/dev/null | wc -l | tr -d ' ')"
+# The reach is the DISTRIBUTION boundary, not just the engine's own source: `template/` is what an adopting
+# project receives and `docs/` is what its operator reads, so a copy landing in either makes the invariant
+# false on the surfaces furthest from anyone who would notice. Neither carries protocol prose today, which
+# is exactly when a boundary is cheap to draw.
+HOME50="$(grep -rliE "$GATE50" "$ROOT/global/protocols/" "$ROOT/global/skills/" "$ROOT/template/" "$ROOT/docs/" 2>/dev/null | wc -l | tr -d ' ')"
 e50=""
-[ "$HOME50" -eq 1 ] || e50=" [the gate is stated in $HOME50 protocol/skill files, not exactly one]"
+[ "$HOME50" -eq 1 ] || e50=" [the gate is stated in $HOME50 engine, template or docs files, not exactly one]"
 grep -qiE "$GATE50" "$BL50" 2>/dev/null || e50="$e50 [the backlog protocol, which is its home, does not state it]"
 [ -z "$e50" ] && ok "the gate is stated in the backlog protocol and nowhere else" \
               || bad "the gate is stated in the backlog protocol and nowhere else ($e50)"
@@ -9726,6 +9730,37 @@ grep -qiE 'nothing is announced|announces nothing' "$ROOT/global/skills/plan/SKI
   || h50="$h50 [it does not say that re-entry announces nothing]"
 [ -z "$h50" ] && ok "the plan command states the re-entry it lands in, and that it announces nothing" \
               || bad "the plan command states the re-entry it lands in, and that it announces nothing ($h50)"
+
+# The per-leg mutation rule, guarded where it now lives. Not a row about this task's mechanism at all --
+# it is the method that FAILED to catch two of this block's own hollow legs, and a rule recorded only in a
+# task's artifacts is one the next Conform phase never reads. Two legs: the verify protocol must state that
+# independent legs are mutated one apiece, and must say what the cheaper battery does not prove -- because
+# a rule given without the failure it prevents is the one a later reader trims as verbosity.
+VP50="$ROOT/global/protocols/verify.md"
+i50=""
+# `own mutation` was an alternative here and had to go: the paragraph BELOW the requirement narrates the
+# failure that produced it ("each killed by their own mutation, and reported proved on that basis"), so
+# deleting the requirement left this leg green on its own justification. Caught by mutation, on the very
+# row that guards the rule about exactly this -- which is the argument for the rule, made against itself.
+grep -qiE 'each leg gets its own mutation|per leg, not per row' "$VP50" 2>/dev/null \
+  || i50=" [the verify protocol does not require independent legs to be mutated one apiece]"
+grep -qiE 'not vacuous|says nothing about whether the other legs' "$VP50" 2>/dev/null \
+  || i50="$i50 [it does not say what a per-row battery leaves unproved]"
+[ -z "$i50" ] && ok "the verify protocol requires a mutation per leg, and says what per-row leaves unproved" \
+              || bad "the verify protocol requires a mutation per leg, and says what per-row leaves unproved ($i50)"
+
+# The workflow's script path. The skill named a path the Workflow tool refuses (`~/.claude/` is neither a
+# path it returned nor one the session can already read), so every Guided verify hit a refusal that names
+# no remedy. The row guards the remedy rather than the prohibition: what must survive is the instruction to
+# copy, since a skill that merely drops the bad path leaves the next reader to rediscover the wall.
+SKV50="$ROOT/global/skills/verify/SKILL.md"
+j50=""
+grep -qiE 'copy the script into the scratchpad|scratchpad copy' "$SKV50" 2>/dev/null \
+  || j50=" [the verify skill does not tell the run to copy the workflow into the scratchpad]"
+grep -qiE 'copy per run|never once and reused' "$SKV50" 2>/dev/null \
+  || j50="$j50 [it does not say the copy is per run, so an edit to the installed workflow would stop reaching the review]"
+[ -z "$j50" ] && ok "the verify skill routes the workflow through a path the tool accepts, per run" \
+              || bad "the verify skill routes the workflow through a path the tool accepts, per run ($j50)"
 
 # O2 -- The lifecycle map shall name three sittings and both boundaries. Paired on one row: a map saying
 # "three sittings" without naming where they are divided sends the reader to count phases and guess, and
