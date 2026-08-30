@@ -3211,7 +3211,10 @@ done
 
 # F10 — the rewritten line names its mover. A passive sentence with no owner is what this task found;
 # leaving the repair unasserted lets it revert to passive with the suite green.
-if grep -qE 'write-guard hook stops restricting once the `plan` command writes' "global/protocols/understand.md"; then
+# Re-keyed when the close of Understand took over the write: the rail is released by step 4 now, so the
+# sentence naming the `plan` command as its mover became false three lines above the step that replaced it
+# -- and this row was holding that false sentence in place.
+if grep -qE 'write-guard hook stops restricting once the close below writes PLAN' "global/protocols/understand.md"; then
   ok "the read-only rail's release names the command that performs it"
 else
   bad "the read-only rail's release names the command that performs it"
@@ -9435,8 +9438,12 @@ else
   # naming the fact it lost: a row reporting only "the announcement is missing" sends the next reader to
   # re-read the whole bullet to find out which half of it went.
   a49=""
-  printf '%s' "$CP49" | grep -qiE 'chang(e|es|ing) the position|changes it|position it is about to overwrite|not already' \
-    || a49=" [the bullet does not condition the announcement on the write CHANGING the position]"
+  # Re-keyed off the retired discriminator. This leg read `position it is about to overwrite`, which the
+  # two-boundary rule kept -- but only in the RE-ENTRY paragraph, about a different condition entirely. So
+  # the leg went on passing while the rule it was written for no longer existed, which is the failure a
+  # green row hides best. It is keyed now on what carries the obligations under the rule that replaced it.
+  printf '%s' "$CP49" | grep -qiE 'Two closes carry the end of the session|close of Understand and the close of Execute' \
+    || a49=" [the bullet does not name the two closes as what carries the end of the sitting]"
   printf '%s' "$CP49" | grep -q 'VERIFY' \
     || a49="$a49 [it does not name VERIFY as the position that announces]"
   printf '%s' "$CP49" | grep -q 'next action:' \
@@ -9445,8 +9452,8 @@ else
     || a49="$a49 [it does not say the turn ends there]"
   printf '%s' "$CP49" | grep -qiE 'asks nothing|asking nothing|no approval|not a gate|nothing is asked' \
     || a49="$a49 [it does not say the announcement asks nothing, so it reads as a gate]"
-  [ -z "$a49" ] && ok "the write that changes the position to VERIFY carries all four obligations, and asks nothing" \
-                || bad "the write that changes the position to VERIFY carries all four obligations, and asks nothing ($a49)"
+  [ -z "$a49" ] && ok "the two closes carry all four obligations, and ask nothing" \
+                || bad "the two closes carry all four obligations, and ask nothing ($a49)"
 
   # A2 -- WHILE the sheet already declares VERIFY, the engine shall state that nothing is announced and the
   # phase's work proceeds.
@@ -9509,7 +9516,7 @@ fi
 # that a second statement cannot exist, and a check asking only whether the rule is present anywhere is
 # satisfied by every copy at once. What selects a statement rather than a citation is the fact itself --
 # how many sittings a full-path task is -- which a document that merely routes to the map never carries.
-# Re-keyed by T-070 from two sittings to three when the cut gained its second boundary: the fact this row
+# Re-keyed from two sittings to three when the cut gained its second boundary: the fact this row
 # counts is the one the map states, so a rule change that moves the fact moves this key with it or the row
 # starts guarding a sentence nobody writes any more.
 HAB49='(three|3) *(sittings|sessions)'
@@ -9529,13 +9536,21 @@ grep -qiE 'quick|auto' "$MAP49" 2>/dev/null && grep -qiE 'never reach|no seal|wr
 # layer must carry the ACT, because a skill that marches on to step 3 defeats a cut stated only in prose --
 # and must not carry the RULE, because the engine's cost for a second copy is drift, which is what every
 # "stated there and only there" clause in this skill already buys.
+# Re-keyed when the cut moved to the two phase closes: the audit command is no longer a place the sitting
+# ends, so the leg that required it to say so was pinning a retired behaviour -- and pinning it green, which
+# is worse than not guarding it, because the removal could not ship without the suite objecting. What the
+# command must carry now is the opposite act: recognise the re-entry it ordinarily lands in and carry on.
 e49=""
-grep -qiE 'ends the turn|end the turn|turn ends|stop(s)? there' "$SK49" 2>/dev/null \
-  || e49=" [the skill's clean-pass clause does not say the turn ends there]"
+grep -qiE 'already declares VERIFY' "$SK49" 2>/dev/null \
+  || e49=" [the skill does not state the re-entry it ordinarily lands in]"
+grep -qiE 'nothing is announced|announces nothing' "$SK49" 2>/dev/null \
+  || e49="$e49 [it does not say that re-entry announces nothing]"
+grep -qiE 'end the turn|ends the turn|the session ends there' "$SK49" 2>/dev/null \
+  && e49="$e49 [it still ends the sitting at the entry to the audit, which is not one of the two closes]"
 grep -q 'next action:' "$SK49" 2>/dev/null \
   && e49="$e49 [the skill restates the announcement's own obligation instead of routing to it]"
-[ -z "$e49" ] && ok "the audit skill carries the act and cites the rule" \
-              || bad "the audit skill carries the act and cites the rule ($e49)"
+[ -z "$e49" ] && ok "the audit command re-enters without stopping, and cites the rule" \
+              || bad "the audit command re-enters without stopping, and cites the rule ($e49)"
 
 # A6 -- CONTROL. `context-cost-note.py` keeps the recommendation this task deliberately did not demote.
 # Green from the start by construction: it pins a decision rather than an achievement. The ticket proposed
@@ -9558,7 +9573,7 @@ echo "== C50: the engine names the two places where stopping pays, and speaks on
 # Conformance: the session cut rides the write that advances the sheet to the NEXT position at the close of
 # Understand and at the close of Execute, and announces only where this session has already become expensive.
 # Generated in the Conform phase from understand.md's Verifiable Criteria; each row names the criterion it
-# comes from. C49 remains T-068's guard over the same bullet and is re-keyed by this task's Step 1, not here.
+# comes from. C49 remains the earlier guard over the same bullet and is re-keyed by this task's Step 1, not here.
 BL50="$ROOT/global/protocols/backlog.md"
 MAP50="$ROOT/global/protocols/lifecycle.md"
 
@@ -9572,13 +9587,17 @@ else
   # A1+A2 -- WHEN Understand closes, and WHEN Execute closes, on a session past the threshold, the engine
   # shall write the NEXT position, its `next action:`, announce and end the turn. Both boundaries are read on
   # ONE row and each names the position it writes, because a row satisfied by either alone passes over a rule
-  # that shipped half of it -- which is precisely the shape T-068 left behind, one boundary out of two.
+  # that shipped half of it -- which is precisely the shape the earlier rule left behind, one boundary out of two.
   a50=""
   printf '%s' "$CP50" | grep -qiE 'close of Understand|Understand closes|closes Understand' \
     || a50=" [the bullet does not name the close of Understand as a boundary that announces]"
   printf '%s' "$CP50" | grep -qiE 'close of Execute|Execute closes|closes Execute' \
     || a50="$a50 [it does not name the close of Execute as a boundary that announces]"
-  printf '%s' "$CP50" | grep -qiE 'PLAN' \
+  # Case-SENSITIVE, like its VERIFY sibling below and unlike its own first draft: the region has always
+  # carried lowercase `plan` -- "`plan` additionally advances the sheet", "the plan's Criteria Coverage
+  # table" -- so a -i here was green before the requirement existed and stayed green when the clause naming
+  # it was deleted. Uppercase PLAN appears on exactly one line, the one this leg is about.
+  printf '%s' "$CP50" | grep -q 'PLAN' \
     || a50="$a50 [it does not name PLAN as the position the close of Understand writes]"
   printf '%s' "$CP50" | grep -q 'VERIFY' \
     || a50="$a50 [it does not name VERIFY as the position the close of Execute writes]"
@@ -9591,8 +9610,12 @@ else
   # ("nothing is announced") which is about a different condition entirely, so the gate could be inverted to
   # announce on cheap sessions and the row would stay green on someone else's sentence.
   b50=""
-  printf '%s' "$CP50" | grep -qiE 'expensive|cost note|context note|150|threshold' \
-    || b50=" [the bullet states no gate: the announcement is not conditioned on the session having become expensive]"
+  # Keyed on the MECHANISM the positive statement supplies and the cheap branch does not. The first draft
+  # accepted a bare `expensive`, which its own partner sentence ("Where the session has not yet become
+  # expensive") satisfies -- so the positive gate could be deleted outright and this leg stayed green on the
+  # negative one, leaving the pair asserting half of itself.
+  printf '%s' "$CP50" | grep -qiE 'context-cost note|cost note fires' \
+    || b50=" [the bullet states no gate: the announcement is not conditioned on a measured cost signal the session already holds]"
   printf '%s' "$CP50" | grep -qiE '(has not|not yet|below|without having) [^.]*(crossed|become expensive|expensive|threshold)[^.]*(nothing is announced|no announcement|announces nothing|is silent|without announcing)' \
     || b50="$b50 [the below-threshold branch does not itself carry the verdict that nothing is announced]"
   [ -z "$b50" ] && ok "the announcement is gated on the session having become expensive, and the cheap branch carries its own verdict" \
@@ -9615,7 +9638,7 @@ else
   # Read over the FORM PARAGRAPH ALONE, not over the whole clean-pass region, and that narrowing is the row.
   # Every one of these four legs has a second satisfier elsewhere in the region: "asks nothing" and "no
   # approval is sought" sit in the first paragraph, and so does "the reason it rides on these writes" -- both
-  # inherited from T-068, both about a different sentence. Keyed on the region, this row was green with the
+  # inherited from the earlier rule, both about a different sentence. Keyed on the region, this row was green with the
   # form's own ban deleted, which a mutation caught and the row's first draft did not: the trap was named in
   # this very comment and the code walked into it anyway. The narrowing is what makes the four legs be about
   # the paragraph that must exist rather than about prose that already existed.
@@ -9636,6 +9659,11 @@ else
     # accepts it is satisfied by its neighbour and guards nothing of its own.
     printf '%s' "$FORM50" | grep -qiE 'short|brief|few lines' \
       || d50="$d50 [it does not require the announcement to be short]"
+    # The third element. Named in this row's own pass message from the first draft and guarded by nothing,
+    # which is the same over-claim the label of a row is most likely to carry: the elements a reader counts
+    # in the message are not the legs the row runs.
+    printf '%s' "$FORM50" | grep -qiE 'where the next session picks up|pointer to the sheet' \
+      || d50="$d50 [it does not name where the next session resumes as the announcement's third element]"
     printf '%s' "$FORM50" | grep -qiE 'requests? no input|no input is (requested|sought)' \
       || d50="$d50 [it does not forbid the close from requesting an input]"
   fi
@@ -9655,6 +9683,44 @@ e50=""
 grep -qiE "$GATE50" "$BL50" 2>/dev/null || e50="$e50 [the backlog protocol, which is its home, does not state it]"
 [ -z "$e50" ] && ok "the gate is stated in the backlog protocol and nowhere else" \
               || bad "the gate is stated in the backlog protocol and nowhere else ($e50)"
+
+# A1+A2, on the surfaces that PERFORM the act rather than the prose that describes it. Every other row in
+# this block reads backlog.md or lifecycle.md, so the whole mechanism could be deleted from the three
+# surfaces a session actually follows and the suite would not move -- which is how the Understand half of it
+# shipped with no guard at all. The precedent is one block up and explicit: C49's e49 guards this for the
+# audit command, on the reasoning that a surface which marches on defeats a cut stated only in prose.
+#
+# Two legs pulling opposite ways, the same pair e49 uses: the surface must carry the ACT, and must NOT carry
+# the RULE. The gate leg is deliberately keyed on the routing paraphrase (`grown costly`) and never on the
+# canonical wording -- e50 above requires the canonical gate to exist in exactly ONE file, so a surface that
+# satisfied this leg with the home phrasing would turn that row red. The two rows are a pair: this one says
+# the condition must be named here, e50 says it must be specified only there.
+for s50 in "global/protocols/understand.md" "global/skills/understand/SKILL.md" "global/protocols/execute.md"; do
+  g50=""
+  grep -qiE 'close the phase|the close of Execute' "$ROOT/$s50" 2>/dev/null \
+    || g50=" [it names no close that advances the sheet to the next position]"
+  grep -qiE 'end the turn|ends the turn' "$ROOT/$s50" 2>/dev/null \
+    || g50="$g50 [its close does not say the turn ends there]"
+  grep -qiE 'grown costly' "$ROOT/$s50" 2>/dev/null \
+    || g50="$g50 [its close is not gated on the sitting having grown costly]"
+  grep -qiE '(become|becomes|has become) expensive|crossed the (context-)?cost threshold' "$ROOT/$s50" 2>/dev/null \
+    && g50="$g50 [it states the gate in the home protocol's own wording instead of routing to it]"
+  grep -q 'next action:' "$ROOT/$s50" 2>/dev/null \
+    && g50="$g50 [it restates the announcement's own obligation instead of routing to it]"
+  [ -z "$g50" ] && ok "$s50 carries the gated close and routes the rule" \
+                || bad "$s50 carries the gated close and routes the rule ($g50)"
+done
+
+# A4, on the command that lands in the re-entry the close of Understand creates. The plan command is the
+# only one of the three whose whole share of this mechanism is arriving to find the work already done, so
+# it is guarded on that and not on a close it does not have.
+h50=""
+grep -qiE 'already declares PLAN' "$ROOT/global/skills/plan/SKILL.md" 2>/dev/null \
+  || h50=" [the plan command does not state the re-entry it ordinarily lands in]"
+grep -qiE 'nothing is announced|announces nothing' "$ROOT/global/skills/plan/SKILL.md" 2>/dev/null \
+  || h50="$h50 [it does not say that re-entry announces nothing]"
+[ -z "$h50" ] && ok "the plan command states the re-entry it lands in, and that it announces nothing" \
+              || bad "the plan command states the re-entry it lands in, and that it announces nothing ($h50)"
 
 # O2 -- The lifecycle map shall name three sittings and both boundaries. Paired on one row: a map saying
 # "three sittings" without naming where they are divided sends the reader to count phases and guess, and

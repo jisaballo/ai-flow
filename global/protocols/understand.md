@@ -254,5 +254,5 @@ Before proceeding to plan:
    - "No, proceed with the plan (Recommended)"
    - "Yes, I have more questions"
    ```
-3. Only proceed to plan when user confirms clarity (the write-guard hook stops restricting once the `plan` command writes its own phase to the task's state sheet — see the backlog protocol's `### The phase precondition`)
+3. Only proceed to plan when user confirms clarity (the write-guard hook stops restricting once the close below writes PLAN to the task's state sheet — the rail is released by step 4, one boundary earlier than the `plan` command, because that is where the position now moves; see the backlog protocol's `### The phase precondition`)
 4. **Close the phase**: advance the sheet to the position Plan will declare, and where this sitting has grown costly, announce the cut and end the turn. This is one of the chain's two cut points (`lifecycle.md` > `## Sessions`); what the close writes, announces, and when it stays silent is stated in the backlog protocol's `### The phase precondition` and only there — route to it, do not restate it here.
