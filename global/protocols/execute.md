@@ -146,4 +146,4 @@ Follow **Action Boundaries** from CLAUDE.md (Always / Ask First / Never). In sum
 - New services, schema changes, lib swaps, >3 unplanned files -> **Ask First**
 - Skip tests, commit secrets, force push -> **Never**
 
-**New work discovered along the way** (not in the task or plan) -> **Discovery Triage** (see Understanding protocol): blocks this task -> Replan Gate; contradicts the epic's Goal/Non-Goals -> escalate to user; everything else -> one line in BACKLOG.md `## Icebox`, then continue the plan. Never create new T-XXX tasks mid-epic.
+**New work discovered along the way** (not in the task or plan) -> **Discovery Triage** (see Understanding protocol): blocks this task -> Replan Gate; contradicts the epic's Goal/Non-Goals -> escalate to user; everything else -> the routing test, ownership asked first — a finding in a file already inside this task's diff is the task's to fix now, a finding the flow cannot reach is discarded with the reason written down, and whatever survives is staged in `artifacts/T-XXX/discoveries.md` — then continue the plan. Never create new T-XXX tasks mid-epic, and nothing reaches BACKLOG.md while the task is in flight.

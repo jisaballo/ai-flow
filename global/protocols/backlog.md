@@ -422,13 +422,13 @@ If an epic's committed tasks exceed its Planned Tasks baseline by >50% (or by 2 
 
 ### Icebox (discoveries)
 
-Discoveries captured via Discovery Triage (see Understanding protocol) live in BACKLOG.md under `## Icebox` as one-liners:
+BACKLOG.md's `## Icebox` holds discoveries as one-liners:
 
 ```markdown
 - (E-XXX, found in T-YYY) description
 ```
 
-No T-ID, no priority, no artifacts. Icebox entries count as pending work for the Size Budget but are NEVER activated directly — promotion to real T-XXX tasks happens only at the epic-close batch review (or when the user explicitly asks for one).
+**Nothing reaches this section while a task is in flight.** A discovery found during a task is routed by the test in Understanding protocol > The routing test and staged in that task's own papers; what sits here arrived before that rule or was put here deliberately. No T-ID, no priority, no artifacts. Icebox entries count as pending work for the Size Budget but are NEVER activated directly — promotion to real T-XXX tasks happens only at the epic-close batch review (or when the user explicitly asks for one).
 
 **On epic completion**, generate `.ai-flow/archive/E-XXX-[slug].md`:
 ```markdown

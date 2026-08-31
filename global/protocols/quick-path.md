@@ -33,6 +33,18 @@ written into a worktree the ceremony is about to dismantle is a trace that does 
 | 2026-02-11 | Fix typo in status label | `abc1234` |
 ```
 
+## Discoveries on a path that keeps no papers
+
+A quick task writes no `artifacts/T-XXX/`, so the staging file of Discovery Triage (Understanding
+protocol) does not exist here. It takes the routing test's two terminals unchanged — a finding in a file
+this task's diff already covers is fixed now, and a finding the flow cannot reach is discarded with the
+reason stated — and whatever survives is **surfaced to the user at the close**, in the same sitting,
+where the user is already present to decide where it goes.
+
+That is the whole of it, and it is written as this path's own rule rather than as an exemption: the
+alternative was routing a survivor to the ledger unseen, which is the leak the routing test exists to
+close. A quick task never writes to BACKLOG.md's `## Icebox` itself.
+
 ## Guarantees Maintained
 
 - TDD validation (tests must pass)
@@ -44,7 +56,7 @@ written into a worktree the ceremony is about to dismantle is a trace that does 
 ## What It Skips
 
 - Backlog entry and T-XXX ID
-- artifacts/ folder (understand.md, plan.md, verify.md)
+- artifacts/ folder (understand.md, plan.md, verify.md, discoveries.md)
 - Formal verify phase
 
 ## Escalation

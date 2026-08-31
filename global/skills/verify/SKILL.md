@@ -67,16 +67,19 @@ level that holds the archive gate, so it is the only level where paying a skepti
 finding nobody decides is a finding that bought nothing — four auditors were paid to produce it — so the
 decision happens here instead, where the diff, the criteria and the plan are already in context.
 
-**Take each MEDIUM finding and reach one of three outcomes.** Read the cited code before deciding; the
-auditor saw the diff, not the surrounding flow.
+**Take each MEDIUM finding through the routing test of Discovery Triage** (understand protocol), in its
+order. Read the cited code before deciding; the auditor saw the diff, not the surrounding flow.
 
-- **Fix now** — it is real, small, and inside this task's scope. Fix it, re-run the step's Verify command,
-  and record it in verify.md as fixed during verify.
-- **Backlog it** — it is real but outside this task's scope. It goes to the BACKLOG.md Icebox under
-  Discovery Triage (understand protocol), never as a new task mid-epic. Record where it went.
+- **Fix now** — the finding sits in a file already inside this task's diff, so the task owns it. Fix it,
+  re-run the step's Verify command, and record it in verify.md as fixed during verify. **Asked before
+  scope, not after**: a MEDIUM the task already owns does not become somebody else's because the fix is
+  large.
+- **Stage it** — real, and not in a file this task's diff already covers. It goes to
+  `artifacts/T-XXX/discoveries.md` with its ground stamp, never to BACKLOG.md mid-task and never as a new
+  task mid-epic. Record where it went.
 - **Discard it** — it is a false positive: already handled elsewhere, intended behavior, or a misread of the
-  code. Say which, in one line. This is the judgment a refutation agent used to make, made by the actor that
-  did not have to rebuild the context to make it.
+  code. Say which, in one line, and say why the flow cannot reach the failure. This is the judgment a
+  refutation agent used to make, made by the actor that did not have to rebuild the context to make it.
 
 **Say which outcome each one got.** An unadjudicated finding that reaches verify.md still unadjudicated has
 only moved the omission into the record — and `## Review Findings` is then a list whose reader cannot tell

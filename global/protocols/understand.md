@@ -75,9 +75,51 @@ A "discovery" is work NOT described in the active task nor in the epic's Planned
 
 1. **Blocks the active task** -> Replan Gate (see Execute protocol).
 2. **Invalidates the epic's Goal or a Non-Goal** -> STOP, escalate to user before any further work.
-3. **Everything else** -> ONE line in BACKLOG.md under `## Icebox`: `- (E-XXX, found in T-YYY) description`. No T-ID, no priority, no artifacts, no further investigation. Capture and move on.
+3. **Everything else takes the routing test below.** Not a catch-all and not a third destination: three
+   outcomes, reached by two questions the engine answers for itself, in a fixed order.
 
-Icebox entries are reviewed IN BATCH at epic close (or when the user asks) — promotion to real T-XXX tasks happens only there, never mid-epic. See Backlog protocol > Icebox.
+### The routing test
+
+**Ownership is asked first, and the order is the whole mechanism.** Asked anywhere but first, a finding
+big enough to be inconvenient escapes to a shared list even where the current task is its owner — which
+is how one ledger reached 23 entries, some outliving five closed epics, under a rule that admitted
+everything in one line.
+
+1. **Is the finding in a file already inside this task's diff?** -> **yes: the task owns it, fix it now.**
+   Terminal; nothing further is asked. The set is `## The Task Diff` as the Verify protocol defines it —
+   commits included, uncommitted work, untracked files — referenced from there and never re-derived here.
+   A command written out at this point narrows the answer silently, and what it drops is precisely the
+   work the task has already committed.
+
+2. **Is the finding on ground this front declared?** -> a **stamp**, never a branch. The declaration is
+   the front's areas from move 2 of the opening ceremony, carried on its roster row. From a linked
+   worktree that roster is not local: locate the main checkout with git's own worktree listing
+   (`git worktree list` — its first entry, the same anchor the guardrail hooks resolve) and read
+   `STATE.md` there **read-only**, never copying it in and never writing there. The answer is *own
+   ground* or *foreign ground*, recorded with the inputs that produced it
+   (`foreign ground (installer ∉ {protocols})`). It is deliberately not terminal: making own ground
+   force the fix would turn a front's entire declared area into scope creep, against the Surgical
+   Changes rule. What it buys is that a wrong hand-off is visible at the close instead of invisible
+   forever.
+
+Then exactly one of two outcomes:
+
+- **Discard** — the flow **cannot reach** the failure. This is the one judgment nothing can derive, so
+  what is checkable is the **written reason**: name why the flow cannot reach it, under `## Discarded`
+  in the file below. With no reason written there is no dismissal — a discard nobody wrote down cannot
+  be told apart from a finding nobody triaged.
+- **Stage** — everything else goes to `artifacts/T-XXX/discoveries.md`, the task's own papers, **never
+  to BACKLOG.md while work is in flight**. One `##` heading per finding, then `ground:` carrying the
+  stamp and its inputs, then the body: what was found and why it matters, written once, here, in full.
+
+**Where a staged finding goes next is not built yet**, and that is said rather than left to be assumed:
+it travels with the task's papers and is deleted with them at archive, like every other paper. The
+quick path keeps no papers at all, so it takes these outcomes and surfaces what survives at its close
+(see Quick Path protocol).
+
+Entries already in BACKLOG.md's `## Icebox` are reviewed IN BATCH at epic close (or when the user
+asks) — promotion to real T-XXX tasks happens only there, never mid-epic. Nothing new reaches that
+section while a task is in flight. See Backlog protocol > Icebox.
 
 ## Steering Files
 
