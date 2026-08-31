@@ -18,6 +18,7 @@ All task management lives in `.ai-flow/`. No external todo files.
 | `decisions-global.md` | Workflow/system decisions (not task-specific) |
 | `artifacts/T-XXX/` | Task artifacts organized by task ID (state.md, understand.md, plan.md, verify.md, discoveries.md) |
 | `archive/T-XXX/` | Completed tasks with all artifacts, decisions, and summary.md |
+| `icebox/` | One parked discovery per file (`IB-XXX.md`) — the body each `## Icebox` index line is regenerated from; retired entries move to `archive/icebox/`, keeping the reason they died |
 | `product.md` | Product context: users, roles, apps, core business flows (read at start of new epics) |
 | `steering/` | Domain-specific rules, patterns, and pitfalls (loaded per-task based on affected domains) |
 

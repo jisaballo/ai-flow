@@ -247,7 +247,9 @@ install_engine() {
 
 # Project data: fresh install only — the only thing that lives in the project
 install_data() {
-  mkdir -p "$TARGET/.ai-flow"/{steering,artifacts,archive}
+  # `archive/icebox` is created here rather than on first retirement so the highest identifier ever
+  # issued stays derivable by listing two directories, with no branch for "the retired half is absent".
+  mkdir -p "$TARGET/.ai-flow"/{steering,artifacts,archive,archive/icebox,icebox}
   for f in BACKLOG STATE decisions-global product; do
     fetch_file "template/.ai-flow/$f.md" "$TARGET/.ai-flow/$f.md"
   done

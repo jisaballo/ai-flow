@@ -6,8 +6,15 @@
 #
 # The rule: project DATA travels, the ledger does not. A second working copy reads the
 # project sheet, the product context, the domain rules and the task artifacts it needs
-# to work; the backlog, the session state, the decision log and the archive stay with
-# the primary checkout, which remains their single writer.
+# to work; the backlog, the session state, the decision log, the archive and the icebox
+# bodies stay with the primary checkout, which remains their single writer.
+#
+# The icebox is named here because it is the one that looks like data and is not: its
+# index lives in the backlog, its identifiers are minted in the coordinator, and a front
+# that needs an entry reads it there read-only. Where this directory is ignored, leaving
+# the icebox unlisted is what keeps it out. Where the project commits it, git carried it
+# in with the checkout and no pattern file can select against that — there what protects
+# it is the written rule that a front never writes the ledger, not this file.
 #
 # The engine itself is deliberately absent: protocols, skills, hooks and the runner live
 # in ~/.claude and reach every worktree without being copied.

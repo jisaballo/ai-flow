@@ -143,14 +143,17 @@ Then exactly one of two outcomes:
   each body verbatim; at the same level it would read the killed findings as live ones and republish, as
   pending work, precisely what a written reason had killed.
 
-**Where a staged finding goes next is not built yet**, and that is said rather than left to be assumed:
-it travels with the task's papers and is deleted with them at archive, like every other paper. The
-quick path keeps no papers at all, so it takes these outcomes and surfaces what survives at its close
-(see Quick Path protocol).
+**Where a staged finding goes next is the write-back at this task's close** — `Icebox write-back`, step 3
+of the single-task archive checklist (see Backlog protocol). It publishes what the task found and did not
+own: the operator sees both halves, and what they admit becomes one index line plus its own body file, the
+essay moved there verbatim from this staging file. Until that close the finding lives here and nowhere
+else, which is the point — a staged finding is the task's paper while the task is in flight, and it becomes
+the ledger's only at a moment somebody is reading. The quick path keeps no papers at all, so it takes these
+outcomes and surfaces what survives at its close (see Quick Path protocol).
 
-Entries already in BACKLOG.md's `## Icebox` are reviewed IN BATCH at epic close (or when the user
-asks) — promotion to real T-XXX tasks happens only there, never mid-epic. Nothing new reaches that
-section while a task is in flight. See Backlog protocol > Icebox.
+Entries already in BACKLOG.md's `## Icebox` are swept WITH the operator at epic close, and promoted or
+retired there. That sweep is no longer the only route out and no longer the first reader: the write-back
+above is. Nothing new reaches that section while a task is in flight. See Backlog protocol > Icebox.
 
 ## Steering Files
 

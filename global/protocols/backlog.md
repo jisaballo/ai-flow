@@ -59,7 +59,7 @@ touch.
 **two** sites — the count is the fact, for the reason **Checkout** above gives about its own four. The
 closing ceremony's **dismantling** move: the ownership condition says the checkout is removed by whatever
 created it, and this column is the only thing that says what that was. And the archive checklist's
-**step 7**, whose label rewrite has first to ask whether that tool offers a mutable label at all; it runs
+**step 8**, whose label rewrite has first to ask whether that tool offers a mutable label at all; it runs
 in the coordinator, which has nothing else to learn the front's tool from. The coordinator's own row has
 nothing to name — nothing created it.
 
@@ -373,10 +373,10 @@ A capture that cannot state its business line yet is captured with what is known
 
 ## BACKLOG.md Size Budget (CRITICAL)
 
-BACKLOG.md must contain **only pending work**. Everything closed lives in `archive/`. Closing a task must make the file SMALLER, never bigger.
+BACKLOG.md must contain **only pending work**. Everything closed lives in `archive/`. **A close must leave nothing closed behind** — that is the whole of the rule, and it is stated about closed work because a close also *publishes*: the Icebox write-back admits pending work at exactly that moment, and one index line per surviving discovery is the price of the finding not being lost. So a close ordinarily shrinks this file and is not required to; what it may never do is leave a closed task's row, narrative or changelog copy sitting here. The earlier form of this rule was an absolute — *smaller, never bigger* — written before anything published at a close, and an absolute contradicted by the engine's own ceremony is a rule its next reader either obeys by dropping findings or ignores entirely.
 
 **Hard rules:**
-- **Soft cap ~300 lines.** If BACKLOG.md exceeds it, something closed is being duplicated there — move it to `archive/`.
+- **Soft cap ~300 lines.** Over it, name the cause before acting, because there are now two. Closed content duplicated here — move it to `archive/`. Or a `## Icebox` grown long, which is **pending** work and belongs in neither `archive/` nor a deletion — sweep it, promoting or retiring entries. Until the write-back began admitting at a close, the first was the only cause, which is why the remedy used to be stated alone; a reader handed that remedy alone against the second cause finds nothing to move and concludes the measurement was wrong.
 - **Session-close changelog entries** (`> YYYY-MM-DD — ...`) go to `archive/CHANGELOG.md` (newest first) — that file is the **only** home, written **once**, at close time. BACKLOG.md keeps a **copy** (condensing is fine) of the **3 most recent** as session continuity; when adding a new one, the oldest of the 3 is **deleted from BACKLOG.md, NOT moved anywhere** — it is already in `archive/CHANGELOG.md`.
   - ⚠️ Reading "rotate the oldest out" as "append it to `archive/CHANGELOG.md`" produces duplicate pairs (a short BACKLOG copy prepended above the already-archived long entry). Rotation is a **delete**, never a write to the archive.
   - Several entries with the **same task/epic ID are legitimate** when they record distinct lifecycle events (`opened` / `activated + split` / `re-audited` / `closed` / `visual reverted`). Same ID alone is NOT a duplicate — only same ID **and** same date **and** one text a condensation of the other.
@@ -422,13 +422,37 @@ If an epic's committed tasks exceed its Planned Tasks baseline by >50% (or by 2 
 
 ### Icebox (discoveries)
 
-BACKLOG.md's `## Icebox` holds discoveries as one-liners:
+BACKLOG.md's `## Icebox` holds one line per parked discovery, and the discovery itself lives in a file of
+its own:
 
 ```markdown
-- (E-XXX, found in T-YYY) description
+- IB-XXX (found in T-YYY) statement
 ```
 
-**Nothing reaches this section while a task is in flight.** A discovery found during a task is routed by the test in Understanding protocol > The routing test and staged in that task's own papers; what sits here arrived before that rule or was put here deliberately. No T-ID, no priority, no artifacts. Icebox entries count as pending work for the Size Budget but are NEVER activated directly — promotion to real T-XXX tasks happens only at the epic-close batch review (or when the user explicitly asks for one).
+The line is **regenerated from the body**, never written beside it — `.ai-flow/icebox/IB-XXX.md` holds the
+essay, moved there verbatim by the write-back that admitted it (`### After ARCHIVE (single task)`, step 3),
+and the line is derived from that essay in the same edit. Retired entries live at
+`.ai-flow/archive/icebox/`, keeping the reason they died; a number is never reused, so the highest ever
+issued is the highest across those two directories.
+
+**An entry carries an identifier and a body file. It still carries no priority, and it is never activated
+directly.** The identifier and the body are a deliberate reversal of the older rule, which forbade both:
+what that rule was protecting is the *ceremony* — no priority, no investigation, no lifecycle — and the
+protection is unchanged. What was given up is the austerity, bought so the index stops being an essay and
+so an entry can be **cited by name**. Without an identifier a cross-reference can only say *"the entry
+above"*, which every entry written under the old rule in fact did, and which breaks on the first reorder.
+Icebox entries count as pending work for the Size Budget.
+
+**Nothing reaches this section while a task is in flight.** A discovery found during a task is routed by
+the test in Understanding protocol > The routing test and staged in that task's own papers; the write-back
+at that task's close is the **only** act that admits an entry here, and it admits nothing the operator has
+not approved. Taking a line out is not putting one in: the epic-close sweep removes the lines of the
+entries it promotes or retires, and that is the one other hand this section ever sees. Entries that predate
+this layout are the exception that proves the rule: they arrived under a rule that admitted anything in one
+line, and migrating them is its own task.
+
+Promotion to a real T-XXX task happens at the write-back, at the epic-close sweep, or whenever the operator
+asks for one — three doors, and the first is the one an ordinary close always reaches.
 
 **On epic completion**, generate `.ai-flow/archive/E-XXX-[slug].md`:
 ```markdown
@@ -586,7 +610,7 @@ what activation has always been, plus the declaration in step 2.
    made at every opening yields inconsistent names, and inconsistency reads worse at a glance than a
    boring uniform scheme. The **current task** goes on whatever **mutable label** the tool offers, and is
    rewritten there by the act that already advances the roster's task field (`### After ARCHIVE (single
-   task)`, step 7) rather than by an act of its own. Where the tool **offers no** such label, nothing is
+   task)`, step 8) rather than by an act of its own. Where the tool **offers no** such label, nothing is
    added and the **roster is the glance** — said out loud, because a silence here reads as a step somebody
    forgot rather than as the floor it is. And a creation-time name that seeds several fields at once names
    the **path**, **never the branch**: a front's branch is **task-scoped** for the reason `## State Files`
@@ -735,32 +759,71 @@ sheet is where an interrupted close is written down, and the roster is the queue
 ### After ARCHIVE (single task)
 
 This checklist is what move 4 of `## Closing a Workstream` runs, and it runs in the coordinator:
-the ledger has one writer, and every step below is that writer at work — except step 4, which also
+the ledger has one writer, and every step below is that writer at work — except step 5, which also
 reaches into the checkout where the task was worked to delete a copy of what it just archived.
 
 1. **Steering update**: did the task teach or modify a domain rule? -> edit the rule in the steering file's **body** AND regenerate its `## Nano` line **in the same edit** — an edit that touches only one of the two is incomplete. No new rule learned -> skip.
 2. **product.md write-back**: copy every rule from understand.md's `New business rules minted` into product.md's Business Rules (with T-XXX provenance); update the Glossary if the task sharpened a term. A business rule that stays only in the archived artifact will be re-asked or re-assumed. None minted -> skip.
-3. Generate `archive/T-XXX/summary.md` (see Archive Summary template)
-4. **Delete** `artifacts/T-XXX/` entirely — in **every checkout that holds it**, not only here. A task
+3. **Icebox write-back**: publish what this task found and did not own, and amend what it touched.
+   Two halves, and **both are shown to the operator — nothing is written until they approve**. That is
+   the whole repair: the shared list grew unowned because entries reached it while nobody was reading.
+   **Additions** are the findings staged under their own `##` headings in
+   `artifacts/T-XXX/discoveries.md`; the `## Discarded` section is not read here, and a discard's reason
+   dies with the papers, which is the trade the routing test already states out loud.
+   **Amendments** are the entries this task touched: the index line is **rewritten, never appended to**,
+   and an entry this task fixed or disproved is **retired**, with the reason it died written into its
+   body. Retiring is the cheapest reaping there is — the only reader who can kill an entry for nothing is
+   the one who already has the context loaded. This move is the **only** act that admits an entry to
+   `## Icebox`; nothing staged reaches it on its own, and nothing reaches it while work is in flight. The
+   epic-close sweep writes here too, but only to take out what it promotes or retires.
+
+   An admitted addition becomes `icebox/IB-XXX.md`. The body is the essay the task already wrote,
+   **moved verbatim, not authored again** — an essay re-authored at the close is re-authored by whoever
+   has the least context left of anyone who will ever hold it. One line is then **regenerated from that
+   body in the same edit** and written to the ledger's `## Icebox`:
+   `- IB-XXX (found in T-YYY) statement`. One edit and not two, for the reason the steering `## Nano`
+   blocks give (step 1 above): two levels inside one diff is the only defence against an index drifting
+   from the thing it indexes.
+
+   **The identifier is minted here, in the coordinator**, where the ledger already has a single writer —
+   so the race the opening ceremony spends a whole move avoiding cannot occur here, and no front ever
+   issues a number. The highest ever issued is the highest in `icebox/` and `archive/icebox/` taken
+   together, which is what makes the other half safe: **retirement moves the body to `archive/icebox/`**
+   and the **number is never reused**, so a citation written a year ago still names one thing. **Where
+   either directory is absent this move creates it** — the installer's data skeleton runs on a fresh
+   install alone, so every project that adopted the engine earlier arrives at its first write-back with
+   nothing there. **The same for the ledger's `## Icebox` heading**, which the shipped BACKLOG.md does not
+   carry: it is created below `## Epics`, after any Execution Order block. A fresh install is the mirror of
+   the case above — it arrives with both directories and no section to write into — and a heading two
+   readers place in two positions is a section neither of them can cite.
+
+   Nothing staged and nothing touched -> skip, and say which of the two halves was empty. It is not a
+   prompt offering two empty lists.
+
+   **Why it sits here.** It publishes **from** the task's papers, and step 5 below deletes them: ordered
+   after that move it would have no source to read. That is also why the position is not a preference —
+   any position that satisfies it renumbers the steps beneath, and the citations were moved with them.
+4. Generate `archive/T-XXX/summary.md` (see Archive Summary template)
+5. **Delete** `artifacts/T-XXX/` entirely — in **every checkout that holds it**, not only here. A task
    worked in a linked worktree leaves a copy there, and the ceremony's tail removes that checkout only
    when the front has no next task: a front continuing its chain keeps the copy, the next task's sheet
    claims the same branch, and the checkout is left with two claims and no way to say which task it is
    on. Locate the front's checkout the way move 2 of the closing ceremony locates it, which is the one
-   place that rule is written. What makes this safe is that the record is already written: step 3
+   place that rule is written. What makes this safe is that the record is already written: step 4
    generated the summary, so what is deleted is a copy of what the archive holds. Which is also why it
    happens **here and not earlier — never before the collection, and never at collection time**: move 3
    can still stop the ceremony, and a front whose merge failed is a front still working that task, with
    the papers it needs gone and git unable to restore what it never tracked.
-5. Remove task from BACKLOG.md (move from Done to nowhere — it's in the archive now)
-6. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
-7. Leave the workstream row to move 7 of `## Closing a Workstream`, its sole owner: the row is removed
+6. Remove task from BACKLOG.md (move from Done to nowhere — it's in the archive now)
+7. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
+8. Leave the workstream row to move 7 of `## Closing a Workstream`, its sole owner: the row is removed
    only when the front has no next task, and a front continuing its chain keeps its row with the task
    field advanced (coordinator only — other open fronts keep theirs). **The same act rewrites the front's
    mutable label** where its tool offers one, to the task the row now names — this is the only statement
    of the continuing case, so a label left to an act of its own is a label nobody would ever rewrite, and
    the front would go on announcing a task that closed here. Where the tool offers none there is nothing
    to rewrite and the row is the whole of it (see move 5 of `## Opening a Workstream`). The task's
-   `state.md` went with `artifacts/T-XXX/` in step 4.
+   `state.md` went with `artifacts/T-XXX/` in step 5.
 
 ### Business-Miss Rule
 
@@ -772,10 +835,16 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
 
 ### After Epic completion
 
-1. **Icebox batch review**: go through the epic's `## Icebox` entries WITH the user — each is promoted to a real T-XXX task (now it gets an ID and priority) or deleted. The Icebox must hold no entries from closed epics.
+1. **Icebox confirmation sweep**: go through the epic's `## Icebox` entries WITH the user — each is
+   promoted to a real T-XXX task (now it gets a priority and a lifecycle) or retired, its body moved to
+   `archive/icebox/` with the reason it died. This is a **sweep and no longer the route out**: every entry
+   here was already put in front of the operator by the write-back that admitted it, so what this move
+   catches is what has since gone stale, not what nobody has read. It was the only door once, and that is
+   precisely why the list it governs reached 23 entries outliving five closed epics — a door reachable only
+   by a ceremony most entries never live to see is a door that is shut.
 2. Generate `archive/E-XXX-[slug].md` (see Epic archive template) — surviving Icebox promotions go under "What Was NOT Done"
 3. **Verify** that `artifacts/` retains no folder of a task of this epic — deleting is the per-task
-   close's own move (step 4 above), which knows what it archived. If a folder is still there, name it
+   close's own move (step 5 above), which knows what it archived. If a folder is still there, name it
    and stop: it belongs either to a task closed without its checklist or to a front that is still
    open, and a sweep cannot tell those apart.
 4. Remove all epic tasks from BACKLOG.md Done section
@@ -809,12 +878,15 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
 ├── artifacts/              # ONLY open task folders
 │   └── T-XXX/              # One folder per open task
 │       └── state.md        # That task's phase, step, autonomy and decisions
+├── icebox/                 # One parked discovery per file
+│   └── IB-XXX.md           # The body its `## Icebox` line is regenerated from
 └── archive/                # Completed work
     ├── CHANGELOG.md        # Session-close entries (newest first)
     ├── EPICS.md            # Closed epics index (rows moved from BACKLOG.md)
     ├── EXECUTION-ORDERS.md # Execution Order blocks of closed epics
     ├── T-XXX/summary.md
-    └── E-XXX-slug.md
+    ├── E-XXX-slug.md
+    └── icebox/IB-XXX.md    # Retired entries — the number is never reused
 ```
 
 **The phase protocols are not in this tree.** They live centrally at `~/.claude/ai-flow/protocols/`,
