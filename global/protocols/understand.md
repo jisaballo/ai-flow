@@ -31,6 +31,14 @@ Holes in the frame become the FIRST round of questions — before any technical 
 
 From an epic's **second task onward**, do NOT relaunch broad Explore agents. Read the epic's Scope Contract (its Execution Order block in BACKLOG.md) plus the task's understand.md if it was created upfront at epic planning; investigation is limited to the task's own files. Anything noticed outside them goes through Discovery Triage — it does NOT widen this task's investigation.
 
+**The Icebox scan is exempt from the second of the two restrictions above** — the limit to the task's own
+files — and still runs in full. It buys no licence over the first: the cap on broad Explore agents stands
+untouched, and the scan launches none. Reading one summary line per entry sizes the investigation rather
+than widening it, and the entries likeliest to be dead are the oldest ones, which no task's own files would
+ever surface. The exemption is written here rather than left to
+inference because second-and-later tasks are the majority: a scan that quietly stopped running on them
+would die exactly where this epic's own evidence says it is needed.
+
 From a **linked worktree** the Scope Contract is not local: the ledger stays with the coordinator, so locate the main checkout with git's own worktree listing (`git worktree list` — the main worktree is its first entry, the same anchor the guardrail hooks resolve) and read its `BACKLOG.md` read-only — never copy it in, and never write there. A copy would go stale against a contract the coordinator can amend; the read does not. If the main checkout or its `BACKLOG.md` cannot be reached, say so and stop: an unreadable contract is a blocked Understand, never an absent constraint.
 
 Exception: if the task's own files contradict an assumption in the Scope Contract, flag it to the user — re-scoping investigation is then allowed. A wrong contract is a Replan signal, not a reason to stay blind.
@@ -141,7 +149,10 @@ Then exactly one of two outcomes:
   **Discards live in that same file under a single `## Discarded` section, one `###` per discard** — not
   as `##` headings of their own. The consumer this shape exists for walks the `##` headings and moves
   each body verbatim; at the same level it would read the killed findings as live ones and republish, as
-  pending work, precisely what a written reason had killed.
+  pending work, precisely what a written reason had killed. **Sightings live in that same file under a
+  single `## Sightings` section, one `###` per entry met** — not as `##` headings of their own, for the
+  same reason discards are not: that consumer would republish a sighting as a finding this task never
+  made.
 
 **Where a staged finding goes next is the write-back at this task's close** — `Icebox write-back`, step 3
 of the single-task archive checklist (see Backlog protocol). It publishes what the task found and did not
@@ -169,6 +180,48 @@ If no steering file exists for the affected domain, proceed without one. Each co
 
 **Scoping pass (always, inline):** before deciding how to investigate, locate the entry points of the affected behavior (grep, read the obvious files) and produce a candidate list of affected areas. This pass SIZES the investigation — it is not the investigation itself.
 
+**Icebox scan (always, inline)** — a step of that same pass, run once it holds the candidate areas and
+before the unknowns are written. It reads **only the summary lines** in the ledger's `## Icebox`, one per
+entry, and **loads a body only where an entry's statement touches this task's ground** — the file is
+`.ai-flow/icebox/IB-XXX.md`. The intersection is a **judgment over that statement**, and never a stored field: an
+area field on the entry would have to be kept true every time the entry is re-priced, and measured against
+this engine's own ledger the front's declared areas matched 4 of 4 entries, discriminating nothing. So what
+is auditable here is the scan's **record**, never its computation.
+
+The scan writes **one aggregate line**: how many entries were scanned, and which ones matched. A scan that
+matched nothing still writes its count — otherwise a skipped scan and a scan with no matches read
+identically, which is the defect the `## Unknowns` list already suffers. Entries that did not match get
+nothing written into them; a line per entry per task is 27 writes and a log that fills with "did not
+apply" is a log that stops being read. Every entry whose body **was** loaded leaves a record, and the two
+branches leave different ones. The entry this task **takes** it takes under the ownership rule the routing
+test above already states — its ground is inside this task's diff, so it is the task's to fix — and its
+record is the retirement the write-back's amendments half performs, or a `narrowed` sighting where what the
+task took only made it smaller. **Taking an entry is never promoting it to a task**: the doors for that are
+Backlog protocol > Icebox and neither of them is here, which is why this branch mints no identifier and
+chooses no priority. The entry this task does **not** take owes a `deferred` sighting staged in this task's
+papers (see Discovery Triage above), naming the task that deferred it. The investigation spent declining an
+entry is the same investigation that would have priced it — discarded, the next reader pays for it again.
+
+Where a loaded entry's log already carries a second `deferred` line, the scan **says so beside its
+aggregate line** and performs nothing else: two deferrals is a signal and the rule it serves is Backlog
+protocol > Icebox, which also holds the five verbs a sighting may carry and the two counts derived from the
+log.
+
+From a **linked worktree both halves are read at the main checkout and neither locally** — the summary
+lines in its `BACKLOG.md` and the bodies those lines name — located by `git worktree list` as the Scope
+Contract read above locates it, and **read-only: never copied in and never written to**. The bodies are
+deliberately not carried to a front (`.worktreeinclude` keeps them with the primary checkout, which stays
+their single writer), so a front resolving `.ai-flow/icebox/` against itself finds an empty directory and
+would read every matched entry as an entry with no body.
+
+**Three failures, and the whole value of the count is that they do not read alike.** A summary line naming
+a body genuinely absent at the main checkout is reported by name and the scan continues — an entry is never
+silently dropped. A `## Icebox` that is absent or empty is zero scanned and not an error: the ordinary
+state of a fresh install. And a **main checkout or ledger that cannot be reached at all is not zero
+scanned** — it takes the answer the Scope Contract read above already gives, say so and stop, because an
+unreadable ledger recorded as an empty one is exactly the indistinguishability this whole paragraph exists
+to refuse.
+
 **Unknowns list — the mandatory, written output of the scoping pass.** The scoping pass is not done until it produces a `## Unknowns` list presented in chat: every open question about the code, one line each ("who else consumes X?", "does flow Y survive Z?"). "No unknowns" is a valid outcome but must be stated explicitly with its source ("Unknowns: none — files pinned by the epic ficha"). The decision inline-vs-agents is never mental: it is derived from this list, and the list lands in understand.md (see template). An unknown that is really a business decision goes to Contextual Questions, not to investigation.
 
 **Altitude — what the first measurement must be able to break.** The first measurement must be able to falsify the framing of the question, not merely answer it. When the task arrives with a diagnosis already attached — named in the task's own text, or recorded by an earlier phase — measure the whole and locate the part; do not inspect the named suspect first. A confirmed suspect proves nothing, because it was named before anything was measured; a falsified frame saves the phase. The artifact records that first measurement and what it could have falsified. Where no diagnosis arrived attached, the field is not written: a note that fires on every run is how a check stops being read.
@@ -190,7 +243,10 @@ What rules the decision is the area left unmeasured: a missed area invalidates t
 
 **When to skip (explicit, mirrors Verify's skip rules):**
 - **Epic tasks from the second onward** — Epic-Scoped Understanding above applies: unknowns limited to the task's own files, no broad Explore agents.
-- **Quick path / Auto level** — the phase is skipped entirely.
+- **Quick path / Auto level** — the phase is skipped entirely, so neither reaches the Icebox scan: the
+  quick path keeps no papers to stage a sighting in, and the auto level runs no phase to scan from. Said
+  rather than left silent, because a mechanism absent by decision and one absent by accident read
+  identically from outside.
 
 Use the results to formulate better contextual questions. Do NOT ask the user questions that could be answered by reading the codebase.
 
@@ -296,6 +352,8 @@ Write `artifacts/T-XXX/understand.md` with:
 |---|---------|--------------|---------------------|
 | 1 | [open question about the code] | inline | [decision] — `file:line`, read first-hand |
 | 2 | [open question about the code] | Explore agent | [decision] — reported by [which agent, over what] |
+
+- **Icebox scan**: [N] scanned, matched: [IB-XXX, IB-YYY — or "none"]; deferred twice: [IB-XXX — or "none"]; unread: [IB-XXX (body absent) — or "none"]
 
 ## Context Gathered
 [Answers from user questions]

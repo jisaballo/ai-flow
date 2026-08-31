@@ -435,6 +435,50 @@ and the line is derived from that essay in the same edit. Retired entries live a
 `.ai-flow/archive/icebox/`, keeping the reason they died; a number is never reused, so the highest ever
 issued is the highest across those two directories.
 
+**The line has a budget: 25 words, counted over the whole line including its `- IB-XXX (found in T-YYY)`
+prefix.** A number rather than a judgment, because the cost it governs is paid by every task that starts:
+the scan in Understanding protocol > Investigation reads one such line per entry, so the budget times the
+number of entries *is* what a task pays before it has investigated anything. Measured on this engine's own
+ledger the day the budget was set — 27 entries at 2,483 words, and the four written under this layout ran
+61 to 70 each — the cut lands almost entirely on the **remedy**, which the body already holds. A budget
+that forced real content out would be the wrong budget; this one squeezes out a duplicate.
+
+**The body grows only through a `## Sightings` log.** Under the essay, one dated line per encounter:
+
+    YYYY-MM-DD — T-YYY — narrowed — what this encounter learned, in one line
+
+and the verb comes from a **closed vocabulary of exactly five**, and no other:
+
+- `confirmed` — the entry was met and still holds as written.
+- `re-priced` — it holds, but its cost or its urgency is not what the body says.
+- `narrowed` — part of it fell. What survives is smaller, and where nothing survives the entry is retired.
+- `falsified` — it does not hold. The entry is retired, and the reason it died goes with it.
+- `deferred` — it holds and this task is not taking it, naming the task that deferred it.
+
+The vocabulary is closed so the log stays countable: an open list of verbs is a log that cannot be read by
+anything but a human re-reading every line. `falsified` and `narrowed` are the reason the mechanism is worth
+its cost — they let an entry die in the hands of a reader who already has the context loaded, which is the
+cheapest reaping this engine has. The log is the **only** growing part of an entry: the essay is amended in
+place and the index line is regenerated, never appended to.
+
+**Two counts ride on the log: `closes survived` and `times deferred`, both derived at read time, stored
+nowhere, and no field is defined for either.** The first is the number of task closes archived later than
+the entry's own `found in T-YYY`, counted from `archive/T-XXX/`; the second is the number of `deferred`
+lines in the entry's own log. Storing them was refused for the reason every stored count is refused here: a
+stored count must be kept true by every writer that could change it, and a close interrupted halfway leaves
+it lying with nothing to say so. Neither is read by any mechanism today — they exist so the operator's own
+review arrives pre-ordered, and so the automation this epic deliberately did not build has a substrate.
+`closes survived` in particular **cannot** be written by the log at all: an entry nobody met still survived
+the close, so a sightings-driven counter would undercount exactly the entries that have been ignored
+longest.
+
+**Two deferrals is a signal, not an act**: where the log carries a second `deferred` line, the scan that
+finds it says so, and the operator promotes the entry to a real task or retires it — the two doors below,
+neither of them new. The engine performs neither on its own; there is no automatic promotion and no
+automatic retirement, which is this epic's frozen non-goal and the reason this is stated as a report and
+not as a rule with teeth. Something that keeps being relevant and keeps not being done is a task, and the
+judgment about which of the two it has become is the operator's.
+
 **An entry carries an identifier and a body file. It still carries no priority, and it is never activated
 directly.** The identifier and the body are a deliberate reversal of the older rule, which forbade both:
 what that rule was protecting is the *ceremony* — no priority, no investigation, no lifecycle — and the
@@ -443,11 +487,15 @@ so an entry can be **cited by name**. Without an identifier a cross-reference ca
 above"*, which every entry written under the old rule in fact did, and which breaks on the first reorder.
 Icebox entries count as pending work for the Size Budget.
 
-**Nothing reaches this section while a task is in flight.** A discovery found during a task is routed by
-the test in Understanding protocol > The routing test and staged in that task's own papers; the write-back
-at that task's close is the **only** act that admits an entry here, and it admits nothing the operator has
-not approved. Taking a line out is not putting one in: the epic-close sweep removes the lines of the
-entries it promotes or retires, and that is the one other hand this section ever sees. Entries that predate
+**Nothing reaches this section while a task is in flight — sightings included.** A discovery found during
+a task is routed by the test in Understanding protocol > The routing test and staged in that task's own
+papers; the write-back at that task's close is the **only** act that admits an entry here, and it admits
+nothing the operator has not approved. A sighting is staged the same way and published by the same move's
+amendments half, so it reaches an entry at the moment somebody is reading and never before: a second
+producer writing at encounter time would have broken this rule, and would have broken it only from a linked
+worktree, where nobody would have seen it. Taking a line out is not putting one in: the epic-close sweep
+removes the lines of the entries it promotes or retires, and that is the one other hand this section ever
+sees. Entries that predate
 this layout are the exception that proves the rule: they arrived under a rule that admitted anything in one
 line, and migrating them is its own task.
 
@@ -775,9 +823,13 @@ reaches into the checkout where the task was worked to delete a copy of what it 
    the whole repair: the shared list grew unowned because entries reached it while nobody was reading.
    **Additions** are the findings staged under their own `##` headings in
    `artifacts/T-XXX/discoveries.md`; the `## Discarded` section is not read here, and a discard's reason
-   dies with the papers, which is the trade the routing test already states out loud.
-   **Amendments** are the entries this task touched: the index line is **rewritten, never appended to**,
-   and an entry this task fixed or disproved is **retired**, with the reason it died written into its
+   dies with the papers, which is the trade the routing test already states out loud. The `## Sightings`
+   section is not read here either, and for a different reason: it is the other half's input, not a
+   finding, and read at this level it would be republished as pending work the task never found.
+   **Amendments** are the entries this task touched: each sighting staged under `## Sightings` is published
+   by appending it to that entry's own log, the index line is then **regenerated from the body within its
+   budget** — rewritten, never appended to — and an entry this task fixed, or whose sighting `falsified` it
+   or `narrowed` it to nothing, is **retired**, with the reason it died written into its
    body. Retiring is the cheapest reaping there is — the only reader who can kill an entry for nothing is
    the one who already has the context loaded. This move is the **only** act that admits an entry to
    `## Icebox`; nothing staged reaches it on its own, and nothing reaches it while work is in flight. The
