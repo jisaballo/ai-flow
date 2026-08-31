@@ -86,10 +86,24 @@ is how one ledger reached 23 entries, some outliving five closed epics, under a 
 everything in one line.
 
 1. **Is the finding in a file already inside this task's diff?** -> **yes: the task owns it, fix it now.**
-   Terminal; nothing further is asked. The set is `## The Task Diff` as the Verify protocol defines it —
-   commits included, uncommitted work, untracked files — referenced from there and never re-derived here.
-   A command written out at this point narrows the answer silently, and what it drops is precisely the
-   work the task has already committed.
+   Terminal for the routing; nothing further is asked. The set is `## The Task Diff` as the Verify
+   protocol defines it — commits included, uncommitted work, untracked files — referenced from there and
+   never re-derived here. A command written out at this point narrows the answer silently, and what it
+   drops is precisely the work the task has already committed.
+
+   **Before Execute has written anything that set is empty**, and a question answering *no* by
+   construction is not a mechanism — it is a clock. So until the first edit lands, the same question is
+   asked against the files the task has already **named**: the Files Affected table above, and the plan's
+   per-step file lists. From Execute onward it is asked against the diff. Ownership is a property of the
+   finding and of the reach this task declared, never of the hour it was noticed.
+
+   **What the task owns it fixes now — where the fix is small and traceable**, in the sense Surgical
+   Changes gives those words. Where it is not, the finding stays **owned**: it is staged with the
+   `own ground` stamp and the reason it was not fixed here, and it never escapes to the shared list on
+   account of its size. Ownership is asked before size so that nothing large escapes merely for being
+   large; size then bounds the **action** and never the routing. That is the whole of the distinction,
+   and it is what keeps this rule from ordering a change that Surgical Changes and the
+   *>3 unplanned files -> Ask First* boundary both forbid.
 
 2. **Is the finding on ground this front declared?** -> a **stamp**, never a branch. The declaration is
    the front's areas from move 2 of the opening ceremony, carried on its roster row. From a linked
@@ -97,20 +111,37 @@ everything in one line.
    (`git worktree list` — its first entry, the same anchor the guardrail hooks resolve) and read
    `STATE.md` there **read-only**, never copying it in and never writing there. The answer is *own
    ground* or *foreign ground*, recorded with the inputs that produced it
-   (`foreign ground (installer ∉ {protocols})`). It is deliberately not terminal: making own ground
+   (`foreign ground (installer ∉ {protocols})`). **Where the read cannot be made** — no main checkout
+   reachable, no `STATE.md` there, no row for this front, or a row whose areas cell is empty — the stamp
+   is `unknown` with the cause named, and it is never simply omitted. The twin instruction above stops an
+   Understand over an unreadable Scope Contract because a contract is a constraint and acting without it
+   is acting blind; a stamp is a record, and the failure to avoid here is the opposite one — a record
+   that goes missing quietly is the thing the close cannot recover. It is deliberately not terminal: making own ground
    force the fix would turn a front's entire declared area into scope creep, against the Surgical
    Changes rule. What it buys is that a wrong hand-off is visible at the close instead of invisible
    forever.
 
 Then exactly one of two outcomes:
 
-- **Discard** — the flow **cannot reach** the failure. This is the one judgment nothing can derive, so
-  what is checkable is the **written reason**: name why the flow cannot reach it, under `## Discarded`
-  in the file below. With no reason written there is no dismissal — a discard nobody wrote down cannot
-  be told apart from a finding nobody triaged.
+- **Discard** — the failure the finding describes **cannot occur**: either the flow **cannot reach** it,
+  or it reaches it and cannot fail there. Both halves are needed, because only one of the three shapes a
+  false positive takes is about reachability — the code was misread — while the other two are reached and
+  are still not failures: the behaviour is intended, or something downstream already prevents it. A test
+  written on reach alone cannot be satisfied in good faith for those two, and an agent held to it will
+  either fabricate the sentence or stall on an outcome this same list calls valid.
+  This is the one judgment nothing can derive, so what is checkable is the **written reason**: name why
+  the failure cannot occur, under `## Discarded` in `artifacts/T-XXX/discoveries.md`. **That file is its
+  only home.** A phase that also records the outcome in a report of its own records the decision and a
+  pointer — never the reason instead, or the record that makes the discard valid lives where the rule
+  requiring it will not look. With no reason written there is no dismissal — a discard nobody wrote down
+  cannot be told apart from a finding nobody triaged.
 - **Stage** — everything else goes to `artifacts/T-XXX/discoveries.md`, the task's own papers, **never
   to BACKLOG.md while work is in flight**. One `##` heading per finding, then `ground:` carrying the
   stamp and its inputs, then the body: what was found and why it matters, written once, here, in full.
+  **Discards live in that same file under a single `## Discarded` section, one `###` per discard** — not
+  as `##` headings of their own. The consumer this shape exists for walks the `##` headings and moves
+  each body verbatim; at the same level it would read the killed findings as live ones and republish, as
+  pending work, precisely what a written reason had killed.
 
 **Where a staged finding goes next is not built yet**, and that is said rather than left to be assumed:
 it travels with the task's papers and is deleted with them at archive, like every other paper. The

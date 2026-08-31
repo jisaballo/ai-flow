@@ -36,10 +36,23 @@ written into a worktree the ceremony is about to dismantle is a trace that does 
 ## Discoveries on a path that keeps no papers
 
 A quick task writes no `artifacts/T-XXX/`, so the staging file of Discovery Triage (Understanding
-protocol) does not exist here. It takes the routing test's two terminals unchanged — a finding in a file
-this task's diff already covers is fixed now, and a finding the flow cannot reach is discarded with the
-reason stated — and whatever survives is **surfaced to the user at the close**, in the same sitting,
-where the user is already present to decide where it goes.
+protocol) does not exist here. It takes the routing test's two terminals unchanged — **a finding in a
+file this task's diff already covers is fixed now**, and **a finding whose failure cannot occur is
+discarded** — and whatever survives is **surfaced to the user in the working sitting**, before the task
+is handed over, where the user is present to decide where it goes.
+
+**The working sitting, not "the close" — the two are not the same here**, and the difference is the
+whole reason this is stated rather than assumed. A quick task's close is the coordinator's ceremony
+above: the merge plus its row, which a linked checkout never writes. A survivor promised to "the close"
+of a quick task worked in a front is promised to a ceremony that happens somewhere else, after the
+sitting that found it has ended — which is the silent loss this rule exists to prevent, reintroduced by
+naming the wrong moment.
+
+**A discard is surfaced the same way, with its reason.** Everywhere else the reason is written under
+`## Discarded` in the staging file, and that writing is what makes the discard stand; here there is no
+file, so what stands in for it is saying the reason out loud to the user who is present. Without that
+substitution a quick task could not perform a valid discard at all — by the routing test's own terms,
+every discard on this path would be a finding nobody triaged.
 
 That is the whole of it, and it is written as this path's own rule rather than as an exemption: the
 alternative was routing a survivor to the ledger unseen, which is the leak the routing test exists to

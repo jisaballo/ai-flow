@@ -70,16 +70,26 @@ decision happens here instead, where the diff, the criteria and the plan are alr
 **Take each MEDIUM finding through the routing test of Discovery Triage** (understand protocol), in its
 order. Read the cited code before deciding; the auditor saw the diff, not the surrounding flow.
 
-- **Fix now** — the finding sits in a file already inside this task's diff, so the task owns it. Fix it,
+The order below **is** the protocol's, and the order is the mechanism: ownership first, then the discard
+test, and staging as what is left. Offering staging before the discard files a false positive as a real
+finding whenever it happens to sit outside the diff.
+
+- **Fix now** — the finding sits in a file this task already reaches, so the task owns it. Fix it,
   re-run the step's Verify command, and record it in verify.md as fixed during verify. **Asked before
   scope, not after**: a MEDIUM the task already owns does not become somebody else's because the fix is
-  large.
-- **Stage it** — real, and not in a file this task's diff already covers. It goes to
-  `artifacts/T-XXX/discoveries.md` with its ground stamp, never to BACKLOG.md mid-task and never as a new
-  task mid-epic. Record where it went.
-- **Discard it** — it is a false positive: already handled elsewhere, intended behavior, or a misread of the
-  code. Say which, in one line, and say why the flow cannot reach the failure. This is the judgment a
-  refutation agent used to make, made by the actor that did not have to rebuild the context to make it.
+  large. What bounds it is the *action*, not the routing — fix it where the fix is small and traceable in
+  the sense Surgical Changes gives those words, and where it is not, stage it **still owned**, with the
+  `own ground` stamp and the reason it was not fixed here. It never leaves the task on account of its
+  size, and the reverse audit has nothing untraceable to flag.
+- **Discard it** — the failure it describes cannot occur: the code was misread, the behavior is intended,
+  or something downstream already prevents it. Say which, in one line, and say why the failure cannot
+  occur — **not** why the flow cannot reach it, which two of those three cases reach and survive anyway.
+  The reason goes under `## Discarded` in `artifacts/T-XXX/discoveries.md`; what is recorded here is the
+  decision and a pointer to it. This is the judgment a refutation agent used to make, made by the actor
+  that did not have to rebuild the context to make it.
+- **Stage it** — what is left: real, and not in a file this task already reaches. It goes to
+  `artifacts/T-XXX/discoveries.md` with its ground stamp, never to BACKLOG.md while the task is in flight
+  and never as a new task mid-epic. Record where it went.
 
 **Say which outcome each one got.** An unadjudicated finding that reaches verify.md still unadjudicated has
 only moved the omission into the record — and `## Review Findings` is then a list whose reader cannot tell
