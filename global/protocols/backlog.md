@@ -451,8 +451,14 @@ entries it promotes or retires, and that is the one other hand this section ever
 this layout are the exception that proves the rule: they arrived under a rule that admitted anything in one
 line, and migrating them is its own task.
 
-Promotion to a real T-XXX task happens at the write-back, at the epic-close sweep, or whenever the operator
-asks for one — three doors, and the first is the one an ordinary close always reaches.
+Promotion to a real T-XXX task happens at the epic-close sweep, or whenever the operator asks for one —
+**two doors, and the write-back is not one of them.** What that move admits is an entry, never a task.
+Nothing is lost by the omission: the operator is reading both halves while it runs, so a staged finding that
+plainly deserves a task is promoted by them asking — the second door firing at that moment rather than a
+third one. A promotion act written into the move would have to mint a T-ID, choose a priority and place a
+row in `## Ready`: the second door's work rebuilt inside a move that already has the operator in the room.
+Stated with its reason because the sentence this replaces claimed the write-back as a door and the move
+never defined the act.
 
 **On epic completion**, generate `.ai-flow/archive/E-XXX-[slug].md`:
 ```markdown
