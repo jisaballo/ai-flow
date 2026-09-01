@@ -10850,6 +10850,7 @@ fi
 # the holders of the exit codes for all five bounded reports.
 echo "== C55: the ledger's size budget is prose, said once, and no report repeats =="
 GRD55="$HK/check-state-size.sh"
+BLG55="$ROOT/global/protocols/backlog.md"
 
 # The same capability probe C45 documents: chmod 000 is the whole method for the unreadable rows and it
 # does not work for a superuser, so a row built on it would report a repair while measuring nothing.
@@ -10900,15 +10901,19 @@ if ! T55="$(mktemp -d 2>/dev/null)" || [ ! -d "$T55" ]; then
   bad "A6 a threshold already spoken in this session is not spoken again (no sandbox: mktemp -d failed)"
   bad "A7 every bounded report refuses, and reports on stderr (no sandbox: mktemp -d failed)"
   bad "A8 with no python3 the note speaks rather than falling silent (no sandbox: mktemp -d failed)"
-elif [ ! -r "$GRD55" ] || [ ! -s "$GRD55" ]; then
-  bad "A1 a backlog over its word budget is noted, not refused (the guard is unreadable)"
-  bad "A2 the firm note states both the measurement and the threshold (the guard is unreadable)"
-  bad "A3 the word budget speaks at 8,001 and stays silent at 8,000 (the guard is unreadable)"
-  bad "A4 a re-delivered stop is answered with silence, blockers included (the guard is unreadable)"
-  bad "A5 two reports in one run both reach the operator, on stderr (the guard is unreadable)"
-  bad "A6 a threshold already spoken in this session is not spoken again (the guard is unreadable)"
-  bad "A7 every bounded report refuses, and reports on stderr (the guard is unreadable)"
-  bad "A8 with no python3 the note speaks rather than falling silent (the guard is unreadable)"
+  bad "A9 the size rule names three causes and the third's remedy is not a prune (no sandbox: mktemp -d failed)"
+  bad "A10 no document states a line budget for the ledger (no sandbox: mktemp -d failed)"
+elif [ ! -r "$GRD55" ] || [ ! -s "$GRD55" ] || [ ! -r "$BLG55" ] || [ ! -s "$BLG55" ]; then
+  bad "A1 a backlog over its word budget is noted, not refused (the guard or the protocol is unreadable)"
+  bad "A2 the firm note states both the measurement and the threshold (the guard or the protocol is unreadable)"
+  bad "A3 the word budget speaks at 8,001 and stays silent at 8,000 (the guard or the protocol is unreadable)"
+  bad "A4 a re-delivered stop is answered with silence, blockers included (the guard or the protocol is unreadable)"
+  bad "A5 two reports in one run both reach the operator, on stderr (the guard or the protocol is unreadable)"
+  bad "A6 a threshold already spoken in this session is not spoken again (the guard or the protocol is unreadable)"
+  bad "A7 every bounded report refuses, and reports on stderr (the guard or the protocol is unreadable)"
+  bad "A8 with no python3 the note speaks rather than falling silent (the guard or the protocol is unreadable)"
+  bad "A9 the size rule names three causes and the third's remedy is not a prune (the guard or the protocol is unreadable)"
+  bad "A10 no document states a line budget for the ledger (the guard or the protocol is unreadable)"
   rm -rf "$T55"
 else
 
@@ -11165,6 +11170,36 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
                     || bad "A8 with no python3 the note speaks rather than falling silent:$c8_55"
   fi
 
+  # --- A9 / A10 (paired) — the rule's causes, and the number that must not survive
+  # THE PAIRING IS THE DESIGN, the house shape: presence alone is satisfied by leaving the old line budget
+  # beside the new word rule, so the engine would state two units at once — which is the exact failure the
+  # measurement behind this task found in the cause list. Absence alone is satisfied by deleting the
+  # section. Neither half is the criterion on its own.
+  SZB55="$(awk '/^## BACKLOG\.md Size Budget/{f=1;next} f && /^#{2,3} /{exit} f' "$BLG55" | tr '\n' ' ' | tr -s ' ')"
+  n55() { printf '%s' "$1" | grep -ciE "$2" | tr -d ' '; }
+  c9_55=""
+  [ -n "$SZB55" ] || c9_55="$c9_55 [the size-budget section did not extract — heading renamed?]"
+  [ "$(n55 "$SZB55" '8,?000')" -ge 1 ]  || c9_55="$c9_55 [the section states no soft word threshold]"
+  [ "$(n55 "$SZB55" '15,?000')" -ge 1 ] || c9_55="$c9_55 [the section states no firm word threshold]"
+  [ "$(n55 "$SZB55" 'three causes')" -ge 1 ] || c9_55="$c9_55 [the cause list is not stated to be three]"
+  # The third cause and its refusal of the prune, as an ordered co-occurrence. Two independent greps would
+  # pass prose that names the cause and then offers a prune for it anyway, which is the whole reason the
+  # cause is being written down: a note pointing at a remedy that does not apply teaches its reader to
+  # stop reading it.
+  [ "$(n55 "$SZB55" '(open|ready)[^.]{0,120}(essay|row)[^.]{0,200}(not a prune|no prune|pruning does not|cannot be pruned)')" -ge 1 ] \
+    || c9_55="$c9_55 [the third cause is not named with its remedy refused in the same breath]"
+  [ -z "$c9_55" ] && ok "A9 the size rule names three causes and the third's remedy is not a prune" \
+                  || bad "A9 the size rule names three causes and the third's remedy is not a prune:$c9_55"
+
+  # Counted across the whole engine, because a retired number moved one section over still reads as the
+  # budget. Scoped to a LINE budget for this ledger, so the sibling hook's turn thresholds and the diff
+  # guardrail's LOC ceilings are not swept up with it.
+  g55() { grep -rIloE "$1" "$ROOT/global/" 2>/dev/null | wc -l | tr -d ' '; }
+  c10_55=""
+  [ "$(g55 '(~|under |budget )300 lines')" -eq 0 ] || c10_55="$c10_55 [a document still states a 300-line budget]"
+  [ "$(g55 'lines \(budget')" -eq 0 ]             || c10_55="$c10_55 [the guard still reports the ledger in lines]"
+  [ -z "$c10_55" ] && ok "A10 no document states a line budget for the ledger" \
+                   || bad "A10 no document states a line budget for the ledger:$c10_55"
 fi
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
