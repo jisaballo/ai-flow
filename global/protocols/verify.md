@@ -141,8 +141,10 @@ resolved: `branch scope unavailable — uncommitted work only`. Where the trunk 
 commit(s) ahead of its remote, and publishing what is not this task's own removes the overlap; where
 the trunk is current, where no remote trunk resolved, or where no base resolved, no lag line is
 written. The working copy was left as found; if it was
-not, what changed and what was restored. If the audit ran out of phase on the operator's word, that it
-did and that the sheet's position was not moved.
+not, what changed and what was restored. The review profile step 7 resolved and the checklist each axis
+received, or that an axis received none, plus any profile or checklist path that did not resolve; where
+the project declared no profiles at all, no line about them. If the audit ran out of phase on the
+operator's word, that it did and that the sheet's position was not moved.
 
 ## Criteria Audit
 | # | Criterion (from understand.md) | Status | Evidence |
@@ -178,12 +180,25 @@ After the criterion audit (steps 1-4), the multi-agent review runs **determinist
 
 ### What it does
 
-Runs 4 auditors in parallel over the task diff (see **The Task Diff** above):
+Runs 4 auditors in parallel over the task diff (see **The Task Diff** above): the **Business Contract
+Auditor**, the **Test Coverage Auditor**, **Security & Error Handling**, and **Architecture Boundaries**.
 
-- **Business Contract Auditor** — audits the diff against the user-approved contract (understand.md `Business Frame` + plan.md `Contract` and `Decision Register`), which is the oracle: (a) contract requirements missing or partial; (b) behavior the contract never asked for (business-level scope creep); (c) requirements that look implemented but wrong. Every finding quotes the contract line it violates.
-- **Test Coverage Auditor** — public methods/branches/edge-cases without tests; existing tests that should have been updated but weren't.
-- **Security & Error Handling** — unvalidated (esp. user-facing) input; async without error handling; subscriptions without unsubscribe; sensitive data in logs/templates/state; missing null/undefined checks on external data.
-- **Architecture Boundaries** — imports crossing forbidden module/layer boundaries defined by the project; modules reaching into another module's internals instead of its public entry point; code bypassing the project's established access pattern; steering-rule and reference-implementation divergences.
+**What each one looks for is stated in the workflow and nowhere else** — `global/workflows/verify-review.js`,
+the `DIMENSIONS` array. That is the text the agents actually receive, so a second copy here would be a
+description of the review rather than the review, and the two would drift: they already had, for long
+enough that one said *subscriptions without unsubscribe* while the running prompt said *resources acquired
+but never released*. Read the lists there.
+
+One thing about their content belongs here, because it is a property of the phase rather than of any one
+axis: the engine's four lists **name no language, framework or runtime**. They are what applies to a
+project that has declared nothing, and a list that assumed a stack would ask a prose repository about a
+stack it is not written in.
+
+A project may **add** to those lists, per axis, through the review profile its `project.yml` declares. How
+an area resolves to a profile, what a checklist may and may not do to the engine's list, and what happens
+when a declaration does not resolve are stated in the **`/verify` skill, step 7, and there only** — the
+same citation this section makes above, for the same reason, and a summary here would be the second copy
+with two of its clauses missing.
 
 Then it **adversarially refutes every HIGH finding**: a skeptic agent reads the code in context and tries to refute it; only findings that survive (confirmed=true) hold the gate. HIGH is refuted because HIGH is what blocks — it is the one level where a false finding costs something to hold.
 
@@ -240,8 +255,10 @@ resolved: `branch scope unavailable — uncommitted work only`. Where the trunk 
 commit(s) ahead of its remote, and publishing what is not this task's own removes the overlap; where
 the trunk is current, where no remote trunk resolved, or where no base resolved, no lag line is
 written. The working copy was left as found; if it was
-not, what changed and what was restored. If the audit ran out of phase on the operator's word, that it
-did and that the sheet's position was not moved.
+not, what changed and what was restored. The review profile step 7 resolved and the checklist each axis
+received, or that an axis received none, plus any profile or checklist path that did not resolve; where
+the project declared no profiles at all, no line about them. If the audit ran out of phase on the
+operator's word, that it did and that the sheet's position was not moved.
 
 ## Criteria Audit
 | # | Criterion | Status | Evidence |

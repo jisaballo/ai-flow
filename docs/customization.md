@@ -36,6 +36,11 @@ commands:
                             # stated no-op
 steering:                   # area -> steering file the verify phase loads
   auth: steering/auth.md
+review:                     # optional — what the review auditors look for, per stack
+  angular-app:
+    security: .claude/skills/review/SKILL.md
+review_profile:             # optional — which area uses which profile
+  default: angular-app
 ```
 
 **Why it exists:** without it, the skills would have to guess your test command from CLAUDE.md prose, so people hardcode their stack into the skills and the framework drifts. `project.yml` makes one generic skill as reliable as a hardcoded one.
@@ -43,6 +48,58 @@ steering:                   # area -> steering file the verify phase loads
 **Authority:** `project.yml` is authoritative for commands. CLAUDE.md may list commands in prose for humans — keep them consistent; the skills trust `project.yml`.
 
 **Fallback:** if `project.yml` is absent, the skills infer values from CLAUDE.md (legacy behavior), so older projects keep working.
+
+### Review profiles — `review:` + `review_profile:` (optional)
+
+The verify phase runs four auditors — Business Contract, Test Coverage, Security & Error Handling,
+Architecture Boundaries. The engine ships **one stack-agnostic checklist per axis** and always applies it.
+These two keys let a project add its own checklist on top, so a change is judged with the vocabulary of the
+stack it is actually written in.
+
+`review:` maps a **profile name** to a checklist path per axis. Every axis is optional — declare the ones
+you have. Paths are relative to the repository root and may point **anywhere**, so you can aim at a
+checklist you already keep rather than duplicating it:
+
+```yaml
+review:
+  angular-app:
+    coverage:     .ai-flow/review/angular-tests.md
+    security:     .claude/skills/review/SKILL.md
+    architecture: .ai-flow/steering/frontend.md
+  express-api:
+    security:     .ai-flow/review/express-security.md
+```
+
+`review_profile:` says which area uses which profile, keyed on the **same area name** as `steering:`:
+
+```yaml
+review_profile:
+  default: angular-app        # RESERVED key — not an area
+  cloud-functions: express-api
+```
+
+**How an area resolves**, in order: the profile named for that area; else the profile named under
+`default:` **where you wrote one**; else nothing. An area that resolves to nothing is reviewed with the
+engine's own lists — **no project default is ever inferred**. An omission makes the review shallower, never
+wrong: a false finding costs you a triage, a generic axis costs only depth.
+
+**A profile is additive.** Its checklist is read *on top of* the engine's list for that axis, never instead
+of it. You extend the review; you cannot narrow it.
+
+**The run tells you what judged your change, before it judges it.** Whichever profile resolved and whichever
+checklist each axis received is said in the run's own output before any auditor starts, and written into the
+report afterwards. You never have to open the report to find out which list your change was read against.
+
+**A declaration that does not resolve is named, and the run continues.** A profile absent from `review:`
+falls the whole area to the engine's lists; a checklist path that cannot be read falls **that axis alone**,
+and the other axes keep theirs. Either way it is named in that same output, and the report records it — a
+mistyped profile costs you depth and a warning, never a stopped verify.
+
+**Declare neither key and nothing changes**: the run reads exactly as it did before profiles existed, and
+writes no line about them.
+
+**What a project cannot redefine:** severities, the archive gate, the adversarial refutation of HIGH
+findings, and the mutation prover. Those are the engine's, and they stay there.
 
 ### Product Context (recommended)
 

@@ -43,3 +43,25 @@ steering: {}
   # example:
   # auth: steering/auth.md
   # payments: steering/payments.md
+
+# --- Review profiles (optional) ----------------------------------------------
+# What the four review auditors look for, in YOUR stack's vocabulary, added ON TOP
+# of the engine's own stack-agnostic list for each axis. Both keys are commented
+# out on purpose: absent is the default state, and the verify run says nothing
+# about profiles until you declare one.
+#
+# The rules — how an area resolves, what `default:` reserves, what happens to a
+# path that does not read — are in docs/customization.md, "Review profiles", and
+# are not restated here.
+#
+# review:
+#   angular-app:
+#     coverage:     .ai-flow/review/angular-tests.md
+#     security:     .claude/skills/review/SKILL.md   # any project-relative path
+#     architecture: .ai-flow/steering/frontend.md
+#   express-api:
+#     security:     .ai-flow/review/express-security.md
+#
+# review_profile:            # keyed on the SAME area name as `steering:` above
+#   default: angular-app     # `default:` is RESERVED here — it is not an area
+#   cloud-functions: express-api

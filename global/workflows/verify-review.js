@@ -8,7 +8,14 @@ export const meta = {
   ],
 }
 
-// args (from the /verify skill): { taskId, area, understandPath, planPath, steeringPath, claudeMdPath, changedFiles, diffText, testCommand }
+// args (from the /verify skill): { taskId, area, understandPath, planPath, steeringPath, claudeMdPath, changedFiles, diffText, testCommand,
+//                                  contractChecklist, coverageChecklist, securityChecklist, architectureChecklist }
+// The four `*Checklist` paths are the project's own list for that axis, resolved by the skill from the
+// review profile of the area under audit. Each is OPTIONAL and each is ADDITIVE: the engine's list below
+// is stack-agnostic and always applies, and a checklist extends it rather than replacing it. An axis given
+// none is the ordinary case — the project declared no profile, or declared one that does not cover this
+// axis — and it reviews with the engine list alone. Nothing here infers a checklist that was not passed:
+// an omission must make the review shallower, never wrong.
 // The Workflow runtime may deliver `args` as a JSON string; parse it back to an object.
 let a = args || {}
 if (typeof a === 'string') {
@@ -126,6 +133,8 @@ const DIMENSIONS = [
       `- Requirements that LOOK implemented but are wrong (the code does something — just not what the contract says)`,
       `- Code that contradicts a Decision Register entry the user approved`,
       ``,
+      a.contractChecklist ? `This project keeps its own checklist for this axis. Read ${a.contractChecklist} and apply it IN ADDITION to the list above — it extends that list and never narrows it: it can only add questions, never remove one. Where an item appears in both, report it once. If that file cannot be read, say so in your findings and audit with the list above alone — never return empty over it.` : ``,
+      ``,
       `Every finding MUST quote the contract/decision line it violates. Write the rationale in product language — what the product does vs. what the contract says — citing file + line only as evidence. Severity: high = a contract line violated or unmet; medium = partial or ambiguous compliance; low = cosmetic drift. Return an empty findings array if the contract is honored.`,
     ].join('\n'),
   },
@@ -138,12 +147,14 @@ const DIMENSIONS = [
       `You are the TEST COVERAGE AUDITOR for an ai-flow verify phase. If a spec is provided, read it for the intended Verifiable Criteria and edge cases: ${a.understandPath || '(none)'}.`,
       ``,
       `Inspect the diff and the changed files (Read them in full as needed). Find test coverage gaps:`,
-      `- Public methods / functions without test coverage`,
-      `- Branches not exercised (if/else, switch cases, error paths)`,
-      `- Edge cases named in the spec without a corresponding test`,
-      `- Regression risk: existing tests that should have been updated but weren't`,
+      `- Behavior reachable from outside the unit that no test exercises`,
+      `- Paths not taken by any test — the alternative branch, the failing case, the empty and the boundary input`,
+      `- Edge cases named in the spec with no test corresponding to them`,
+      `- Regression risk: an existing test that should have been updated by this change and was not`,
       ``,
-      `Severity: high = untested critical/public behavior or a missing regression guard; medium = untested branch/edge case; low = nice-to-have. Cite file + line. Return an empty findings array if there are none.`,
+      a.coverageChecklist ? `This project keeps its own checklist for this axis. Read ${a.coverageChecklist} and apply it IN ADDITION to the list above — it extends that list and never narrows it: it can only add questions, never remove one. Where an item appears in both, report it once. If that file cannot be read, say so in your findings and audit with the list above alone — never return empty over it.` : ``,
+      ``,
+      `Severity: high = untested critical or externally reachable behavior, or a missing regression guard; medium = an untested path or edge case; low = nice-to-have. Cite file + line. Return an empty findings array if there are none.`,
     ].join('\n'),
   },
   {
@@ -152,12 +163,16 @@ const DIMENSIONS = [
     prompt: [
       ctx,
       ``,
-      `You are the SECURITY & ERROR HANDLING auditor for an ai-flow verify phase. Inspect the diff and the changed files (Read them as needed). Find:`,
-      `- Inputs without validation (especially user-facing)`,
-      `- Async operations without error handling`,
-      `- Resources acquired but never released (leak risk: subscriptions, listeners, handles, connections)`,
-      `- Sensitive data exposed in logs, responses, or state`,
-      `- Missing null/undefined checks on external data`,
+      `You are the SECURITY & ERROR HANDLING auditor for an ai-flow verify phase.${a.steeringPath ? ` The project's rules for this area are in ${a.steeringPath} — read them: an area whose stack or threat model differs from the rest of the project says so there.` : ''} Inspect the diff and the changed files (Read them as needed). Find:`,
+      `- Inputs without validation, especially any value that crosses a trust boundary into this code`,
+      `- Operations that can fail with no path for the failure — it is swallowed, or it never reaches a caller that could act on it`,
+      `- Resources acquired and never released, including on the paths where something went wrong`,
+      `- Sensitive data exposed where it is written, stored or transmitted — output, logs, persisted state, error text`,
+      `- Data from outside the unit consumed without checking it is what the code assumes it is`,
+      ``,
+      a.securityChecklist ? `This project keeps its own checklist for this axis. Read ${a.securityChecklist} and apply it IN ADDITION to the list above — it extends that list and never narrows it: it can only add questions, never remove one. Where an item appears in both, report it once. If that file cannot be read, say so in your findings and audit with the list above alone — never return empty over it.` : ``,
+      ``,
+      `The list above names no language, framework or runtime, because it is what applies when a project has declared nothing. Anything specific to how THIS repository is written arrives in the checklist above it, or in the steering file, or not at all — do not supply it from assumptions about the stack.`,
       ``,
       `Severity high/medium/low. Cite file + line. Return an empty findings array if there are none.`,
     ].join('\n'),
@@ -171,11 +186,13 @@ const DIMENSIONS = [
       `You are the ARCHITECTURE BOUNDARIES auditor for an ai-flow verify phase. Read the project's architecture and import rules in ${a.claudeMdPath || 'CLAUDE.md'}${a.steeringPath ? ` and the steering file ${a.steeringPath}` : ''}.`,
       ``,
       `Inspect the diff and the changed files. Find:`,
-      `- Imports crossing forbidden module/layer boundaries defined by the project`,
+      `- Dependencies crossing forbidden module/layer boundaries defined by the project`,
       `- Modules reaching into another module's internals instead of its public entry point`,
       `- Code bypassing the project's established access pattern (e.g. skipping a defined abstraction layer)`,
       `- Divergences from the project's reference/gold-standard pattern`,
       `- Steering-file rules violated`,
+      ``,
+      a.architectureChecklist ? `This project keeps its own checklist for this axis. Read ${a.architectureChecklist} and apply it IN ADDITION to the list above — it extends that list and never narrows it: it can only add questions, never remove one. Where an item appears in both, report it once. If that file cannot be read, say so in your findings and audit with the list above alone — never return empty over it.` : ``,
       ``,
       `Severity high/medium/low. Cite file + line + the rule violated. Return an empty findings array if there are none.`,
     ].join('\n'),
