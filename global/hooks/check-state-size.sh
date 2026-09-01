@@ -4,6 +4,9 @@
 #   - STATE.md carries narrative of closed work outside its two sanctioned records
 #   - BACKLOG.md exceeds its size budget (~300 lines) or holds >3 session-close changelog entries
 # No-op in any project without an .ai-flow/, so it's safe globally.
+#
+# It reports at most once per request. Where the payload says the stop is one the harness is
+# re-delivering after a refusal, the guard exits quietly rather than turning one refusal into a loop.
 
 # The ledger belongs to the coordinator checkout. A linked worktree only ever holds a copy of it,
 # so policing that copy would report the coordinator's hygiene where nothing can fix it.
@@ -15,6 +18,47 @@ gitdir="$(git rev-parse --git-dir 2>/dev/null || true)"
 common="$(git rev-parse --git-common-dir 2>/dev/null || true)"
 if [ -n "$gitdir" ] && [ -n "$common" ] && [ "$(canon_dir "$gitdir")" != "$(canon_dir "$common")" ]; then
   exit 0
+fi
+
+# The Stop payload, read once, before any check runs. Three siblings at this event already read it and
+# this guard was the only one that did not — measured: `diff-size-guard.py`, `drift-check.sh` and
+# `context-cost-note.py` all resolve `stop_hook_active`, and this file read stdin nowhere while being one
+# of the three that refuse. The cost of that gap is not a missed report but a loop: on a refusal the
+# harness re-delivers the stop, and a guard that cannot tell a re-delivery from a first delivery refuses
+# again, and again, for as long as the condition holds. Reported from the field as the guard firing
+# "mid-requirement" — which is what a loop looks like from the outside, since every turn close meets it.
+#
+# The read is BOUNDED and accumulates line-wise. A Stop hook waiting for input it never receives is a
+# hung session, strictly worse than anything this guard is protecting; and a read that waits for a
+# delimiter loses on bash 3.2 whatever it had already taken. The `|| [ -n "$stop_line" ]` arm is what
+# keeps a payload with no trailing newline, which is the ordinary shape: at EOF the read reports failure
+# and still assigns what it took. The `-t 0` gate keeps a hand run — or a conformance row that feeds
+# nothing — from waiting on a terminal that will never speak.
+STOP_PAYLOAD=""
+stop_line=""
+if [ ! -t 0 ]; then
+  while IFS= read -r -t 2 stop_line || [ -n "$stop_line" ]; do
+    STOP_PAYLOAD="$STOP_PAYLOAD$stop_line"
+    stop_line=""
+  done
+fi
+
+# Parsed, never matched as text, and for the reason this repository already states about this very field:
+# a guard reading the characters of a mechanism cannot tell the field from the same characters appearing
+# inside something else, and a truncated or non-JSON payload carrying them would be read as an
+# instruction to go quiet — a false all-clear over a ledger this guard was about to report on. Malformed
+# is therefore ABSENT, and absent reports.
+#
+# Where python3 is missing no suppression happens at all and the guard behaves as it did before this
+# existed: the noisy direction, which is the safe one for every report here. A guard that fails loud
+# costs a repeated message; one that fails quiet costs the verdict itself.
+if [ -n "$STOP_PAYLOAD" ] && command -v python3 >/dev/null 2>&1; then
+  printf '%s' "$STOP_PAYLOAD" | python3 -c 'import json, sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    d = {}
+sys.exit(0 if isinstance(d, dict) and d.get("stop_hook_active") is True else 1)' && exit 0
 fi
 
 problems=""

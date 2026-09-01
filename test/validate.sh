@@ -161,6 +161,10 @@ mkproj() {  # $1 = dir, $2 = initial branch name -> repo with one commit
   $GIT -C "$1" commit -q -m init
 }
 nlines() { seq 1 "$1" | sed 's/^/line /'; }
+# N words, exactly, counted the way `wc -w` counts them: whitespace-separated tokens. `nlines` cannot
+# serve where a word budget is being driven — it emits two words per line, so its 400-line fixture is 800
+# words and sits an order of magnitude under the budget.
+nwords() { seq 1 "$1" | tr '\n' ' '; printf '\n'; }
 wguard() {  # $1 = cwd, $2 = file_path -> prints output, returns hook exit code
   printf '{"cwd":"%s","tool_input":{"file_path":"%s"}}' "$1" "$2" | python3 "$HK/understand-write-guard.py" 2>&1
 }
@@ -10813,6 +10817,76 @@ else
     || c22_73="$c22_73 [the taken branch cites no rule bounding what it may take]"
   [ -z "$c22_73" ] && ok "A22 taking an entry is bounded and is not a promotion" \
                    || bad "A22 taking an entry is bounded and is not a promotion ($c22_73)"
+fi
+
+# C55 — no report from this guardian repeats itself turn after turn. Generated in the Conform phase from
+# understand.md's Verifiable Criteria; the section grows as the remaining criteria are taken.
+#
+# Every verdict is derived from an exact exit code or from a COUNT, never from a `grep -v` inside an `if`.
+#
+# THE TWO STREAMS ARE KEPT APART, and that is what separates these rows from C45's. C45 captures the guard
+# with `2>&1` and keys on the exit code, so it cannot tell a message delivered on stdout from one on
+# stderr. Nothing here needs that distinction yet, but the row below asserts the ABSENCE of output, and an
+# absence measured over a merged capture cannot say which stream stayed quiet.
+echo "== C55: no report from the ledger guardian repeats itself =="
+GRD55="$HK/check-state-size.sh"
+
+T55=""
+trap 'chmod -R u+rwX "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55" 2>/dev/null; rm -rf "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55"' EXIT   # extended, never replaced
+
+# A roster whose only non-table lines are its own headings: readable, carrying no closure narrative. The
+# control that keeps the refusal control below from being satisfied by a guard that refuses everything.
+ros55() {
+  printf '# Session State\n\n## Workstreams\n\n'
+  printf '| Workstream | Checkout | Task | Epic | Areas | Tool | Opened |\n'
+  printf '|---|---|---|---|---|---|---|\n'
+  printf '| coordinator | . | T-100 | E-009 | auth | - | 2026-08-01 |\n'
+}
+# The one thing the roster invariant forbids, placed in the notes.
+vio55() { ros55; printf '\n## Notes\n\n**Epic E-007 CLOSED 2026-07-30.** Sealed: `archive/E-007.md`.\n'; }
+# A project whose ledger holds the given roster and EXACTLY the given word count, heading included. The
+# heading is two words to `wc -w` — `#` and `Backlog` — so the filler is short by two.
+mk55() {  # $1 = dir, $2 = roster fn, $3 = total words in the ledger
+  mkproj "$1" main
+  mkdir -p "$1/.ai-flow"
+  "$2" > "$1/.ai-flow/STATE.md"
+  { printf '# Backlog\n\n'; nwords "$(( $3 - 2 ))"; } > "$1/.ai-flow/BACKLOG.md"
+}
+# The guard run with a payload on stdin, the two streams kept apart. $1 = cwd, $2 = payload.
+# stdout lands in the caller's substitution; stderr is diverted to a file the caller reads by name.
+run55() { ( cd "$1" && printf '%s' "$2" | bash "$GRD55" 2>"$T55/err" ); }
+
+if ! T55="$(mktemp -d 2>/dev/null)" || [ ! -d "$T55" ]; then
+  bad "A4 a re-delivered stop is answered with silence, blockers included (no sandbox: mktemp -d failed)"
+elif [ ! -r "$GRD55" ] || [ ! -s "$GRD55" ]; then
+  bad "A4 a re-delivered stop is answered with silence, blockers included (the guard is unreadable)"
+  rm -rf "$T55"
+else
+
+  # --- A4: the loop guard -------------------------------------------------------
+  # WHEN the Stop payload declares `stop_hook_active` true, the guardian shall exit 0 and deliver NO report
+  # at all, blockers included. This is the row that fails today: the guard reads stdin nowhere, so it
+  # re-refuses the stop the harness re-delivers after its own refusal — the defect three siblings at this
+  # event already close. The fixture violates the roster invariant, so the report the flag has to silence
+  # is a real one and not an empty run.
+  P55D="$T55/d"; mk55 "$P55D" vio55 8001
+  o55="$(run55 "$P55D" '{"stop_hook_active":true}')"; rc55=$?
+  e55="$(cat "$T55/err")"
+  c4_55=""
+  [ "$rc55" = 0 ] || c4_55="$c4_55 [a re-delivered stop was refused again (exit $rc55)]"
+  [ -z "$e55" ]   || c4_55="$c4_55 [a re-delivered stop still wrote a report to stderr]"
+  case "$o55" in *systemMessage*) c4_55="$c4_55 [a re-delivered stop still spoke on stdout]" ;; esac
+  # The control. Without it a guard that had gone silent for every payload would pass the row above, and
+  # the whole section would be measuring a guard that no longer guards.
+  o55="$(run55 "$P55D" '{}')"; rc55=$?
+  [ "$rc55" = 2 ] || c4_55="$c4_55 [a first-delivery stop over a violating roster no longer refuses (exit $rc55)]"
+  # Malformed is ABSENT, and absent reports: a truncated payload carrying those characters must never be
+  # read as an instruction to go quiet, which is why the field is parsed and not matched as text.
+  o55="$(run55 "$P55D" '{"stop_hook_active":true')"; rc55=$?
+  [ "$rc55" = 2 ] || c4_55="$c4_55 [a truncated payload was read as an instruction to go quiet (exit $rc55)]"
+  [ -z "$c4_55" ] && ok "A4 a re-delivered stop is answered with silence, blockers included" \
+                  || bad "A4 a re-delivered stop is answered with silence, blockers included:$c4_55"
+
 fi
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
