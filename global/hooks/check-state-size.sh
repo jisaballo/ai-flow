@@ -2,11 +2,19 @@
 # ai-flow STATE.md + BACKLOG.md guardian (Stop hook).
 # Blocks session stop if:
 #   - STATE.md carries narrative of closed work outside its two sanctioned records
-#   - BACKLOG.md exceeds its size budget (~300 lines) or holds >3 session-close changelog entries
+#   - BACKLOG.md holds >3 session-close changelog entries
+# and NOTES, without blocking, when:
+#   - BACKLOG.md is over its size budget (8,000 words, firmer at 15,000)
 # No-op in any project without an .ai-flow/, so it's safe globally.
 #
 # It reports at most once per request. Where the payload says the stop is one the harness is
 # re-delivering after a refusal, the guard exits quietly rather than turning one refusal into a loop.
+#
+# The size note is additionally once per session per threshold, with ONE exception, stated because a
+# documented invariant that silently does not hold reads as a broken mark rather than an unreachable one:
+# the mark is the harness's record of having DELIVERED the note, and only a stdout delivery is recorded.
+# A note carried out on stderr beside a blocker is therefore never marked, and returns at the next close.
+# It fails towards speaking, which is the direction this whole mechanism is built to fail in.
 
 # The ledger belongs to the coordinator checkout. A linked worktree only ever holds a copy of it,
 # so policing that copy would report the coordinator's hygiene where nothing can fix it.
@@ -61,12 +69,102 @@ except Exception:
 sys.exit(0 if isinstance(d, dict) and d.get("stop_hook_active") is True else 1)' && exit 0
 fi
 
-problems=""
-# Appends one report, separating with a newline only when something is already there. Five sources can
-# now write here (the ledger directory, each ledger file, and each of the two budget checks), and the
-# plain assignment this replaces would have let whichever ran last silently discard the others.
-add_problem() { if [ -n "$problems" ]; then problems="$problems
-$1"; else problems="$1"; fi; }
+# The transcript the size note reads its own prior delivery out of. Extracted from the same payload,
+# separately from the field above, because the two answers are needed at different moments and a single
+# parse would have to survive being asked for both — the field above must be able to exit the script.
+# Absent, unreadable and unparseable all collapse to the empty string here, and every one of them makes
+# the note speak: see `spoken_already` below for why that is the only safe direction.
+TRANSCRIPT=""
+if [ -n "$STOP_PAYLOAD" ] && command -v python3 >/dev/null 2>&1; then
+  TRANSCRIPT="$(printf '%s' "$STOP_PAYLOAD" | python3 -c 'import json, sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    d = {}
+p = d.get("transcript_path") if isinstance(d, dict) else None
+print(p if isinstance(p, str) else "")' 2>/dev/null || true)"
+fi
+
+# TWO BUCKETS, and the split is the whole of what this guard now decides. A report goes to `blockers`
+# when its remedy is bounded and doable in the turn it is raised: trim the narrative, delete one
+# changelog line, fix one permission. It goes to `notes` when the remedy is not bounded — which is true
+# of exactly one report here, the ledger's size, whose largest cause is open task rows written as essays
+# and has no prune at all. Measured on this engine's own ledger the day the split was made: that cause
+# was 71% of its words, against a rule which named two causes and neither of them it. A guard that
+# refuses the turn over a condition the operator cannot clear in that turn is a guard people learn to
+# route around, and it takes the four honest refusals down with it.
+#
+# The two buckets do NOT mean two channels unconditionally. Where anything blocks, everything travels on
+# stderr and the guard exits 2 — the note included, because a `Stop` hook exiting 2 has its stdout JSON
+# unread, and dropping the note there would lose it on precisely the sessions that are already going
+# badly. Only a note-only run takes the other channel. See the exit at the bottom.
+blockers=""
+notes=""
+# Each appends one report to its own bucket, separating with a newline only when something is already
+# there. Five sources write to the blocking one (the ledger directory, each ledger file, the roster's
+# narrative and the changelog ceiling), and the plain assignment this replaces would have let whichever
+# ran last silently discard the others. The blocking helper is named for its bucket rather than for
+# "problem", which is what it was called while there was only one: the size note is a report this guard
+# makes and is not a problem it refuses over, so the old name would now describe half of what it collects.
+add_blocker() { if [ -n "$blockers" ]; then blockers="$blockers
+$1"; else blockers="$1"; fi; }
+add_note() { if [ -n "$notes" ]; then notes="$notes
+$1"; else notes="$1"; fi; }
+
+# Whether this session has already been told about a given threshold. The note's own text is the mark, so
+# there is no sentinel file: no path to choose, no session-versus-checkout scope to decide between, and
+# nothing left behind to clean up. What makes that possible is that the harness records a delivered
+# systemMessage back into the session's own transcript, in two independent records — the
+# `hook_system_message` it becomes, and the verbatim `stdout` kept beside the hook's exit status.
+# Measured on this project's real transcripts before this was written: 73 of the first and 45,821 of the
+# second, and one of them read back verbatim as the sibling note's own JSON.
+#
+# The mark is read ONLY out of those two records, and that restriction is the whole of what makes it mean
+# anything. An unanchored search of the file counts every other way the text can arrive — a user naming
+# it, an assistant quoting it, a tool result grepping it — and this engine's own conformance suite holds
+# marks verbatim while being the Verify command of every step of every task here. Under a plain text
+# search the first session to run the suite would mark both thresholds as spoken and the note would never
+# fire again, in the one repository the thresholds were measured on. The sibling reproduced exactly that,
+# on a 248-turn session silenced by one line of its own tool output.
+#
+# EVERY failure returns 1, which means "not yet spoken", which means the note speaks. A missed
+# suppression costs a repeated line; a false suppression costs the note entirely, on a session that never
+# heard it. Absent transcript, unreadable file, half-flushed last line, no python3 — all of them land on
+# the side that talks.
+spoken_already() {  # $1 = threshold
+  [ -n "$TRANSCRIPT" ] || return 1
+  command -v python3 >/dev/null 2>&1 || return 1
+  # stderr silenced for the reason the sibling parse above silences it: this runs BEFORE the note is
+  # printed, and on the blocking path stderr is what the operator reads, so a stray byte from here either
+  # prefixes the note or lands in the middle of a refusal.
+  python3 - "$TRANSCRIPT" "$1" 2>/dev/null <<'MARKPY'
+import json, sys
+
+path, mark = sys.argv[1], "ai-flow ledger size note [%s]" % sys.argv[2]
+DELIVERY = ("hook_system_message", "hook_success")
+try:
+    fh = open(path, errors="replace")
+except Exception:
+    sys.exit(1)
+with fh:
+    for line in fh:
+        # A transcript is written while it is being read, so its last line can be half-flushed. A hook
+        # that raised there would go silent for the rest of the session -- silent on a session that is,
+        # by construction, a long one.
+        try:
+            rec = json.loads(line)
+        except Exception:
+            continue
+        if not isinstance(rec, dict):
+            continue
+        att = rec.get("attachment")
+        if not isinstance(att, dict) or att.get("type") not in DELIVERY:
+            continue
+        if mark in "%s%s" % (att.get("content") or "", att.get("stdout") or ""):
+            sys.exit(0)
+sys.exit(1)
+MARKPY
+}
 
 # Resolve the ledger from the checkout root, not from the cwd: a session sitting in a
 # subdirectory would otherwise silently find no ledger and pass.
@@ -92,7 +190,7 @@ root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 # listing raises rather than answering — see the hooks README.
 AIFLOW="$root/.ai-flow"
 if [ -d "$AIFLOW" ] && [ ! -x "$AIFLOW" ]; then
-  add_problem "Cannot enter $AIFLOW, so neither STATE.md nor BACKLOG.md was checked. This is not a clean verdict — it is the absence of one. Fix the permission (chmod u+rx '$AIFLOW') and finish again."
+  add_blocker "Cannot enter $AIFLOW, so neither STATE.md nor BACKLOG.md was checked. This is not a clean verdict — it is the absence of one. Fix the permission (chmod u+rx '$AIFLOW') and finish again."
 fi
 
 STATE="$root/.ai-flow/STATE.md"
@@ -101,7 +199,7 @@ if [ -f "$STATE" ] && [ ! -r "$STATE" ]; then
   # the whole defect this pair closes — the guard concluded "no closed-work narrative" from an extraction
   # that never ran, and on exit 0 the harness discards a Stop hook's stderr, so the diagnostic the tools
   # did print reached nobody. What the hook sells is that somebody looked.
-  add_problem "Cannot read $STATE, so the roster was not checked for closed-work narrative. This is not a clean verdict — it is the absence of one. Fix the permission (chmod u+r '$STATE') and finish again."
+  add_blocker "Cannot read $STATE, so the roster was not checked for closed-work narrative. This is not a clean verdict — it is the absence of one. Fix the permission (chmod u+r '$STATE') and finish again."
 elif [ -f "$STATE" ]; then
   # The signal is what a real ledger accumulated, measured: three closed-epic narratives an operator had
   # written into one, all three found, and a legitimate cross-front note beside them left alone. It is NOT
@@ -156,11 +254,11 @@ elif [ -f "$STATE" ]; then
   # for the two budget counts below, in the one branch that had no gate.
   case "$n" in ''|*[!0-9]*) n_broken=1 ;; *) n_broken=0 ;; esac
   if [ "$extraction" -ne 0 ]; then
-    add_problem "Could not read $STATE while extracting the lines to police, so the roster was not checked. This is not a clean verdict — it is the absence of one. Fix the permission (chmod u+r '$STATE') and finish again."
+    add_blocker "Could not read $STATE while extracting the lines to police, so the roster was not checked. This is not a clean verdict — it is the absence of one. Fix the permission (chmod u+r '$STATE') and finish again."
   elif [ "$n_broken" -eq 1 ]; then
-    add_problem "Could not count the closed-work lines in $STATE — the search failed and produced no number, so the roster was not checked. This is not a clean verdict — it is the absence of one."
+    add_blocker "Could not count the closed-work lines in $STATE — the search failed and produced no number, so the roster was not checked. This is not a clean verdict — it is the absence of one."
   elif [ "$n" -gt 0 ]; then
-    add_problem "STATE.md carries $n line(s) of closed-work narrative. Its home is archive/E-XXX-*.md (or archive/T-XXX/summary.md); trim STATE.md down to the roster — one row per open front — before finishing. Neither the roster nor the Quick Tasks Completed table is policed — both stay where they are."
+    add_blocker "STATE.md carries $n line(s) of closed-work narrative. Its home is archive/E-XXX-*.md (or archive/T-XXX/summary.md); trim STATE.md down to the roster — one row per open front — before finishing. Neither the roster nor the Quick Tasks Completed table is policed — both stay where they are."
   fi
 fi
 
@@ -171,20 +269,77 @@ if [ -f "$BACKLOG" ] && [ ! -r "$BACKLOG" ]; then
   # expected`, and both checks are then SKIPPED rather than mis-answered — so the guard passed a 400-line
   # backlog. The counts cannot be made to carry it either: `grep -c` answers 1 for a legitimate "found
   # none", which is the passing case, so its status alone cannot separate an error from a clean count.
-  add_problem "Cannot read $BACKLOG, so neither its size budget nor its changelog count was measured. This is not a clean verdict — it is the absence of one. Fix the permission (chmod u+r '$BACKLOG') and finish again."
+  add_blocker "Cannot read $BACKLOG, so neither its size budget nor its changelog count was measured. This is not a clean verdict — it is the absence of one. Fix the permission (chmod u+r '$BACKLOG') and finish again."
 elif [ -f "$BACKLOG" ]; then
-  lines=$(wc -l < "$BACKLOG" | tr -d ' ')
-  if [ "$lines" -gt 300 ]; then
-    add_problem "BACKLOG.md is $lines lines (budget ~300). It must contain only pending work — move closed content to archive/ (changelog entries -> archive/CHANGELOG.md, closed epic rows -> archive/EPICS.md, their Execution Order blocks -> archive/EXECUTION-ORDERS.md). See protocols/backlog.md > Size Budget."
+  # WORDS, not lines, and the unit is the defect being repaired rather than a preference. One entry is one
+  # line however long it is, so the ledger this budget was written for reached 82 lines — 27% of a 300-line
+  # cap — while holding 10,118 words, three times the prose the cap assumed. Lines stopped discriminating
+  # the moment an entry became an essay, which the business-first entry format makes it. Words rather than
+  # estimated tokens because words are what the engine already budgets prose in (the 25-word index line in
+  # the Icebox) and because a word count is a fact the operator can check by hand, where an estimate
+  # invites arguing about the estimator instead of about the excess.
+  #
+  # Two thresholds, and ONLY THE LEVEL REACHED is ever spoken. Written as a search for any unspoken
+  # threshold this has a defect that breaks its own premise, and the sibling at this event reproduced it
+  # live: a session arriving past the firm threshold without having been told hears the firm note, which
+  # says it will not be repeated, and then hears the soft one at the next close because the soft mark was
+  # never laid down — two notices in descending firmness, one contradicting the other in writing.
+  #
+  # The numbers are anchored outside this engine rather than picked. Of six comparable systems surveyed,
+  # none guards the size of a shared file and the only one that proposes such a guard proposes it
+  # non-blocking; the two thresholds are the ends of the bracket that survey leaves: ~8,000 words is about
+  # the 8k tokens BMAD sizes one unit of reading at, and ~15,000 is about the 20k Kiro targets for a heavy
+  # operation. The AGENTS.md convention's 32 KiB technical maximum sits between them, and this ledger was
+  # already at 61.6 KiB when the budget was set.
+  words=$(wc -w < "$BACKLOG" | tr -d ' ')
+  crossed=""
+  if [ "$words" -gt 15000 ]; then crossed=15000
+  elif [ "$words" -gt 8000 ]; then crossed=8000
+  fi
+  if [ -n "$crossed" ] && ! spoken_already "$crossed"; then
+    if [ "$crossed" = 15000 ]; then
+      firmer="This is the firm threshold and not the soft one: at this size the ledger costs a session more to carry than it returns, and the parked ledger-split decision has become the action rather than an option. "
+    else
+      firmer=""
+    fi
+    # No double quote, no backslash and no newline anywhere in this text. That contract now binds only the
+    # python3-absent path at the exit below — where python3 is present the note is serialised by json.dumps
+    # and cannot be malformed — but it still binds, because that path has no escaper to reach for. The
+    # newline is named beside the other two because `add_note` supplies one itself the moment a second note
+    # is added, which is the breach no editor of THIS text would think to look for.
+    add_note "ai-flow ledger size note [$crossed] — ${firmer}BACKLOG.md is $words words (budget $crossed), which every session that opens it re-reads. Name the cause before acting, because there are three. Closed content duplicated here moves to archive/ (changelog entries -> archive/CHANGELOG.md, closed epic rows -> archive/EPICS.md, their Execution Order blocks -> archive/EXECUTION-ORDERS.md). A long Icebox is pending work and is swept, promoting or retiring entries. Open task rows written as essays are usually most of it, and pruning does not fix that one — it is the ledger-split decision parked in the candidate section, not a tidy-up. Nothing is blocked by this. See protocols/backlog.md > Size Budget."
   fi
   entries=$(grep -cE '^> 20[0-9]{2}-' "$BACKLOG")
   if [ "$entries" -gt 3 ]; then
-    add_problem "BACKLOG.md holds $entries session-close changelog entries (max 3). Rotate the oldest into archive/CHANGELOG.md (newest first)."
+    add_blocker "BACKLOG.md holds $entries session-close changelog entries (max 3). Rotate the oldest into archive/CHANGELOG.md (newest first)."
   fi
 fi
 
-if [ -n "$problems" ]; then
-  echo "$problems" >&2
+# The two exits, and which stream each uses is decided by whether anything blocks — never by which bucket
+# a report came from. A `Stop` hook that exits 2 has its stderr fed back to the session and its stdout JSON
+# unread; one that exits 0 has its stderr DISCARDED and only a top-level systemMessage on stdout survives.
+# So a blocking run carries everything on stderr, the note included, and a note-only run carries the note
+# on stdout. Writing the note to its "own" channel regardless would lose it exactly when something else
+# had already gone wrong.
+if [ -n "$blockers" ]; then
+  echo "$blockers" >&2
+  [ -n "$notes" ] && echo "$notes" >&2
   exit 2
+fi
+if [ -n "$notes" ]; then
+  # Serialised by the parser wherever there is one, and hand-built only where there is not. The hand-built
+  # form splices prose into a JSON string literal, so its validity rests on a contract no mechanism
+  # enforces — and the failure it fails with is silent: a malformed document is not rejected loudly, the
+  # note simply reaches nobody, on exactly the sessions the note exists for. The accumulator above is what
+  # makes that reachable rather than theoretical: `add_note` joins with a raw newline, which is not legal
+  # inside a JSON string, so the first second note ever added would break delivery with no edit here at
+  # all. Where python3 is present none of that can happen; where it is absent the printf form is still the
+  # only option, and the quote-free contract below is what keeps that path working.
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -c 'import json, sys
+print(json.dumps({"systemMessage": sys.argv[1]}))' "$notes"
+  else
+    printf '{"systemMessage": "%s"}\n' "$notes"
+  fi
 fi
 exit 0
