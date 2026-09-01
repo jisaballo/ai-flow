@@ -73,8 +73,11 @@ work it is judging changes what every other auditor is reading at that moment, a
 writes describes a state that never existed. That damage leaves nothing behind to find it by — which is
 why the rule is not "restore whatever you broke" but "do not break it".
 
-Proving a fact does sometimes require a change: an assertion is only shown to be hollow by making the
-thing it guards untrue and watching the suite stay green. Where that is so:
+Proving a fact does sometimes require a change, and it takes one of two shapes. An assertion is only
+shown to be hollow by making the thing it guards untrue and watching the suite stay green; a fact nothing
+asserts is only shown to be unguarded by adding the assertion and watching it go red. The two are
+opposite readings of one observation, which is why a proposal declares which shape it is and why nothing
+downstream may infer it — see `Consolidation into verify.md` below. Where either is so:
 
 - **The proof is made by one actor at a time**, alone, never beside another and never by the parallel
   auditors. A change worth making is data an auditor hands over — performing it belongs to whoever the
@@ -186,7 +189,7 @@ Then it **adversarially refutes every HIGH finding**: a skeptic agent reads the 
 
 **MEDIUM and LOW come back unadjudicated, and the phase decides them.** No skeptic is spent there: a MEDIUM neither blocks the archive nor gets fixed by the review, so an agent spent refuting one buys a tidier list and no decision — and buys it at the price of rebuilding the whole diff to read a single finding. The phase already holds the diff, the criteria and the plan, so the judgment a refuter used to make is made where the context already is. The rule is that it *is* made: a finding nobody decides is a finding four auditors were paid to produce and nobody used. MEDIUM findings take the routing test of Discovery Triage (Understanding protocol), whose order matters here for the same reason it matters there — ownership is asked first: fixed now where the finding sits in a file already inside this task's diff, discarded as a false positive with the reason written under `## Discarded` in `artifacts/T-XXX/discoveries.md`, else staged in that same file with its ground stamp — **never to BACKLOG.md while the task is in flight**. Each outcome is recorded here too — but the record kept here is the decision and a pointer, never the reason instead: the routing test makes the written reason the whole of a discard's validity, and a reason filed only in this report sits where that rule does not look. LOW findings are listed as raised and marked unadjudicated; no outcome is required of them.
 
-Finally, **one prover** — alone, after every auditor and refuter has finished reading, and only when a surviving finding proposed one. The auditors are read-only (see **Mutation and the Working Copy** above): an auditor that suspects an assertion is hollow returns the change that would settle it instead of making it, and this stage is the actor the rule appoints. It applies them one at a time, runs the project's test command, and puts each file back before the next. Proposals naming a path outside the repository or outside the reviewed scope are dropped before the stage runs.
+Finally, **one prover** — alone, after every auditor and refuter has finished reading, and only when a surviving finding proposed one. The auditors are read-only (see **Mutation and the Working Copy** above): an auditor that cannot settle a suspicion by reading returns the change that would settle it instead of making it — declaring whether that change **weakens** an assertion the code already has or **adds** one it does not — and this stage is the actor the rule appoints. It applies them one at a time, runs the project's test command, and puts each file back before the next. What it reports is what the run did (`red`, `green`, `unproven`) and never what that means for a finding: the meaning is read afterwards, against the declared shape. Proposals naming a path outside the repository or outside the reviewed scope are dropped before the stage runs.
 
 ### Consolidation into verify.md
 
@@ -195,9 +198,22 @@ Finally, **one prover** — alone, after every auditor and refuter has finished 
 - **LOW unadjudicated** -> listed as raised, marked unadjudicated, doesn't block.
 - **Refuted** -> list briefly under "Dismissed (refuted)" for a transparent audit trail.
 - No findings -> `## Review Findings: None`.
-- **A proof came back** -> `died` retires the finding: the assertion does guard its fact. `survived` keeps it, now
-  demonstrated rather than suspected. `unproven` keeps it with the reason the proof could not be run. The prover's
-  own claim to have restored what it touched is its word, never the verdict — the comparison below is.
+- **A proof came back** -> read what the run did against the shape the proposal declared, because one red
+  means opposite things for the two. `weaken` + `red` **retires** the finding: the assertion does guard its
+  fact. `weaken` + `green` keeps it, the assertion now shown hollow rather than suspected. `add-check` +
+  `red` keeps it, the defect now demonstrated rather than suspected. `add-check` + `green` keeps it and
+  records that the proposed assertion did not reproduce it. `unproven` keeps it with the reason the proof
+  could not be run. And `unknown` — the answer could not be attributed to a single proposal — keeps it too,
+  with that attribution named as the reason: an outcome nobody can read is worth what an outcome nobody
+  could produce is worth, and reading one anyway is how a run built to confirm a finding came to close it.
+  **The consequence half of this mapping — what a pair does to a finding — has one home and this is it.**
+  Other surfaces say what each shape *is*, because an auditor cannot declare a shape it has not been told
+  the meaning of; none of them says what the report will then do with the pair. The boundary is drawn there
+  rather than at the whole mapping because the wider claim was false the day it was written: the same change
+  that made it had the workflow telling reviewers a red run made their finding *fall* or *stand*, which is
+  these rows in synonyms, in a file the sentence claimed restated nothing. The
+  prover's own claim to have restored what it touched is its word, never the verdict — the comparison below
+  is.
 - **The working copy differs from the copy taken before the review** -> restore from it, record exactly
   what differed, and mark the review's verdict **suspect**: it may have been written against a state that
   no longer exists. The user decides between accepting it and re-running the review — the same gate as a
@@ -256,7 +272,9 @@ did and that the sheet's position was not moved.
 - [LOW findings, listed as raised and unadjudicated]
 
 ### Proven (mutation)
-- [finding + died/survived/unproven + the evidence, or "Nothing proposed"]
+- [finding + the shape the proposal declared (weaken / add-check) + what the run did (red / green /
+  unproven) + the evidence — or, where the answer could not be attributed to one proposal, `unknown` with
+  the attribution as its reason; or "Nothing proposed"]
 
 ## Gaps Found
 [Consolidated list from audit + review, or "None"]

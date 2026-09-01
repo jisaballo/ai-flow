@@ -39,7 +39,7 @@ const ctx = [
   `- Read the cited files only for surrounding context. If a file cannot be opened (e.g. a brand-new file), review from the diff alone — do NOT return empty just because you could not open a file.`,
   `- Actually inspect the changed code before concluding. Report genuine issues in your dimension; don't pad with trivia, but don't skip issues that are plainly visible in the diff.`,
   `- You are READ-ONLY over this repository: do not edit, write, rename or delete a file, and do not run any command that changes one. Three other agents are reading the same files right now, and a verdict written over a working copy another agent is editing describes a state that never existed — see the verify protocol's \`Mutation and the Working Copy\`.`,
-  `- If the only way to settle a finding is to change something — an assertion you suspect is hollow, a guard you suspect passes on anything — do NOT apply it. Return it on that finding as \`proposedMutation\`: the file, the exact change, and what you expect to fail because of it. One agent applies these afterwards, alone, and puts them back.`,
+  `- If the only way to settle a finding is to change something — an assertion you suspect is hollow, a guard you suspect passes on anything, or a fact you suspect nothing asserts at all — do NOT apply it. Return it on that finding as \`proposedMutation\`: the file, the exact change, what you expect to fail because of it, and \`kind\` — which of two shapes your change takes. \`weaken\`: you make untrue the fact an existing assertion guards. \`add-check\`: you add an assertion the suite does not have today. Say which — the same red is read in opposite directions by the two, and nothing downstream can tell them apart from the change alone. What the report then does with the pair is not stated here and is not yours to state: it has one home, the verify protocol's \`Consolidation into verify.md\`. A change that both weakens an existing assertion and adds a new one is **two proposals**, each declaring its own shape — never one proposal carrying both, which would have a red read against half of what was applied. One agent applies these afterwards, alone, and puts them back.`,
   `- Report what you READ, never what you RAN. A finding resting on the outcome of running something — a suite's failures, a command's exit code — is not evidence this phase can spend: three other agents are reading the same working copy right now, so nobody can check your run afterwards. If a suspicion can only be settled by a run, do not run it: put it on the finding as \`proposedMutation\` above and say what you expect to fail. A HIGH finding's proposal is applied by the one agent appointed to run it, alone, afterwards; below HIGH it reaches the phase as the datum it is. See the verify protocol's \`Mutation and the Working Copy\`.`,
 ].join('\n')
 
@@ -64,11 +64,17 @@ const FINDINGS_SCHEMA = {
           proposedMutation: {
             type: 'object',
             additionalProperties: false,
-            required: ['file', 'change', 'expectedToFail'],
+            required: ['file', 'change', 'expectedToFail', 'kind'],
             properties: {
               file: { type: 'string' },
               change: { type: 'string' },
               expectedToFail: { type: 'string' },
+              // Which direction a red run is to be read in. `weaken` makes untrue the fact an existing
+              // assertion guards, so red means that assertion is real. `add-check` adds an assertion the
+              // suite does not have, so red means the defect is real. Opposite verdicts on one
+              // observation, and the change itself does not say which — only the auditor that wrote it
+              // knows, which is why it is required of the proposal and asked of nobody else.
+              kind: { type: 'string', enum: ['weaken', 'add-check'] },
             },
           },
         },
@@ -221,10 +227,18 @@ const PROOFS_SCHEMA = {
       items: {
         type: 'object',
         additionalProperties: false,
-        required: ['title', 'outcome', 'evidence'],
+        required: ['index', 'title', 'outcome', 'evidence'],
         properties: {
+          // The number the proposal was listed under in the prompt, and the join back to it. A title is
+          // free text the prover rewrites; an answer that cannot be joined to its proposal carries no
+          // reading at all, which is what the run below turns it into.
+          index: { type: 'integer' },
           title: { type: 'string' },
-          outcome: { type: 'string', enum: ['died', 'survived', 'unproven'] },
+          // What the run DID, and never what it means. The meaning is read afterwards, against the shape
+          // of change the proposal declared — a fact this run already holds and the prover does not need.
+          // Asking the prover for it instead would put the judgment back in the actor whose one wrong
+          // call is the reason this vocabulary stopped naming verdicts.
+          outcome: { type: 'string', enum: ['red', 'green', 'unproven'] },
           evidence: { type: 'string' },
         },
       },
@@ -261,12 +275,13 @@ if (proposals.length) {
     ``,
     `You are the MUTATION PROVER for an ai-flow verify phase. The auditors were read-only; you are the one agent allowed to change a file, and you run alone. The rule you work under is the verify protocol's \`Mutation and the Working Copy\`.`,
     ``,
-    `Each auditor below suspects an assertion is hollow — that it would stay green even if the fact it guards became untrue — and has proposed the change that would settle it:`,
+    `Each auditor below could not settle a suspicion by reading, and has proposed the change that would settle it. Every proposal declares which of two shapes it takes. \`weaken\` makes untrue the fact an existing assertion guards. \`add-check\` adds an assertion the suite does not have today. That declaration is DATA — the auditor who wrote the proposal decided it, and it is not yours to judge, to change, or to report back:`,
     ``,
     proposals
       .map((f, i) => [
         `  ${i + 1}. ${f.title}`,
         `     file: ${f.proposedMutation.file}`,
+        `     shape: ${f.proposedMutation.kind}`,
         `     change: ${f.proposedMutation.change}`,
         `     expected to fail: ${f.proposedMutation.expectedToFail}`,
       ].join('\n'))
@@ -280,17 +295,62 @@ if (proposals.length) {
     `- The test command is ${a.testCommand ? '\`' + a.testCommand + '\`' : "in `.ai-flow/project.yml` under `commands.test` — read it"}.`,
     `- A proposal you cannot run (no suite, the command fails for an unrelated reason, the file does not match the description) is \`unproven\`. Say why. Never guess an outcome.`,
     ``,
-    `Outcomes: \`died\` = the suite went red, so the assertion really does guard that fact. \`survived\` = the suite stayed green, so the assertion is hollow and the finding stands. Record the evidence (the failing assertion's name, or the count before and after).`,
+    `Outcomes name what the run DID and nothing else: \`red\` = the suite went red. \`green\` = the suite stayed green. \`unproven\` = it could not be run. What a red or a green means for the finding is not asked of you and is not yours to decide — it is read afterwards against the shape the proposal declared. Record the evidence (the failing assertion's name, or the count before and after) and the number the proposal was listed under above.`,
     ``,
     `Before you finish: every file you touched is back to exactly what it was. Set treeRestored accordingly — false if anything is still applied or you are not certain, and say so in notes. The phase that invoked you compares against a copy taken before this run, so an untruthful answer here is caught; an unreported one is not.`,
   ].join('\n')
   proofs = await agent(provePrompt, { label: 'prove', phase: 'Prove', schema: PROOFS_SCHEMA })
+    .catch((e) => ({ proofs: [], treeRestored: false, notes: `prover errored, nothing proven: ${e && e.message ? e.message : e}` }))
+  // The kind is joined back on, never asked for. The prover reported an observation; what that
+  // observation means depends on which shape the proposal took, and that is a fact this run already
+  // holds. Deriving it here is the whole of what keeps the reading out of the actor that produced the run.
+  // Every way the join can fail lands on the same value, and `unknown` is not a fourth outcome — it is
+  // the absence of a reading. What the consolidation does with one is the verify protocol's
+  // `Consolidation into verify.md`, which is where that rule lives and where it is stated once.
+  if (proofs && Array.isArray(proofs.proofs)) {
+    // Counted BEFORE any answer is read, because a contested index makes every claimant unreadable and
+    // not merely the later ones. Resolving it in one pass gave the first arrival the proposal's real
+    // shape and marked only the second unknown — which is ambiguity settled by array order, and an
+    // ambiguity settled by choice is indistinguishable from a correct answer.
+    const claims = new Map()
+    proofs.proofs.forEach((p) => {
+      const i = p && p.index
+      claims.set(i, (claims.get(i) || 0) + 1)
+    })
+    proofs.proofs = proofs.proofs.map((p) => {
+      // Four ways to fail, each with the reason it actually failed for: the protocol obliges the report
+      // to name the attribution, and one message shared across distinct failures misnames three of them.
+      if (!Number.isInteger(p && p.index) || p.index < 1 || p.index > proposals.length) {
+        return { ...p, kind: 'unknown', unattributed: 'this index addresses no proposal' }
+      }
+      if (claims.get(p.index) > 1) {
+        return { ...p, kind: 'unknown', unattributed: 'more than one answer claims this proposal' }
+      }
+      const f = proposals[p.index - 1]
+      // The title is a cross-check and never the join. Joining on it would lose a reading the run had
+      // whenever the prover reworded a title, and grant one it never earned whenever a wrong number
+      // arrived under a plausible one. A blank title on either side is a failed cross-check and never a
+      // skipped one: opting out on empty input disables the guard with the cheapest malformed answer.
+      if (!p.title || !f.title || p.title !== f.title) {
+        return { ...p, kind: 'unknown', unattributed: 'no title corroborates the proposal at this index' }
+      }
+      // The one value the whole reading hangs on, read through the set the schema admits. `required` is
+      // enforced by a runtime this file does not own, and an absent or off-enum shape would otherwise
+      // reach the report as no shape at all — which the consolidation has no row for, so a reader would
+      // guess, and the guess that retires is the false clean.
+      const k = f.proposedMutation && f.proposedMutation.kind
+      if (k !== 'weaken' && k !== 'add-check') {
+        return { ...p, kind: 'unknown', unattributed: 'the proposal declared no readable shape' }
+      }
+      return { ...p, kind: k }
+    })
+  }
 }
 
 log(
   `Review complete: ${confirmed.length} adjudicated and standing, ${refuted.length} refuted; ` +
     `${bySev('medium').length} MEDIUM + ${bySev('low').length} LOW handed back unadjudicated` +
-    (proposals.length ? `; ${proposals.length} mutation(s) proposed, prover ${proofs ? 'reported' : 'returned nothing'}` : '') +
+    (proposals.length ? `; ${proposals.length} proposal(s) to prove, prover ${proofs ? 'reported' : 'returned nothing'}` : '') +
     (outOfScope.length ? `; ${outOfScope.length} proposal(s) dropped as out of scope` : '')
 )
 
