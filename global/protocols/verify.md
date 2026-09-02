@@ -180,8 +180,9 @@ After the criterion audit (steps 1-4), the multi-agent review runs **determinist
 
 ### What it does
 
-Runs 4 auditors in parallel over the task diff (see **The Task Diff** above): the **Business Contract
-Auditor**, the **Test Coverage Auditor**, **Security & Error Handling**, and **Architecture Boundaries**.
+Runs 5 auditors in parallel over the task diff (see **The Task Diff** above): the **Business Contract
+Auditor**, the **Test Coverage Auditor**, **Security & Error Handling**, **Architecture Boundaries**, and
+**Simplicity & Structure**.
 
 **What each one looks for is stated in the workflow and nowhere else** — `global/workflows/verify-review.js`,
 the `DIMENSIONS` array. That is the text the agents actually receive, so a second copy here would be a
@@ -190,7 +191,7 @@ enough that one said *subscriptions without unsubscribe* while the running promp
 but never released*. Read the lists there.
 
 One thing about their content belongs here, because it is a property of the phase rather than of any one
-axis: the engine's four lists **name no language, framework or runtime**. They are what applies to a
+axis: the engine's five lists **name no language, framework or runtime**. They are what applies to a
 project that has declared nothing, and a list that assumed a stack would ask a prose repository about a
 stack it is not written in.
 
@@ -202,7 +203,7 @@ with two of its clauses missing.
 
 Then it **adversarially refutes every HIGH finding**: a skeptic agent reads the code in context and tries to refute it; only findings that survive (confirmed=true) hold the gate. HIGH is refuted because HIGH is what blocks — it is the one level where a false finding costs something to hold.
 
-**MEDIUM and LOW come back unadjudicated, and the phase decides them.** No skeptic is spent there: a MEDIUM neither blocks the archive nor gets fixed by the review, so an agent spent refuting one buys a tidier list and no decision — and buys it at the price of rebuilding the whole diff to read a single finding. The phase already holds the diff, the criteria and the plan, so the judgment a refuter used to make is made where the context already is. The rule is that it *is* made: a finding nobody decides is a finding four auditors were paid to produce and nobody used. MEDIUM findings take the routing test of Discovery Triage (Understanding protocol), whose order matters here for the same reason it matters there — ownership is asked first: fixed now where the finding sits in a file already inside this task's diff, discarded as a false positive with the reason written under `## Discarded` in `artifacts/T-XXX/discoveries.md`, else staged in that same file with its ground stamp — **never to BACKLOG.md while the task is in flight**. Each outcome is recorded here too — but the record kept here is the decision and a pointer, never the reason instead: the routing test makes the written reason the whole of a discard's validity, and a reason filed only in this report sits where that rule does not look. LOW findings are listed as raised and marked unadjudicated; no outcome is required of them.
+**MEDIUM and LOW come back unadjudicated, and the phase decides them.** No skeptic is spent there: a MEDIUM neither blocks the archive nor gets fixed by the review, so an agent spent refuting one buys a tidier list and no decision — and buys it at the price of rebuilding the whole diff to read a single finding. The phase already holds the diff, the criteria and the plan, so the judgment a refuter used to make is made where the context already is. The rule is that it *is* made: a finding nobody decides is a finding five auditors were paid to produce and nobody used. MEDIUM findings take the routing test of Discovery Triage (Understanding protocol), whose order matters here for the same reason it matters there — ownership is asked first: fixed now where the finding sits in a file already inside this task's diff, discarded as a false positive with the reason written under `## Discarded` in `artifacts/T-XXX/discoveries.md`, else staged in that same file with its ground stamp — **never to BACKLOG.md while the task is in flight**. Each outcome is recorded here too — but the record kept here is the decision and a pointer, never the reason instead: the routing test makes the written reason the whole of a discard's validity, and a reason filed only in this report sits where that rule does not look. LOW findings are listed as raised and marked unadjudicated; no outcome is required of them.
 
 Finally, **one prover** — alone, after every auditor and refuter has finished reading, and only when a surviving finding proposed one. The auditors are read-only (see **Mutation and the Working Copy** above): an auditor that cannot settle a suspicion by reading returns the change that would settle it instead of making it — declaring whether that change **weakens** an assertion the code already has or **adds** one it does not — and this stage is the actor the rule appoints. It applies them one at a time, runs the project's test command, and puts each file back before the next. What it reports is what the run did (`red`, `green`, `unproven`) and never what that means for a finding: the meaning is read afterwards, against the declared shape. Proposals naming a path outside the repository or outside the reviewed scope are dropped before the stage runs.
 
@@ -280,6 +281,9 @@ operator's word, that it did and that the sheet's position was not moved.
 
 ### Architecture Boundaries
 - [finding or "No violations found"]
+
+### Simplicity & Structure
+- [finding + the simpler design it proposed, or "No structural cost found"]
 
 ### Dismissed (refuted)
 - [finding + why refuted, or "None"]

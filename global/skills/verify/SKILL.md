@@ -1,6 +1,6 @@
 ---
 name: verify
-description: Run the ai-flow Verify phase for the active task — criterion-by-criterion audit against understand.md, then a deterministic multi-agent review (contract/coverage/security/architecture) with adversarial refutation of HIGH findings and in-phase triage of the rest via the verify-review workflow. Use when the user says "verify", "verifica", or runs the ai-flow verify phase. Requires an .ai-flow/ directory.
+description: Run the ai-flow Verify phase for the active task — criterion-by-criterion audit against understand.md, then a deterministic multi-agent review (contract/coverage/security/architecture/simplicity & structure) with adversarial refutation of HIGH findings and in-phase triage of the rest via the verify-review workflow. Use when the user says "verify", "verifica", or runs the ai-flow verify phase. Requires an .ai-flow/ directory.
 ---
 
 # ai-flow Verify Phase
@@ -36,9 +36,9 @@ Runs the Verify phase of the ai-flow workflow. Works in any project that has `.a
 
 6. **Take the byte-exact copy of the working tree, before the review is invoked.** The protocol's `Mutation and the Working Copy` is the rule this serves. It goes to a path step 8 can recompute rather than inherit: `SNAP="${TMPDIR:-/tmp}/ai-flow-verify-T-XXX"`, outside the repository and never inside it. A shell variable does not survive from one step to the next, and a snapshot whose location is forgotten is a snapshot that cannot be compared against — worse, a restore branch reached with `$SNAP` empty writes to the filesystem root and discards work against nothing. Then `rm -rf "$SNAP"; mkdir -p "$SNAP/untracked"`, `git diff --binary HEAD > "$SNAP/tree.patch"` — **`--binary`**, because a plain patch cannot represent a binary change and therefore cannot put one back — `git status --porcelain > "$SNAP/status.txt"`, `git ls-files --others --exclude-standard > "$SNAP/untracked.txt"`, and copy each path it lists into `"$SNAP/untracked/"` keeping its directories, since no patch reaches an untracked file. This is the record step 8 compares against, and it is taken on every review, including the ones that prove nothing.
 
-7. **Invoke the verify-review workflow** (deterministic 4-auditor + adversarial refutation). **Copy the script into the scratchpad first** — `cp ~/.claude/workflows/verify-review.js <scratchpad>/verify-review.js` — and pass that path. The Workflow tool accepts only a path it returned or one you can already read, which `~/.claude/` is not: passing the installed path directly is refused, and the refusal names no remedy. Copy per run, never once and reused, or an edit to the installed workflow silently stops reaching the review. Call the **Workflow** tool with:
+7. **Invoke the verify-review workflow** (deterministic 5-auditor + adversarial refutation). **Copy the script into the scratchpad first** — `cp ~/.claude/workflows/verify-review.js <scratchpad>/verify-review.js` — and pass that path. The Workflow tool accepts only a path it returned or one you can already read, which `~/.claude/` is not: passing the installed path directly is refused, and the refusal names no remedy. Copy per run, never once and reused, or an edit to the installed workflow silently stops reaching the review. Call the **Workflow** tool with:
    - `scriptPath`: the scratchpad copy just made (source: `~/.claude/workflows/verify-review.js`)
-   - `args`: `{ taskId, area, understandPath, planPath, steeringPath, claudeMdPath, changedFiles, diffText, testCommand, contractChecklist, coverageChecklist, securityChecklist, architectureChecklist }`
+   - `args`: `{ taskId, area, understandPath, planPath, steeringPath, claudeMdPath, changedFiles, diffText, testCommand, contractChecklist, coverageChecklist, securityChecklist, architectureChecklist, structureChecklist }`
    Resolve `area` from the affected unit using `area_kind` in `.ai-flow/project.yml`, and `steeringPath` from that file's `steering` map (`steering[<area>]`, falling back to `.ai-flow/steering/<area>.md` if present). `claudeMdPath` = the project `CLAUDE.md`. `understandPath` = the active task's `understand.md`; `planPath` = its `plan.md` (the Business Contract auditor reads the `Business Frame`, `Contract`, and `Decision Register` from these). `testCommand` = `commands.test` from `.ai-flow/project.yml` — the prover runs it to settle what a proposal shows, and reports the proposal unproven rather than guessing when it has none.
 
    **Resolve the review profile**, from the same `.ai-flow/project.yml`, keyed on the `area` already resolved above — the identical key the `steering` map uses, which is why it needs no resolution of its own:
@@ -71,7 +71,7 @@ Runs the Verify phase of the ai-flow workflow. Works in any project that has `.a
 
 The review hands back every MEDIUM and LOW finding without a verdict. That is deliberate: HIGH is the only
 level that holds the archive gate, so it is the only level where paying a skeptic changes an outcome. But a
-finding nobody decides is a finding that bought nothing — four auditors were paid to produce it — so the
+finding nobody decides is a finding that bought nothing — five auditors were paid to produce it — so the
 decision happens here instead, where the diff, the criteria and the plan are already in context.
 
 **Take each MEDIUM finding through the routing test of Discovery Triage** (understand protocol), in its
@@ -107,5 +107,5 @@ unadjudicated, and no outcome is required of them.
 a ❌ on that criterion, and it goes through step 4, not through here.
 
 ## Notes
-- The multi-agent review is **always** the workflow — never run those 4 auditors ad-hoc or "in your head". The workflow guarantees parallel execution, schema-validated output, and adversarial refutation.
-- Each Guided/Supervised verify therefore spends 4 review agents + one refutation agent per HIGH finding. MEDIUM and LOW get no agent: they come back unadjudicated and this phase decides them, because it already holds the diff, the criteria and the plan that a fresh skeptic would have to rebuild from scratch to read a single finding.
+- The multi-agent review is **always** the workflow — never run those 5 auditors ad-hoc or "in your head". The workflow guarantees parallel execution, schema-validated output, and adversarial refutation.
+- Each Guided/Supervised verify therefore spends 5 review agents + one refutation agent per HIGH finding. MEDIUM and LOW get no agent: they come back unadjudicated and this phase decides them, because it already holds the diff, the criteria and the plan that a fresh skeptic would have to rebuild from scratch to read a single finding.

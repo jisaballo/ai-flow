@@ -51,8 +51,9 @@ review_profile:             # optional — which area uses which profile
 
 ### Review profiles — `review:` + `review_profile:` (optional)
 
-The verify phase runs four auditors — Business Contract, Test Coverage, Security & Error Handling,
-Architecture Boundaries. The engine ships **one stack-agnostic checklist per axis** and always applies it.
+The verify phase runs five auditors — Business Contract, Test Coverage, Security & Error Handling,
+Architecture Boundaries, Simplicity & Structure. The engine ships **one stack-agnostic checklist per axis**
+and always applies it.
 These two keys let a project add its own checklist on top, so a change is judged with the vocabulary of the
 stack it is actually written in.
 
@@ -66,6 +67,7 @@ review:
     coverage:     .ai-flow/review/angular-tests.md
     security:     .claude/skills/review/SKILL.md
     architecture: .ai-flow/steering/frontend.md
+    structure:    .ai-flow/review/frontend-structure.md
   express-api:
     security:     .ai-flow/review/express-security.md
 ```

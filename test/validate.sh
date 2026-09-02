@@ -2149,7 +2149,7 @@ NEW_RULE_HOMES="$(grep -rlie 'never what it ran' global/ 2>/dev/null | wc -l | t
   && ok "the evidence rule is stated in exactly one engine file (found in $NEW_RULE_HOMES)" \
   || bad "the evidence rule is stated in exactly one engine file (found in $NEW_RULE_HOMES)"
 
-# The workflow's shared prompt header, bounded by the join that closes it: the four auditors and the
+# The workflow's shared prompt header, bounded by the join that closes it: the five auditors and the
 # refuter all inherit it, so a fact placed here is a fact every worker reads — and a fact asserted on
 # the whole file would pass on the schema, the comments, or a dimension that no longer includes it.
 CTX="$(awk "/^const ctx = \[/{f=1;next} /^\]\.join/{f=0} f" "$VW" | tr '\n' ' ')"
@@ -2161,7 +2161,7 @@ for pair in "$VS:the verify skill" "$PP:the plan protocol's Conform section"; do
   grep -qF "$RULE_SECTION" "$f" && ok "$what cites the rule's section" || bad "$what cites the rule's section"
 done
 # The workflow carries two citations — the shared header and the prover's own prompt — so a file-wide
-# grep stays green after the auditors' half is deleted, which is the half that governs the four agents
+# grep stays green after the auditors' half is deleted, which is the half that governs the five agents
 # reading the same working copy. Each is asserted where its reader actually finds it.
 { [ -n "$CTX" ] && printf '%s' "$CTX" | grep -qF "$RULE_SECTION"; } \
   && ok "the review workflow cites the rule's section in the header every auditor reads" \
@@ -2187,9 +2187,9 @@ fi
 # Fact 3b — and every worker actually inherits that header. The declaration is worth exactly as much as
 # its reach: dropping `ctx` from one dimension is a mutation that leaves the sentence in place.
 CTX_USES="$(awk '/^const DIMENSIONS = \[/{f=1;next} /^\]$/{f=0} f' "$VW" | grep -cE '^[[:space:]]+ctx,')"
-[ "$CTX_USES" = "4" ] \
-  && ok "all four auditor prompts inherit the shared header (found $CTX_USES)" \
-  || bad "all four auditor prompts inherit the shared header (found $CTX_USES)"
+[ "$CTX_USES" = "5" ] \
+  && ok "all five auditor prompts inherit the shared header (found $CTX_USES)" \
+  || bad "all five auditor prompts inherit the shared header (found $CTX_USES)"
 awk '/^function refutePrompt/{f=1} f&&/^}/{exit} f' "$VW" | grep -qE '^[[:space:]]+ctx,' \
   && ok "the refutation prompt inherits the shared header" \
   || bad "the refutation prompt inherits the shared header"
@@ -2221,7 +2221,7 @@ grep -qE '^  unverified,' "$VW" || r3d="$r3d not-returned"
 
 # Fact 3e — the phase that consumes the review adjudicates what the review did not. Dropping the skeptic
 # from MEDIUM is a saving only while something still decides those findings: left as a list nobody acts on,
-# the level yields neither a gate nor a fix and four auditors are paid to fill it. The phase already holds
+# the level yields neither a gate nor a fix and five auditors are paid to fill it. The phase already holds
 # the diff and the criteria, so the decision is made where the context already is.
 TRIAGE="$(awk '/Triaging the Unadjudicated/{f=1} f' "$VS" | tr '\n' ' ')"
 t3e=""
@@ -4055,7 +4055,7 @@ printf '%s' "$ACT24" | grep -qi 'as the active task'         && a1="$a1 stale-ac
   || bad "the front door names the roster and the map names the task's own sheet (missing:$a1)"
 
 
-# A2 — the audit runs four auditors. The count is asserted by naming all four, not by matching a numeral:
+# A2 — the audit runs five auditors. The count is asserted by naming all five, not by matching a numeral:
 # a document that says "four" and lists three is the same defect with the arithmetic corrected. The stale
 # count is asserted absent for the reason A1 gives.
 a2=""
@@ -4063,10 +4063,11 @@ grep -q  'Business Contract'         "$LC24" || a2="$a2 contract"
 grep -q  'Test Coverage'             "$LC24" || a2="$a2 coverage"
 grep -qi 'Security & Error Handling' "$LC24" || a2="$a2 security"
 grep -q  'Architecture Boundaries'   "$LC24" || a2="$a2 architecture"
+grep -q  'Simplicity & Structure'    "$LC24" || a2="$a2 structure"
 grep -qiE '(3|three) review agents'  "$LC24" && a2="$a2 stale-count"
 [ -z "$a2" ] \
-  && ok "the lifecycle names all four auditors of the review" \
-  || bad "the lifecycle names all four auditors of the review (missing:$a2)"
+  && ok "the lifecycle names all five auditors of the review" \
+  || bad "the lifecycle names all five auditors of the review (missing:$a2)"
 
 # A3 — archiving is a ceremony, and the move that puts the work into effect is the one a reader most needs:
 # a close that ends before distribution leaves the engine committed and not installed — the work is in the
@@ -11443,6 +11444,7 @@ else
   ARC82="$(dim_region architecture)"
   CON82="$(dim_region contract)"
   COV82="$(dim_region coverage)"
+  STRUCT82="$(dim_region structure)"
   # The skill's step 7 states the resolution; step 10 states the report's provenance. Both terminate at the
   # next numbered step, never at a heading: these steps are list items.
   S7_82="$(awk '/^7\. \*\*Invoke/{f=1} f && /^8\. /{exit} f' "$SKV82")"
@@ -11500,8 +11502,8 @@ EOF82
   for t82 in 'async' 'unsubscribe' 'subscription' 'promise' 'npm' 'null/undefined'; do
     [ "$(n82 "$t82" "$DIM82")" -eq 0 ] || a2_82="$a2_82 [$t82]"
   done
-  [ -z "$a2_82" ] && ok "A2 the four generic lists name no stack, language or runtime" \
-                  || bad "A2 the four generic lists name no stack, language or runtime (found:$a2_82)"
+  [ -z "$a2_82" ] && ok "A2 the five generic lists name no stack, language or runtime" \
+                  || bad "A2 the five generic lists name no stack, language or runtime (found:$a2_82)"
 
   # ---- A3: each prompt reads its own checklist, only when given one, and ADDITIVELY ------------------
   # The third leg is the feature's floor and nothing asserted it: the prover changed "apply it IN ADDITION
@@ -11509,7 +11511,7 @@ EOF82
   # 768/0. A project that could replace the engine's list could make its own review shallower than the
   # floor, which is the one thing the contract says a profile can never do.
   a3_82=""
-  for pair82 in "contract:$CON82" "coverage:$COV82" "security:$SEC82" "architecture:$ARC82"; do
+  for pair82 in "contract:$CON82" "coverage:$COV82" "security:$SEC82" "architecture:$ARC82" "structure:$STRUCT82"; do
     k82="${pair82%%:*}"; r82="${pair82#*:}"
     [ -n "$r82" ] || { a3_82="$a3_82 [$k82 region absent]"; continue; }
     [ "$(n82 "${k82}Checklist" "$r82")" -ge 1 ] || a3_82="$a3_82 [$k82 receives no checklist]"
@@ -11521,7 +11523,9 @@ EOF82
     [ "$(n82 'cannot be read' "$r82")" -ge 1 ] \
       || a3_82="$a3_82 [$k82's clause tells the auditor nothing about a checklist it cannot read]"
   done
-  [ "$(n82 'Checklist \?' "$DIM82")" -ge 4 ] \
+  # The floor is the population, never a constant beside it: at 4-of-4 dropping any axis's ternary turned
+  # the row red, and a floor left behind while the array grew is a count that has quietly become slack.
+  [ "$(n82 'Checklist \?' "$DIM82")" -ge "$(printf '%s\n' "$DIM82" | grep -cE "^[[:space:]]+key: '")" ] \
     || a3_82="$a3_82 [a checklist clause is not conditional on one having been given]"
   [ -z "$a3_82" ] && ok "A3 each prompt reads its own checklist, only when given one, and only additively" \
                   || bad "A3 each prompt reads its own checklist, only when given one, and only additively:$a3_82"
@@ -11590,15 +11594,15 @@ EOF82
   # could record a checklist no auditor ever read. Every other step that depends on a filesystem fact names
   # its probe; this one now does too.
   a8_82=""
-  for arg82 in contractChecklist coverageChecklist securityChecklist architectureChecklist; do
+  for arg82 in contractChecklist coverageChecklist securityChecklist architectureChecklist structureChecklist; do
     [ "$(n82 "$arg82" "$S7_82")" -ge 1 ] || a8_82="$a8_82 [$arg82 is never passed]"
   done
   [ "$(n82 '\[ -r |readab|Test each path' "$S7_82")" -ge 1 ] \
     || a8_82="$a8_82 [step 7 names no probe that tests a checklist path]"
   [ "$(n82 'before the Workflow call|before any auditor runs' "$S7_82")" -ge 1 ] \
     || a8_82="$a8_82 [the probe is not ordered before the review]"
-  [ -z "$a8_82" ] && ok "A8 all four checklists are passed, and a path is tested before it is passed" \
-                  || bad "A8 all four checklists are passed, and a path is tested before it is passed:$a8_82"
+  [ -z "$a8_82" ] && ok "A8 all five checklists are passed, and a path is tested before it is passed" \
+                  || bad "A8 all five checklists are passed, and a path is tested before it is passed:$a8_82"
 
   # ---- B1: provenance is spoken on BOTH paths, and written in every report template -----------------
   # The resolved case is the one the feature was built for, and the first draft obliged an announcement
@@ -11654,6 +11658,214 @@ EOF82
     || b3_82="$b3_82 [the silence is keyed on key presence rather than on what resolved]"
   [ -z "$b3_82" ] && ok "B3 a project that declared nothing gets no line about profiles" \
                   || bad "B3 a project that declared nothing gets no line about profiles:$b3_82"
+fi
+
+# C58 — a fifth axis judges the design itself, and the header keeps every reviewer blunt.
+# Generated in the Conform phase from understand.md's Verifiable Criteria.
+#
+# The three shapes C57's header names are kept here for the same reasons: a verdict is a COUNT inside an
+# extracted REGION, never a bare file-wide grep — the workflow says "auditor", "schema" and "structure"
+# in a dozen places that are not the ones under audit; where a rule has a positive and a negative half
+# BOTH are asserted, because the positive alone is satisfied by prose that also permits what the rule
+# forbids; and no pattern below uses a bounded proximity repeat, per the standing entry IB-012, which
+# `ugrep` refuses under -i over UTF-8 with a complexity error that reaches the row as an empty count
+# rather than as a failure. Every discriminator here is a literal or an alternation of literals.
+#
+# One reach is deliberately NOT asserted here. That all five auditor prompts and the refuter inherit the
+# shared header is already the subject of Fact 3b above, which this task's first step moves from four to
+# five. A second copy of that count is the restatement this engine's own architecture list names first,
+# and the two would drift toward disagreeing about how many auditors there are — which is precisely the
+# defect this task exists to close. A3 below asserts only what is new: the clause itself, stated once,
+# and kept away from the prover.
+echo "== C58: a fifth axis judges the design itself, and the header keeps every reviewer blunt =="
+
+VW83="global/workflows/verify-review.js"
+SKV83="global/skills/verify/SKILL.md"
+VP83="global/protocols/verify.md"
+LC83="global/protocols/lifecycle.md"
+RD83="README.md"
+DOC83="docs/customization.md"
+TPL83="template/.ai-flow/project.yml"
+
+n83() { printf '%s\n' "$2" | grep -ciE "$1" | tr -d ' '; }
+
+c58_readable=1
+for f83 in "$VW83" "$SKV83" "$VP83" "$LC83" "$RD83" "$DOC83" "$TPL83"; do
+  [ -r "$f83" ] || { bad "C58 cannot run: $f83 is unreadable"; c58_readable=0; }
+done
+
+if [ "$c58_readable" = "1" ]; then
+
+  DIM83="$(awk '/^const DIMENSIONS = \[/{f=1;next} /^\]$/{f=0} f' "$VW83")"
+  CTX83="$(awk '/^const ctx = \[/{f=1;next} /^\]\.join/{f=0} f' "$VW83")"
+  FS83="$(awk '/^const FINDINGS_SCHEMA = \{/{f=1;next} /^\}$/{f=0} f' "$VW83")"
+  STRUCT83="$(awk "/^[[:space:]]+key: 'structure'/{f=1} f && /^  \},/{exit} f" "$VW83")"
+  # The exit is guarded by `f`, or it fires on the first top-level `}` in the file — which closes the
+  # SHARED schema, sixty lines above this one, and the region comes back empty.
+  SFS83="$(awk '/^const STRUCTURE_FINDINGS_SCHEMA = \{/{f=1;next} f && /^\}$/{exit} f' "$VW83")"
+  PRV83="$(awk '/const provePrompt = \[/{f=1;next} f && /^  \]\.join/{exit} f' "$VW83")"
+  S7_83="$(awk '/^7\. \*\*Invoke/{f=1} f && /^8\. /{exit} f' "$SKV83")"
+
+  # ---- A1: the review defines five dimensions, and one of them is this axis ------------------------
+  # The count is read off the array's own `key:` lines rather than off any prose about it: a description
+  # that says five while the array holds four is the defect with the arithmetic corrected, and it is the
+  # exact shape eight files carrying one count have already produced once.
+  a1_83=""
+  [ -n "$DIM83" ] || a1_83="$a1_83 [the DIMENSIONS array could not be extracted]"
+  k83="$(printf '%s\n' "$DIM83" | grep -cE "^[[:space:]]+key: '" | tr -d ' ')"
+  [ "$k83" = "5" ] || a1_83="$a1_83 [the review defines $k83 auditor dimensions, not five]"
+  [ "$(n83 "key: 'structure'" "$DIM83")" -ge 1 ] || a1_83="$a1_83 [no dimension is keyed structure]"
+  [ "$(n83 'Simplicity & Structure' "$DIM83")" -ge 1 ] \
+    || a1_83="$a1_83 [the fifth axis is not labelled Simplicity & Structure]"
+  [ -z "$a1_83" ] && ok "A1 the review defines five auditor dimensions and one of them is the structure axis" \
+                  || bad "A1 the review defines five auditor dimensions and one of them is the structure axis:$a1_83"
+
+  # ---- A2: the strict schema belongs to that axis ALONE --------------------------------------------
+  # Three legs pulling in different directions, because a structural finding that names no remedy leaves
+  # the author guessing and a strict schema applied to all five would make every auditor drop findings it
+  # cannot write a fix for. So: the STRICT schema requires the fix inside its own region; the SHARED one
+  # still does not; exactly one dimension declares a schema of its own; and the call site actually reads
+  # it. The leg that carries the row is the one naming the VALUE — `schema: STRUCTURE_FINDINGS_SCHEMA` —
+  # because every other leg is answered just as happily by `schema: FINDINGS_SCHEMA` on that same line,
+  # which is the whole of the composition this row exists to prove. A file-wide `required:` count was the
+  # first form and it certified the orphaned const, not the axis.
+  a2_83=""
+  [ -n "$FS83" ] || a2_83="$a2_83 [the shared findings schema could not be extracted]"
+  [ -n "$SFS83" ] || a2_83="$a2_83 [the strict schema could not be extracted]"
+  [ "$(printf '%s\n' "$SFS83" | grep -E 'required:' | grep -c 'suggestedFix' | tr -d ' ')" -ge 1 ] \
+    || a2_83="$a2_83 [the strict schema does not require suggestedFix]"
+  [ "$(printf '%s\n' "$FS83" | grep -E 'required:' | grep -c 'suggestedFix' | tr -d ' ')" = "0" ] \
+    || a2_83="$a2_83 [the shared schema requires suggestedFix, so all five axes are held to it]"
+  s83="$(printf '%s\n' "$DIM83" | grep -cE '^[[:space:]]+schema: ' | tr -d ' ')"
+  [ "$s83" = "1" ] || a2_83="$a2_83 [$s83 dimensions declare a schema of their own, not one]"
+  [ "$(n83 'schema: STRUCTURE_FINDINGS_SCHEMA' "$STRUCT83")" -ge 1 ] \
+    || a2_83="$a2_83 [the structure axis does not hold the strict schema]"
+  grep -qE 'schema: d\.schema' "$VW83" \
+    || a2_83="$a2_83 [the call site passes a fixed schema, so a dimension's own is never read]"
+  [ -z "$a2_83" ] && ok "A2 the structure axis alone is held to a schema that requires a named fix" \
+                  || bad "A2 the structure axis alone is held to a schema that requires a named fix:$a2_83"
+
+  # ---- A3: the honesty clause, stated once, and withheld from the prover ---------------------------
+  # The refutation stage is paid to knock findings down and nothing balances it — 47% of HIGH findings
+  # were refuted or downgraded — so an auditor that under-calls leaves no trace at all, where a false
+  # positive costs a visible triage. The `pad` leg counts rather than finds: the clause ABSORBS the
+  # sentence already in the header, and two statements of one rule in one header is the restatement this
+  # engine's own architecture list names first. The prover leg is the negative half: it reports what a
+  # run did and is asked for no judgment, so a clause telling it how to judge does not belong to it.
+  a3_83=""
+  [ -n "$CTX83" ] || a3_83="$a3_83 [the shared header could not be extracted]"
+  [ "$(n83 'soften' "$CTX83")" -ge 1 ] || a3_83="$a3_83 [the header does not forbid softening a real problem]"
+  [ "$(n83 'quantif' "$CTX83")" -ge 1 ] || a3_83="$a3_83 [the header does not ask for quantification]"
+  [ "$(n83 'high-conviction|high conviction' "$CTX83")" -ge 1 ] \
+    || a3_83="$a3_83 [the header does not prefer a few high-conviction findings to a long list]"
+  p83="$(n83 "don't pad|do not pad" "$CTX83")"
+  [ "$p83" = "1" ] || a3_83="$a3_83 [the padding rule is stated $p83 times in the header, not once]"
+  [ -n "$PRV83" ] || a3_83="$a3_83 [the prover's prompt could not be extracted]"
+  [ "$(n83 'soften|high-conviction' "$PRV83")" = "0" ] \
+    || a3_83="$a3_83 [the prover was handed the honesty clause; it reports what a run did and judges nothing]"
+  [ -z "$a3_83" ] && ok "A3 the honesty clause is stated once in the header the auditors and the skeptic read" \
+                  || bad "A3 the honesty clause is stated once in the header the auditors and the skeptic read:$a3_83"
+
+  # ---- A4: every shipped document names the CURRENT count, and no other ----------------------------
+  # Eight files carry this one count and nothing had ever asserted they agree. The count is derived from
+  # the DIMENSIONS array (`k83`, computed by A1) rather than written here, because a row pinned to the
+  # four-to-five transition goes green on documents still saying five the day a sixth axis lands — the
+  # same defect one transition later. So: the current count must appear, and every other count in the
+  # range must not. `4-auditor` is why the shapes carry the hyphen: the first form of this row missed a
+  # hyphenated singular in README's layout block and reported green over a page naming both counts.
+  #
+  # One loop, not a loop beside a hand-copied branch. The template differs only in its presence
+  # discriminator — it has no prose, just commented example axis keys — so that is what the table varies.
+  # `simplicity` is the discriminator for the other six rather than `structure`: they already say
+  # "structure" about directories and about prose, and none says "simplicity".
+  a4_83=""
+  shapes83() { printf '%s auditors|%s auditors|%s-auditor|%s-auditor|%s parallel auditors|%s parallel auditors|%s review agents|%s review agents|%s review auditors|%s review auditors|%s lists|%s lists' \
+    "$1" "$2" "$1" "$2" "$1" "$2" "$1" "$2" "$1" "$2" "$1" "$2"; }
+  word83() { case "$1" in 3) printf three;; 4) printf four;; 5) printf five;; 6) printf six;; 7) printf seven;; *) printf %s "$1";; esac; }
+  now83="$(shapes83 "$k83" "$(word83 "$k83")")"
+  stale83=""
+  for c83 in 3 4 5 6 7; do
+    [ "$c83" = "$k83" ] && continue
+    stale83="${stale83:+$stale83|}$(shapes83 "$c83" "$(word83 "$c83")")"
+  done
+  for e83 in "$RD83|simplicity" "$DOC83|simplicity" "$VP83|simplicity" "$LC83|simplicity" \
+             "$SKV83|simplicity" "$VW83|simplicity" "$TPL83|structure:"; do
+    d83="${e83%%|*}"; want83="${e83##*|}"
+    if ! b83="$(tr '\n' ' ' < "$d83" 2>/dev/null)"; then
+      a4_83="$a4_83 [unreadable: $d83]"; continue
+    fi
+    [ "$(n83 "$stale83" "$b83")" = "0" ] || a4_83="$a4_83 [$d83 names a count that is not $k83]"
+    [ "$(n83 "$now83" "$b83")" -ge 1 ]   || a4_83="$a4_83 [$d83 never names the current count of $k83]"
+    [ "$(n83 "$want83" "$b83")" -ge 1 ]  || a4_83="$a4_83 [$d83 never names the fifth axis]"
+  done
+  [ -z "$a4_83" ] && ok "A4 every shipped document names the review's current auditor count, and no other" \
+                  || bad "A4 every shipped document names the review's current auditor count, and no other:$a4_83"
+
+  # ---- A5: the axis's list has exactly ONE home ----------------------------------------------------
+  # The rule the other four already live by, applied to the fifth on the day it is born: what each axis
+  # looks for is stated in the workflow and cited everywhere else. Counted across every readable file
+  # under global/, by an alternation of two literal phrases from the list itself — two so a single
+  # legitimate rewording does not break the row, literal because a bounded proximity repeat is not
+  # portable across greps. Counted with the one-line idiom this file already uses for the same question
+  # at :2147 and :2171: both discriminators are single-line literals, so the per-file flatten the longhand
+  # form was built around bought nothing but a second idiom for one recurring question.
+  a5_83=""
+  h83="$(grep -rlIiE 'relocates complexity|earning its keep' "$ROOT/global/" 2>/dev/null | wc -l | tr -d ' ')"
+  [ "$h83" = "1" ] || a5_83="$a5_83 [the structure axis's list is enumerated in $h83 engine files, not one]"
+  [ -z "$a5_83" ] && ok "A5 the structure axis's list is enumerated in exactly one engine file" \
+                  || bad "A5 the structure axis's list is enumerated in exactly one engine file:$a5_83"
+
+  # ---- A6: the fifth checklist is passed on the same terms as the other four -----------------------
+  # C57's A8 already asserts that a checklist path is probed before it is passed, and that leg is not
+  # restated here. What is new is that the fifth argument exists, rides the SAME args object as the other
+  # four — a checklist resolved into a variable nobody passes is the hole the prover opened once already —
+  # and that the prompt on the far end actually reads it.
+  a6_83=""
+  [ -n "$S7_83" ] || a6_83="$a6_83 [step 7 could not be extracted]"
+  [ "$(n83 'structureChecklist' "$S7_83")" -ge 1 ] || a6_83="$a6_83 [structureChecklist is never passed]"
+  [ "$(grep -E 'contractChecklist' "$SKV83" | grep -c 'structureChecklist' | tr -d ' ')" -ge 1 ] \
+    || a6_83="$a6_83 [the fifth checklist is not in the same args list as the other four]"
+  [ "$(n83 'a\.structureChecklist' "$STRUCT83")" -ge 1 ] \
+    || a6_83="$a6_83 [the structure prompt never reads the checklist it is handed]"
+  [ -z "$a6_83" ] && ok "A6 the fifth checklist is passed on the same terms as the other four and is read" \
+                  || bad "A6 the fifth checklist is passed on the same terms as the other four and is read:$a6_83"
+
+  # ---- A7: the severity rule, the remedy vocabulary, and no stack in the generic --------------------
+  # This axis surfaces rather than blocks: HIGH is reserved for a change that actively makes the structure
+  # worse, because HIGH is what holds the archive gate and a design opinion is not a blocker. The remedy
+  # legs are sampled from the vocabulary rather than enumerating it — three literals that no other axis's
+  # prompt uses. The last leg is the negative half of the engine's oldest rule about these lists: the
+  # reference this axis is drawn from writes its type-boundary check in TypeScript, and a generic list
+  # that assumed a stack would ask a prose repository about a stack it is not written in.
+  a7_83=""
+  [ -n "$STRUCT83" ] || a7_83="$a7_83 [the structure dimension could not be extracted]"
+  [ "$(n83 'simpler design' "$STRUCT83")" -ge 1 ] \
+    || a7_83="$a7_83 [a finding is not required to arrive with the simpler design proposed]"
+  [ "$(n83 'actively makes|only where the change|only when the change' "$STRUCT83")" -ge 1 ] \
+    || a7_83="$a7_83 [HIGH is not reserved for a change that makes the structure worse]"
+  v83=0
+  for w83 in 'dispatcher' 'pass-through' 'canonical helper'; do
+    [ "$(n83 "$w83" "$STRUCT83")" -ge 1 ] && v83=$((v83+1))
+  done
+  [ "$v83" -ge 3 ] || a7_83="$a7_83 [the remedy vocabulary names $v83 of the three sampled moves]"
+  [ "$(n83 'typescript|javascript|python' "$STRUCT83")" = "0" ] \
+    || a7_83="$a7_83 [the prompt names a language, and the engine's generic lists name none]"
+  [ -z "$a7_83" ] && ok "A7 the structure prompt surfaces with a design proposed, reserves HIGH, and names the remedies" \
+                  || bad "A7 the structure prompt surfaces with a design proposed, reserves HIGH, and names the remedies:$a7_83"
+
+  # ---- A8: the report carries the fifth axis beside the fourth --------------------------------------
+  # An equality with a floor under it. Both counts derive from the report template's own `### ` headings,
+  # so a renamed or reflowed template collapses them to 0 and `0 = 0` would certify the fifth axis over
+  # zero templates — the negative that opts out on empty input.
+  a8_83=""
+  arch83="$(grep -c '^### Architecture Boundaries' "$VP83" | tr -d ' ')"
+  simp83="$(grep -c '^### Simplicity & Structure' "$VP83" | tr -d ' ')"
+  [ "$arch83" -ge 1 ] 2>/dev/null \
+    || a8_83="$a8_83 [no report template could be located: $arch83 axis sections found]"
+  [ "$simp83" = "$arch83" ] \
+    || a8_83="$a8_83 [$simp83 report templates carry the fifth axis, against $arch83 that carry the fourth]"
+  [ -z "$a8_83" ] && ok "A8 the report template carries the fifth axis beside the other four" \
+                  || bad "A8 the report template carries the fifth axis beside the other four:$a8_83"
 fi
 
 echo ""

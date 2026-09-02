@@ -45,7 +45,7 @@ steering: {}
   # payments: steering/payments.md
 
 # --- Review profiles (optional) ----------------------------------------------
-# What the four review auditors look for, in YOUR stack's vocabulary, added ON TOP
+# What the five review auditors look for, in YOUR stack's vocabulary, added ON TOP
 # of the engine's own stack-agnostic list for each axis. Both keys are commented
 # out on purpose: absent is the default state, and the verify run says nothing
 # about profiles until you declare one.
@@ -59,6 +59,7 @@ steering: {}
 #     coverage:     .ai-flow/review/angular-tests.md
 #     security:     .claude/skills/review/SKILL.md   # any project-relative path
 #     architecture: .ai-flow/steering/frontend.md
+#     structure:    .ai-flow/review/frontend-structure.md
 #   express-api:
 #     security:     .ai-flow/review/express-security.md
 #

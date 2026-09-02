@@ -129,11 +129,12 @@ This phase bridges planning and execution. The tests become the contract.
 1. Re-read understand.md criteria
 2. For each criterion, cite evidence (file:line, test name)
 3. Re-run all Verify commands from the plan (catches cross-step regressions)
-4. Launch 4 auditors in parallel:
+4. Launch 5 auditors in parallel:
    - Business Contract Auditor — the diff against the contract the user approved
    - Test Coverage Auditor
    - Security & Error Handling
    - Architecture Boundaries
+   - Simplicity & Structure
 5. Adversarially refute each HIGH finding — a skeptic reads the code in context and tries to refute it,
    and only what survives holds the gate. HIGH is refuted because HIGH is what blocks. MEDIUM and LOW come
    back unadjudicated and the verify phase triages them itself, in the context it already has

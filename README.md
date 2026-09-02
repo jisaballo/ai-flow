@@ -125,7 +125,7 @@ your-project/
 │   ├── ralph/                   # AFK loop runner + prompts
 │   └── scripts/                 # ceremony mechanisms (front seeding)
 ├── skills/                      # /understand, /plan, /verify, /discover
-├── workflows/verify-review.js   # 4-auditor verify workflow
+├── workflows/verify-review.js   # 5-auditor verify workflow
 └── hooks/                       # Guardrails (incl. the engine drift-check)
 ```
 
@@ -173,7 +173,7 @@ The framework ships optional global tooling under `global/`, installed to `~/.cl
 | `/plan` | Plan + Conform phase — max-3-step `plan.md`, then failing conformance test stubs |
 | `/verify` | Verify phase — criterion audit, then the `verify-review` workflow |
 
-**verify-review workflow** (`global/workflows/verify-review.js` → `~/.claude/workflows/`) — a deterministic multi-agent review invoked by `/verify`: four auditors (business contract / coverage / security / architecture) in parallel over the task diff, then adversarial refutation of every HIGH finding — the level that blocks — so only genuine blockers survive; MEDIUM and LOW come back unadjudicated for the verify phase to triage.
+**verify-review workflow** (`global/workflows/verify-review.js` → `~/.claude/workflows/`) — a deterministic multi-agent review invoked by `/verify`: five auditors (business contract / coverage / security / architecture / simplicity & structure) in parallel over the task diff, then adversarial refutation of every HIGH finding — the level that blocks — so only genuine blockers survive; MEDIUM and LOW come back unadjudicated for the verify phase to triage.
 
 **Guardrail hooks** (`global/hooks/` → `~/.claude/hooks/`) — optional Claude Code hooks that enforce the workflow. See [`global/hooks/README.md`](global/hooks/README.md) for what each does and how to register them in `settings.json`. These are safe to install globally (no-op outside an ai-flow project).
 

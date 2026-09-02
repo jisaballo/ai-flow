@@ -1,16 +1,16 @@
 export const meta = {
   name: 'verify-review',
-  description: 'ai-flow verify: 4 parallel auditors (contract/coverage/security/architecture) over the task diff + adversarial refutation of every HIGH finding; MEDIUM and LOW are handed back unadjudicated for the phase to triage',
+  description: 'ai-flow verify: 5 parallel auditors (contract/coverage/security/architecture/simplicity & structure) over the task diff + adversarial refutation of every HIGH finding; MEDIUM and LOW are handed back unadjudicated for the phase to triage',
   phases: [
-    { title: 'Review', detail: '4 auditors in parallel over the task diff' },
+    { title: 'Review', detail: '5 auditors in parallel over the task diff' },
     { title: 'Refute', detail: 'a skeptic agent tries to refute each HIGH finding — the level that blocks' },
     { title: 'Prove', detail: 'one serialised agent applies the proposed mutations and puts them back' },
   ],
 }
 
 // args (from the /verify skill): { taskId, area, understandPath, planPath, steeringPath, claudeMdPath, changedFiles, diffText, testCommand,
-//                                  contractChecklist, coverageChecklist, securityChecklist, architectureChecklist }
-// The four `*Checklist` paths are the project's own list for that axis, resolved by the skill from the
+//                                  contractChecklist, coverageChecklist, securityChecklist, architectureChecklist, structureChecklist }
+// The five `*Checklist` paths are the project's own list for that axis, resolved by the skill from the
 // review profile of the area under audit. Each is OPTIONAL and each is ADDITIVE: the engine's list below
 // is stack-agnostic and always applies, and a checklist extends it rather than replacing it. An axis given
 // none is the ordinary case — the project declared no profile, or declared one that does not cover this
@@ -44,10 +44,10 @@ const ctx = [
   `How to review:`,
   `- The DIFF above is the authoritative record of what changed — review the added/changed lines directly.`,
   `- Read the cited files only for surrounding context. If a file cannot be opened (e.g. a brand-new file), review from the diff alone — do NOT return empty just because you could not open a file.`,
-  `- Actually inspect the changed code before concluding. Report genuine issues in your dimension; don't pad with trivia, but don't skip issues that are plainly visible in the diff.`,
-  `- You are READ-ONLY over this repository: do not edit, write, rename or delete a file, and do not run any command that changes one. Three other agents are reading the same files right now, and a verdict written over a working copy another agent is editing describes a state that never existed — see the verify protocol's \`Mutation and the Working Copy\`.`,
+  `- Actually inspect the changed code before concluding, then report what you found without softening it. Do not soften a real problem into a suggestion, and do not pad the list with trivia: a few high-conviction findings are worth more than a long list, and an issue plainly visible in the diff is not skipped because raising it is awkward. Quantify wherever the diff lets you — how many call sites, how many lines, which branch. Nothing downstream corrects an auditor who under-reports: the refutation stage removes false positives only, so a false finding costs a visible triage and an under-call leaves no trace at all.`,
+  `- You are READ-ONLY over this repository: do not edit, write, rename or delete a file, and do not run any command that changes one. Four other agents are reading the same files right now, and a verdict written over a working copy another agent is editing describes a state that never existed — see the verify protocol's \`Mutation and the Working Copy\`.`,
   `- If the only way to settle a finding is to change something — an assertion you suspect is hollow, a guard you suspect passes on anything, or a fact you suspect nothing asserts at all — do NOT apply it. Return it on that finding as \`proposedMutation\`: the file, the exact change, what you expect to fail because of it, and \`kind\` — which of two shapes your change takes. \`weaken\`: you make untrue the fact an existing assertion guards. \`add-check\`: you add an assertion the suite does not have today. Say which — the same red is read in opposite directions by the two, and nothing downstream can tell them apart from the change alone. What the report then does with the pair is not stated here and is not yours to state: it has one home, the verify protocol's \`Consolidation into verify.md\`. A change that both weakens an existing assertion and adds a new one is **two proposals**, each declaring its own shape — never one proposal carrying both, which would have a red read against half of what was applied. One agent applies these afterwards, alone, and puts them back.`,
-  `- Report what you READ, never what you RAN. A finding resting on the outcome of running something — a suite's failures, a command's exit code — is not evidence this phase can spend: three other agents are reading the same working copy right now, so nobody can check your run afterwards. If a suspicion can only be settled by a run, do not run it: put it on the finding as \`proposedMutation\` above and say what you expect to fail. A HIGH finding's proposal is applied by the one agent appointed to run it, alone, afterwards; below HIGH it reaches the phase as the datum it is. See the verify protocol's \`Mutation and the Working Copy\`.`,
+  `- Report what you READ, never what you RAN. A finding resting on the outcome of running something — a suite's failures, a command's exit code — is not evidence this phase can spend: four other agents are reading the same working copy right now, so nobody can check your run afterwards. If a suspicion can only be settled by a run, do not run it: put it on the finding as \`proposedMutation\` above and say what you expect to fail. A HIGH finding's proposal is applied by the one agent appointed to run it, alone, afterwards; below HIGH it reaches the phase as the datum it is. See the verify protocol's \`Mutation and the Working Copy\`.`,
 ].join('\n')
 
 const FINDINGS_SCHEMA = {
@@ -85,6 +85,29 @@ const FINDINGS_SCHEMA = {
             },
           },
         },
+      },
+    },
+  },
+}
+
+// The structure axis alone is held to a stricter contract. A structural finding that names no
+// restructuring leaves the author with a verdict and no move, which is the one shape of finding that
+// reliably goes unactioned — the other four axes point at a rule the reader can go and read, and this one
+// points at nothing but its own judgment. The cost is recorded rather than hidden: an agent that sees a
+// real problem it cannot name a remedy for may drop the finding rather than fail validation. That trade
+// was taken deliberately over a schema carrying an escape sentence, which would have been read as
+// permission to omit the fix rather than as a rare exit.
+//
+// Derived from the shared schema rather than written out again, so the two cannot drift on the fields they
+// share. Only the item-level `required` list differs.
+const STRUCTURE_FINDINGS_SCHEMA = {
+  ...FINDINGS_SCHEMA,
+  properties: {
+    findings: {
+      ...FINDINGS_SCHEMA.properties.findings,
+      items: {
+        ...FINDINGS_SCHEMA.properties.findings.items,
+        required: [...FINDINGS_SCHEMA.properties.findings.items.required, 'suggestedFix'],
       },
     },
   },
@@ -197,11 +220,44 @@ const DIMENSIONS = [
       `Severity high/medium/low. Cite file + line + the rule violated. Return an empty findings array if there are none.`,
     ].join('\n'),
   },
+  {
+    key: 'structure',
+    label: 'Simplicity & Structure',
+    schema: STRUCTURE_FINDINGS_SCHEMA,
+    prompt: [
+      ctx,
+      ``,
+      `You are the SIMPLICITY & STRUCTURE auditor for an ai-flow verify phase. Every other auditor measures this change against something already written down — the contract the user approved, the spec's criteria, the boundaries the project declared. You have no such oracle: you measure the change against itself. A change can satisfy every rule anyone wrote down and still leave this codebase harder to work in, and you are the only reader asked to say so.`,
+      ``,
+      `Inspect the diff and the changed files. Find:`,
+      `- A refactor that relocates complexity instead of removing it: the same number of concepts a reader must hold, now spread across more places, or gathered behind a name that hides them rather than explaining them`,
+      `- An abstraction that is not earning its keep yet — introduced for one or two call sites, where the third case that would have shown its real shape has not arrived`,
+      `- A conditional bolted onto a flow that had nothing to do with it: the new branch shares no precondition with the code it was inserted into`,
+      `- Conditionals repeated on the shape of one value in more than one place — the missing model or dispatcher, written out longhand each time`,
+      `- A near-duplicate of a helper this codebase already has, arriving under a new name`,
+      `- Feature-specific logic placed in a module several features share, so a change made for one of them now reaches the others`,
+      `- An already-large file grown further by this change with nothing extracted from it`,
+      `- A silent fallback — a default, a catch that swallows, a coalesce — standing in for an invariant nobody stated. Either the invariant holds and the fallback is dead code, or it does not and the fallback is hiding the case that matters`,
+      ``,
+      a.structureChecklist ? `This project keeps its own checklist for this axis. Read ${a.structureChecklist} and apply it IN ADDITION to the list above — it extends that list and never narrows it: it can only add questions, never remove one. Where an item appears in both, report it once. If that file cannot be read, say so in your findings and audit with the list above alone — never return empty over it.` : ``,
+      ``,
+      `The list above names no language, framework or runtime, because it is what applies when a project has declared nothing. Anything specific to how THIS repository is written arrives in the checklist above it, or not at all — do not supply it from assumptions about the stack.`,
+      ``,
+      `EVERY finding you return MUST carry \`suggestedFix\`, and it must name a move rather than a direction — "simplify this" is not a fix. Draw it from: replace the chain of conditionals with a typed model or an explicit dispatcher; collapse the duplicate branches; separate the orchestration from the logic; move the feature-specific logic to the module that owns it; reuse the canonical helper, naming it; make the boundary explicit instead of defaulting past it; delete the pass-through wrapper; extract a helper, or split the file along the seam this change just revealed. If you cannot name the move, you do not yet understand the problem well enough to report it.`,
+      ``,
+      `Severity: this axis SURFACES rather than blocks. A structural finding is reported at medium with the simpler design proposed, and reaches high ONLY where the change actively makes the structure worse than it found it — not where it merely failed to improve it, and not where the code was already like this before the diff. Low is a local awkwardness worth naming once. Cite file + line. Return an empty findings array if the change left the structure as good as it found it.`,
+    ].join('\n'),
+  },
 ]
 
 const perDimension = await pipeline(
   DIMENSIONS,
-  (d) => agent(d.prompt, { label: `review:${d.key}`, phase: 'Review', schema: FINDINGS_SCHEMA }),
+  // The degraded shape the refuter and the prover already carry, for the reason they carry it: the five
+  // auditors share one pipeline, so an axis that errors or fails schema validation would otherwise take
+  // the four that completed down with it. A dropped axis names itself instead of disappearing — a report
+  // that says nothing was found reads identically to one whose auditor never answered.
+  (d) => agent(d.prompt, { label: `review:${d.key}`, phase: 'Review', schema: d.schema || FINDINGS_SCHEMA })
+    .catch((e) => ({ findings: [{ title: `the ${d.key} auditor returned no usable result`, severity: 'low', file: '(none)', rationale: `it errored or failed schema validation: ${(e && e.message) || e}` }] })),
   (review, d) => {
     const findings = ((review && review.findings) || []).map((f) => ({ ...f, dimension: d.key }))
     // What the refutation does not reach carries no verdict, and is not given one. A finding marked
