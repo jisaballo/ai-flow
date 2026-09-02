@@ -11777,13 +11777,13 @@ EOF82
   # "negative that opts out on empty input" the project's harness checklist names last.
   AUD82="$(grep -c '^\*\*Audited\*\*' "$VP82" | tr -d ' ')"
   PRO82="$(awk '/^\*\*Audited\*\*/{f=1} f{buf=buf" "$0} f&&/^$/{if(buf ~ /profile/) n++; f=0; buf=""} END{print n+0}' "$VP82")"
-  SIL82="$(awk '/^\*\*Audited\*\*/{f=1} f{buf=buf" "$0} f&&/^$/{if(buf ~ /no line about them|declared no profiles/) n++; f=0; buf=""} END{print n+0}' "$VP82")"
   [ "$AUD82" -ge 2 ] 2>/dev/null \
     || b1_82="$b1_82 [the report templates could not be located: $AUD82 found]"
   [ "$AUD82" = "$PRO82" ] || b1_82="$b1_82 [$PRO82 of $AUD82 report templates carry the profile provenance]"
-  # Both halves per template: a copy that demands a profile line unconditionally contradicts B-3, and the
-  # `profile` substring alone is satisfied by a sentence stating the opposite rule.
-  [ "$AUD82" = "$SIL82" ] || b1_82="$b1_82 [$SIL82 of $AUD82 report templates keep the no-profiles silence clause]"
+  # The silence half of this row is gone, and deliberately: the clause it counted — every template keeping
+  # the no-profiles silence — was reversed, and the claim that replaced it belongs to C59, which asserts it
+  # with a floor, an equality over the new clause, and a negative proving the old one is absent. Restating
+  # it here would put two checks in charge of one fact, which is how they come to disagree.
   [ -z "$b1_82" ] && ok "B1 the profile is spoken on both paths before the verdict and recorded in every report template" \
                   || bad "B1 the profile is spoken on both paths before the verdict and recorded in every report template:$b1_82"
 
@@ -11800,17 +11800,18 @@ EOF82
   [ -z "$b2_82" ] && ok "B2 a checklist that does not resolve costs its own axis and not the run" \
                   || bad "B2 a checklist that does not resolve costs its own axis and not the run:$b2_82"
 
-  # ---- B3: silence where nothing was declared -------------------------------------------------------
-  # A zero is never reported as a zero. The test is on what RESOLVED, never on whether the keys are
-  # present: the shipped template used to carry both keys as empty maps, so a presence test would have
-  # reported the zero on precisely the majority case this rule calls ordinary.
+  # ---- B3: the rule is keyed on what RESOLVED, never on which keys are present ----------------------
+  # What this row asserted first — that a project which declared nothing gets no line at all — was
+  # reversed: an omission now produces a line and the only silence is an explicit choice, a claim C59 owns
+  # whole. What survived the reversal is the half below, which nothing else asserts and which the new rule
+  # needs just as much as the old one did: the shipped template hands every adopter both keys, commented
+  # out, so a rule keyed on key presence would stay silent on precisely the majority case the new rule was
+  # written to reach.
   b3_82=""
-  [ "$(n82 'no line about profiles is written at all|writes no line|says nothing' "$S7_82")" -ge 1 ] \
-    || b3_82="$b3_82 [nothing says a project that declared nothing gets no line at all]"
   [ "$(n82 'on what \*\*resolved\*\*|never on whether the keys|test is on what' "$S7_82")" -ge 1 ] \
-    || b3_82="$b3_82 [the silence is keyed on key presence rather than on what resolved]"
-  [ -z "$b3_82" ] && ok "B3 a project that declared nothing gets no line about profiles" \
-                  || bad "B3 a project that declared nothing gets no line about profiles:$b3_82"
+    || b3_82="$b3_82 [the rule is keyed on key presence rather than on what resolved]"
+  [ -z "$b3_82" ] && ok "B3 the rule is keyed on what resolved, never on which keys are present" \
+                  || bad "B3 the rule is keyed on what resolved, never on which keys are present:$b3_82"
 fi
 
 # C58 — a fifth axis judges the design itself, and the header keeps every reviewer blunt.
@@ -12019,6 +12020,224 @@ if [ "$c58_readable" = "1" ]; then
     || a8_83="$a8_83 [$simp83 report templates carry the fifth axis, against $arch83 that carry the fourth]"
   [ -z "$a8_83" ] && ok "A8 the report template carries the fifth axis beside the other four" \
                   || bad "A8 the report template carries the fifth axis beside the other four:$a8_83"
+fi
+
+# C59 — an area that fell to the engine's generic lists says so, and an explicit choice is the only silence.
+# Generated in the Conform phase from understand.md's Verifiable Criteria (A1-A7; the observables are
+# inspection).
+#
+# The three shapes C57's header names are kept here, for the reasons it gives. A verdict is a COUNT inside
+# an extracted REGION, never a bare file-wide grep: step 7, step 10, the two report templates and the
+# discover protocol all say these words in places that are not the ones under audit. Where a rule has a
+# positive and a negative half BOTH are asserted, because the positive alone is satisfied by prose that
+# also permits what the rule forbids — and this task INVERTS a rule, so the negative half is what proves
+# the old one is gone rather than merely joined by a newer sentence. And no pattern below uses a bounded
+# proximity repeat (`[^.]{0,N}`), per the standing entry IB-012: `ugrep` refuses it under -i over UTF-8 and
+# the counting helper answers an empty string rather than a count, so a row's verdict would depend on which
+# `grep` was first on PATH. Every discriminator here is a literal or an alternation of literals.
+#
+# One further shape, from IB-003, which this task's scan loaded and deferred: no leg below is an alternation
+# whose other branch is satisfied by text that was already there. Where two spellings are admitted they are
+# spellings of the SAME new claim, never a new claim OR an old neighbour.
+echo "== C59: an area that fell to the generic says so, and an explicit choice is the only silence =="
+
+SKV86="global/skills/verify/SKILL.md"
+VP86="global/protocols/verify.md"
+TPL86="template/.ai-flow/project.yml"
+DOC86="docs/customization.md"
+DSC86="global/protocols/discover.md"
+DSK86="global/skills/discover/SKILL.md"
+
+n86() { printf '%s' "$2" | grep -ciE "$1" | tr -d ' '; }
+
+c59_readable=1
+for f86 in "$SKV86" "$VP86" "$TPL86" "$DOC86" "$DSC86" "$DSK86"; do
+  { [ -r "$f86" ] && [ -s "$f86" ]; } || c59_readable=0
+done
+
+if [ "$c59_readable" -eq 0 ]; then
+  bad "C59's six documents are all readable and non-empty"
+else
+  # Step 7 states the resolution and the line; step 10 states what the report records. Both terminate at
+  # the next numbered step, never at a heading: these steps are list items.
+  S7_86="$(awk '/^7\. \*\*Invoke/{f=1} f && /^8\. /{exit} f' "$SKV86")"
+  S10_86="$(awk '/^10\. \*\*Write/{f=1} f && /^11\. /{exit} f' "$SKV86")"
+  B_SKV86="$(tr '\n' ' ' < "$SKV86")"
+
+  # One region per bullet of step 7, keyed on a literal the bullet must contain. A row asserting over the
+  # whole of step 7 is answered by a sibling bullet — which is how C57's own ordering leg came to be green
+  # for a sentence four bullets away about the mutation prover.
+  bullet86() {
+    printf '%s\n' "$S7_86" | awk -v k="$1" '
+      !f && index($0,k) { f=1; print; next }
+      f && /^[[:space:]]*- / { exit }
+      f { print }'
+  }
+
+  # ---- A1: the fall to the generic is named, before anything is judged -----------------------------
+  # Four legs and a negative, all inside the bullet that carries the line. The bare presence of the word
+  # `generic` in step 7 was already true before this task: it is the fallback's own name, so a row keyed
+  # on it asserts the sentence that predates this change rather than the line this row is for.
+  a1_86=""
+  FALL86="$(bullet86 'generic lists only')"
+  [ -n "$FALL86" ] || a1_86="$a1_86 [the bullet that carries the line could not be located]"
+  [ "$(n86 'generic lists only' "$FALL86")" -ge 1 ] \
+    || a1_86="$a1_86 [the line does not say the change was read against the generic lists only]"
+  [ "$(n86 'own output' "$FALL86")" -ge 1 ] \
+    || a1_86="$a1_86 [the line is not written in the run's own output]"
+  [ "$(n86 'before any auditor runs|before the Workflow call' "$FALL86")" -ge 1 ] \
+    || a1_86="$a1_86 [the line is not ordered before the auditors]"
+  [ "$(n86 'to sharpen it' "$FALL86")" -ge 1 ] \
+    || a1_86="$a1_86 [the line names no remedy the operator can act on]"
+  # The trigger, which no leg pinned: strip the opening condition and every leg above still counts 1, so
+  # the row would certify a notice printed on every run of every project — the one outcome the spec puts
+  # under Out of scope. Both halves, because the positive alone permits an unconditional notice that also
+  # happens to mention the condition.
+  [ "$(n86 'resolved to no profile' "$FALL86")" -ge 1 ] \
+    || a1_86="$a1_86 [the line is not conditioned on the area resolving to no profile]"
+  [ "$(n86 'on every run|whatever resolved|regardless of what resolved' "$FALL86")" -eq 0 ] \
+    || a1_86="$a1_86 [the bullet obliges the line unconditionally]"
+  [ "$(n86 'no line about profiles is written at all|writes no line' "$FALL86")" -eq 0 ] \
+    || a1_86="$a1_86 [the bullet still says an omission produces no line]"
+  [ -z "$a1_86" ] && ok "A1 an area that fell to the generic is named before anything is judged" \
+                  || bad "A1 an area that fell to the generic is named before anything is judged:$a1_86"
+
+  # ---- A2: an explicit written choice is the only silence -------------------------------------------
+  # The inversion, asserted on both halves and in both places it must hold. The negative is the load-
+  # bearing leg: adding the new sentence while leaving the old test in place would satisfy every positive
+  # leg here and still leave the engine keying its silence on what a project omitted.
+  a2_86=""
+  [ "$(n86 'engine-generic' "$S7_86")" -ge 1 ] \
+    || a2_86="$a2_86 [step 7 never names the reserved value]"
+  [ "$(n86 'the only silence|only legitimate zero' "$S7_86")" -ge 1 ] \
+    || a2_86="$a2_86 [nothing says an explicit choice is the only silence]"
+  [ "$(n86 'the project declared none|declared no profiles' "$B_SKV86")" -eq 0 ] \
+    || a2_86="$a2_86 [the skill still keys its silence on what the project omitted]"
+  [ -n "$S10_86" ] || a2_86="$a2_86 [step 10 could not be extracted]"
+  [ "$(n86 'engine-generic' "$S10_86")" -ge 1 ] \
+    || a2_86="$a2_86 [step 10 does not exempt the explicit choice from the report]"
+  [ -z "$a2_86" ] && ok "A2 an explicit choice of the generic is the only silence" \
+                  || bad "A2 an explicit choice of the generic is the only silence:$a2_86"
+
+  # ---- A3: the reserved value is resolved before the lookup ----------------------------------------
+  # Three legs. Order alone is not the claim — what matters is the consequence the order buys, so the
+  # consequence is asserted beside it: read in the other order, the one declaration whose whole purpose is
+  # to silence the line is the declaration that produces it.
+  a3_86=""
+  [ "$(n86 'recognised before the|resolved before the' "$S7_86")" -ge 1 ] \
+    || a3_86="$a3_86 [nothing orders the reserved value before the review: lookup]"
+  [ "$(n86 'is never looked up|never looked up in' "$S7_86")" -ge 1 ] \
+    || a3_86="$a3_86 [nothing says the reserved value is never looked up]"
+  [ "$(n86 'never be reported as a declaration that did not resolve|never reported as a declaration' "$S7_86")" -ge 1 ] \
+    || a3_86="$a3_86 [nothing exempts the reserved value from the unresolved-declaration report]"
+  [ -z "$a3_86" ] && ok "A3 the reserved value is resolved before the lookup and never reported unresolved" \
+                  || bad "A3 the reserved value is resolved before the lookup and never reported unresolved:$a3_86"
+
+  # ---- A4: every report template carries the line and its exemption -------------------------------
+  # Counts derived from the `**Audited**` anchor, with a floor under the equality: both counts collapse to
+  # 0 if the marker is renamed or reflowed, and `0 = 0` would certify the line over zero templates. The
+  # floor guards the duplication as well as this row's own claim: the two copies are slated to be
+  # collapsed into one, and until they are, a clause added to one and not the other is a red row rather
+  # than a silent divergence.
+  a4_86=""
+  AUD86="$(grep -c '^\*\*Audited\*\*' "$VP86" | tr -d ' ')"
+  GEN86="$(awk '/^\*\*Audited\*\*/{f=1} f{buf=buf" "$0} f&&/^$/{if(buf ~ /generic lists only/) n++; f=0; buf=""} END{print n+0}' "$VP86")"
+  EXE86="$(awk '/^\*\*Audited\*\*/{f=1} f{buf=buf" "$0} f&&/^$/{if(buf ~ /engine-generic/) n++; f=0; buf=""} END{print n+0}' "$VP86")"
+  OLD86="$(awk '/^\*\*Audited\*\*/{f=1} f{buf=buf" "$0} f&&/^$/{if(buf ~ /no line about them/) n++; f=0; buf=""} END{print n+0}' "$VP86")"
+  [ "$AUD86" -ge 2 ] 2>/dev/null \
+    || a4_86="$a4_86 [the report templates could not be located: $AUD86 found]"
+  [ "$AUD86" = "$GEN86" ] || a4_86="$a4_86 [$GEN86 of $AUD86 report templates carry the fall-to-generic line]"
+  [ "$AUD86" = "$EXE86" ] || a4_86="$a4_86 [$EXE86 of $AUD86 report templates carry the explicit-choice exemption]"
+  [ "$OLD86" -eq 0 ] || a4_86="$a4_86 [$OLD86 report templates still keep the omission silence]"
+  [ -z "$a4_86" ] && ok "A4 every report template carries the fall-to-generic line and its exemption" \
+                  || bad "A4 every report template carries the fall-to-generic line and its exemption:$a4_86"
+
+  # ---- A5: the guide and the template document the reserved value ----------------------------------
+  # The reserved VALUE beside the reserved KEY, in both adopter-facing documents, joined to the one fact
+  # this task can break: neither document may still promise the old silence.
+  #
+  # It does NOT also assert that the template ships both keys undeclared. C57 A7 owns that claim and owned
+  # it first, and a second copy here would be two checks in charge of one fact — the same duplication the
+  # B1 and B3 legs above were retired for. A5's first draft carried it as a guard against passing these
+  # legs the wrong way, by DECLARING the reserved value in the shipped template rather than documenting it
+  # in a comment; that route is already red through A7, so the join bought nothing the suite did not have.
+  a5_86=""
+  [ "$(n86 'engine-generic' "$(tr '\n' ' ' < "$DOC86")")" -ge 1 ] \
+    || a5_86="$a5_86 [the guide does not document the reserved value]"
+  [ "$(n86 'engine-generic' "$(tr '\n' ' ' < "$TPL86")")" -ge 1 ] \
+    || a5_86="$a5_86 [the template does not document the reserved value]"
+  grep -q 'Declare neither key and nothing changes' "$DOC86" \
+    && a5_86="$a5_86 [the guide still promises that declaring neither key changes nothing]"
+  [ "$(n86 'nothing about profiles until you declare' "$(tr '\n' ' ' < "$TPL86")")" -eq 0 ] \
+    || a5_86="$a5_86 [the template still promises the run says nothing until you declare a profile]"
+  # The guide's POSITIVE promise, inside its own section. The legs above are a token count and two
+  # absences, and an absence is satisfied by deleting the passage and writing nothing — so the paragraph
+  # that is the only human-readable statement of the new rule was guarded by nothing at all.
+  DOC5_86="$(awk '/^### Review profiles/{f=1;next} f && /^### /{exit} f' "$DOC86")"
+  [ -n "$DOC5_86" ] || a5_86="$a5_86 [the guide's Review profiles section could not be extracted]"
+  [ "$(n86 'the only silence' "$DOC5_86")" -ge 1 ] \
+    || a5_86="$a5_86 [the guide never states that an explicit written choice is the only silence]"
+  [ "$(n86 'to sharpen it' "$DOC5_86")" -ge 1 ] \
+    || a5_86="$a5_86 [the guide never states the line names what to declare to sharpen it]"
+  [ -z "$a5_86" ] && ok "A5 the guide and the template document the reserved value, and neither promises the old silence" \
+                  || bad "A5 the guide and the template document the reserved value, and neither promises the old silence:$a5_86"
+
+  # ---- A6: a decline is offered the explicit choice, and no skeleton is generated ------------------
+  # Both halves, and the second is the one at risk: a section told to propose checklist sets is one edit
+  # away from generating empty ones, which is the rule that already governs steering in this same section.
+  # Scoped to section 5 — the protocol says "suggest" and "propose" in places that are not this obligation.
+  a6_86=""
+  DSC5_86="$(awk '/^## 5\./{f=1;next} f && /^## /{exit} f' "$DSC86")"
+  S4_86="$(awk '/^4\. /{f=1} f && /^5\. /{exit} f' "$DSK86")"
+  [ -n "$DSC5_86" ] || a6_86="$a6_86 [the discover protocol's section 5 could not be extracted]"
+  [ "$(n86 'engine-generic' "$DSC5_86")" -ge 1 ] \
+    || a6_86="$a6_86 [the section never names the explicit choice it must offer]"
+  [ "$(n86 'declin' "$DSC5_86")" -ge 1 ] \
+    || a6_86="$a6_86 [the section names no decline to offer it on]"
+  [ "$(n86 'offer' "$DSC5_86")" -ge 1 ] \
+    || a6_86="$a6_86 [the section does not oblige offering anything]"
+  # One leg per object, because the section forbids two generations and a single `not generate` count is
+  # satisfied by the steering sentence alone — which predates this change, so the row would report the same
+  # verdict whether the checklist prohibition exists or not.
+  [ "$(n86 'not generate steering' "$DSC5_86")" -ge 1 ] \
+    || a6_86="$a6_86 [the section stopped forbidding generated steering skeletons]"
+  [ "$(n86 'not generate checklist files' "$DSC5_86")" -ge 1 ] \
+    || a6_86="$a6_86 [the section stopped forbidding generated checklist files]"
+  # Scoped to the table rows of section 2, never the whole file: `review_profile` is named in section 5 by
+  # this task's own prose, so a file-wide count answers with that and reports nothing about the table row
+  # it claims to guard.
+  TBL86="$(awk '/^## 2\./{f=1;next} f && /^## /{exit} f' "$DSC86" | grep '^|')"
+  [ -n "$TBL86" ] || a6_86="$a6_86 [the detected-field table could not be extracted]"
+  [ "$(n86 'review_profile' "$TBL86")" -ge 1 ] \
+    || a6_86="$a6_86 [the protocol's detected-field table knows nothing of review_profile]"
+  [ -n "$S4_86" ] || a6_86="$a6_86 [the discover skill's step 4 could not be extracted]"
+  [ "$(n86 'review_profile|checklist' "$S4_86")" -ge 1 ] \
+    || a6_86="$a6_86 [the skill's step 4 names checklist sets nowhere beside steering]"
+  [ -z "$a6_86" ] && ok "A6 a decline is offered the explicit choice, and no skeleton is ever generated" \
+                  || bad "A6 a decline is offered the explicit choice, and no skeleton is ever generated:$a6_86"
+
+  # ---- A7: a set declared under the reserved name is named, not dropped ---------------------------
+  # Scoped to the bullet that carries the clause, and joined to WHAT is said. The bare word `shadow` in
+  # step 7 would be satisfied by a sentence stating the opposite outcome; what the rule buys is that the
+  # project which lost its own checklists hears it from the run rather than from a shallower review.
+  a7_86=""
+  SHAD86="$(bullet86 'shadow')"
+  [ -n "$SHAD86" ] || a7_86="$a7_86 [the shadowed-declaration clause could not be located]"
+  [ "$(n86 'reserved value wins|reserved name wins' "$SHAD86")" -ge 1 ] \
+    || a7_86="$a7_86 [nothing says the reserved value wins over a declaration of the same name]"
+  [ "$(n86 'the run says|is named' "$SHAD86")" -ge 1 ] \
+    || a7_86="$a7_86 [nothing says the shadowed declaration is named out loud]"
+  # The report side, counted over the same `**Audited**` anchor A4 uses. The exemption granted to the
+  # reserved value is the one case a shadowed declaration can occur in, so a template that exempts it
+  # without saving this warning obliges the report to stay silent about what step 7 just required.
+  TPLN86="$(grep -c '^\*\*Audited\*\*' "$VP86" | tr -d ' ')"
+  SHR86="$(awk '/^\*\*Audited\*\*/{f=1} f{buf=buf" "$0} f&&/^$/{if(buf ~ /shadow/) n++; f=0; buf=""} END{print n+0}' "$VP86")"
+  [ "$TPLN86" -ge 2 ] 2>/dev/null \
+    || a7_86="$a7_86 [the report templates could not be located: $TPLN86 found]"
+  [ "$TPLN86" = "$SHR86" ] \
+    || a7_86="$a7_86 [$SHR86 of $TPLN86 report templates save the shadowed declaration from the silence]"
+  [ -z "$a7_86" ] && ok "A7 a checklist set declared under the reserved name is named, not dropped" \
+                  || bad "A7 a checklist set declared under the reserved name is named, not dropped:$a7_86"
 fi
 
 echo ""

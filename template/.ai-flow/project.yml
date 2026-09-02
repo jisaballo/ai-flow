@@ -52,8 +52,8 @@ steering: {}
 # --- Review profiles (optional) ----------------------------------------------
 # What the five review auditors look for, in YOUR stack's vocabulary, added ON TOP
 # of the engine's own stack-agnostic list for each axis. Both keys are commented
-# out on purpose: absent is the default state, and the verify run says nothing
-# about profiles until you declare one.
+# out on purpose: absent is the default state — and absent is not the same as
+# choosing it, which is what the reserved value below is for.
 #
 # The rules — how an area resolves, what `default:` reserves, what happens to a
 # path that does not read — are in docs/customization.md, "Review profiles", and
@@ -71,3 +71,5 @@ steering: {}
 # review_profile:            # keyed on the SAME area name as `steering:` above
 #   default: angular-app     # `default:` is RESERVED here — it is not an area
 #   cloud-functions: express-api
+#   legacy-scripts: engine-generic   # `engine-generic` is a RESERVED value here —
+#                                    # it is not a profile name

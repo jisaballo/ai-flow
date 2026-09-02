@@ -24,6 +24,7 @@ Read configuration and structure — do not guess from the project name. Sources
 | `area_kind` | Monorepo layout: `apps/`+`libs/` → `app`/`domain`; `packages/` → `package`; single `src/` → leave as the module/service the repo represents |
 | `source_dirs` | Top-level source directories actually present (`apps`, `libs`, `packages`, `src`, …) |
 | `steering` | Usually empty at first — only map an area if a `steering/<area>.md` already exists |
+| `review` / `review_profile` | Not derived from a signal — usually absent at first. Propose them in §5 rather than writing them, and never invent a checklist file |
 
 For monorepo command runners (Nx, Turbo, pnpm workspaces), prefer the scoped form with the `{area}` placeholder (e.g. `npx nx test {area}`). For a single-package repo, use the flat command (e.g. `npm test`).
 
@@ -42,6 +43,10 @@ Write `.ai-flow/project.yml` using the T-001 v1 schema. It must be valid YAML wi
 
 **Carry over every optional key the file already declares** — `commands.distribute`, `front_tool`, anything a later schema adds. A re-derive that writes only the keys it knows about deletes the operator's own declarations without saying so, and the two above are read by ceremonies rather than by this protocol: nothing here would notice their absence, and the ceremony that reads one would report the project as declaring none.
 
-## 5. Suggest steering — do not generate it
+## 5. Suggest steering and review profiles — do not generate either
 
 List the candidate areas you detected (apps / domains / packages) and suggest creating `steering/<area>.md` for the high-value ones (domains with non-obvious rules, security/compliance, established patterns). **Do not generate steering skeletons** — empty files are noise. Point the user at the steering guidance in `~/.claude/ai-flow/docs/customization.md`, which the engine installs beside these protocols — a reference that names no path sends the reader looking for a file they cannot find.
+
+**Propose review profiles from that same detection, on the same terms.** The stack is already known by this point, so name the checklist sets worth having and the axes they would cover, and point at the same guide for the rules. **Do not generate checklist files either**, for the reason above.
+
+**Where the operator declines, offer to write the explicit choice.** A project that declares neither key is told so on every verify run — `docs/customization.md`, "Review profiles", owns what that line says and what the value below does, and none of it is restated here. Offer `review_profile: default: engine-generic`, and write it only if they accept: asking once is cheaper than a notice nobody wanted. Offering is not generating: no checklist file is created on either answer, and a decline that is not converted leaves the line in place, which is the honest reading of a choice nobody made.

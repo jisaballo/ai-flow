@@ -88,6 +88,17 @@ review_profile:
 engine's own lists — **no project default is ever inferred**. An omission makes the review shallower, never
 wrong: a false finding costs you a triage, a generic axis costs only depth.
 
+**`engine-generic` is a reserved value.** Declare it where a profile name would go and that area is judged
+by the engine's own lists **on purpose** — the run looks it up in nothing, so it can never be reported as a
+profile that failed to resolve, and it silences the line described below. It works per area as well as
+under `default:`, because it is a value and not a key:
+
+```yaml
+review_profile:
+  default: angular-app
+  legacy-scripts: engine-generic   # this area is judged by the engine's lists, by choice
+```
+
 **A profile is additive.** Its checklist is read *on top of* the engine's list for that axis, never instead
 of it. You extend the review; you cannot narrow it.
 
@@ -100,8 +111,12 @@ falls the whole area to the engine's lists; a checklist path that cannot be read
 and the other axes keep theirs. Either way it is named in that same output, and the report records it — a
 mistyped profile costs you depth and a warning, never a stopped verify.
 
-**Declare neither key and nothing changes**: the run reads exactly as it did before profiles existed, and
-writes no line about them.
+**Declare neither key and the run tells you.** You get the engine's own lists — shallower, never wrong —
+and one line before any auditor starts, saying the change was read against them and naming what to declare
+to sharpen it. It is not a complaint about your code; it is the one moment you can learn this feature
+exists, which is why it does not wait for you to come looking. To accept the engine's lists on purpose and
+silence it, declare the reserved value above. **An explicit written choice is the only silence**: an
+omission and a decision read identically from outside, and only one of them was made.
 
 **What a project cannot redefine:** severities, the archive gate, the adversarial refutation of HIGH
 findings, and the mutation prover. Those are the engine's, and they stay there.

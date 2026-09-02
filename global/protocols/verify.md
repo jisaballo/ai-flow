@@ -143,8 +143,10 @@ the trunk is current, where no remote trunk resolved, or where no base resolved,
 written. The working copy was left as found; if it was
 not, what changed and what was restored. The review profile step 7 resolved and the checklist each axis
 received, or that an axis received none, plus any profile or checklist path that did not resolve; where
-the project declared no profiles at all, no line about them. If the audit ran out of phase on the
-operator's word, that it did and that the sheet's position was not moved.
+the area resolved to no profile, that the change was read against the engine's generic lists only and
+what to declare to sharpen it; where the operator resolved it to `engine-generic`, no line about profiles
+at all — save a declaration shadowed by the reserved name, which is recorded. If the audit ran out of phase on the operator's word, that it did and that the sheet's position
+was not moved.
 
 ## Criteria Audit
 | # | Criterion (from understand.md) | Status | Evidence |
@@ -258,8 +260,10 @@ the trunk is current, where no remote trunk resolved, or where no base resolved,
 written. The working copy was left as found; if it was
 not, what changed and what was restored. The review profile step 7 resolved and the checklist each axis
 received, or that an axis received none, plus any profile or checklist path that did not resolve; where
-the project declared no profiles at all, no line about them. If the audit ran out of phase on the
-operator's word, that it did and that the sheet's position was not moved.
+the area resolved to no profile, that the change was read against the engine's generic lists only and
+what to declare to sharpen it; where the operator resolved it to `engine-generic`, no line about profiles
+at all — save a declaration shadowed by the reserved name, which is recorded. If the audit ran out of phase on the operator's word, that it did and that the sheet's position
+was not moved.
 
 ## Criteria Audit
 | # | Criterion | Status | Evidence |

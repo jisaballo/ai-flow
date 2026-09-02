@@ -15,7 +15,7 @@ Derives the **project layer** (`.ai-flow/project.yml`) for an existing codebase,
 
 3. **Follow the protocol**: detect the project-layer values from real signals, confirm every low-confidence field with `AskUserQuestion` (best detection as option 1 — never persist a guessed value unconfirmed), then write a complete, valid `.ai-flow/project.yml`.
 
-4. **Suggest, don't generate, steering**: list the candidate areas you detected and suggest creating `steering/<area>.md` for the high-value ones. Do **not** generate steering skeletons.
+4. **Suggest, don't generate, steering and review profiles**: list the candidate areas you detected and suggest creating `steering/<area>.md` for the high-value ones, plus the review checklist sets the detected stack warrants. Do **not** generate steering skeletons or checklist files. Where the operator declines profiles, offer to write the reserved `engine-generic` choice, so that decision is recorded once (`docs/customization.md`, "Review profiles").
 
 5. **Sanity check**: confirm the written `project.yml` is valid YAML with all required keys (`name`, `area_kind`, `source_dirs`, `commands.test`, `steering`).
 
