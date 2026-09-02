@@ -44,7 +44,7 @@ Before executing a step, invoke each skill declared in its plan `Skills:` line, 
 
 ## Steering Files
 
-Before executing, re-read the steering file(s) for the affected domain(s) from `.ai-flow/steering/{domain}.md`. These contain domain-specific rules and pitfalls that act as guardrails during implementation.
+Before executing, re-read what the `steering:` map names for the affected domain(s) — **the map's value, whatever path it names**, on the terms the Understand protocol's `## Steering Files` owns and states; `.ai-flow/steering/{domain}.md` is the convention, not the only place an entry may point. These contain domain-specific rules and pitfalls that act as guardrails during implementation.
 
 ## Code Comments & Provenance
 

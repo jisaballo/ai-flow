@@ -11840,6 +11840,9 @@ LC83="global/protocols/lifecycle.md"
 RD83="README.md"
 DOC83="docs/customization.md"
 TPL83="template/.ai-flow/project.yml"
+# The architecture card names the axes because this very guard obliges it to, which makes it a home of the
+# auditor list like the seven above — and one that would otherwise go stale in silence when a sixth axis lands.
+CRD83="docs/architecture/verify.md"
 
 n83() { printf '%s\n' "$2" | grep -ciE "$1" | tr -d ' '; }
 
@@ -11943,7 +11946,7 @@ if [ "$c58_readable" = "1" ]; then
     stale83="${stale83:+$stale83|}$(shapes83 "$c83" "$(word83 "$c83")")"
   done
   for e83 in "$RD83|simplicity" "$DOC83|simplicity" "$VP83|simplicity" "$LC83|simplicity" \
-             "$SKV83|simplicity" "$VW83|simplicity" "$TPL83|structure:"; do
+             "$SKV83|simplicity" "$VW83|simplicity" "$CRD83|simplicity" "$TPL83|structure:"; do
     d83="${e83%%|*}"; want83="${e83##*|}"
     if ! b83="$(tr '\n' ' ' < "$d83" 2>/dev/null)"; then
       a4_83="$a4_83 [unreadable: $d83]"; continue
@@ -12240,6 +12243,207 @@ else
                   || bad "A7 a checklist set declared under the reserved name is named, not dropped:$a7_86"
 fi
 
+
+# C60 — a capability has one written shape, and the session that touches it receives it.
+# Generated in the Conform phase from understand.md's Verifiable Criteria (A1-A7; the two observables and
+# the first behavioural are inspection, per D2 — the wiring lives in a gitignored file the suite never
+# reads, and a fixture would prove a different claim).
+#
+# Written red in Conform and replaced leg by leg in Execute, one step at a time. Every row below now
+# asserts; none is a placeholder. A3's exemption and A6's document set were both widened at Verify, each
+# against a confirmed HIGH — the comments at those two rows say what they were and why they moved.
+echo "== C60: a capability has one written shape, and the session that touches it receives it =="
+
+# One name per path, declared before either block reads it: A3 reads the map for the budget it declares
+# and A5 reads it for the diagram, and two spellings of one path are two things to keep in step.
+MAP88="docs/architecture/README.md"
+CARD88="docs/architecture/verify.md"
+BLOCKS88="What it is|The artifacts|The homes table|External dependencies"
+
+if ! { [ -r "$CARD88" ] && [ -s "$CARD88" ]; }; then
+  for r88 in \
+    "A1 the verify card exists and carries its summary and its four blocks" \
+    "A2 the card's summary is derived from its body, in both directions" \
+    "A3 the card is inside the budget a card is given" \
+    "A4 the card is inside the guard that keeps every home naming the current count" \
+    "A7 the card's home list for the auditor count does not contradict the suite's"; do
+    bad "$r88 ($CARD88 is unreadable or empty)"
+  done
+else
+  # Sections and Nano lines are read from EXTRACTED regions, never from a file-wide grep: the card's prose
+  # names its own block titles, and a bare grep would accept a card whose headings say one thing and whose
+  # summary says another — which is the exact drift the derived-summary rule exists to prevent.
+  SECS88="$(grep '^## ' "$CARD88" | grep -v '^## Nano$' | sed 's/^## //' | sort)"
+  NANO88="$(awk '/^## Nano$/{f=1;next} /^## /{f=0} f' "$CARD88")"
+  NTITLES88="$(printf '%s\n' "$NANO88" | grep '^- \*\*' | sed -E 's/^- \*\*(.*)\*\* —.*/\1/' | sort)"
+
+  # --- A1: the card exists and carries the four blocks -----------------------
+  a1_88=""
+  printf '%s\n' "$NANO88" | grep -q '^- ' || a1_88="$a1_88 [the Nano block carries no lines]"
+  n1_88=0
+  IFS='|'; for b88 in $BLOCKS88; do
+    printf '%s\n' "$SECS88" | grep -qxF "$b88" || a1_88="$a1_88 [$b88 is not a section]"
+    n1_88=$((n1_88+1))
+  done; unset IFS
+  # A count, so a card that grows a sixth block is caught rather than passing on containment alone.
+  [ "$(printf '%s\n' "$SECS88" | grep -c .)" = "$n1_88" ] \
+    || a1_88="$a1_88 [the card carries $(printf '%s\n' "$SECS88" | grep -c .) sections, not $n1_88]"
+  [ -z "$a1_88" ] && ok "A1 the verify card exists and carries its summary and its four blocks" \
+                  || bad "A1 the verify card exists and carries its summary and its four blocks:$a1_88"
+
+  # --- A2: the summary is derived from the body, in BOTH directions ----------
+  # Set equality, not containment. A section with no Nano line is an undescribed block; a Nano line naming
+  # no section is a summary of something that is not there. Only both legs catch both.
+  a2_88=""
+  [ -n "$NTITLES88" ] || a2_88="$a2_88 [no Nano line declares a section title]"
+  MISS88="$(comm -23 <(printf '%s\n' "$SECS88") <(printf '%s\n' "$NTITLES88") | tr '\n' ' ')"
+  EXTRA88="$(comm -13 <(printf '%s\n' "$SECS88") <(printf '%s\n' "$NTITLES88") | tr '\n' ' ')"
+  [ -z "$(printf '%s' "$MISS88" | tr -d ' ')" ]  || a2_88="$a2_88 [sections with no Nano line: $MISS88]"
+  [ -z "$(printf '%s' "$EXTRA88" | tr -d ' ')" ] || a2_88="$a2_88 [Nano lines naming no section: $EXTRA88]"
+  [ -z "$a2_88" ] && ok "A2 the card's summary is derived from its body, in both directions" \
+                  || bad "A2 the card's summary is derived from its body, in both directions:$a2_88"
+
+  # --- A3: the budget the map declares, measured on the card -----------------
+  # The two ceilings are READ from docs/architecture/README.md rather than repeated here: a budget written
+  # in the guard and again in the document it governs is two numbers that drift, and the map is the home.
+  a3_88=""
+  # $MAP88 is the same path A5 guards, declared once above. The NUMBERS are extracted, not pinned:
+  # the comparisons below use what the map declares, so raising a ceiling there raises it here, which is
+  # what "the map is the home" has to mean if it is to mean anything.
+  if ! { [ -r "$MAP88" ] && [ -s "$MAP88" ]; }; then
+    a3_88="$a3_88 [the map that declares the budget is unreadable or empty: $MAP88]"
+    NLIM88=""; WLIM88=""
+  else
+    NLIM88="$(grep -oE '\*\*[0-9]+ lines\*\*' "$MAP88" | head -1 | grep -oE '[0-9]+')"
+    WLIM88="$(grep -oE '\*\*[0-9]+ words\*\*' "$MAP88" | head -1 | grep -oE '[0-9]+')"
+  fi
+  [ -n "$NLIM88" ] || a3_88="$a3_88 [the map declares no Nano ceiling]"
+  [ -n "$WLIM88" ] || a3_88="$a3_88 [the map declares no body ceiling]"
+  NLINES88="$(printf '%s\n' "$NANO88" | grep -c '^- ' | tr -d ' ')"
+  # The exemption the map grants is the HOMES TABLE's rows and no other table's. Stripping every `^|` line
+  # forgave the artifacts and external-dependencies tables too — 275 of the card's own words at the time
+  # this was found — and left two of the four bounded blocks unbounded for good, over a map that names the
+  # homes table as the only one licensed to grow.
+  BODY88="$(awk '/^## Nano$/{f=1;next} /^## /{f=0} !f' "$CARD88")"
+  # The section heading is KEPT here and skipped in the homes count below, so the two partition the body
+  # exactly — which is what lets the identity leg further down be an equality rather than an inequality
+  # that would pass over any exemption at all.
+  BWORDS88="$(printf '%s\n' "$BODY88" | awk '/^## The homes table$/{h=1} /^## /{if(!/^## The homes table$/)h=0} !(h && /^\|/)' | wc -w | tr -d ' ')"
+  [ -z "$NLIM88" ] || [ "$NLINES88" -le "$NLIM88" ] 2>/dev/null \
+    || a3_88="$a3_88 [the Nano is $NLINES88 lines, over the map's $NLIM88]"
+  [ -z "$WLIM88" ] || [ "$BWORDS88" -le "$WLIM88" ] 2>/dev/null \
+    || a3_88="$a3_88 [the body is $BWORDS88 words, over the map's $WLIM88]"
+  # The table is the block licensed to grow, so the count must actually exclude it: a measurement that
+  # counted table rows would make the exemption a sentence nothing honours.
+  # Anti-hollowness, and it names WHICH table: that some pipe-prefixed line was dropped proves nothing, and
+  # proving nothing is how the wrong exemption survived this row's first draft. So both directions — the
+  # homes table's rows are out of the count, and the other tables' rows are in it.
+  ALL88="$(printf '%s\n' "$BODY88" | wc -w | tr -d ' ')"
+  HOMEW88="$(printf '%s\n' "$BODY88" | awk '/^## The homes table$/{h=1;next} /^## /{h=0} h && /^\|/' | wc -w | tr -d ' ')"
+  OTHERW88="$(printf '%s\n' "$BODY88" | awk '/^## The homes table$/{h=1;next} /^## /{h=0} !h && /^\|/' | wc -w | tr -d ' ')"
+  [ "$HOMEW88" -gt 0 ] 2>/dev/null && [ "$ALL88" = "$((BWORDS88 + HOMEW88))" ] 2>/dev/null \
+    || a3_88="$a3_88 [the count does not exclude exactly the homes table's rows: body $ALL88, counted $BWORDS88, homes $HOMEW88]"
+  [ "$OTHERW88" = "0" ] 2>/dev/null || [ "$BWORDS88" -gt "$OTHERW88" ] 2>/dev/null \
+    || a3_88="$a3_88 [the other tables' rows ($OTHERW88 words) are not inside the count]"
+  [ -z "$a3_88" ] && ok "A3 the card is inside the budget a card is given" \
+                  || bad "A3 the card is inside the budget a card is given:$a3_88"
+
+  # --- A4: the card is inside the guard that keeps the count current ---------
+  # Read from the loop C58 A4 actually runs, never from a second list: a copy here would go green while
+  # the guard itself had dropped the card, which is the only failure this row exists to see.
+  a4_88=""
+  LOOP88="$(awk '/^  for e83 in /{f=1} f{print} f&&/; do$/{exit}' "$0" 2>/dev/null)"
+  [ -n "$LOOP88" ] || LOOP88="$(awk '/^  for e83 in /{f=1} f{print} f&&/; do$/{exit}' test/validate.sh)"
+  [ -n "$LOOP88" ] || a4_88="$a4_88 [the auditor-count guard's document loop could not be extracted]"
+  printf '%s\n' "$LOOP88" | grep -q 'CRD83' \
+    || a4_88="$a4_88 [the card is not among the documents the auditor-count guard loops over]"
+  grep -q '^CRD83="docs/architecture/verify.md"$' test/validate.sh \
+    || a4_88="$a4_88 [CRD83 does not resolve to the card]"
+  [ -z "$a4_88" ] && ok "A4 the card is inside the guard that keeps every home naming the current count" \
+                  || bad "A4 the card is inside the guard that keeps every home naming the current count:$a4_88"
+
+  # --- A7: the card's home list does not contradict the suite's -------------
+  # Set equality between the paths the card's Auditor list row names and the paths the guard loops over,
+  # each variable resolved from its own assignment. Equality and not containment: a card naming six of
+  # eight would pass containment while being exactly the miscount this whole task was opened over.
+  a7_88=""
+  ROW88="$(grep '^| Auditor list |' "$CARD88")"
+  [ -n "$ROW88" ] || a7_88="$a7_88 [the card has no Auditor list row]"
+  # Filtered on a file extension, never on a slash: README.md sits at the repository root, and a
+  # slash-keyed filter drops it from the card's side while the guard still holds it — a mismatch the row
+  # would then report as the card's, which is a guard blaming the document for its own reader.
+  CARDSET88="$(printf '%s\n' "$ROW88" | grep -oE '`[^`]+`' | tr -d '`' | grep -E '\.(md|js|yml|sh|py)$' | sort -u)"
+  GUARDSET88="$(printf '%s\n' "$LOOP88" | grep -oE '\$[A-Z]+83' | tr -d '$' | sort -u \
+    | while read -r v88; do
+        [ -n "$v88" ] && sed -nE "s/^$v88=\"([^\"]+)\"$/\1/p" test/validate.sh | head -1
+      done | sort -u)"
+  [ -n "$CARDSET88" ]  || a7_88="$a7_88 [the Auditor list row names no files]"
+  [ -n "$GUARDSET88" ] || a7_88="$a7_88 [the guard's document set could not be resolved]"
+  ONLYCARD88="$(comm -23 <(printf '%s\n' "$CARDSET88") <(printf '%s\n' "$GUARDSET88") | tr '\n' ' ')"
+  ONLYGUARD88="$(comm -13 <(printf '%s\n' "$CARDSET88") <(printf '%s\n' "$GUARDSET88") | tr '\n' ' ')"
+  [ -z "$(printf '%s' "$ONLYCARD88" | tr -d ' ')" ] \
+    || a7_88="$a7_88 [the card claims homes the guard does not: $ONLYCARD88]"
+  [ -z "$(printf '%s' "$ONLYGUARD88" | tr -d ' ')" ] \
+    || a7_88="$a7_88 [the guard holds homes the card omits: $ONLYGUARD88]"
+  [ -z "$a7_88" ] && ok "A7 the card's home list for the auditor count does not contradict the suite's" \
+                  || bad "A7 the card's home list for the auditor count does not contradict the suite's:$a7_88"
+fi
+if ! { [ -r "$MAP88" ] && [ -s "$MAP88" ]; }; then
+  bad "A5 the root map draws the engine's capabilities and both arrow kinds ($MAP88 is unreadable or empty)"
+else
+  # The verdict is a count inside the EXTRACTED mermaid block, never a file-wide grep: the prose around the
+  # diagram names every capability too, and a bare grep would pass over a map with no diagram at all.
+  a5_88=""
+  FENCE88="$(awk '/^```mermaid$/{f=1;next} /^```$/{f=0} f' "$MAP88")"
+  [ -n "$FENCE88" ] || a5_88="$a5_88 [no mermaid block could be extracted]"
+  # Nine capabilities, each as a NODE — matched on the quoted label a node declaration carries, so a
+  # capability that only appears inside an arrow line does not count as drawn.
+  for cap88 in understand plan execute verify "backlog ceremonies" ralph install harness "guardrail hooks"; do
+    printf '%s\n' "$FENCE88" | grep -qF "[\"$cap88\"]" || a5_88="$a5_88 [$cap88 is not a node]"
+  done
+  # Both arrow kinds, and no third: an unlabelled edge or a third verb would make the map's own legend false.
+  for kind88 in requires enriches; do
+    [ "$(printf '%s\n' "$FENCE88" | grep -c -- "|$kind88|" | tr -d ' ')" -ge 1 ] \
+      || a5_88="$a5_88 [no edge is labelled $kind88]"
+  done
+  EDGES88="$(printf '%s\n' "$FENCE88" | grep -c -- '-->' | tr -d ' ')"
+  LABELLED88="$(printf '%s\n' "$FENCE88" | grep -c -E -- '-->\|(requires|enriches)\|' | tr -d ' ')"
+  [ "$EDGES88" = "$LABELLED88" ] \
+    || a5_88="$a5_88 [$LABELLED88 of $EDGES88 edges carry one of the two arrow kinds]"
+  # conform is not a node, and the map says why rather than leaving the absence to be read as an oversight.
+  printf '%s\n' "$FENCE88" | grep -qF '["conform"]' && a5_88="$a5_88 [conform is drawn as a node]"
+  grep -qi 'conform.*not a node' "$MAP88" || a5_88="$a5_88 [the map never says conform is not a node]"
+  [ -z "$a5_88" ] && ok "A5 the root map draws the engine's capabilities and both arrow kinds" \
+                  || bad "A5 the root map draws the engine's capabilities and both arrow kinds:$a5_88"
+fi
+# Three documents, not two: the loosening reaches every phase that RESOLVES a steering entry. The pair the
+# criterion first named was a list built by hand, and execute.md — the phase that writes the code — was the
+# one it missed, so a card resolved by Understand was dropped by the phase that needed it most.
+UP88="global/protocols/understand.md"
+USK88="global/skills/understand/SKILL.md"
+EXP88="global/protocols/execute.md"
+a6_88=""
+for d88 in "$UP88" "$USK88" "$EXP88"; do
+  if ! b88="$(tr '\n' ' ' < "$d88" 2>/dev/null)"; then
+    a6_88="$a6_88 [unreadable: $d88]"; continue
+  fi
+  # Positive: the document says what is loaded is the MAP'S VALUE. Counted over the whole document because
+  # both carry the rule in one place; the negative leg below is what stops a file-wide count from passing
+  # on prose that says the right thing beside prose that still says the old one.
+  [ "$(printf '%s' "$b88" | grep -ciE "the map's value|whatever path it names" | tr -d ' ')" -ge 1 ] \
+    || a6_88="$a6_88 [$d88 never says the value is whatever the map names]"
+  # Negative: nothing still resolves the entry TO THE DIRECTORY. Both halves are asserted because the
+  # positive alone is satisfied by a document that gained the new sentence and kept the old one — which is
+  # exactly the shape a loosening takes when it is written as an addition instead of a replacement.
+  [ "$(printf '%s' "$b88" | grep -ciE "steering files from .\.ai-flow/steering|steering file\(s\) for the affected domain\(s\) from|read the corresponding steering files|Load steering files for the affected domains|are the values of the .steering:. map in .\.ai-flow/project\.yml. \(files under" | tr -d ' ')" = "0" ] \
+    || a6_88="$a6_88 [$d88 still resolves the entry to the steering directory]"
+  # And the directory survives as the CONVENTION rather than being deleted: a loosening that erased it
+  # would leave every project that follows the convention with no statement of where its files go.
+  [ "$(printf '%s' "$b88" | grep -ciE "\.ai-flow/steering" | tr -d ' ')" -ge 1 ] \
+    || a6_88="$a6_88 [$d88 no longer names the conventional place at all]"
+done
+[ -z "$a6_88" ] && ok "A6 the steering value is whatever the map names, said in both directions" \
+                || bad "A6 the steering value is whatever the map names, said in both directions:$a6_88"
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

@@ -168,11 +168,11 @@ above is. Nothing new reaches that section while a task is in flight. See Backlo
 
 ## Steering Files
 
-**After task split analysis**, identify which domains the task affects and read the corresponding steering files from `.ai-flow/steering/{domain}.md`. These contain domain-specific rules, patterns, and pitfalls that inform better questions and plans.
+**After task split analysis**, identify which domains the task affects and read what the `steering:` map in `.ai-flow/project.yml` names for each. These contain domain-specific rules, patterns, and pitfalls that inform better questions and plans.
 
-The available steering files are the values of the `steering:` map in `.ai-flow/project.yml` (files under `.ai-flow/steering/`).
+**What is loaded is the map's value, whatever path it names.** `.ai-flow/steering/<domain>.md` is the conventional place and not the only one: a project may point an entry at any file it keeps — a checklist, an architecture card, a document it already maintains elsewhere. Resolving to the directory instead of to the value would silently drop every entry that names something else, and drop it with no diagnostic, since a path never looked up cannot be reported missing.
 
-If no steering file exists for the affected domain, proceed without one. Each code-domain steering file opens with a `## Nano` block (one line per rule) — read the nano first; read the full body when the task actually touches that domain.
+If the map names nothing for the affected domain, proceed without one. Each file it does name opens with a `## Nano` block (one line per rule or section) — read the nano first; read the full body when the task actually touches that domain.
 
 ## Investigation
 
