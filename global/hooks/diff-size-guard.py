@@ -2,11 +2,15 @@
 """Stop hook (ai-flow only): nudges once when a change outgrows the Diff Size Guardrail.
 Two ceilings, both measured in the checkout the session runs in — primary or linked worktree:
 the step (what is not committed yet) and the task (everything this branch added since its base,
-commits included, which the step measure cannot see). No-op outside ai-flow projects."""
-import sys, json, subprocess, re, os
+commits included, which the step measure cannot see). And one note, which never blocks: a touched
+file that the change has grown past a healthy size — the shape ten small diffs build with every
+ceiling green. No-op outside ai-flow projects."""
+import sys, json, subprocess, re, os, stat
 
 STEP_THRESHOLD = 150   # one execution step: uncommitted work
 TASK_THRESHOLD = 400   # the whole task: the branch's distance from its base
+FILE_THRESHOLD = 1000  # a touched file's size after the change; the project layer may override it
+THRESHOLD_KEY = 'large_file_lines'  # top-level key in .ai-flow/project.yml carrying that override
 
 # Test suites don't count as production diff. Conventions across the stacks ai-flow is used on,
 # not just JS/TS: a Kotlin *Test.kt counted as production code makes the brake fire on test work.
@@ -68,36 +72,109 @@ def base_ref(root: str):
     return None
 
 
-def numstat_total(root: str, rev: str) -> int:
-    total = 0
+RENAME_RE = re.compile(r'\{[^{}]* => ([^{}]*)\}')
+
+
+def numstat_path(raw: str) -> str:
+    """numstat reports a rename as `old => new` or `dir/{old => new}/f`; the note needs the path that
+    exists in the working tree, which is the right-hand side. The ceilings never opened the path, so
+    they never met this."""
+    if '{' in raw:
+        return RENAME_RE.sub(r'\1', raw).replace('//', '/')
+    if ' => ' in raw:
+        return raw.split(' => ', 1)[1]
+    return raw
+
+
+def numstat_files(root: str, rev: str) -> dict:
+    """Per non-test, non-binary file: (added, deleted) between rev and the working tree."""
+    files = {}
     for line in git(root, 'diff', '--numstat', rev).splitlines():
         parts = line.split('\t')
         if len(parts) < 3:
             continue
-        added, deleted, path = parts[0], parts[1], parts[2]
+        added, deleted, path = parts[0], parts[1], numstat_path(parts[2])
         if added == '-':  # binary
             continue
         if is_test(path):
             continue
-        total += int(added) + int(deleted)
-    return total
+        files[path] = (int(added), int(deleted))
+    return files
 
 
-def untracked_total(root: str) -> int:
-    """New files are part of both measures: git diff sees neither."""
-    total = 0
+def count_lines(full: str):
+    """None where the file is gone, is not a regular file, or cannot be read — a size nobody measured
+    is not a size. The regular-file test comes first because opening a FIFO or a device blocks, and a
+    Stop hook that blocks holds the turn."""
+    try:
+        if not stat.S_ISREG(os.lstat(full).st_mode):
+            return None
+    except Exception:
+        return None
+    if is_binary(full):
+        return None
+    try:
+        with open(full, 'r', errors='ignore') as f:
+            return sum(1 for _ in f)
+    except Exception:
+        return None
+
+
+def untracked_files(root: str) -> dict:
+    """New files are part of every measure: git diff sees none of them. Every line is an addition."""
+    files = {}
     for path in git(root, 'ls-files', '--others', '--exclude-standard').splitlines():
         if not path.strip() or is_test(path):
             continue
-        full = os.path.join(root, path)
-        if is_binary(full):
+        lines = count_lines(os.path.join(root, path))
+        if lines is not None:
+            files[path] = (lines, 0)
+    return files
+
+
+def total(files: dict) -> int:
+    return sum(a + d for a, d in files.values())
+
+
+def read_threshold(root: str) -> int:
+    """The project layer's override, read as a line and not as YAML: a hook that runs at every turn
+    close takes on no library it could fail to import. Absent file, absent key, unreadable file —
+    all mean the default, silently: a configuration read that fails must not turn a note into anything."""
+    try:
+        with open(os.path.join(root, '.ai-flow', 'project.yml'), 'r', errors='ignore') as f:
+            for line in f:
+                m = re.match(r'^' + THRESHOLD_KEY + r':\s*(\d+)\s*(#.*)?$', line)
+                if m:
+                    return int(m.group(1))
+    except Exception:
+        pass
+    return FILE_THRESHOLD
+
+
+def large_grown_files(files: dict, root: str, threshold: int, sizes: dict) -> list:
+    """(path, lines) for every file the change GREW past the threshold. Growth is the discriminator:
+    a task trimming a large file must not be answered with 'decompose before adding'. `sizes` holds
+    the counts already taken (the untracked files), so nothing is read twice; a file of at most
+    `threshold` bytes cannot hold more than `threshold` lines, so it is not read at all."""
+    found = []
+    for path, (added, deleted) in sorted(files.items()):
+        if added - deleted <= 0:
             continue
-        try:
-            with open(full, 'r', errors='ignore') as f:
-                total += sum(1 for _ in f)
-        except Exception:
-            pass
-    return total
+        full = os.path.join(root, path)
+        lines = sizes.get(path)
+        if lines is None:
+            try:
+                if os.lstat(full).st_size <= threshold:
+                    continue
+            except Exception:
+                continue
+            lines = count_lines(full)
+        if lines is not None and lines > threshold:
+            found.append((path, lines))
+    return found
+
+
+TASK_KEY = ''  # the task ceiling's record is the line with no path — a key no file can claim
 
 
 def ack_path(root: str):
@@ -107,12 +184,36 @@ def ack_path(root: str):
     return os.path.join(gitdir, 'ai-flow-diff-guard-ack') if gitdir else None
 
 
-def acknowledged(path) -> int:
+def acknowledged(path) -> dict:
+    """{key: count last reported}, one `count<TAB>path` line each, the task ceiling under TASK_KEY. A
+    record written before files were recorded holds one bare integer, and that line partitions to the
+    same key — so it is read, not migrated. Unreadable or absent reads as nothing reported, the direction
+    that speaks; one bad line loses that line, never the lines after it."""
+    spoken = {}
     try:
         with open(path) as f:
-            return int(f.read().strip())
+            for line in f:
+                count, _, key = line.rstrip('\n').partition('\t')
+                try:
+                    spoken[key] = int(count)
+                except ValueError:
+                    continue
     except Exception:
-        return 0
+        pass
+    return spoken
+
+
+def outgrown(reported, now: int) -> bool:
+    """The one rule both measures speak by: once, then again only after another step's worth."""
+    return reported is None or now > reported + STEP_THRESHOLD
+
+
+def file_note(large: list, threshold: int) -> str:
+    named = ', '.join(f"{path} ({lines} lines)" for path, lines in large)
+    return (
+        f"this change grows an already-large file — {named}, threshold {threshold}; decompose "
+        f"before adding. A note, not a ceiling: nothing is blocked"
+    )
 
 
 def main():
@@ -130,14 +231,23 @@ def main():
         sys.exit(0)
 
     try:
-        new_files = untracked_total(root)
-        step_total = numstat_total(root, 'HEAD') + new_files
+        new_files = untracked_files(root)
+        step_files = numstat_files(root, 'HEAD')
+        step_total = total(step_files) + total(new_files)
         base = base_ref(root)
         task_total = None
+        task_files = None
         if base:
             merge_base = git(root, 'merge-base', base, 'HEAD').strip()
             if merge_base:
-                task_total = numstat_total(root, merge_base) + new_files
+                task_files = numstat_files(root, merge_base)
+                task_total = total(task_files) + total(new_files)
+        # The note judges the task diff's files where a base resolves, the step's where none does,
+        # and the new files in either case.
+        touched = dict(task_files if task_files is not None else step_files)
+        touched.update(new_files)
+        threshold = read_threshold(root)
+        large = large_grown_files(touched, root, threshold, {p: a for p, (a, _) in new_files.items()})
     except Exception:
         sys.exit(0)
 
@@ -149,11 +259,15 @@ def main():
     # The task total only ever grows — committing raises it and nothing lowers it — so without an
     # acknowledgement the notice would block the end of every turn for the rest of the task. Firing
     # records the total; it speaks again only once the branch has grown another step's worth past it.
-    ack_file = ack_path(root) if task_total is not None else None
+    # A large file stays in the diff for the rest of the task too, so the note keeps the same rule, in
+    # the same record. Its first speaking is unconditional — measured against zero it would demand a
+    # step's worth of growth as well, and a project with a low threshold would never hear it.
+    ack_file = ack_path(root)
+    spoken = acknowledged(ack_file) if ack_file else {}
     task_notice = (
         task_total is not None
         and task_total > TASK_THRESHOLD
-        and (ack_file is None or task_total > acknowledged(ack_file) + STEP_THRESHOLD)
+        and outgrown(spoken.get(TASK_KEY), task_total)
     )
     if task_notice:
         notices.append(
@@ -162,20 +276,32 @@ def main():
             f"task is intentionally this big, or it should be split into a follow-up task"
         )
 
+    to_note = [(p, n) for p, n in large if outgrown(spoken.get(p), n)]
+    reported = dict(to_note)
+    if task_notice:
+        reported[TASK_KEY] = task_total
+    if reported and ack_file:
+        spoken.update(reported)
+        try:
+            with open(ack_file, 'w') as f:
+                f.writelines(f"{n}\t{p}\n" for p, n in sorted(spoken.items()))
+        except Exception:
+            pass
+
     if notices:
-        if task_notice and ack_file:
-            try:
-                with open(ack_file, 'w') as f:
-                    f.write(str(task_total))
-            except Exception:
-                pass
+        # A Stop hook exiting 2 has its stdout unread, so the note travels here, beside the ceilings.
         print(
             "Diff guardrail: " + "; ".join(notices) + ". "
             "Per your rule, pause and evaluate: is this intentionally large, or should the step be "
-            "split / committed?",
+            "split / committed?"
+            + (" Also noted — " + file_note(to_note, threshold) + "." if to_note else ""),
             file=sys.stderr,
         )
         sys.exit(2)
+    if to_note:
+        # Alone, the note must not block — and a Stop hook exiting 0 has its stderr discarded, so the
+        # only channel that reaches the session is a top-level systemMessage on stdout.
+        print(json.dumps({"systemMessage": "Diff guardrail note: " + file_note(to_note, threshold) + "."}))
     sys.exit(0)
 
 

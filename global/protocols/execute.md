@@ -93,13 +93,17 @@ This applies to factual/technical assumptions — not minor implementation detai
 
 ## Diff Size Guardrail
 
-Two ceilings, both excluding test files:
+Two ceilings and one note, all excluding test files:
 
 - **Step** — uncommitted work **>150 lines**. The step you are in has grown past one reviewable unit.
 - **Task** — **>400 lines** on this branch since its base (commits included). Committing does not lower
   this one: it exists because free commits on a branch would otherwise let a task grow without a ceiling.
+- **File** — a touched file the change has **grown** past **1,000 lines** (`large_file_lines` in
+  `project.yml` overrides it). This one is a note, not a ceiling: it reports and never pauses, because a
+  legitimately large file must not be blocked by a heuristic — but ten small diffs build exactly this
+  shape with both ceilings green, so the file is named once, with the ask: decompose before adding.
 
-On either, pause and evaluate:
+On either ceiling, pause and evaluate:
 - Is this necessary or am I over-engineering?
 - Does the plan need revision?
 

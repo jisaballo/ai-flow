@@ -27,6 +27,9 @@ source_dirs:                # verify scopes changed files to these
 # front_tool: "<tool>"      # optional, TOP-LEVEL — the tool this project is managed in; the opening
                             # ceremony identifies it before it creates a front. Absent, the native
                             # worktree path is used and the ceremony says so
+# large_file_lines: 1000    # optional, TOP-LEVEL — the diff brake names a touched file the change grew
+                            # past this many lines; a note, never a block. Default 1000; a bare
+                            # integer, or it is read as absent
 commands:
   test: "npm test"          # use {area} when the command is scoped, e.g. "npx nx test {area}"
   lint: "npm run lint"

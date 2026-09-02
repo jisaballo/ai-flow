@@ -445,6 +445,159 @@ else
   echo "  [skip] diff brake checks (python3 unavailable)"
 fi
 
+# --- the file-size note --------------------------------------------------
+# A third measure beside the two ceilings: the size a touched file ends up at. It is a note, never a
+# ceiling — alone it exits 0 and travels as a systemMessage on stdout; beside a ceiling breach it rides
+# the ceiling's stderr line. Channels are asserted separately here because the two are the contract:
+# the combined-output helper above cannot tell a note that blocked from one that did not.
+brake_out() { ( cd "$1" && printf '{}' | python3 "$HK/diff-size-guard.py" 2>"$T11/note-err" ); }
+# A repo whose base commit already holds one large file, on a branch: the shape the note exists for is
+# a small change to a file that was big before the task began, so neither ceiling fires.
+mkbig() {  # $1 = dir, $2 = path of the big file, $3 = its committed line count
+  mkproj "$1" main
+  mkdir -p "$1/.ai-flow"; printf 'Current phase: **EXECUTE**\n' > "$1/.ai-flow/STATE.md"
+  mkdir -p "$(dirname "$1/$2")"
+  nlines "$3" > "$1/$2"
+  $GIT -C "$1" add -A >/dev/null 2>&1
+  $GIT -C "$1" commit -q -m big
+  $GIT -C "$1" checkout -q -b feat
+}
+
+if [ "$PY3" = 1 ]; then
+  N1="$T11/n1"; mkbig "$N1" big.py 1050
+  nlines 10 >> "$N1/big.py"
+  out="$(brake_out "$N1")"; rc=$?
+  if [ "$rc" = 0 ] && printf '%s' "$out" | grep -q 'systemMessage' \
+     && printf '%s' "$out" | grep -q 'big.py' && printf '%s' "$out" | grep -q '1060'; then
+    ok "A1 the brake notes a grown large file without blocking"
+  else
+    bad "A1 the brake notes a grown large file without blocking (exit $rc, stdout: ${out:-<empty>})"
+  fi
+
+  # Run again over the same file at the same size: the record lives in the git dir, never the tree.
+  out2="$(brake_out "$N1")"; rc2=$?
+  if [ "$rc2" = 0 ] && ! printf '%s' "$out2" | grep -q 'systemMessage' \
+     && [ -f "$N1/.git/ai-flow-diff-guard-ack" ] && ! [ -e "$N1/ai-flow-diff-guard-ack" ]; then
+    ok "A6 the note speaks once per file"
+  else
+    bad "A6 the note speaks once per file (exit $rc2, stdout: ${out2:-<empty>})"
+  fi
+
+  N2="$T11/n2"; mkbig "$N2" big.py 1050
+  head -n 1030 "$N2/big.py" > "$N2/big.tmp" && mv "$N2/big.tmp" "$N2/big.py"
+  out="$(brake_out "$N2")"; rc=$?
+  if [ "$rc" = 0 ] && ! printf '%s' "$out" | grep -q 'systemMessage'; then
+    ok "A2 a trimmed large file draws no note"
+  else
+    bad "A2 a trimmed large file draws no note (exit $rc, stdout: ${out:-<empty>})"
+  fi
+
+  N3="$T11/n3"; mkbig "$N3" tests/big_test.py 1050
+  nlines 10 >> "$N3/tests/big_test.py"
+  out="$(brake_out "$N3")"; rc=$?
+  if [ "$rc" = 0 ] && ! printf '%s' "$out" | grep -q 'systemMessage'; then
+    ok "A3 a large test file draws no note"
+  else
+    bad "A3 a large test file draws no note (exit $rc, stdout: ${out:-<empty>})"
+  fi
+
+  N4="$T11/n4"; mkbig "$N4" mod.py 60
+  printf 'name: n4\nlarge_file_lines: 50\n' > "$N4/.ai-flow/project.yml"
+  nlines 5 >> "$N4/mod.py"
+  out="$(brake_out "$N4")"; rc=$?
+  if [ "$rc" = 0 ] && printf '%s' "$out" | grep -q 'systemMessage' && printf '%s' "$out" | grep -q 'mod.py'; then
+    ok "A4 the project layer sets the threshold"
+  else
+    bad "A4 the project layer sets the threshold (exit $rc, stdout: ${out:-<empty>})"
+  fi
+
+  N5="$T11/n5"; mkbig "$N5" big.py 1050
+  nlines 200 >> "$N5/big.py"
+  out="$(brake_out "$N5")"; rc=$?; err="$(cat "$T11/note-err")"
+  if [ "$rc" = 2 ] && printf '%s' "$err" | grep -q 'step ceiling' && printf '%s' "$err" | grep -q 'big.py' \
+     && ! printf '%s' "$out" | grep -q 'systemMessage'; then
+    ok "A5 beside a ceiling the note rides the blocking line"
+  else
+    bad "A5 beside a ceiling the note rides the blocking line (exit $rc, stderr: ${err:-<empty>})"
+  fi
+
+  # Derived from the hook's own source: rename the key or change the default there and this row names
+  # every home that lags. The default is accepted in either spelling the prose uses (1000 / 1,000).
+  NKEY="$(sed -n "s/^THRESHOLD_KEY = ['\"]\([a-z_]*\)['\"].*/\1/p" "$HK/diff-size-guard.py" | head -1)"
+  NDEF="$(sed -n 's/^FILE_THRESHOLD = \([0-9]*\).*/\1/p' "$HK/diff-size-guard.py" | head -1)"
+  NDEFC="$(printf '%s' "$NDEF" | sed 's/\([0-9]\)\([0-9][0-9][0-9]\)$/\1,\2/')"
+  miss7=""
+  [ -n "$NKEY" ] || miss7="$miss7 [the hook declares no THRESHOLD_KEY]"
+  [ -n "$NDEF" ] || miss7="$miss7 [the hook declares no FILE_THRESHOLD]"
+  for h7 in template/.ai-flow/project.yml docs/customization.md global/hooks/README.md global/protocols/execute.md; do
+    [ -n "$NKEY" ] && { grep -q "$NKEY" "$h7" || miss7="$miss7 $h7(key)"; }
+    [ -n "$NDEF" ] && { grep -q -e "$NDEF" -e "$NDEFC" "$h7" || miss7="$miss7 $h7(default)"; }
+  done
+  [ -n "$NKEY" ] && { grep -q "^# $NKEY:" template/.ai-flow/project.yml || miss7="$miss7 template(commented-key)"; }
+  [ -z "$miss7" ] && ok "A7 the key the hook reads is the key the template and the docs show" \
+                  || bad "A7 the key the hook reads is the key the template and the docs show (missing:$miss7)"
+
+  # An untracked file is every line an addition; the note must see it although no diff does.
+  N8="$T11/n8"; mkbig "$N8" mod.py 5
+  printf 'name: n8\nlarge_file_lines: 50\n' > "$N8/.ai-flow/project.yml"
+  nlines 60 > "$N8/new.py"
+  out="$(brake_out "$N8")"; rc=$?
+  if [ "$rc" = 0 ] && printf '%s' "$out" | grep -q 'systemMessage' && printf '%s' "$out" | grep -q 'new.py' \
+     && printf '%s' "$out" | grep -q '60'; then
+    ok "A8 a new large file draws the note although no diff sees it"
+  else
+    bad "A8 a new large file draws the note although no diff sees it (exit $rc, stdout: ${out:-<empty>})"
+  fi
+
+  # Re-speaking, both directions, on N4 (threshold 50, mod.py at 65 and recorded): a step's worth of growth
+  # or less stays silent; past it the note returns and the record moves to the new count.
+  $GIT -C "$N4" add -A >/dev/null 2>&1; $GIT -C "$N4" commit -q -m grown
+  nlines 100 >> "$N4/mod.py"
+  out="$(brake_out "$N4")"; rc=$?
+  if [ "$rc" = 0 ] && ! printf '%s' "$out" | grep -q 'systemMessage'; then
+    ok "A9 a recorded file grown by less than a step's worth stays silent"
+  else
+    bad "A9 a recorded file grown by less than a step's worth stays silent (exit $rc, stdout: ${out:-<empty>})"
+  fi
+  $GIT -C "$N4" add -A >/dev/null 2>&1; $GIT -C "$N4" commit -q -m grown2
+  nlines 60 >> "$N4/mod.py"
+  out="$(brake_out "$N4")"; rc=$?
+  if [ "$rc" = 0 ] && printf '%s' "$out" | grep -q 'systemMessage' && printf '%s' "$out" | grep -q '225' \
+     && grep -q "^225	mod.py$" "$N4/.git/ai-flow-diff-guard-ack"; then
+    ok "A10 a recorded file grown past a step's worth speaks again and the record moves"
+  else
+    bad "A10 a recorded file grown past a step's worth speaks again and the record moves (exit $rc, stdout: ${out:-<empty>})"
+  fi
+
+  # No base to resolve: the note judges the step's files, and a key nested under another mapping is not
+  # the threshold — with it honoured (2000) this file would be silent.
+  N11="$T11/n11"; mkproj "$N11" wip
+  mkdir -p "$N11/.ai-flow"; printf 'Current phase: **EXECUTE**\n' > "$N11/.ai-flow/STATE.md"
+  printf 'name: n11\ncommands:\n  large_file_lines: 2000\n' > "$N11/.ai-flow/project.yml"
+  nlines 1050 > "$N11/big.py"
+  $GIT -C "$N11" add -A >/dev/null 2>&1; $GIT -C "$N11" commit -q -m big
+  nlines 10 >> "$N11/big.py"
+  out="$(brake_out "$N11")"; rc=$?
+  if [ "$rc" = 0 ] && printf '%s' "$out" | grep -q 'systemMessage' && printf '%s' "$out" | grep -q '1060'; then
+    ok "A11 with no base the note judges the step's files, and a nested key is not the threshold"
+  else
+    bad "A11 with no base the note judges the step's files, and a nested key is not the threshold (exit $rc, stdout: ${out:-<empty>})"
+  fi
+
+  # A rename in a committed step reaches numstat as `old => new`; the note must open the new path.
+  N12="$T11/n12"; mkbig "$N12" big.py 1050
+  $GIT -C "$N12" mv big.py big2.py; nlines 10 >> "$N12/big2.py"
+  $GIT -C "$N12" add -A >/dev/null 2>&1; $GIT -C "$N12" commit -q -m rename
+  out="$(brake_out "$N12")"; rc=$?
+  if [ "$rc" = 0 ] && printf '%s' "$out" | grep -q 'systemMessage' && printf '%s' "$out" | grep -q 'big2.py'; then
+    ok "A12 a renamed and grown large file is judged at its new path"
+  else
+    bad "A12 a renamed and grown large file is judged at its new path (exit $rc, stdout: ${out:-<empty>})"
+  fi
+else
+  echo "  [skip] file-size note checks (python3 unavailable)"
+fi
+
 # --- the ledger guardian ------------------------------------------------
 # A state file a reader would recognise as a real ledger, carrying the one thing the invariant forbids:
 # a closed-epic narrative outside the sanctioned sections. The previous fixture was the bare string the

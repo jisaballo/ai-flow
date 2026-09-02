@@ -36,6 +36,11 @@ commands:
 # worktree path manages this project. Left out, the ceremony uses the native path and says that it did.
 # front_tool: "<tool name>"
 
+# Top-level, optional. The diff brake's file-size note: a touched file the change has grown past this
+# many lines is named at the turn's close — a note, never a block. Default 1000; declare it only where
+# your convention differs, as a bare integer at the top level — any other form is read as absent.
+# large_file_lines: 1000
+
 # Map an area to its steering file. The verify phase loads the matching steering
 # file (.ai-flow/steering/<area>.md) for the area a task touches.
 # Leave empty if you have no steering files yet.
