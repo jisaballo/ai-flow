@@ -11840,9 +11840,6 @@ LC83="global/protocols/lifecycle.md"
 RD83="README.md"
 DOC83="docs/customization.md"
 TPL83="template/.ai-flow/project.yml"
-# The architecture card names the axes because this very guard obliges it to, which makes it a home of the
-# auditor list like the seven above — and one that would otherwise go stale in silence when a sixth axis lands.
-CRD83="docs/architecture/verify.md"
 
 n83() { printf '%s\n' "$2" | grep -ciE "$1" | tr -d ' '; }
 
@@ -11945,16 +11942,116 @@ if [ "$c58_readable" = "1" ]; then
     [ "$c83" = "$k83" ] && continue
     stale83="${stale83:+$stale83|}$(shapes83 "$c83" "$(word83 "$c83")")"
   done
-  for e83 in "$RD83|simplicity" "$DOC83|simplicity" "$VP83|simplicity" "$LC83|simplicity" \
-             "$SKV83|simplicity" "$VW83|simplicity" "$CRD83|simplicity" "$TPL83|structure:"; do
-    d83="${e83%%|*}"; want83="${e83##*|}"
-    if ! b83="$(tr '\n' ' ' < "$d83" 2>/dev/null)"; then
+  # ---- The homes sweep: one marker per concept, and the corpus every marker runs over ---------------
+  # This machinery sits here, inside the auditor-count check, for one reason: the auditor marker IS the
+  # count shapes built just above, and a second copy of those shapes is precisely the drift the card's
+  # homes table exists to end. The legs that consume it live with the card, further down.
+  #
+  # The corpus is what the repository TRACKS, minus this file. The suite names every marker by
+  # construction, so leaving it in would place it in five of the six sweeps and make every row false. The
+  # exclusion runs through a named constant rather than an inline literal, so that it is visible in the
+  # guard rather than performed silently — a sweep that quietly skipped a file would be the same silence
+  # the table used to be.
+  SELFEX89="test/validate.sh"
+  # The axis names, derived from the same array k83 above is counted from — one source for the count and
+  # for the names, so a sixth axis reaches every marker that needs it without an edit anywhere here.
+  ax89="$(printf '%s\n' "$DIM83" | sed -nE "s/^[[:space:]]+key: '([a-z]+)'.*/\\1/p" | paste -sd'|' -)"
+  CORPUS89="$(cd "$ROOT" && git ls-files 2>/dev/null | grep -vxF "$SELFEX89")"
+
+  # $1: i case-insensitive, s case-sensitive. $2: extended regex. Paths print relative to $ROOT, which is
+  # the form the card cites them in, so neither side needs normalising before they are compared.
+  sweep89() {
+    if [ "$1" = "s" ]; then
+      printf '%s\n' "$CORPUS89" | tr '\n' '\0' | (cd "$ROOT" && xargs -0 grep -lIE -- "$2" 2>/dev/null) | sort -u
+    else
+      printf '%s\n' "$CORPUS89" | tr '\n' '\0' | (cd "$ROOT" && xargs -0 grep -lIiE -- "$2" 2>/dev/null) | sort -u
+    fi
+  }
+
+  # One marker per concept: the rule that recognises a HOME of it, as against a file that merely mentions
+  # it. The difference is not cosmetic and two of the six prove it — `**Audited**` unanchored finds three
+  # referrers beside the one home, and the template's axis keys sit inside `#` comments, so a marker blind
+  # to either is wrong, in opposite directions. An unknown concept returns non-zero: that is the signal a
+  # row has no marker, and it is why every known branch ends by returning zero even when it matched nothing.
+  marker89() {
+    case "$1" in
+      "Auditor list")
+        # Current OR stale shapes. A document naming a count that is no longer current is a home that has
+        # gone wrong, and a marker sweeping only the current shapes goes quiet on exactly that document.
+        sweep89 i "$now83|$stale83" ;;
+      "Axis content (what each auditor looks for)")
+        # The array itself, not a phrase out of one axis's prompt. A lexical fingerprint recognises the
+        # dimension it was copied from and no other, so a rewording of those two sentences would empty the
+        # set — and the two phrases already have a home in A5 above, which is the duplication this whole
+        # mechanism exists to refuse.
+        sweep89 s '^const DIMENSIONS = \[' ;;
+      "Workflow arguments")
+        sweep89 i 'understandPath|claudeMdPath|steeringPath|diffText|changedFiles|testCommand' ;;
+      "Declarable profile axes")
+        # Two ways to carry the set: as YAML keys, or as the `<axis>Checklist` identifiers the call and the
+        # prompts use. The comment prefix is stripped before the keys are read, because the shipped
+        # template hands every adopter its example commented out — a marker that read typography would
+        # miss the one file every project starts from.
+        # The five names come from DIMENSIONS, never from a list written here: a marker inside machinery
+        # whose whole claim is "computed, never enumerated" cannot itself enumerate the thing it looks for,
+        # and a sixth axis would otherwise be declarable everywhere except in the guard that finds it.
+        printf '%s\n' "$CORPUS89" | while IFS= read -r f89; do
+          [ -n "$f89" ] || continue
+          if sed 's/^[[:space:]]*#[[:space:]]*//' "$ROOT/$f89" 2>/dev/null \
+               | grep -qE "^[[:space:]]*($ax89):[[:space:]]" \
+             || grep -qE "($ax89)Checklist" "$ROOT/$f89" 2>/dev/null
+          then printf '%s\n' "$f89"; fi
+        done | sort -u ;;
+      "Report template")
+        # Anchored at line start, which is the whole marker: the template's own first line begins with it,
+        # while every reference to it names it mid-sentence.
+        sweep89 s '^\*\*Audited\*\*:' ;;
+      "Severities")
+        # All three levels, not any one: a file naming a single level is stating a rule about that level,
+        # not carrying the scheme, and the scheme is what a change to severities would have to tick.
+        printf '%s\n' "$CORPUS89" | while IFS= read -r f89; do
+          [ -n "$f89" ] || continue
+          grep -qE '\bHIGH\b' "$ROOT/$f89" 2>/dev/null \
+            && grep -qE '\bMEDIUM\b' "$ROOT/$f89" 2>/dev/null \
+            && grep -qE '\bLOW\b' "$ROOT/$f89" 2>/dev/null \
+            && printf '%s\n' "$f89"
+        done | sort -u ;;
+      *) return 1 ;;
+    esac
+    return 0
+  }
+
+  # The documents are COMPUTED, never enumerated. This list was hand-written until it was measured against
+  # the sweep above and found to agree — and agreement proves the sweep, not the list: what a hand list
+  # omits is exactly what nobody remembered to add, so it can only ever be wrong in the direction nothing
+  # detects. A floor and two anchors come first, because a sweep returning nothing satisfies every leg
+  # below it in silence and reads in a report exactly like a guard that passed.
+  # The marker's stale half selects nothing while every home is current, so no leg below reads it and it
+  # can be deleted with the suite green — and with it goes the one behaviour it exists for: a document
+  # naming an obsolete count must stay IN the set, to be failed by the count leg rather than vanish from
+  # it. Anchored to the marker line, which the assertion's own line cannot match.
+  grep -qE "^        sweep89 i \"\\\$now83[|]\\\$stale83\" ;;\$" test/validate.sh \
+    || a4_83="$a4_83 [the auditor marker no longer sweeps stale counts, so a stale home would leave the set]"
+  DOCS83="$(marker89 "Auditor list")"
+  nd83="$(printf '%s\n' "$DOCS83" | grep -c . | tr -d ' ')"
+  [ "$nd83" -ge 2 ] || a4_83="$a4_83 [the auditor-document sweep found $nd83 documents]"
+  for anc83 in "$VW83" "$SKV83"; do
+    printf '%s\n' "$DOCS83" | grep -qxF "$anc83" || a4_83="$a4_83 [$anc83 is not in the swept set]"
+  done
+  while IFS= read -r d83; do
+    [ -n "$d83" ] || continue
+    if ! b83="$(tr '\n' ' ' < "$ROOT/$d83" 2>/dev/null)"; then
       a4_83="$a4_83 [unreadable: $d83]"; continue
     fi
     [ "$(n83 "$stale83" "$b83")" = "0" ] || a4_83="$a4_83 [$d83 names a count that is not $k83]"
     [ "$(n83 "$now83" "$b83")" -ge 1 ]   || a4_83="$a4_83 [$d83 never names the current count of $k83]"
-    [ "$(n83 "$want83" "$b83")" -ge 1 ]  || a4_83="$a4_83 [$d83 never names the fifth axis]"
-  done
+    # One alternation for every document, where the list carried a discriminator per file. A derived set
+    # cannot carry one, and the trade is named rather than buried: `simplicity` is what seven of the eight
+    # say, `structure:` is the template's, which has no prose at all — so a document swept in later could
+    # satisfy this through the weaker branch. The gap fails towards accepting too much, which is the
+    # admissible direction; a gap that failed towards protecting too little would not be.
+    [ "$(n83 'simplicity|structure:' "$b83")" -ge 1 ] || a4_83="$a4_83 [$d83 never names the fifth axis]"
+  done <<< "$DOCS83"
   [ -z "$a4_83" ] && ok "A4 every shipped document names the review's current auditor count, and no other" \
                   || bad "A4 every shipped document names the review's current auditor count, and no other:$a4_83"
 
@@ -12265,8 +12362,7 @@ if ! { [ -r "$CARD88" ] && [ -s "$CARD88" ]; }; then
     "A1 the verify card exists and carries its summary and its four blocks" \
     "A2 the card's summary is derived from its body, in both directions" \
     "A3 the card is inside the budget a card is given" \
-    "A4 the card is inside the guard that keeps every home naming the current count" \
-    "A7 the card's home list for the auditor count does not contradict the suite's"; do
+    "A4 the card is inside the guard that keeps every home naming the current count"; do
     bad "$r88 ($CARD88 is unreadable or empty)"
   done
 else
@@ -12349,45 +12445,37 @@ else
                   || bad "A3 the card is inside the budget a card is given:$a3_88"
 
   # --- A4: the card is inside the guard that keeps the count current ---------
-  # Read from the loop C58 A4 actually runs, never from a second list: a copy here would go green while
-  # the guard itself had dropped the card, which is the only failure this row exists to see.
+  # Read from the SET the guard actually consumes, never from a second list: a copy here would go green
+  # while the guard itself had dropped the card, which is the only failure this row exists to see.
   a4_88=""
-  LOOP88="$(awk '/^  for e83 in /{f=1} f{print} f&&/; do$/{exit}' "$0" 2>/dev/null)"
-  [ -n "$LOOP88" ] || LOOP88="$(awk '/^  for e83 in /{f=1} f{print} f&&/; do$/{exit}' test/validate.sh)"
-  [ -n "$LOOP88" ] || a4_88="$a4_88 [the auditor-count guard's document loop could not be extracted]"
-  printf '%s\n' "$LOOP88" | grep -q 'CRD83' \
-    || a4_88="$a4_88 [the card is not among the documents the auditor-count guard loops over]"
-  grep -q '^CRD83="docs/architecture/verify.md"$' test/validate.sh \
-    || a4_88="$a4_88 [CRD83 does not resolve to the card]"
+  if ! command -v marker89 >/dev/null 2>&1; then
+    a4_88="$a4_88 [the marker table was never defined — the auditor-count check did not run]"
+  else
+    DOCS88="$(marker89 "Auditor list")"
+    [ -n "$DOCS88" ] || a4_88="$a4_88 [the auditor-document sweep selected nothing]"
+    printf '%s\n' "$DOCS88" | grep -qxF "$CARD88" \
+      || a4_88="$a4_88 [the card is not among the documents the auditor-count guard reads]"
+  fi
   [ -z "$a4_88" ] && ok "A4 the card is inside the guard that keeps every home naming the current count" \
                   || bad "A4 the card is inside the guard that keeps every home naming the current count:$a4_88"
 
-  # --- A7: the card's home list does not contradict the suite's -------------
-  # Set equality between the paths the card's Auditor list row names and the paths the guard loops over,
-  # each variable resolved from its own assignment. Equality and not containment: a card naming six of
-  # eight would pass containment while being exactly the miscount this whole task was opened over.
-  a7_88=""
-  ROW88="$(grep '^| Auditor list |' "$CARD88")"
-  [ -n "$ROW88" ] || a7_88="$a7_88 [the card has no Auditor list row]"
-  # Filtered on a file extension, never on a slash: README.md sits at the repository root, and a
-  # slash-keyed filter drops it from the card's side while the guard still holds it — a mismatch the row
-  # would then report as the card's, which is a guard blaming the document for its own reader.
-  CARDSET88="$(printf '%s\n' "$ROW88" | grep -oE '`[^`]+`' | tr -d '`' | grep -E '\.(md|js|yml|sh|py)$' | sort -u)"
-  GUARDSET88="$(printf '%s\n' "$LOOP88" | grep -oE '\$[A-Z]+83' | tr -d '$' | sort -u \
-    | while read -r v88; do
-        [ -n "$v88" ] && sed -nE "s/^$v88=\"([^\"]+)\"$/\1/p" test/validate.sh | head -1
-      done | sort -u)"
-  [ -n "$CARDSET88" ]  || a7_88="$a7_88 [the Auditor list row names no files]"
-  [ -n "$GUARDSET88" ] || a7_88="$a7_88 [the guard's document set could not be resolved]"
-  ONLYCARD88="$(comm -23 <(printf '%s\n' "$CARDSET88") <(printf '%s\n' "$GUARDSET88") | tr '\n' ' ')"
-  ONLYGUARD88="$(comm -13 <(printf '%s\n' "$CARDSET88") <(printf '%s\n' "$GUARDSET88") | tr '\n' ' ')"
-  [ -z "$(printf '%s' "$ONLYCARD88" | tr -d ' ')" ] \
-    || a7_88="$a7_88 [the card claims homes the guard does not: $ONLYCARD88]"
-  [ -z "$(printf '%s' "$ONLYGUARD88" | tr -d ' ')" ] \
-    || a7_88="$a7_88 [the guard holds homes the card omits: $ONLYGUARD88]"
-  [ -z "$a7_88" ] && ok "A7 the card's home list for the auditor count does not contradict the suite's" \
-                  || bad "A7 the card's home list for the auditor count does not contradict the suite's:$a7_88"
 fi
+# A7 sits OUTSIDE the card-readable branch, because it reads only the suite: gated on the card it
+# would go silent on an unreadable card while asserting nothing about one.
+# --- A7: the hand-written document list has not been reverted -------------
+# What the computed set replaced was a literal list of eight, and the value of replacing it is lost the
+# moment one is written back beside it: a dead list reads to the next reader as the authority. So this
+# row's claim is the ABSENCE, and it is distinct from A10's below, which requires the presence of the
+# computed one — a guard could read the sweep and still keep a stale list beside it, and only this row
+# would see that. Neither pattern can match the line asserting it: one is anchored to the start of a
+# continuation line, the other to the start of an assignment.
+a7_88=""
+[ "$(grep -c '^  for e83 in ' test/validate.sh | tr -d ' ')" = "0" ] \
+  || a7_88="$a7_88 [the auditor guard still enumerates its documents by hand]"
+[ "$(grep -cE '^CRD83=' test/validate.sh | tr -d ' ')" = "0" ] \
+  || a7_88="$a7_88 [a variable from the hand-written document list survives]"
+[ -z "$a7_88" ] && ok "A7 the hand-written document list has not been reverted" \
+                || bad "A7 the hand-written document list has not been reverted:$a7_88"
 if ! { [ -r "$MAP88" ] && [ -s "$MAP88" ]; }; then
   bad "A5 the root map draws the engine's capabilities and both arrow kinds ($MAP88 is unreadable or empty)"
 else
@@ -12444,6 +12532,132 @@ for d88 in "$UP88" "$USK88" "$EXP88"; do
 done
 [ -z "$a6_88" ] && ok "A6 the steering value is whatever the map names, said in both directions" \
                 || bad "A6 the steering value is whatever the map names, said in both directions:$a6_88"
+
+# Every concept the card's homes table names is held to a set COMPUTED from the repository, so no row can
+# be wrong in silence and no row can exist that nothing computes. The markers themselves live with the
+# auditor-count check above, because the auditor marker IS the count shapes derived there.
+if ! command -v marker89 >/dev/null 2>&1; then
+  for r89 in \
+    "A8 every homes row has a marker and every marker a row" \
+    "A9 every row's cited files are exactly what its marker selects" \
+    "A11 the sweep's corpus excludes the suite, and the guard says so"; do
+    bad "$r89 (the marker table was never defined — the auditor-count check did not run)"
+  done
+else
+  # The card's rows, header and separator dropped. A row's LABEL is its first cell; its CITED PATHS are its
+  # backticked spans carrying a file extension — filtered on the extension and never on a slash, because
+  # README.md sits at the repository root and a slash-keyed filter would drop it from the card's side while
+  # the marker still found it, which is a guard blaming the document for its own reader.
+  ROWS89="$(awk '/^## The homes table$/{f=1;next} /^## /{f=0} f && /^\| /' "$CARD88" \
+            | grep -vE '^\| Concept \||^\|[-| ]*$')"
+  LABELS89="$(printf '%s\n' "$ROWS89" | sed -E 's/^\|[[:space:]]*([^|]*[^|[:space:]])[[:space:]]*\|.*/\1/' | sort -u)"
+  # The keys the marker table actually knows, read out of the case statement itself. A second list here
+  # would go green while the table it claims to describe had lost a branch, which is the whole defect.
+  KEYS89="$(awk '/^  marker89\(\) \{$/{f=1;next} f&&/^    esac$/{exit} f' test/validate.sh \
+            | grep -oE '^      "[^"]+"\)' | sed -E 's/^ +"(.*)"\)$/\1/' | sort -u)"
+
+  # --- A8: every row has a marker, and every marker a row --------------------
+  # Set equality, not containment, and the second direction is not decoration: a marker left behind for a
+  # concept the card has dropped is a rule nothing governs, and it reads as coverage.
+  a8_89=""
+  [ -n "$ROWS89" ]   || a8_89="$a8_89 [the card's homes table yielded no rows]"
+  [ -n "$LABELS89" ] || a8_89="$a8_89 [no row label could be extracted]"
+  [ -n "$KEYS89" ]   || a8_89="$a8_89 [the marker table's keys could not be extracted]"
+  if [ -n "$LABELS89" ] && [ -n "$KEYS89" ]; then
+    NOMARK89="$(comm -23 <(printf '%s\n' "$LABELS89") <(printf '%s\n' "$KEYS89") | tr '\n' ';')"
+    NOROW89="$(comm -13 <(printf '%s\n' "$LABELS89") <(printf '%s\n' "$KEYS89") | tr '\n' ';')"
+    [ -z "$(printf '%s' "$NOMARK89" | tr -d ';')" ] \
+      || a8_89="$a8_89 [rows nothing computes: $NOMARK89]"
+    [ -z "$(printf '%s' "$NOROW89" | tr -d ';')" ] \
+      || a8_89="$a8_89 [markers naming no row: $NOROW89]"
+  fi
+  [ -z "$a8_89" ] && ok "A8 every homes row has a marker and every marker a row" \
+                  || bad "A8 every homes row has a marker and every marker a row:$a8_89"
+
+  # --- A9: each row's cited files are exactly what its marker selects --------
+  # Per row, both directions, and the file is NAMED on either side — a verdict that said only "row 6 is
+  # wrong" would send its reader back to do the sweep by hand, which is the work this row exists to spend.
+  a9_89=""
+  # The floor A8 already applies, applied here too: this row's loop body never runs on an empty table, so
+  # without it the row implementing "cited exactly" reports green over a card it never read.
+  [ -n "$ROWS89" ] || a9_89="$a9_89 [the card's homes table yielded no rows to compare]"
+  while IFS= read -r row89; do
+    [ -n "$row89" ] || continue
+    lab89="$(printf '%s\n' "$row89" | sed -E 's/^\|[[:space:]]*([^|]*[^|[:space:]])[[:space:]]*\|.*/\1/')"
+    span89="$(printf '%s\n' "$row89" | grep -oE '`[^`]+`' | tr -d '`' | sort -u)"
+    # Two ways to be a citation, unioned: an extension the engine writes in, OR an exact tracked path.
+    # The extension half catches a typo (a path that resolves to nothing is still compared and still
+    # fails); the corpus half closes the sixteen tracked files no extension in that list can express.
+    cite89="$( { printf '%s\n' "$span89" | grep -E '\.(md|js|yml|sh|py)$'
+                 printf '%s\n' "$span89" | grep -xF -f <(printf '%s\n' "$CORPUS89") ; } 2>/dev/null | sort -u)"
+    if ! swp89="$(marker89 "$lab89")"; then
+      a9_89="$a9_89 [$lab89: no marker, so nothing was compared]"; continue
+    fi
+    # A floor before the equality. An extractor that returns nothing satisfies every containment test ever
+    # written over it, and reads in a report exactly like a row that passed.
+    [ -n "$swp89" ]   || a9_89="$a9_89 [$lab89: the marker selected no file at all]"
+    [ -n "$cite89" ]  || a9_89="$a9_89 [$lab89: the row cites no file at all]"
+    [ -n "$swp89" ] && [ -n "$cite89" ] || continue
+    MISS89="$(comm -13 <(printf '%s\n' "$cite89") <(printf '%s\n' "$swp89") | tr '\n' ' ')"
+    EXTRA89="$(comm -23 <(printf '%s\n' "$cite89") <(printf '%s\n' "$swp89") | tr '\n' ' ')"
+    [ -z "$(printf '%s' "$MISS89" | tr -d ' ')" ] \
+      || a9_89="$a9_89 [$lab89 omits: $MISS89]"
+    [ -z "$(printf '%s' "$EXTRA89" | tr -d ' ')" ] \
+      || a9_89="$a9_89 [$lab89 cites what its marker does not select: $EXTRA89]"
+  done <<< "$ROWS89"
+  [ -z "$a9_89" ] && ok "A9 every row's cited files are exactly what its marker selects" \
+                  || bad "A9 every row's cited files are exactly what its marker selects:$a9_89"
+
+  # --- A11: the corpus excludes the suite, and the exclusion is visible ------
+  # Three legs, because two of them alone prove the wrong thing. That the suite is absent from the sweeps
+  # is worth nothing if the file were simply untracked, so its tracked-ness is asserted first: only then is
+  # the absence an EXCLUSION rather than an accident. And the third leg is what makes it visible — the
+  # exclusion runs through a named constant, so a reader of the guard meets it instead of inferring it.
+  a11_89=""
+  printf '%s\n' "$(cd "$ROOT" && git ls-files 2>/dev/null)" | grep -qxF "$SELFEX89" \
+    || a11_89="$a11_89 [$SELFEX89 is not tracked, so its absence from the corpus proves nothing]"
+  printf '%s\n' "$CORPUS89" | grep -qxF "$SELFEX89" \
+    && a11_89="$a11_89 [the corpus still holds $SELFEX89]"
+  # Anchored to the ASSIGNMENT, because the unanchored form matched this very line: a leg whose pattern
+  # occurs inside its own text is satisfied by itself and can never fail, whatever the corpus does.
+  grep -qE '^  CORPUS89=.*grep -vxF "\$SELFEX89"' test/validate.sh \
+    || a11_89="$a11_89 [the corpus does not exclude the suite through a named constant]"
+  [ -n "$KEYS89" ] || a11_89="$a11_89 [no marker key was extracted, so no marker was swept]"
+  while IFS= read -r k89; do
+    [ -n "$k89" ] || continue
+    printf '%s\n' "$(marker89 "$k89")" | grep -qxF "$SELFEX89" \
+      && a11_89="$a11_89 [$k89 sweeps in the suite itself]"
+  done <<< "$KEYS89"
+  [ -z "$a11_89" ] && ok "A11 the sweep's corpus excludes the suite, and the guard says so" \
+                   || bad "A11 the sweep's corpus excludes the suite, and the guard says so:$a11_89"
+fi
+# --- A10: the guard and the card's row consume ONE computed set ------------------------------------
+# Not a comparison of two lists — that is precisely what this change removed, and a comparison written back
+# here would be the second list wearing a different hat. The claim is identity: the set the auditor-count
+# guard iterates is the value of the very marker A9 holds the card's row to, so there is no second thing
+# left that could be wrong. Floored and anchored, because an identity between two empty sets is not one.
+a10_89=""
+if ! command -v marker89 >/dev/null 2>&1; then
+  a10_89="$a10_89 [the marker table was never defined — the auditor-count check did not run]"
+else
+  SET89="$(marker89 "Auditor list")"
+  n10_89="$(printf '%s\n' "$SET89" | grep -c . | tr -d ' ')"
+  [ "$n10_89" -ge 2 ] || a10_89="$a10_89 [the computed set holds $n10_89 documents]"
+  # The card is NOT an anchor here: A4_88 above already holds exactly that claim over the same marker
+  # call, and asserting it twice is the duplicate-check defect this task spent its A7 avoiding.
+  for anc89 in "global/workflows/verify-review.js"; do
+    printf '%s\n' "$SET89" | grep -qxF "$anc89" || a10_89="$a10_89 [$anc89 is not in the computed set]"
+  done
+  # Both halves of the consumption, because either alone is satisfied by a guard that computes the set and
+  # then walks a different one: the assignment says where the set comes from, the loop says what is read.
+  [ "$(grep -c '^  DOCS83="\$(marker89 "Auditor list")"$' test/validate.sh | tr -d ' ')" = "1" ] \
+    || a10_89="$a10_89 [the auditor guard does not take its documents from the marker, exactly once]"
+  [ "$(grep -c '^  done <<< "\$DOCS83"$' test/validate.sh | tr -d ' ')" = "1" ] \
+    || a10_89="$a10_89 [the auditor guard's loop does not iterate that set]"
+fi
+[ -z "$a10_89" ] && ok "A10 the auditor guard and the card's row consume one computed set" \
+                 || bad "A10 the auditor guard and the card's row consume one computed set:$a10_89"
+
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

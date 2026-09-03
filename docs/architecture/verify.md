@@ -4,7 +4,7 @@
 
 - **What it is** — three pieces: a protocol that defines, a skill that runs, a workflow that judges.
 - **The artifacts** — what each piece reads and writes; `verify.md` is the only thing the capability produces.
-- **The homes table** — every concept the review is made of, against every file that carries it.
+- **The homes table** — every concept the review is made of, against every file that carries it; each row computed, none authored.
 - **External dependencies** — what verify needs from the rest of the chain, and what it degrades to without each.
 
 ## What it is
@@ -42,15 +42,20 @@ Every concept the review is made of, against every file that carries it. To chan
 | Concept | Files |
 |---|---|
 | Auditor list | `global/workflows/verify-review.js`, `global/skills/verify/SKILL.md`, `global/protocols/verify.md`, `global/protocols/lifecycle.md`, `README.md`, `docs/customization.md`, `template/.ai-flow/project.yml`, `docs/architecture/verify.md` — this card is a home too, because the guard below obliges it to name the axes |
-| Axis content (what each auditor looks for) | `global/workflows/verify-review.js` (`DIMENSIONS`) — one home by design, plus whatever a project declares under `review:` in its own `project.yml` |
+| Axis content (what each auditor looks for) | `global/workflows/verify-review.js` (`DIMENSIONS`) — one home by design, plus whatever a project declares under `review:` in its own project layer |
 | Workflow arguments | `global/workflows/verify-review.js` (the header comment and each `a.*` read), `global/skills/verify/SKILL.md` (step 7), `docs/architecture/verify.md` — this card's artifacts table names them too, and a card that omitted itself here would be the miscount it exists to prevent |
-| Declarable profile axes | `template/.ai-flow/project.yml`, `docs/customization.md`, `global/skills/verify/SKILL.md` (step 7's resolution) |
+| Declarable profile axes | `template/.ai-flow/project.yml`, `docs/customization.md`, `global/skills/verify/SKILL.md` (step 7's resolution), `global/workflows/verify-review.js` — its five prompts each read an `a.*Checklist`, so a sixth declarable axis lands here too |
 | Report template | `global/protocols/verify.md` — each copy anchored on `**Audited**`, which is what the suite counts them by rather than trusting a number written here |
-| Severities | `global/workflows/verify-review.js` (the finding schema, the verdict schema, `REFUTE`), `global/protocols/verify.md` (the gate rules), `global/skills/verify/SKILL.md`, `global/protocols/lifecycle.md` |
+| Severities | `global/workflows/verify-review.js` (the finding schema, the verdict schema, `REFUTE`), `global/protocols/verify.md` (the gate rules), `global/skills/verify/SKILL.md`, `global/protocols/lifecycle.md`, `README.md` — which states what each of the three levels does, and is the one home an adopter reads |
 
-Two rows are guarded and the rest are not, which is worth knowing before trusting them. The auditor list
-is checked against the suite's own document set, and the auditor count inside each of those files is
-checked against the number of dimensions the workflow declares. Nothing yet checks the other rows.
+Every row is **computed**, and that is what makes the table worth trusting. The suite declares one marker
+per concept — the rule that recognises a home of it — and holds the row to set equality against what that
+marker selects across everything the repository tracks, the suite itself excepted. A file carrying a concept and missing from its row
+fails; a file cited by a row and carrying nothing fails; and a row whose concept has no marker fails, so
+the table cannot grow a line nothing computes. The judgment did not vanish, it moved: from *which files
+carry this*, which no one can keep true, to *what marks this*, which is one rule per row, reviewed once.
+The markers live with the guard rather than here, because a document that carried its own patterns would
+be the second home this table exists to prevent.
 
 ## External dependencies
 
