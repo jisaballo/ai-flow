@@ -12,7 +12,7 @@
 Three pieces, and the split is worth holding in mind because each fails differently.
 
 `global/protocols/verify.md` is the **rulebook**. It defines the task diff, the status meanings, the
-mutation rule, the consolidation mapping and the report templates. It is read and never runs; a defect
+mutation rule, the consolidation mapping and the report template. It is read and never runs; a defect
 here is a rule two readers implement differently.
 
 `global/skills/verify/SKILL.md` is the **referee**. It resolves the task, audits each criterion itself,
@@ -45,7 +45,8 @@ Every concept the review is made of, against every file that carries it. To chan
 | Axis content (what each auditor looks for) | `global/workflows/verify-review.js` (`DIMENSIONS`) — one home by design, plus whatever a project declares under `review:` in its own project layer |
 | Workflow arguments | `global/workflows/verify-review.js` (the header comment and each `a.*` read), `global/skills/verify/SKILL.md` (step 7), `docs/architecture/verify.md` — this card's artifacts table names them too, and a card that omitted itself here would be the miscount it exists to prevent |
 | Declarable profile axes | `template/.ai-flow/project.yml`, `docs/customization.md`, `README.md`, `global/skills/verify/SKILL.md` (step 7's resolution), `global/workflows/verify-review.js` — the front door's own example declares an axis, which is what makes it a home rather than a referrer; and the workflow's five prompts each read an `a.*Checklist`, so a sixth declarable axis lands here too |
-| Report template | `global/protocols/verify.md` — each copy anchored on `**Audited**`, which is what the suite counts them by rather than trusting a number written here |
+| Report template | `global/protocols/verify.md` — one copy, anchored on `**Audited**`, which is what the suite counts by rather than trusting a number written here |
+| Outcome disclosure | `global/skills/verify/SKILL.md` — step 7's table, one home by design: five resolution outcomes against the two channels that disclose them, the run's own output and the report. Every other surface cites it and states no row. The marker is the table's own header, so a citer can never be counted as a home — which is what keeps this row at one home rather than at every surface that mentions the outcomes |
 | Severities | `global/workflows/verify-review.js` (the finding schema, the verdict schema, `REFUTE`), `global/protocols/verify.md` (the gate rules), `global/skills/verify/SKILL.md`, `global/protocols/lifecycle.md`, `README.md` — which states what each of the three levels does, and is the one home an adopter reads |
 
 Every row is **computed**, and that is what makes the table worth trusting. The suite declares one marker

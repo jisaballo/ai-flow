@@ -1681,8 +1681,9 @@ else
   bad "the skill's reverse audit reads a task diff an earlier step already gathered"
 fi
 
-# both report templates, not only the one the multi-agent review path writes: the reverse audit and
-# the provenance grep consume the task diff even when the review is skipped. Counted, and read off
+# every report template, not only the review-bearing shape: the reverse audit and the provenance grep
+# consume the task diff even when the review is skipped, and the one form covers both cases. Counted
+# rather than assumed, so a silently re-added second form is held to the same clause. Read off
 # non-comment lines carrying the placeholders themselves — 'base' plus 'commit' were satisfied by a
 # commented-out fallback line ("uncommitted" contains "commit"), so deleting the whole Audited line
 # left the suite green.
@@ -1697,8 +1698,9 @@ TC="$(awk '
   }
   END { print (good+0) "/" (total+0) }
 ' "$VP")"
-[ "$TC" = "2/2" ] && ok "both verify.md templates carry the measured base and commit count" \
-                  || bad "both verify.md templates carry the measured base and commit count ($TC)"
+[ "${TC#*/}" -ge 1 ] 2>/dev/null && [ "${TC%/*}" = "${TC#*/}" ] \
+  && ok "every report template carries the measured base and commit count" \
+  || bad "every report template carries the measured base and commit count ($TC)"
 
 DH="$(grep 'DIFF' "$VW" | tr '\n' ' ')"
 if printf '%s' "$DH" | grep -qiE 'branch|since|base' && ! printf '%s' "$DH" | grep -qi 'working tree'; then
@@ -2397,9 +2399,9 @@ grep -qE '^const proposals = confirmed\.filter' "$VW" \
 
 # Fact 3g — what a worker may REPORT, which is the half that governs evidence rather than damage. The
 # header already forbids an auditor from CHANGING the copy; nothing forbade it from telling the phase
-# what it RAN. Three of four auditors once reported the same four failures against a suite that had none,
-# with the read-only sentence already in place and already guarded — so the prohibition on the act and
-# the prohibition on the account are two rules, and only the first existed.
+# what it RAN. The read-only sentence being in place and already guarded does not reach the account, so
+# the prohibition on the act and the prohibition on the account are two rules, and only the first
+# existed. The occasion that showed it is in the record; what this leg needs is the claim.
 #
 # Scoped to the single bullet that carries it, never to the header: `proposedMutation` occurs in the
 # bullet above this one, so a header-wide grep for the route stays green with this whole bullet deleted.
@@ -2703,7 +2705,7 @@ else
   bad "proposal paths are contained before the prover's prompt is built"
 fi
 
-# Fact 8 — both report templates carry the verdict, and both branches of it. A slot with only the clean
+# Fact 8 — every report template carries the verdict, and both branches of it. A slot with only the clean
 # branch is the mutation that makes a dirty run unreportable while every other check stays green.
 TPL_OK=1
 # The paragraph is the boundary, not a fixed line count: a slot that grew by one sentence pushed the
@@ -2713,10 +2715,12 @@ for t in $(grep -n '^\*\*Audited\*\*' "$VP" | cut -d: -f1); do
   printf '%s' "$BLK" | grep -qiE 'left as (it was )?found|working copy unchanged' || TPL_OK=0
   printf '%s' "$BLK" | grep -qiE 'was not|otherwise|restored' || TPL_OK=0
 done
-[ -n "$(grep -c '^\*\*Audited\*\*' "$VP")" ] && [ "$(grep -c '^\*\*Audited\*\*' "$VP")" = "2" ] || TPL_OK=0
+# A floor, not a cardinality: the loop above holds every template it finds, and zero templates would
+# otherwise leave TPL_OK untouched at 1 and certify the verdict over nothing.
+[ "$(grep -c '^\*\*Audited\*\*' "$VP")" -ge 1 ] 2>/dev/null || TPL_OK=0
 [ "$TPL_OK" = "1" ] \
-  && ok "both report templates carry the tree verdict with both of its branches" \
-  || bad "both report templates carry the tree verdict with both of its branches"
+  && ok "every report template carries the tree verdict with both of its branches" \
+  || bad "every report template carries the tree verdict with both of its branches"
 
 # Fact 9 — a difference reaches the user as a suspect verdict. Restoring quietly is the failure this
 # criterion guards: the copy is clean again, and the audit was written against something else.
@@ -3521,15 +3525,15 @@ else
   bad "no assertion reaches a step of the verify command by a hardcoded number ($LIT22 of $INV22 literal)"
 fi
 
-# O5 — both report templates, counted. One template carrying the note and the other silent is the
+# O5 — every report template, counted. A template carrying the note while another stays silent is the
 # same half-fix the twin-manual verdicts were: the reader opens whichever one their path reaches.
 AUDP22="$(awk '/^\*\*Audited\*\*/{f=1;buf=""} f{buf=buf" "$0} (f && /^[[:space:]]*$/){print buf; f=0} END{if(f) print buf}' "$VP22")"
 AUDT22="$(printf '%s\n' "$AUDP22" | grep -c 'Audited' || true)"
 AUDW22="$(printf '%s\n' "$AUDP22" | grep -ci 'out of phase' || true)"
-if [ "$AUDT22" -eq 2 ] && [ "$AUDW22" -eq 2 ]; then
-  ok "both report templates carry the out-of-phase note"
+if [ "$AUDT22" -ge 1 ] 2>/dev/null && [ "$AUDW22" = "$AUDT22" ]; then
+  ok "every report template carries the out-of-phase note"
 else
-  bad "both report templates carry the out-of-phase note ($AUDW22 of $AUDT22)"
+  bad "every report template carries the out-of-phase note ($AUDW22 of $AUDT22)"
 fi
 
 # The writers table names who writes the phase field — the field a mechanism now refuses on, which is
@@ -4109,9 +4113,9 @@ TL27="$(awk '
   }
   END { print (good+0) "/" (total+0) }
 ' "$VP27")"
-[ "$TL27" = "2/2" ] \
-  && ok "both verify.md templates record the trunk's lag beside the base" \
-  || bad "both verify.md templates record the trunk's lag beside the base ($TL27)"
+[ "${TL27#*/}" -ge 1 ] 2>/dev/null && [ "${TL27%/*}" = "${TL27#*/}" ] \
+  && ok "every report template records the trunk's lag beside the base" \
+  || bad "every report template records the trunk's lag beside the base ($TL27)"
 
 # A5 — the sentence the branch-scoped task diff falsified, repaired. Positive requirement first,
 # because what bounds a statement is the form it must carry; the one negative is aimed at the exact
@@ -4129,7 +4133,7 @@ printf '%s' "$PR27" | grep -qiE 'on new work only'              && p27="$p27 sta
 
 
 # A7 — the ordinary run, which the contract singles out as the one that must not change. Counted over
-# both templates for the same reason A6 is: one template carrying the escape and the other silent is
+# every report template, for the same reason A6 is: one carrying the escape while another stays silent is
 # the half-fix, and a slot enumerating only the branch where the notice fires prints "0 commit(s)
 # ahead — publish them" on every clean run.
 TC27="$(awk '
@@ -4147,9 +4151,9 @@ TC27="$(awk '
   }
   END { print (good+0) "/" (total+0) }
 ' "$VP27")"
-[ "$TC27" = "2/2" ] \
-  && ok "both templates write no lag line where the trunk is current" \
-  || bad "both templates write no lag line where the trunk is current ($TC27)"
+[ "${TC27#*/}" -ge 1 ] 2>/dev/null && [ "${TC27%/*}" = "${TC27#*/}" ] \
+  && ok "every report template writes no lag line where the trunk is current" \
+  || bad "every report template writes no lag line where the trunk is current ($TC27)"
 
 # A8 — the report writer's own enumeration of what the Audited line carries. It was repaired because
 # this change falsified it, and a repair nothing asserts is revertible with the suite green.
@@ -10238,7 +10242,20 @@ else
   y52=""
   [ "$(n52 "$TRI52" '## Discarded')" -ge 1 ]  || y52="$y52 [the triage does not name the section the reason goes in]"
   [ "$(n52 "$TRI52" 'only home')" -ge 1 ]     || y52="$y52 [the triage does not say it is the only home]"
-  [ "$(n52 "$VER52" '## Discarded')" -ge 1 ]  || y52="$y52 [the verify protocol does not route the reason there]"
+  # Scoped to the two regions of the verify protocol that actually carry a claim about the reason, never
+  # to the file. Read file-wide, this leg was answered by the report template's own placeholder bullet
+  # while the NORMATIVE paragraph it is about had stopped naming the home altogether — a leg satisfied by
+  # a document's example rather than by its rule. Two legs now, because the protocol does two different
+  # things: the routing paragraph DELEGATES the home to the test that owns it, and the report template
+  # NAMES it for the writer filling the report in.
+  VERMED52="$(awk '/^\*\*MEDIUM and LOW come back unadjudicated/{f=1;print;next} f && /^$/{exit} f' "$V52" | tr '\n' ' ')"
+  VERTRI52="$(grep -F 'Triaged in-phase' -A2 "$V52" | tr '\n' ' ')"
+  [ -n "$VERMED52" ] || y52="$y52 [the verify protocol's routing paragraph did not extract]"
+  [ -n "$VERTRI52" ] || y52="$y52 [the verify protocol's triage report section did not extract]"
+  [ "$(n52 "$VERMED52" 'Discovery Triage')" -ge 1 ] \
+    || y52="$y52 [the routing paragraph does not delegate the reason's home to the test that owns it]"
+  [ "$(n52 "$VERTRI52" '## Discarded')" -ge 1 ] \
+    || y52="$y52 [the verify protocol does not route the reason there]"
   [ "$(n52 "$TSK52" '## Discarded')" -ge 1 ]  || y52="$y52 [the verify skill does not route the reason there]"
   [ -z "$y52" ] && ok "R4 the written reason has one named home, and every site that requires it names it" \
                 || bad "R4 the written reason has one named home, and every site that requires it names it ($y52)"
@@ -11714,7 +11731,11 @@ EOF82
   # Joined to WHAT is named. The bare verb form of this leg was green before a line of this task was
   # written — satisfied by `reports the proposal unproven`, four sentences away and about the mutation
   # prover. A leg green for an unrelated reason asserts nothing; IB-003 records the same defect in this file.
-  [ "$(n82 'name it|naming it|named in that same output|name the profile' "$S7_82")" -ge 1 ] \
+  # The naming now lives in the outcome table's own cells, which say `names the declaration` and `names
+  # the path`; the phrase list is widened to reach them rather than the prose being bent to the pattern.
+  # The list is still an enumeration and that is still its weakness — the claim is "the run names what did
+  # not resolve", and only a phrase list is available to express it over prose.
+  [ "$(n82 'name it|naming it|named in that same output|name the profile|names the declaration|names the path' "$S7_82")" -ge 1 ] \
     || a6_82="$a6_82 [nothing says the run names the profile or checklist that did not resolve]"
   [ "$(n82 'the run continues|never refuses over it|and continue' "$S7_82")" -ge 1 ] \
     || a6_82="$a6_82 [nothing says the run continues]"
@@ -11768,7 +11789,10 @@ EOF82
     || b1_82="$b1_82 [only one of the two cases — resolved and unresolved — is spoken in the run's own output]"
   [ "$(n82 'which profile resolved|profile resolved and which checklist' "$S7_82")" -ge 1 ] \
     || b1_82="$b1_82 [the resolved profile is not what step 7 obliges the run to speak]"
-  [ "$(n82 'Both cases|not only the failure' "$S7_82")" -ge 1 ] \
+  # Re-keyed on the claim rather than on its first wording: the sentence used to open "Both cases",
+  # whose antecedent was two bullets that no longer exist, and the two spellings admitted below are
+  # spellings of the SAME claim — every outcome is announced, not only the ones reporting a failure.
+  [ "$(n82 'not only the rows that report a failure|not only the failure' "$S7_82")" -ge 1 ] \
     || b1_82="$b1_82 [nothing forbids announcing the failure case alone]"
   [ -n "$S10_82" ] || b1_82="$b1_82 [step 10 could not be extracted]"
   [ "$(n82 'profile' "$S10_82")" -ge 1 ] || b1_82="$b1_82 [step 10 does not record the profile]"
@@ -11777,8 +11801,8 @@ EOF82
   # "negative that opts out on empty input" the project's harness checklist names last.
   AUD82="$(grep -c '^\*\*Audited\*\*' "$VP82" | tr -d ' ')"
   PRO82="$(awk '/^\*\*Audited\*\*/{f=1} f{buf=buf" "$0} f&&/^$/{if(buf ~ /profile/) n++; f=0; buf=""} END{print n+0}' "$VP82")"
-  [ "$AUD82" -ge 2 ] 2>/dev/null \
-    || b1_82="$b1_82 [the report templates could not be located: $AUD82 found]"
+  [ "$AUD82" -ge 1 ] 2>/dev/null \
+    || b1_82="$b1_82 [the report template could not be located: $AUD82 found]"
   [ "$AUD82" = "$PRO82" ] || b1_82="$b1_82 [$PRO82 of $AUD82 report templates carry the profile provenance]"
   # The silence half of this row is gone, and deliberately: the clause it counted — every template keeping
   # the no-profiles silence — was reversed, and the claim that replaced it belongs to C59, which asserts it
@@ -12006,6 +12030,14 @@ if [ "$c58_readable" = "1" ]; then
         # Anchored at line start, which is the whole marker: the template's own first line begins with it,
         # while every reference to it names it mid-sentence.
         sweep89 s '^\*\*Audited\*\*:' ;;
+      "Outcome disclosure")
+        # The table's own header is the marker — three columns naming the outcome, what the run says and
+        # what the report records. Case-sensitive and anchored at the row, because every other surface
+        # names the table mid-sentence in order to cite it, and a marker that reached those would report
+        # the citers as homes. One home is the point of the row, and a matrix stated in prose is the
+        # shape that acquires more of them without anyone deciding to: every copy reads as a restatement
+        # until the day two of them disagree.
+        sweep89 s '^[[:space:]]*\| Outcome \| What the run says' ;;
       "Severities")
         # All three levels, not any one: a file naming a single level is stating a rule about that level,
         # not carrying the scheme, and the scheme is what a change to severities would have to tick.
@@ -12139,7 +12171,7 @@ fi
 # inspection).
 #
 # The three shapes C57's header names are kept here, for the reasons it gives. A verdict is a COUNT inside
-# an extracted REGION, never a bare file-wide grep: step 7, step 10, the two report templates and the
+# an extracted REGION, never a bare file-wide grep: step 7, step 10, the report template and the
 # discover protocol all say these words in places that are not the ones under audit. Where a rule has a
 # positive and a negative half BOTH are asserted, because the positive alone is satisfied by prose that
 # also permits what the rule forbids — and this task INVERTS a rule, so the negative half is what proves
@@ -12183,22 +12215,55 @@ else
     printf '%s\n' "$S7_86" | awk -v k="$1" '
       !f && index($0,k) { f=1; print; next }
       f && /^[[:space:]]*- / { exit }
+      f && /^[[:space:]]*\|/ { exit }
+      f { print }'
+  }
+
+  # The matrix that replaced step 7's bullets is NOT a bullet, and `bullet86` cannot bound it: a row is
+  # one line and the line after it is another row, so a region keyed on a literal inside a row runs to
+  # the end of the step and every leg pointed at it is answered by any row, any paragraph, or the step's
+  # closing sentence. Hence a terminator on `|` above, and three extractors below, each bounded by its
+  # own shape. A leg belongs to the region that OWNS its claim — the whole of step 7 owns nothing.
+  #   pre86  — the preamble: the two channels and the ordering that governs all rows, up to the header
+  #   row86  — the ONE table row carrying a literal, and nothing else
+  #   exc86  — the exception paragraph beneath the table
+  pre86() {
+    printf '%s\n' "$S7_86" | awk '
+      !f && /What each resolution says/ { f=1; print; next }
+      f && /^[[:space:]]*\|/ { exit }
+      f { print }'
+  }
+  row86() {
+    printf '%s\n' "$S7_86" | awk -v k="$1" '/^[[:space:]]*\|/ && index($0,k) { print; exit }'
+  }
+  exc86() {
+    printf '%s\n' "$S7_86" | awk '
+      !f && /The last row has one exception/ { f=1; print; next }
+      f && /^[[:space:]]*$/ { exit }
       f { print }'
   }
 
   # ---- A1: the fall to the generic is named, before anything is judged -----------------------------
-  # Four legs and a negative, all inside the bullet that carries the line. The bare presence of the word
-  # `generic` in step 7 was already true before this task: it is the fallback's own name, so a row keyed
-  # on it asserts the sentence that predates this change rather than the line this row is for.
+  # Every leg on the region that owns its claim. The line itself is now a TABLE ROW, so the row is the
+  # region — `bullet86` would have run from that row to the end of the step, where any paragraph answers
+  # anything. The ordering is the one claim the row does not own: it is stated once in the preamble and
+  # governs all five rows, so it is asserted over the preamble and nowhere wider. The bare presence of
+  # `generic` in step 7 was already true before this task — it is the fallback's own name — which is why
+  # no leg here reads the step as a whole.
   a1_86=""
-  FALL86="$(bullet86 'generic lists only')"
-  [ -n "$FALL86" ] || a1_86="$a1_86 [the bullet that carries the line could not be located]"
+  FALL86="$(row86 'generic lists only')"
+  PRE86="$(pre86)"
+  [ -n "$FALL86" ] || a1_86="$a1_86 [the table row that carries the line could not be located]"
+  [ -n "$PRE86" ]  || a1_86="$a1_86 [the table's preamble could not be located]"
   [ "$(n86 'generic lists only' "$FALL86")" -ge 1 ] \
     || a1_86="$a1_86 [the line does not say the change was read against the generic lists only]"
-  [ "$(n86 'own output' "$FALL86")" -ge 1 ] \
+  [ "$(n86 'own output' "$PRE86")" -ge 1 ] \
     || a1_86="$a1_86 [the line is not written in the run's own output]"
-  [ "$(n86 'before any auditor runs|before the Workflow call' "$FALL86")" -ge 1 ] \
-    || a1_86="$a1_86 [the line is not ordered before the auditors]"
+  # One spelling, over the preamble alone. The alternation that admitted `before the Workflow call` was
+  # answered by the path-probe bullet, which orders a `[ -r ]` test and says nothing about when the
+  # disclosure is printed — a new claim OR an old neighbour, which the header of this block forbids.
+  [ "$(n86 'before any auditor runs' "$PRE86")" -ge 1 ] \
+    || a1_86="$a1_86 [the disclosure is not ordered before the auditors]"
   [ "$(n86 'to sharpen it' "$FALL86")" -ge 1 ] \
     || a1_86="$a1_86 [the line names no remedy the operator can act on]"
   # The trigger, which no leg pinned: strip the opening condition and every leg above still counts 1, so
@@ -12219,15 +12284,28 @@ else
   # bearing leg: adding the new sentence while leaving the old test in place would satisfy every positive
   # leg here and still leave the engine keying its silence on what a project omitted.
   a2_86=""
-  [ "$(n86 'engine-generic' "$S7_86")" -ge 1 ] \
-    || a2_86="$a2_86 [step 7 never names the reserved value]"
-  [ "$(n86 'the only silence|only legitimate zero' "$S7_86")" -ge 1 ] \
+  # ONE leg for the exemption, on the row that states it, keyed on the PAIR the row exists to assert —
+  # the reserved value and the silence it buys. `engine-generic` counted over the whole of step 7 was
+  # written three times here under three different failure labels, and all three were answered by the
+  # resolution bullet, which names the value and says nothing about any silence.
+  # Keyed on the row's own SUBJECT, never on the bare value: `engine-generic` occurs first in row 4's
+  # remedy text ("...or `review_profile: <area>: engine-generic` to accept the generic on purpose"), so a
+  # row selected by the bare value is row 4 — the wrong row, silently. D12 of this task recorded the same
+  # trap from the other side, where a table-wide count of the value stayed green with row 5 renamed away.
+  EXEROW86="$(row86 'resolved to `engine-generic`')"
+  [ -n "$EXEROW86" ] || a2_86="$a2_86 [the table has no row for the reserved value]"
+  [ "$(n86 'nothing about profiles' "$EXEROW86")" -ge 1 ] \
+    || a2_86="$a2_86 [the reserved value's row does not pair it with the silence it owes]"
+  [ "$(n86 'the only silence|only legitimate zero' "$EXEROW86")" -ge 1 ] \
     || a2_86="$a2_86 [nothing says an explicit choice is the only silence]"
   [ "$(n86 'the project declared none|declared no profiles' "$B_SKV86")" -eq 0 ] \
     || a2_86="$a2_86 [the skill still keys its silence on what the project omitted]"
+  # Step 10 no longer states the outcomes: it cites the table's third column, which is where the
+  # exemption now lives. Both halves are asserted — the citation exists, and the table carries the
+  # exemption — because the citation alone would be satisfied by a pointer at nothing.
   [ -n "$S10_86" ] || a2_86="$a2_86 [step 10 could not be extracted]"
-  [ "$(n86 'engine-generic' "$S10_86")" -ge 1 ] \
-    || a2_86="$a2_86 [step 10 does not exempt the explicit choice from the report]"
+  [ "$(n86 "table" "$S10_86")" -ge 1 ] \
+    || a2_86="$a2_86 [step 10 does not cite the outcome table]"
   [ -z "$a2_86" ] && ok "A2 an explicit choice of the generic is the only silence" \
                   || bad "A2 an explicit choice of the generic is the only silence:$a2_86"
 
@@ -12253,13 +12331,20 @@ else
   # than a silent divergence.
   a4_86=""
   AUD86="$(grep -c '^\*\*Audited\*\*' "$VP86" | tr -d ' ')"
-  GEN86="$(awk '/^\*\*Audited\*\*/{f=1} f{buf=buf" "$0} f&&/^$/{if(buf ~ /generic lists only/) n++; f=0; buf=""} END{print n+0}' "$VP86")"
-  EXE86="$(awk '/^\*\*Audited\*\*/{f=1} f{buf=buf" "$0} f&&/^$/{if(buf ~ /engine-generic/) n++; f=0; buf=""} END{print n+0}' "$VP86")"
   OLD86="$(awk '/^\*\*Audited\*\*/{f=1} f{buf=buf" "$0} f&&/^$/{if(buf ~ /no line about them/) n++; f=0; buf=""} END{print n+0}' "$VP86")"
-  [ "$AUD86" -ge 2 ] 2>/dev/null \
-    || a4_86="$a4_86 [the report templates could not be located: $AUD86 found]"
-  [ "$AUD86" = "$GEN86" ] || a4_86="$a4_86 [$GEN86 of $AUD86 report templates carry the fall-to-generic line]"
-  [ "$AUD86" = "$EXE86" ] || a4_86="$a4_86 [$EXE86 of $AUD86 report templates carry the explicit-choice exemption]"
+  [ "$AUD86" -ge 1 ] 2>/dev/null \
+    || a4_86="$a4_86 [the report template could not be located: $AUD86 found]"
+  # The two clauses moved to the outcome table, which is now their single home; the template cites it.
+  # Each is read off the ROW that states it, not off the step: over the step both were answered by the
+  # resolution bullet, which names the reserved value and states neither clause. The two per-template
+  # counts these legs replaced (`GEN86`, `EXE86`) are gone rather than left computed and unread — an
+  # orphan count is a leg a reader believes exists.
+  [ "$(n86 'generic lists only' "$(row86 'generic lists only')")" -ge 1 ] \
+    || a4_86="$a4_86 [the outcome table does not carry the fall-to-generic line]"
+  [ "$(n86 'nothing about profiles' "$(row86 'resolved to `engine-generic`')")" -ge 1 ] \
+    || a4_86="$a4_86 [the outcome table does not carry the explicit-choice exemption]"
+  # The template-side negative stays, because a template still promising the old omission silence would
+  # contradict the table whatever the table says.
   [ "$OLD86" -eq 0 ] || a4_86="$a4_86 [$OLD86 report templates still keep the omission silence]"
   [ -z "$a4_86" ] && ok "A4 every report template carries the fall-to-generic line and its exemption" \
                   || bad "A4 every report template carries the fall-to-generic line and its exemption:$a4_86"
@@ -12329,25 +12414,38 @@ else
                   || bad "A6 a decline is offered the explicit choice, and no skeleton is ever generated:$a6_86"
 
   # ---- A7: a set declared under the reserved name is named, not dropped ---------------------------
-  # Scoped to the bullet that carries the clause, and joined to WHAT is said. The bare word `shadow` in
-  # step 7 would be satisfied by a sentence stating the opposite outcome; what the rule buys is that the
-  # project which lost its own checklists hears it from the run rather than from a shallower review.
+  # Two claims, two regions. The RESOLUTION — which value wins — stays in the bullet. The DISCLOSURE —
+  # that the shadowing is spoken in both channels — is the exception paragraph's, and it is asserted
+  # there and only there, keyed on the pair of channels rather than on a token.
+  #
+  # Read over the whole of step 7 instead, both disclosure legs were hollow: `the run says|is named` was
+  # answered by the table's own column header "What the run says here", and the bare `shadow` by the
+  # resolution bullet's "is not silently shadowed" — a sentence about which value wins, not about what is
+  # disclosed. The comment above them already forbade exactly that shape and the legs were written anyway,
+  # which is why the region is now extracted rather than trusted to a bounded phrase.
   a7_86=""
   SHAD86="$(bullet86 'shadow')"
+  EXC86="$(exc86)"
   [ -n "$SHAD86" ] || a7_86="$a7_86 [the shadowed-declaration clause could not be located]"
-  [ "$(n86 'reserved value wins|reserved name wins' "$SHAD86")" -ge 1 ] \
+  [ -n "$EXC86" ]  || a7_86="$a7_86 [the table's exception paragraph could not be located]"
+  [ "$(n86 'reserved value wins|reserved value still wins|reserved name wins' "$SHAD86")" -ge 1 ] \
     || a7_86="$a7_86 [nothing says the reserved value wins over a declaration of the same name]"
-  [ "$(n86 'the run says|is named' "$SHAD86")" -ge 1 ] \
-    || a7_86="$a7_86 [nothing says the shadowed declaration is named out loud]"
-  # The report side, counted over the same `**Audited**` anchor A4 uses. The exemption granted to the
-  # reserved value is the one case a shadowed declaration can occur in, so a template that exempts it
-  # without saving this warning obliges the report to stay silent about what step 7 just required.
+  # The run's side and the report's side, each named, because the claim is that BOTH channels carry it:
+  # one leg over the pair would be satisfied by either half, and a rule disclosed to only one channel is
+  # the failure this row exists to catch.
+  [ "$(n86 'shadowed by the reserved name' "$EXC86")" -ge 1 ] \
+    || a7_86="$a7_86 [the run is not obliged to say the declaration was shadowed]"
+  [ "$(n86 'step 10 records it' "$EXC86")" -ge 1 ] \
+    || a7_86="$a7_86 [the report is not obliged to record the shadowed declaration]"
+  # The negative that makes the pair load-bearing: the paragraph must not grant the shadowing the very
+  # silence the row denies it. Without this, inverting the rule to "dropped without a word" leaves both
+  # positives above unsatisfied but says nothing about a paragraph that asserts the opposite outright.
+  [ "$(n86 'dropped without|without a word|neither the run nor step 10' "$EXC86")" -eq 0 ] \
+    || a7_86="$a7_86 [the exception paragraph grants the shadowing the silence this row denies it]"
+  # The floor stays on the template so a renamed anchor cannot certify over zero of them.
   TPLN86="$(grep -c '^\*\*Audited\*\*' "$VP86" | tr -d ' ')"
-  SHR86="$(awk '/^\*\*Audited\*\*/{f=1} f{buf=buf" "$0} f&&/^$/{if(buf ~ /shadow/) n++; f=0; buf=""} END{print n+0}' "$VP86")"
-  [ "$TPLN86" -ge 2 ] 2>/dev/null \
-    || a7_86="$a7_86 [the report templates could not be located: $TPLN86 found]"
-  [ "$TPLN86" = "$SHR86" ] \
-    || a7_86="$a7_86 [$SHR86 of $TPLN86 report templates save the shadowed declaration from the silence]"
+  [ "$TPLN86" -ge 1 ] 2>/dev/null \
+    || a7_86="$a7_86 [the report template could not be located: $TPLN86 found]"
   [ -z "$a7_86" ] && ok "A7 a checklist set declared under the reserved name is named, not dropped" \
                   || bad "A7 a checklist set declared under the reserved name is named, not dropped:$a7_86"
 fi
@@ -12895,6 +12993,304 @@ else
     || a6_61="$a6_61 [the subsection restates a resolution outcome; the guide is its home]"
   [ -z "$a6_61" ] && ok "A6 the subsection states no resolution outcome" \
                   || bad "A6 the subsection states no resolution outcome:$a6_61"
+
+fi
+
+
+# C62 — the rulebook states its rules and not the occasions that produced them, the report form has one
+# copy, and the run's resolution outcomes have a single home.
+# Generated in the Conform phase from understand.md's Verifiable Criteria. Written red; each leg below
+# fails today for the reason it names, not for a missing fixture or an extractor that returns nothing.
+#
+# Two shapes are deliberate. Every absence leg is **floored on its own region**: an extraction that comes
+# back empty makes an absence trivially true, and a renamed heading would then certify the prune over
+# nothing. And every prose deletion carries a **positive** leg naming the reason that must survive it —
+# an absence alone is satisfied by deleting the whole passage, rule and reason together, which is the
+# opposite of what this section asks for.
+#
+# `A2` owns the template count as a claim. `A3` reads singleness as a *precondition* and owns the
+# contents, so the two are not one check twice: they fail together today and for different reasons, and
+# the comment says which is which so a later reader does not retire the wrong one.
+echo "== C62: the rulebook states rules, not occasions; one report form; one home for the outcomes =="
+
+VP62="global/protocols/verify.md"
+SK62="global/skills/verify/SKILL.md"
+HN62="test/validate.sh"
+CD62="docs/architecture/verify.md"
+
+c62_readable=1
+for f62 in "$VP62" "$SK62" "$HN62" "$CD62"; do
+  { [ -r "$f62" ] && [ -s "$f62" ]; } || c62_readable=0
+done
+
+if [ "$c62_readable" -eq 0 ]; then
+  bad "C62's four documents are all readable and non-empty"
+else
+  # Occurrences, not lines: this file's prose is one paragraph per line in places, so a line count
+  # undercounts a phrase that repeats inside one of them.
+  # A refused pattern must be LOUD, never a clean zero. `grep` exits 2 when it will not compile the
+  # pattern and prints nothing, so `grep | wc -l` answers `0` — and every absence leg below tests for
+  # `-eq 0`, so the whole battery certifies green on a pattern that never ran. That is IB-012's symptom
+  # by the route the entry does not name, and this helper is where this block would meet it: `REFUSED`
+  # is not a number, so an arithmetic test on it fails loudly instead of passing quietly.
+  o62() {
+    o62out="$(printf '%s' "$2" | grep -oiE "$1" 2>/dev/null)"; o62rc=$?
+    [ "$o62rc" -le 1 ] || { printf 'REFUSED'; return 0; }
+    printf '%s' "$o62out" | grep -c . | tr -d ' '
+  }
+  VPT62="$(tr '\n' ' ' < "$VP62")"
+  SKT62="$(tr '\n' ' ' < "$SK62")"
+
+  # ---- A1: no rule is justified by recounting the occasion that produced it ------------------------
+  # Keyed on the NARRATIVE form — a past occurrence being told — and NOT on the phrases that carried it
+  # before the prune. A pattern built from the deleted phrases is a blocklist: it goes green on a
+  # reworded anecdote, which is the assertion-keyed-on-a-word defect this repository has paid for
+  # repeatedly. The alternation below is therefore the grammar of past tense applied to a rule's own
+  # history — `it was two`, `used to be`, `had drifted`, `once`, `the Nth time` — and it is swept over
+  # all three surfaces a rule can be stated on, not the protocol alone. Scope is the point: the first
+  # form of this leg read one file, so the same commit that deleted four anecdotes from the protocol
+  # wrote new ones into the skill and the card and this row stayed green over every one of them.
+  a1_62=""
+  NARR62='once (reported|said|stated)|it was the (second|third|fourth) time|already had, for long enough|was false the day it was written|and it was two|used to be|drifted by construction|had (already )?drifted|had .* prose (homes|copies)|this concept had'
+  [ -n "$VPT62" ] || a1_62="$a1_62 [the protocol could not be read, so the absence proves nothing]"
+  [ -n "$SKT62" ] || a1_62="$a1_62 [the skill could not be read, so the absence proves nothing]"
+  CDT62="$(tr '\n' ' ' < "$CD62")"
+  [ -n "$CDT62" ] || a1_62="$a1_62 [the architecture card could not be read, so the absence proves nothing]"
+  for pair62 in "protocol:$VPT62" "skill:$SKT62" "card:$CDT62"; do
+    who62="${pair62%%:*}"; txt62="${pair62#*:}"
+    n62="$(o62 "$NARR62" "$txt62")"
+    [ "$n62" = "0" ] || a1_62="$a1_62 [the $who62 recounts the occasion that produced a rule in $n62 place(s)]"
+  done
+  # The four reasons the anecdotes introduce. Each must outlive its story.
+  [ "$(o62 'two rules and not one' "$VPT62")" -ge 1 ] \
+    || a1_62="$a1_62 [the reason that the act and the account are two rules is gone]"
+  [ "$(o62 'each leg gets its own mutation' "$VPT62")" -ge 1 ] \
+    || a1_62="$a1_62 [the per-leg mutation rule is gone]"
+  [ "$(o62 'a description of the review rather than the review' "$VPT62")" -ge 1 ] \
+    || a1_62="$a1_62 [the reason a second copy of the axis lists would drift is gone]"
+  [ "$(o62 'consequence half' "$VPT62")" -ge 1 ] \
+    || a1_62="$a1_62 [the consolidation boundary's own rule is gone]"
+  [ -z "$a1_62" ] && ok "A1 the protocol states every rule without recounting the occasion that produced it" \
+                  || bad "A1 the protocol states every rule without recounting the occasion that produced it:$a1_62"
+
+  # ---- A2: the report form has exactly one copy ----------------------------------------------------
+  # A floor under the equality, for the reason the sibling checks already give: both numbers collapse to
+  # 0 if the anchor is renamed or reflowed, and `0` would then read as a successful collapse.
+  a2_62=""
+  AUD62="$(grep -c '^\*\*Audited\*\*' "$VP62" | tr -d ' ')"
+  [ "$AUD62" -ge 1 ] 2>/dev/null || a2_62="$a2_62 [no report template located at all: $AUD62 found]"
+  [ "$AUD62" -eq 1 ] 2>/dev/null || a2_62="$a2_62 [$AUD62 report templates, not one]"
+  [ -z "$a2_62" ] && ok "A2 the report template has one copy, counted by its own anchor" \
+                  || bad "A2 the report template has one copy, counted by its own anchor:$a2_62"
+
+  # ---- A3: the surviving template keeps the clauses that do not move to the dispatcher -------------
+  # Scope narrowed at Conform: the profile provenance, the fall-to-generic line and the shadowed
+  # declaration are the dispatcher's rows and A6 forbids the template to state them, so asserting them
+  # here would contradict A6. What stays is the tree verdict, the out-of-phase note and the diff's own
+  # facts. Singleness is read as a precondition here; A2 owns it as a claim.
+  a3_62=""
+  AUDP62="$(awk '/^\*\*Audited\*\*/{f=1;buf=""} f{buf=buf" "$0} (f && /^[[:space:]]*$/){print buf; f=0} END{if(f) print buf}' "$VP62")"
+  AUDN62="$(printf '%s\n' "$AUDP62" | grep -c 'Audited' || true)"
+  if [ "$AUDN62" -ne 1 ]; then
+    a3_62="$a3_62 [the template is not single yet: $AUDN62 found, so its contents cannot be read as one]"
+  else
+    [ "$(o62 'left as (it was )?found' "$AUDP62")" -ge 1 ] || a3_62="$a3_62 [no clean tree verdict]"
+    # Keyed on the claim, not on `was not`: that phrase is the CONDITIONAL the branch hangs off ("if it
+    # was not"), so it survives the branch being replaced by anything at all. Proven by mutation — the
+    # earlier form stayed green with "what changed and what was restored" gone. What the branch owes is
+    # both halves: what differed, and what was put back.
+    [ "$(o62 'what changed' "$AUDP62")" -ge 1 ]            || a3_62="$a3_62 [the dirty branch does not say what changed]"
+    [ "$(o62 'restored' "$AUDP62")" -ge 1 ]                || a3_62="$a3_62 [the dirty branch does not say what was restored]"
+    [ "$(o62 'out of phase' "$AUDP62")" -ge 1 ]            || a3_62="$a3_62 [no out-of-phase note]"
+    [ "$(o62 'ahead of its remote' "$AUDP62")" -ge 1 ]     || a3_62="$a3_62 [no trunk lag]"
+    [ "$(o62 'no lag line' "$AUDP62")" -ge 1 ]             || a3_62="$a3_62 [no silence for a current trunk]"
+  fi
+  [ -z "$a3_62" ] && ok "A3 the surviving template carries every clause that does not move to the dispatcher" \
+                  || bad "A3 the surviving template carries every clause that does not move to the dispatcher:$a3_62"
+
+  # ---- A4: no leg compares one template count against another -------------------------------------
+  # Both shapes of the comparison, because retiring one leaves the other. The literal shape is a count
+  # tested against 2; the derived shape is a template count tested against a clause count. With one
+  # template both are tautologies — green whatever the prose says — which is the hollow leg the
+  # per-row battery cannot see.
+  a4_62=""
+  # Its own lines are excluded: the patterns below contain the very shapes they look for, so a sweep that
+  # read them would count itself and could never reach zero. That is the leg-matches-its-own-text defect,
+  # and excluding the definition is the same exception the homes sweep makes for the suite.
+  #
+  # What is forbidden is the **literal 2**, never a count-against-a-count: `total >= 1 && carrying ==
+  # total` is the correct shape here — it says every template that exists carries the clause, floors out
+  # the zero-template certification, and holds a third template to the same rule. A leg that encodes two
+  # as the expected number is the one that breaks, and the one that would let a silently re-added second
+  # template pass unnoticed.
+  #
+  # The template-bearing lines are found by DERIVING the variable names from the file rather than listing
+  # them. The first form of this leg carried a hand-written set (`AUD*|TPLN*|TC*|TL*`) and ID-3 of this
+  # task had already recorded what that costs: the measurement said six sites and there were eight,
+  # because a discriminator that is enumerated cannot measure what the list omits. So the names are read
+  # off the assignments that count the anchor, and any line mentioning one of them is in scope.
+  SELF62='SELF62|TPLVARS62|TPLLIT62|TPLBOTH62'
+  # The self-exclusion happens BEFORE the derivation, not only before the sweep, and that ordering is the
+  # whole of the floor's meaning. Derived after it, the set was `TPLLIT62|TPLVARS62` — its own two lines,
+  # the only ones in the file where the anchor appears UNESCAPED — so the sweep dropped to
+  # `(Audited|# Verify: T-XXX)`, a new literal-2 leg naming neither was invisible, and `[ -n ... ]` passed
+  # because the leg had found itself. A floor satisfied by the leg's own text is not a floor.
+  #
+  # And the read is multi-line, because these extractors are: `TC`, `TC27` and `TL27` open with `VAR="$(`
+  # and carry the anchor inside an awk program on a later line, so a per-line derivation misses exactly
+  # the three sites ID-3 recorded as missed by the hand-written list.
+  TPLVARS62="$(grep -vE "$SELF62" "$HN62" | awk '
+    function nm(s){ sub(/^[[:space:]]*/,"",s); sub(/=.*/,"",s); return s }
+    /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*="\$\(/ { var=nm($0); inblk=1; hit=0 }
+    inblk { if ($0 ~ /Audited/ || $0 ~ /# Verify: T-XXX/) hit=1
+            if ($0 ~ /\)"[[:space:]]*$/) { if (hit) print var; inblk=0 }
+            next }
+    /^[[:space:]]*[A-Za-z_][A-Za-z0-9_]*=/ && ($0 ~ /Audited/ || $0 ~ /# Verify: T-XXX/) { print nm($0) }
+  ' | sort -u | paste -sd'|' -)"
+  [ -n "$TPLVARS62" ] || a4_62="$a4_62 [no variable in the suite is derived from the template anchor, so the sweep has no scope]"
+  TPLLIT62="$(grep -nE "(Audited|# Verify: T-XXX|$TPLVARS62)" "$HN62" | grep -vE "$SELF62" | grep -cE '(= *"2"|-eq 2|-ge 2|"2/2")' || true)"
+  # The second leg reads the assertion's own stated claim, which is where a two-template world is
+  # declared: a row describing itself as covering "both" templates is asserting that there are two.
+  # Plural `templates` is the discriminator, and the plural is the whole of it: three unrelated rows say
+  # "both ... the template" in the singular ("both keys and the template ships them", "both paths ... in
+  # every report template") and none of them claims there are two. An earlier form of this leg matched
+  # "both" near "template" and counted all three. It also carried an **empty alternation branch**, which
+  # `ugrep` refuses outright — the pattern then yields no output at all and the leg compares an empty
+  # string, which reads in the report as a count of nothing rather than as a broken pattern.
+  TPLBOTH62="$(grep -cE '(ok|bad) "[^"]*both[^"]*templates' "$HN62" || true)"
+  [ "$TPLLIT62" -eq 0 ]  || a4_62="$a4_62 [$TPLLIT62 leg(s) still test a template count against the literal 2]"
+  [ "$TPLBOTH62" -eq 0 ] || a4_62="$a4_62 [$TPLBOTH62 assertion(s) still claim to cover both templates]"
+  # What this row asserts, stated narrowly because the verdict below reads wider than the legs reach:
+  # no leg encodes TWO as the expected number of templates, and no assertion claims to cover "both" of
+  # them. It does NOT assert that every count-against-a-count in the suite is sound — `total >= 1 &&
+  # carrying == total` is the correct shape at one template and is deliberately permitted. The narrower
+  # claim is the one these two legs can carry; the wider one is declared uncovered rather than implied.
+  [ -z "$a4_62" ] && ok "A4 no leg encodes two as the expected number of report templates" \
+                  || bad "A4 no leg encodes two as the expected number of report templates:$a4_62"
+
+  # ---- A5: the resolution outcomes are one table ---------------------------------------------------
+  # The table is found by its HEADER's three columns, never by a row: a row is prose and would match the
+  # bullets it replaces. Widened at Conform to take the three clauses A3 gave up.
+  a5_62=""
+  S7_62="$(awk '/^7\. \*\*Invoke the verify-review workflow/{f=1;next} f && /^[0-9]+\. \*\*/{exit} f' "$SK62")"
+  [ -n "$S7_62" ] || a5_62="$a5_62 [step 7 could not be extracted]"
+  DISP62="$(printf '%s\n' "$S7_62" | grep -iE '^[[:space:]]*\|.*outcome.*\|.*(run|say).*\|.*(record|report)' | head -1)"
+  [ -n "$DISP62" ] || a5_62="$a5_62 [no outcome table: nothing in step 7 heads three columns of outcome, what the run says, what the report records]"
+  # Each moved clause once, and in the table's own region rather than anywhere in the step.
+  # Rows for what is a row; the block for what is deliberately a note. The shadowed declaration rides on
+  # the reserved-value row as its one exception, so it is prose beneath the table and not a sixth row —
+  # reading it out of the `|` lines alone would fail a design decision rather than a defect.
+  TBL62="$(printf '%s\n' "$S7_62" | grep -E '^[[:space:]]*\|')"
+  TBLBLK62="$(printf '%s\n' "$S7_62" | awk '/What each resolution says/{f=1} f')"
+  # PER ROW, and each on the pair of things only that row says. A token counted over the whole table is
+  # answered by whichever row happens to mention it: `engine-generic` appears in the fall-to-generic row's
+  # own remedy, so a table-wide count of it stayed green with the reserved-value row renamed away. Proven
+  # by mutation. The pair is what discriminates — the outcome and the disclosure it owes.
+  [ "$(printf '%s\n' "$TBL62" | grep -c 'generic lists only' | tr -d ' ')" -ge 1 ] \
+    || a5_62="$a5_62 [no row carries the fall-to-generic line]"
+  [ "$(printf '%s\n' "$TBL62" | grep 'engine-generic' | grep -c 'nothing about profiles' | tr -d ' ')" -ge 1 ] \
+    || a5_62="$a5_62 [no row pairs the reserved value with the silence it owes]"
+  [ "$(printf '%s\n' "$TBL62" | grep -c 'that axis alone\|axis alone' | tr -d ' ')" -ge 1 ] \
+    || a5_62="$a5_62 [no row carries the per-axis blast radius]"
+  [ "$(o62 'shadow' "$TBLBLK62")" -ge 1 ] \
+    || a5_62="$a5_62 [the table's block does not carry the shadowed-declaration exception]"
+  # The cardinality is DERIVED, not read. The preamble spells a number and three surfaces used to spell
+  # it too; a spelled count nothing computes is the shape that goes quietly false the day a row is added.
+  # So the word is turned back into a number and compared against the rows actually present — header and
+  # separator excluded — which is the cheapest kind of check this engine has and the one its own homes
+  # table is built on.
+  NROW62="$(printf '%s\n' "$TBL62" | grep -cE '^[[:space:]]*\|' | tr -d ' ')"
+  NROW62=$((NROW62 - 2))
+  SAID62="$(printf '%s\n' "$TBLBLK62" | tr 'A-Z' 'a-z' \
+              | sed -nE 's/.*[^a-z](one|two|three|four|five|six|seven|eight) outcomes.*/\1/p; s/^(one|two|three|four|five|six|seven|eight) outcomes.*/\1/p' | head -1)"
+  case "$SAID62" in
+    one) SAIDN62=1 ;; two) SAIDN62=2 ;; three) SAIDN62=3 ;; four) SAIDN62=4 ;;
+    five) SAIDN62=5 ;; six) SAIDN62=6 ;; seven) SAIDN62=7 ;; eight) SAIDN62=8 ;; *) SAIDN62="" ;;
+  esac
+  [ -n "$SAIDN62" ] || a5_62="$a5_62 [the table's preamble spells no count of the outcomes]"
+  [ -n "$SAIDN62" ] && [ "$SAIDN62" = "$NROW62" ] \
+    || a5_62="$a5_62 [the preamble says $SAIDN62 outcomes and the table has $NROW62 rows]"
+  [ -z "$a5_62" ] && ok "A5 the resolution outcomes have one home and it is a table" \
+                  || bad "A5 the resolution outcomes have one home and it is a table:$a5_62"
+
+  # ---- A6: the report writer and the template cite the table and restate none of it ---------------
+  # Floored on both regions: an absence over an extraction that failed is the false green this whole
+  # section is written against.
+  a6_62=""
+  # The header line is KEPT, not skipped: this step is a single line, and an extractor that skipped it
+  # would return the blank line after it — an empty region, on which every absence leg below is trivially
+  # true. That is the false green the floors in this section exist to refuse.
+  S10_62="$(awk '/^10\. \*\*Write\*\*/{f=1} f && /^11\. \*\*/{exit} f' "$SK62")"
+  [ -n "$S10_62" ] || a6_62="$a6_62 [step 10 could not be extracted]"
+  [ -n "$AUDP62" ] || a6_62="$a6_62 [the report template could not be extracted]"
+  ROW62='generic lists only|engine-generic|resolved to no profile|shadow'
+  S10N62="$(o62 "$ROW62" "$S10_62")"
+  TPLN62="$(o62 "$ROW62" "$AUDP62")"
+  [ "$S10N62" -eq 0 ] || a6_62="$a6_62 [step 10 still states $S10N62 outcome row(s) instead of citing the table]"
+  [ "$TPLN62" -eq 0 ] || a6_62="$a6_62 [the template still states $TPLN62 outcome row(s) instead of citing the table]"
+  # The POSITIVE half, and it is the one the whole collapse turns on: both regions must point AT the
+  # table. Absence alone is satisfied by deleting the pointer — the leg gets greener as the report loses
+  # the only thing telling its writer where the outcomes are. The C62 header promises every prose
+  # deletion a positive leg naming what must survive it, and this deletion is the one the task was for.
+  [ "$(o62 "step 7's table|table at step 7" "$S10_62")" -ge 1 ] \
+    || a6_62="$a6_62 [step 10 does not point at the table it defers to]"
+  [ "$(o62 "step 7 of the .verify. skill|table at step 7|step 7's table" "$AUDP62")" -ge 1 ] \
+    || a6_62="$a6_62 [the template does not point at the table it defers to]"
+  # The reach beyond the two known citers. A6 read step 10 and the template only, so the recurrence the
+  # single home exists to prevent — the matrix re-enumerated in some third document — was outside every
+  # leg. Swept over what the repository TRACKS, excluding the suite (whose own ROW62 carries the tokens)
+  # and the table's own file, so any other surface stating two or more of the outcome rows is named.
+  while IFS= read -r f62x; do
+    [ -n "$f62x" ] || continue
+    case "$f62x" in "$HN62"|"$SK62") continue ;; esac
+    b62x="$(tr '\n' ' ' < "$f62x" 2>/dev/null)" || continue
+    hits62="$(printf '%s' "$b62x" | grep -oiE "$ROW62" | sort -u | grep -c . | tr -d ' ')"
+    [ "$hits62" -lt 2 ] \
+      || a6_62="$a6_62 [$f62x re-enumerates $hits62 of the table's outcomes instead of citing it]"
+  done <<EOF62
+$(git ls-files 2>/dev/null | grep -E '\.md$')
+EOF62
+  [ -z "$a6_62" ] && ok "A6 the report writer and the template cite the outcome table and restate none of it" \
+                  || bad "A6 the report writer and the template cite the outcome table and restate none of it:$a6_62"
+
+  # ---- A7: the routing of mild findings is cited, never enumerated --------------------------------
+  # The positive and the negative together: the citation must be there AND the outcomes must not be
+  # spelled out beside it, because a citation that summarises what it cites is a second copy wearing a
+  # pointer's clothes.
+  a7_62=""
+  MED62="$(awk '/^\*\*MEDIUM and LOW come back unadjudicated/{f=1;print;next} f && /^$/{exit} f' "$VP62" | tr '\n' ' ')"
+  [ -n "$MED62" ] || a7_62="$a7_62 [the paragraph deciding mild findings could not be extracted]"
+  [ "$(o62 'Discovery Triage' "$MED62")" -ge 1 ] || a7_62="$a7_62 [the routing test is not cited at all]"
+  ENUM62="$(o62 'fixed now|discarded as a false positive|staged in that same file' "$MED62")"
+  [ "$ENUM62" -eq 0 ] || a7_62="$a7_62 [$ENUM62 routing outcome(s) enumerated beside the citation]"
+  [ -z "$a7_62" ] && ok "A7 the protocol cites the routing test and enumerates none of its outcomes" \
+                  || bad "A7 the protocol cites the routing test and enumerates none of its outcomes:$a7_62"
+
+  # ---- A8: the merged template names the case that omits its review section -----------------------
+  # The one consumer of the review-less form is a full-path task whose review was skipped; quick and auto
+  # skip the phase outright. Merging the two forms without saying so silently obliges that task to file
+  # findings it never gathered.
+  a8_62=""
+  TPLREG62="$(awk '/^## verify\.md Template/{f=1;next} f && /^## [^v]/{exit} f' "$VP62" | tr '\n' ' ')"
+  [ -n "$TPLREG62" ] || a8_62="$a8_62 [the template section could not be extracted]"
+  # Both halves of the claim, and neither is `skipped`: that word occurs in a neighbouring sentence of
+  # the very note this leg guards ("a task whose review was skipped still writes this report"), so the
+  # earlier form was satisfied by prose one clause away from the sentence it names. Proven by mutation.
+  # `Review Findings` discriminates here because the template's own heading of that name sits past this
+  # region's bound, so the only source inside it is the note.
+  [ "$(o62 'omitted' "$TPLREG62")" -ge 1 ] \
+    || a8_62="$a8_62 [nothing says the review section is omitted where no review ran]"
+  # The CONDITION, which no leg pinned: strip it and the note reads as an unconditional omission, so the
+  # row would certify a template that drops its findings block on every run — the opposite of the rule.
+  # Both halves, because the positive alone permits a note that omits always and merely mentions a skip.
+  [ "$(o62 'where no review ran|where a review was skipped' "$TPLREG62")" -ge 1 ] \
+    || a8_62="$a8_62 [the omission is not conditioned on no review having run]"
+  [ "$(o62 'omitted on every run|always omitted|never written' "$TPLREG62")" -eq 0 ] \
+    || a8_62="$a8_62 [the note omits the review block unconditionally]"
+  [ "$(o62 'Review Findings' "$TPLREG62")" -ge 1 ] \
+    || a8_62="$a8_62 [the note does not name the block that is omitted]"
+  [ -z "$a8_62" ] && ok "A8 the merged template names the case that omits its review section" \
+                  || bad "A8 the merged template names the case that omits its review section:$a8_62"
 
 fi
 

@@ -94,9 +94,8 @@ downstream may infer it — see `Consolidation into verify.md` below. Where eith
 - **An auditor reading beside other auditors reports what it read, never what it ran.** A finding
   resting on the outcome of a run — a suite's failures, a command's exit — is an account nobody else can
   check: the run happened inside one actor while the others were reading the same copy, and the report is
-  the only trace it leaves. **Three of four** auditors once reported the same four failures against a
-  suite that had none, with the rule above already stated to each of them and already guarded — which is
-  why these are two rules and not one. The first governs the damage; this one governs the evidence, and
+  the only trace it leaves. **These are two rules and not one**, and the second is what makes a review's
+  evidence spendable: the first governs the damage; this one governs the evidence, and
   forbidding the act never forbade the account. The scope is the parallel readers and only them: the
   phase that invokes them runs alone, and what it reports under Test Results is its own — so the closing
   sentence below, which binds every actor the lifecycle appoints, reaches this bullet's siblings and not
@@ -113,13 +112,9 @@ is not vacuous — that something, somewhere in it, is load-bearing. It says not
 legs are keyed on anything, and a row is only as strong as its weakest leg, because every leg has to hold for
 the row to be green and therefore any hollow one can be deleted from the source with the row none the wiser.
 
-This is written down because the cheaper battery reads as sufficient and is not. A block whose six rows were
-each killed by their own mutation, and reported proved on that basis, was then found to carry two legs green
-on prose that predated the requirement: one matched case-insensitively against a word the surrounding
-paragraph had always used, the other asserted the bare presence of a term the region already contained. Both
-survived the per-row battery untouched, because in each case a *different* leg of the same row was what the
-mutation killed. It was the third time the same defect had been found in that block and the first time the
-rule was stated.
+This is written down because the cheaper battery reads as sufficient and is not: a row whose legs are
+independent can pass a per-row battery with a hollow leg untouched, because what the mutation killed was a
+different leg of the same row.
 
 **The mutation deletes or falsifies the exact sentence the leg names — never a neighbour.** A leg that
 survives its own sentence being deleted is satisfied by something else in the region, and what that something
@@ -129,38 +124,6 @@ case-insensitivity is how such a leg most often reaches text its author never co
 
 Where a row's legs genuinely stand or fall together, one mutation is the honest count and the report says
 which case it is. What is never acceptable is a count that leaves the reader unable to tell the two apart.
-
-## verify.md Template
-
-```markdown
-# Verify: T-XXX - [Title]
-
-**Audited**: `T-XXX`, resolved from `[the state file the ladder answered with]`. The task diff — base
-`[base ref]`, `[N]` commit(s) on this branch since it, plus what is still uncommitted. If no base
-resolved: `branch scope unavailable — uncommitted work only`. Where the trunk is behind: `[M]`
-commit(s) ahead of its remote, and publishing what is not this task's own removes the overlap; where
-the trunk is current, where no remote trunk resolved, or where no base resolved, no lag line is
-written. The working copy was left as found; if it was
-not, what changed and what was restored. The review profile step 7 resolved and the checklist each axis
-received, or that an axis received none, plus any profile or checklist path that did not resolve; where
-the area resolved to no profile, that the change was read against the engine's generic lists only and
-what to declare to sharpen it; where the operator resolved it to `engine-generic`, no line about profiles
-at all — save a declaration shadowed by the reserved name, which is recorded. If the audit ran out of phase on the operator's word, that it did and that the sheet's position
-was not moved.
-
-## Criteria Audit
-| # | Criterion (from understand.md) | Status | Evidence |
-|---|-------------------------------|--------|----------|
-| 1 | [criterion text] | ✅/⚠️/❌ | `file.ts:line` or test name |
-| 2 | [criterion text] | ✅/⚠️/❌ | `file.ts:line` or test name |
-
-## Test Results
-- `[verify command 1]` -> PASS/FAIL
-- `[verify command 2]` -> PASS/FAIL
-
-## Gaps Found
-[List anything missed, or "None"]
-```
 
 ## Status Meanings
 
@@ -188,9 +151,7 @@ Auditor**, the **Test Coverage Auditor**, **Security & Error Handling**, **Archi
 
 **What each one looks for is stated in the workflow and nowhere else** — `global/workflows/verify-review.js`,
 the `DIMENSIONS` array. That is the text the agents actually receive, so a second copy here would be a
-description of the review rather than the review, and the two would drift: they already had, for long
-enough that one said *subscriptions without unsubscribe* while the running prompt said *resources acquired
-but never released*. Read the lists there.
+description of the review rather than the review, and the two would drift. Read the lists there.
 
 One thing about their content belongs here, because it is a property of the phase rather than of any one
 axis: the engine's five lists **name no language, framework or runtime**. They are what applies to a
@@ -205,7 +166,7 @@ with two of its clauses missing.
 
 Then it **adversarially refutes every HIGH finding**: a skeptic agent reads the code in context and tries to refute it; only findings that survive (confirmed=true) hold the gate. HIGH is refuted because HIGH is what blocks — it is the one level where a false finding costs something to hold.
 
-**MEDIUM and LOW come back unadjudicated, and the phase decides them.** No skeptic is spent there: a MEDIUM neither blocks the archive nor gets fixed by the review, so an agent spent refuting one buys a tidier list and no decision — and buys it at the price of rebuilding the whole diff to read a single finding. The phase already holds the diff, the criteria and the plan, so the judgment a refuter used to make is made where the context already is. The rule is that it *is* made: a finding nobody decides is a finding five auditors were paid to produce and nobody used. MEDIUM findings take the routing test of Discovery Triage (Understanding protocol), whose order matters here for the same reason it matters there — ownership is asked first: fixed now where the finding sits in a file already inside this task's diff, discarded as a false positive with the reason written under `## Discarded` in `artifacts/T-XXX/discoveries.md`, else staged in that same file with its ground stamp — **never to BACKLOG.md while the task is in flight**. Each outcome is recorded here too — but the record kept here is the decision and a pointer, never the reason instead: the routing test makes the written reason the whole of a discard's validity, and a reason filed only in this report sits where that rule does not look. LOW findings are listed as raised and marked unadjudicated; no outcome is required of them.
+**MEDIUM and LOW come back unadjudicated, and the phase decides them.** No skeptic is spent there: a MEDIUM neither blocks the archive nor gets fixed by the review, so an agent spent refuting one buys a tidier list and no decision — and buys it at the price of rebuilding the whole diff to read a single finding. The phase already holds the diff, the criteria and the plan, so the judgment a refuter used to make is made where the context already is. The rule is that it *is* made: a finding nobody decides is a finding five auditors were paid to produce and nobody used. MEDIUM findings take the routing test of Discovery Triage (Understanding protocol), which owns its outcomes, the order they are asked in and where each one is written; this protocol states none of them — save the destination it refuses, **never to BACKLOG.md while the task is in flight**, which every routing site states in words rather than citing, because a citation dies with a revert of the owner and the refusal has to outlive one. Each outcome is recorded here too — but the record kept here is the decision and a pointer, never the reason instead: the routing test makes the written reason the whole of a discard's validity, and a reason filed only in this report sits where that rule does not look. LOW findings are listed as raised and marked unadjudicated; no outcome is required of them.
 
 Finally, **one prover** — alone, after every auditor and refuter has finished reading, and only when a surviving finding proposed one. The auditors are read-only (see **Mutation and the Working Copy** above): an auditor that cannot settle a suspicion by reading returns the change that would settle it instead of making it — declaring whether that change **weakens** an assertion the code already has or **adds** one it does not — and this stage is the actor the rule appoints. It applies them one at a time, runs the project's test command, and puts each file back before the next. What it reports is what the run did (`red`, `green`, `unproven`) and never what that means for a finding: the meaning is read afterwards, against the declared shape. Proposals naming a path outside the repository or outside the reviewed scope are dropped before the stage runs.
 
@@ -227,9 +188,9 @@ Finally, **one prover** — alone, after every auditor and refuter has finished 
   **The consequence half of this mapping — what a pair does to a finding — has one home and this is it.**
   Other surfaces say what each shape *is*, because an auditor cannot declare a shape it has not been told
   the meaning of; none of them says what the report will then do with the pair. The boundary is drawn there
-  rather than at the whole mapping because the wider claim was false the day it was written: the same change
-  that made it had the workflow telling reviewers a red run made their finding *fall* or *stand*, which is
-  these rows in synonyms, in a file the sentence claimed restated nothing. The
+  rather than at the whole mapping because the wider claim cannot hold: a surface that stated nothing of the
+  mapping could not tell an auditor which shape to declare, so what the other surfaces owe is the meaning of
+  each shape and what this one owes is the consequence. The
   prover's own claim to have restored what it touched is its word, never the verdict — the comparison below
   is.
 - **The working copy differs from the copy taken before the review** -> restore from it, record exactly
@@ -247,7 +208,15 @@ What the user reads in chat is **one line per axis**: finding count + the worst 
 - **Auto level** tasks (rely on test validation only)
 - Pure style/i18n/config changes with no logic
 
-### verify.md Template (with Review Findings)
+## verify.md Template
+
+**One form, and its review block is conditional rather than assumed**: a task whose review was skipped
+still writes this report, and **`## Review Findings` and its subsections are omitted** where no review
+ran — the skip cases are the three above, of which only the last reaches this template, since the quick
+path and the auto level write no report at all. Everything above that block is written on every run.
+**A second form for the review-less case is what this section refuses**, and the reason is structural
+rather than historical: two forms sharing one header differ only by a clause, so a clause added to one is
+a clause missing from the other, and nothing but a count of the forms would notice.
 
 ```markdown
 # Verify: T-XXX - [Title]
@@ -259,10 +228,9 @@ commit(s) ahead of its remote, and publishing what is not this task's own remove
 the trunk is current, where no remote trunk resolved, or where no base resolved, no lag line is
 written. The working copy was left as found; if it was
 not, what changed and what was restored. The review profile step 7 resolved and the checklist each axis
-received, or that an axis received none, plus any profile or checklist path that did not resolve; where
-the area resolved to no profile, that the change was read against the engine's generic lists only and
-what to declare to sharpen it; where the operator resolved it to `engine-generic`, no line about profiles
-at all — save a declaration shadowed by the reserved name, which is recorded. If the audit ran out of phase on the operator's word, that it did and that the sheet's position
+received. **What each resolution obliges this line to carry is the table at step 7 of the `/verify`
+skill, third column, and is stated there and only there** — every outcome with the line it owes, and
+the one case that owes nothing. If the audit ran out of phase on the operator's word, that it did and that the sheet's position
 was not moved.
 
 ## Criteria Audit
