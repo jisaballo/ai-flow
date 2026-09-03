@@ -153,6 +153,22 @@ Create domain-specific guidance in `.ai-flow/steering/`. These are loaded automa
 
 See `examples/` for more steering file examples.
 
+### Review Profiles
+
+Two keys in `.ai-flow/project.yml` teach the review your stack. `review:` maps a profile name to a checklist path per axis; `review_profile:` says which area uses which profile.
+
+```yaml
+review:
+  angular-app:
+    security: .ai-flow/review/angular-security.md
+review_profile:
+  default: angular-app
+```
+
+The checklists themselves are **the project's own** — the engine ships no stack-specific checklist, on purpose: what an Nx library and an Express handler get wrong has no stack-agnostic phrasing, and a generic list pretending otherwise would be worse than none.
+
+See [Review profiles](docs/customization.md) in the customization guide for how an area resolves, the reserved off switch, and what a profile cannot redefine.
+
 ### Project CLAUDE.md
 
 The project `CLAUDE.md` tells Claude Code about your specific stack. See `template/CLAUDE.md` for a starting template and `examples/` for stack-specific examples.
@@ -173,7 +189,7 @@ The framework ships optional global tooling under `global/`, installed to `~/.cl
 | `/plan` | Plan + Conform phase — max-3-step `plan.md`, then failing conformance test stubs |
 | `/verify` | Verify phase — criterion audit, then the `verify-review` workflow |
 
-**verify-review workflow** (`global/workflows/verify-review.js` → `~/.claude/workflows/`) — a deterministic multi-agent review invoked by `/verify`: five auditors (business contract / coverage / security / architecture / simplicity & structure) in parallel over the task diff, then adversarial refutation of every HIGH finding — the level that blocks — so only genuine blockers survive; MEDIUM and LOW come back unadjudicated for the verify phase to triage.
+**verify-review workflow** (`global/workflows/verify-review.js` → `~/.claude/workflows/`) — a deterministic multi-agent review invoked by `/verify`: five auditors (business contract / coverage / security / architecture / simplicity & structure) in parallel over the task diff, then adversarial refutation of every HIGH finding — the level that blocks — so only genuine blockers survive; MEDIUM and LOW come back unadjudicated for the verify phase to triage. Each axis is judged against the engine's own stack-agnostic list plus whatever checklist the project declared on top of it. The auditors only read; one serialised prover applies the mutations they proposed, afterwards and alone — the rule it works under is [`global/protocols/verify.md`](global/protocols/verify.md), *Mutation and the Working Copy*.
 
 **Guardrail hooks** (`global/hooks/` → `~/.claude/hooks/`) — optional Claude Code hooks that enforce the workflow. See [`global/hooks/README.md`](global/hooks/README.md) for what each does and how to register them in `settings.json`. These are safe to install globally (no-op outside an ai-flow project).
 
@@ -184,6 +200,7 @@ The framework ships optional global tooling under `global/`, installed to `~/.cl
 - [Getting Started](docs/getting-started.md) — Step-by-step setup guide
 - [Lifecycle Protocol](global/protocols/lifecycle.md) — Every phase, the execution paths and the autonomy levels
 - [Customization Guide](docs/customization.md) — Adapting ai-flow to your workflow
+- [Verify architecture card](docs/architecture/verify.md) — How the review is built: its three pieces, and every file that carries each of its concepts
 
 ## Related
 
