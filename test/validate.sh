@@ -1056,6 +1056,15 @@ if [ -n "$sec" ]; then
   printf '%s' "$sec" | grep -qi 'activation' \
     && ok "the protocol mandates the sheet at activation" \
     || bad "the protocol mandates the sheet at activation"
+  # A4 -- CONTROL. The sheet skeleton shall declare an `autonomy:` line. Green from the start by
+  # construction rather than by achievement: the field is already there, and what was missing is any
+  # assertion over it -- the battery above pins the sheet path, `phase:` and `branch:`, and `autonomy:`
+  # was asserted only NEGATIVELY, at the roster leg, as a field the roster must not carry. So the field
+  # three commands are about to depend on could be deleted from the skeleton with the suite green. Its
+  # own row rather than another entry in `miss`, so it can be mutated on its own.
+  printf '%s' "$sec" | grep -qE '^[[:space:]]*autonomy:' \
+    && ok "A4 control: the sheet skeleton declares the autonomy line the commands read" \
+    || bad "A4 control: the sheet skeleton declares the autonomy line the commands read"
   printf '%s' "$sec" | grep -qi 'paused' \
     && ok "the protocol states a paused task keeps its sheet" \
     || bad "the protocol states a paused task keeps its sheet"
@@ -3242,6 +3251,21 @@ if [ -n "$ACC22" ] && printf '%s' "$ACC22" | grep -q 'EXECUTE or VERIFY'; then
 else
   bad "the accepted positions name verify's own two"
 fi
+# A5 -- WHEN the accepted positions are stated, the engine shall name EXECUTE as the position
+# `execute` runs on. Generated in the Conform phase from understand.md's Verifiable Criteria.
+# NOT the bare presence of `EXECUTE`: the clause has always carried it on verify's own pair
+# ("`verify` runs on EXECUTE or VERIFY"), so a presence leg was green before the requirement existed --
+# the disease c50's comment records twice. What discriminates is the COMMAND named beside the position,
+# and the second leg is where that position comes from: a phase whose command does not exist yet is
+# honoured by a manual run, and a row that never says who writes the position lets the next reader read
+# it as unreachable and delete it.
+acc22e=""
+printf '%s' "$ACC22" | grep -qE '`execute`[^.]*\bEXECUTE\b|\bEXECUTE\b[^.]*`execute`' \
+  || acc22e=" [the accepted positions do not name EXECUTE as the position execute runs on]"
+printf '%s' "$ACC22" | grep -qiE 'Conform|`plan`[^.]*(writes|advances)' \
+  || acc22e="$acc22e [it does not name what writes that position]"
+[ -n "$ACC22" ] && [ -z "$acc22e" ] && ok "A5 the accepted positions name execute's own position, and what writes it" \
+                                   || bad "A5 the accepted positions name execute's own position, and what writes it ($acc22e)"
 
 # --- the material leg -----------------------------------------------------
 MAT22="$(pclause22 'material')"
@@ -3261,6 +3285,57 @@ if [ -n "$MAT22" ] && printf '%s' "$MAT22" | grep -qiE 'understand [^.]*none|no 
   ok "the material leg says understand has none"
 else
   bad "the material leg says understand has none"
+fi
+# A6 -- WHEN the material leg is stated, the engine shall name `plan.md`, its Criteria Coverage table
+# and the conformance manifest as what `execute` feeds on, and shall state that the manifest is not
+# required where Conform was skipped. Generated in the Conform phase from understand.md's Verifiable
+# Criteria.
+#
+# Four legs, not one. `plan.md` and `Criteria Coverage` are BOTH already in this clause on verify's
+# account, so neither can carry this row: what is new is the manifest, and the exemption that keeps the
+# manifest from being demanded where Conform was legitimately skipped -- one of whose three cases is an
+# ordinary full-path task with no automated criteria, so the exemption is not a quick-path escape. The
+# exemption is the leg most likely to be dropped as a caveat, and dropping it turns a lawful task into a
+# refused one.
+mat22e=""
+printf '%s' "$MAT22" | grep -qE '`execute`' \
+  || mat22e=" [the material leg does not name execute at all]"
+# The artifact's FULL NAME, not a bare `manifest` -- which was HOLLOW, proven by mutation: the exemption
+# leg below needs its own sentence naming the manifest ("The manifest is not required where Conform was
+# legitimately skipped"), so deleting the manifest from what execute FEEDS ON left this leg green on the
+# exemption's mention. Two legs about the same noun can only discriminate on what each binds it to.
+#
+# Binding it to `execute` within a sentence was tried first and does not work: `plan.md` carries a period,
+# so a `[^.]*` window cannot reach past it, and a `[^;]*` one runs straight into the exemption sentence.
+# The full name is where the artifact is INTRODUCED; the exemption refers back to it as "the manifest".
+# Residual risk, stated rather than hidden: a rewrite that spelled the full name only in the exemption
+# would satisfy this leg with the feeds-on mention gone. The mutation battery is what catches that, and
+# it is cheaper than a key elaborate enough to make it unreachable.
+printf '%s' "$MAT22" | grep -qi 'conformance baseline manifest' \
+  || mat22e="$mat22e [it does not name the conformance baseline manifest as what execute feeds on]"
+printf '%s' "$MAT22" | grep -qiE '(manifest|it) is not required|no manifest is required|unless Conform|where Conform was skipped' \
+  || mat22e="$mat22e [it does not exempt the manifest where Conform was legitimately skipped]"
+# A6b -- the leg requires nothing of a level that produces nothing. Found in the Verify phase: the leg
+# demanded `understand.md` of every run, and an Auto task legitimately has none (it skips Understand and
+# plans inline), so the engine refused at its second phase every task on a path its own map promises
+# works. The exemption is the leg's own principle -- a phase checks what it CONSUMES -- and stating it is
+# what makes the Auto branch each command documents a branch that can actually be reached.
+printf '%s' "$MAT22" | grep -qiE 'Auto[^.]*(inline|consumes nothing|requires nothing)|(inline|consumes nothing|requires nothing)[^.]*Auto' \
+  || mat22e="$mat22e [it does not waive the artifact at Auto, so the level's own documented branch is refused by this leg]"
+[ -n "$MAT22" ] && [ -z "$mat22e" ] && ok "A6 the material leg names what execute feeds on, and exempts a skipped Conform" \
+                                    || bad "A6 the material leg names what execute feeds on, and exempts a skipped Conform ($mat22e)"
+
+# A6c -- the autonomy read is stated BEFORE the material leg, because the leg's requirement depends on the
+# level. An ORDER, which presence greps cannot see, so it is read by byte offset the way this block already
+# reads verify's gather-before-judge. Not cosmetic: reversed, a run tests for papers before it knows
+# whether this level produces any, which is exactly the refusal the waiver above exists to prevent -- and a
+# reader who meets the leg first learns the requirement and never reaches the exception.
+O_AUT22="$(poff22 "$PBLK22" 'The autonomy read')"
+O_MAT22="$(poff22 "$PBLK22" 'The material leg')"
+if [ -n "$O_AUT22" ] && [ -n "$O_MAT22" ] && [ "$O_AUT22" -lt "$O_MAT22" ]; then
+  ok "A6c the level is read before the leg whose requirement it decides"
+else
+  bad "A6c the level is read before the leg whose requirement it decides (autonomy at ${O_AUT22:-absent}, material at ${O_MAT22:-absent})"
 fi
 
 # --- what a disagreement produces ----------------------------------------
@@ -3392,6 +3467,28 @@ for s in $C22_SKILLS; do
     bad "$s records the phase before doing the phase's work"
   fi
 done
+
+# A5b -- WHERE a phase is given an accepted position, the protocol that phase is run from shall route to
+# the precondition at its ENTRY, not only where it closes. Added with execute's row: a position accepted
+# and papers insisted on, with nothing at the phase's entry that reads them, is a rule whose only reader
+# is the document that declares it.
+#
+# Scoped to the text ABOVE the first `##` heading, which is where the three sibling protocols put this
+# route -- and asserted for execute.md ALONE, deliberately. The same leg run as a loop over all four
+# would redden `global/protocols/verify.md`, whose route is real but sits in step 1 under `## Steps`; a
+# leg that fails on a document doing the right thing is a leg that gets deleted rather than obeyed. That
+# was measured, not guessed: the prover ran this shape and reported exactly that caveat.
+EXE22="$(awk '/^## /{exit} {print}' "$ROOT/global/protocols/execute.md" 2>/dev/null | tr '\n' ' ')"
+exe22=""
+[ -n "$EXE22" ] || exe22=" [execute.md has no text above its first heading, so nothing was examined]"
+printf '%s' "$EXE22" | grep -q 'Resolving the task' \
+  || exe22="$exe22 [its entry does not route to the ladder that resolves the task]"
+printf '%s' "$EXE22" | grep -q "$PRECOND22" \
+  || exe22="$exe22 [its entry does not route to the phase precondition, so the row execute was given has no reader]"
+printf '%s' "$EXE22" | grep -qiE 'no command|only carrier' \
+  || exe22="$exe22 [it does not say the manual run is the only carrier, which is what makes a check with no command performable]"
+[ -z "$exe22" ] && ok "A5b execute.md routes to the precondition at its entry, and says what performs it" \
+                || bad "A5b execute.md routes to the precondition at its entry, and says what performs it ($exe22)"
 
 # --- F1b: the rule must reach the layer that is the documented manual fallback -------------
 # The sibling ladder is cited in BOTH layers — each protocol head and each command. This one was cited
@@ -9814,11 +9911,18 @@ grep -qiE 'overran|over-?ran' "$NOTE49" 2>/dev/null \
               || bad "control: the note keeps its recommendation and was not demoted ($f49)"
 
 echo ""
-echo "== C50: the engine names the two places where stopping pays, and speaks only where it does =="
+echo "== C50: the engine names the two places where stopping pays, and says so on every sitting =="
 # Conformance: the session cut rides the write that advances the sheet to the NEXT position at the close of
 # Understand and at the close of Execute, and announces only where this session has already become expensive.
 # Generated in the Conform phase from understand.md's Verifiable Criteria; each row names the criterion it
-# comes from. C49 remains the earlier guard over the same bullet and is re-keyed by this task's Step 1, not here.
+# comes from. C49 remains the earlier guard over the same bullet.
+#
+# THE BLOCK'S RULE CHANGED under it, and this header is the corrected one. The title spoke of the engine
+# speaking "only where stopping pays"; both closes now state their line on EVERY sitting, cheap or long,
+# and what is guarded is the line's fixed form (A7), the retired gate's absence everywhere installed (A8),
+# the positive rule that emits it (A3'), the routing surfaces (A10), the map's dropped silence claim (A11)
+# and the line's single home (A12). A conformance header describing the retired rule is the first thing a
+# reader trusts and the last thing anyone edits.
 BL50="$ROOT/global/protocols/backlog.md"
 MAP50="$ROOT/global/protocols/lifecycle.md"
 
@@ -9849,22 +9953,37 @@ else
   [ -z "$a50" ] && ok "both boundaries are named, each with the position its close writes" \
                 || bad "both boundaries are named, each with the position its close writes ($a50)"
 
-  # A3 -- WHILE the session has not crossed the context-cost threshold, the engine shall write the position
-  # and announce no cut. The gate and its negative are paired on one line for the reason C49's own b49 row
-  # records: read as two independent legs over the region, the negative is satisfied by the re-entry sentence
-  # ("nothing is announced") which is about a different condition entirely, so the gate could be inverted to
-  # announce on cheap sessions and the row would stay green on someone else's sentence.
-  b50=""
-  # Keyed on the MECHANISM the positive statement supplies and the cheap branch does not. The first draft
-  # accepted a bare `expensive`, which its own partner sentence ("Where the session has not yet become
-  # expensive") satisfies -- so the positive gate could be deleted outright and this leg stayed green on the
-  # negative one, leaving the pair asserting half of itself.
-  printf '%s' "$CP50" | grep -qiE 'context-cost note|cost note fires' \
-    || b50=" [the bullet states no gate: the announcement is not conditioned on a measured cost signal the session already holds]"
-  printf '%s' "$CP50" | grep -qiE '(has not|not yet|below|without having) [^.]*(crossed|become expensive|expensive|threshold)[^.]*(nothing is announced|no announcement|announces nothing|is silent|without announcing)' \
-    || b50="$b50 [the below-threshold branch does not itself carry the verdict that nothing is announced]"
-  [ -z "$b50" ] && ok "the announcement is gated on the session having become expensive, and the cheap branch carries its own verdict" \
-                || bad "the announcement is gated on the session having become expensive, and the cheap branch carries its own verdict ($b50)"
+  # A3's rule is RETIRED here, in the same change that removes the prose it asserted. `b50` required the
+  # announcement to be gated on a measured cost signal and the cheap branch to carry its own verdict of
+  # silence; both closes now state their line on every sitting, so the row would have pinned the engine to
+  # a condition it no longer has -- and pinned it GREEN, which is worse than not guarding it, because the
+  # removal could not have shipped without the suite objecting. Its replacement is A7's `a7_50` (the line's
+  # fixed form, availability as a fact) together with A8's `GONE50` (the gate stated nowhere). The rows are
+  # not silently dropped: this comment is what stops the next reader finding a retired key in the frozen
+  # manifest and concluding a leg went missing.
+  # A3' -- WHILE any sitting closes, cheap or long, the engine shall state that the line is owed. The
+  # POSITIVE half of the replacement, and it was missing: A8 counts zero statements of the retired gate,
+  # A7 reads the form paragraph for the line's elements, A11 forbids the map's silence claim -- and
+  # nothing at all read the paragraph that says WHEN the line is emitted. Its single home could be
+  # deleted outright, leaving the engine with a form for a line and no rule requiring it, and every row
+  # of C49, C50 and C63 stayed green.
+  #
+  # This is the class the project's own coverage checklist calls the most expensive: a rule that replaces
+  # one behaviour with another needs both halves, because absence alone is satisfied by deleting the
+  # passage and writing nothing. The retired `b50` did pair them; its replacements kept only the negative
+  # side, which is how a pairing gets lost in a re-key rather than in an omission.
+  #
+  # Three legs, and the third is not decoration: without `no threshold`, the paragraph can shrink to a
+  # bare adverb that no longer denies the thing it replaced.
+  a3p_50=""
+  printf '%s' "$CP50" | grep -qiE '(state|states|carry|carries|end with)[^.]*(on|at) every sitting|every sitting[^.]*(included|cheap)' \
+    || a3p_50=" [nothing says the line is owed on every sitting, so the rule that emits it has no home]"
+  printf '%s' "$CP50" | grep -qiE 'short ones included|cheap or expensive|cheap ones included|the short ones' \
+    || a3p_50="$a3p_50 [the short sitting is not named as included, which is the case the retired rule excluded]"
+  printf '%s' "$CP50" | grep -qiE 'no threshold|nothing (for the close )?to measure|nothing to measure' \
+    || a3p_50="$a3p_50 [it does not deny the threshold, so the paragraph can shrink to an adverb that no longer replaces anything]"
+  [ -z "$a3p_50" ] && ok "A3' the line is owed on every sitting, the short ones named, and the threshold denied" \
+                   || bad "A3' the line is owed on every sitting, the short ones named, and the threshold denied ($a3p_50)"
 
   # A5 -- WHERE the write advances the sheet to EXECUTE at Conform's close, the engine shall announce no cut.
   # Written down because it is the one boundary a reader would assume symmetric: three closes write a next
@@ -9882,89 +10001,74 @@ else
   [ -z "$c50" ] && ok "the write that closes Conform is named as the boundary that does not announce" \
                 || bad "the write that closes Conform is named as the boundary that does not announce ($c50)"
 
-  # A6 -- The announcement shall carry the recommendation, its reason and the resume pointer, and shall
-  # request no input.
-  #
-  # Read over the FORM PARAGRAPH ALONE, not over the whole clean-pass region, and that narrowing is the row.
-  # Every one of these four legs has a second satisfier elsewhere in the region: "asks nothing" and "no
-  # approval is sought" sit in the first paragraph, and so does "the reason it rides on these writes" -- both
-  # inherited from the earlier rule, both about a different sentence. Keyed on the region, this row was green with the
-  # form's own ban deleted, which a mutation caught and the row's first draft did not: the trap was named in
-  # this very comment and the code walked into it anyway. The narrowing is what makes the four legs be about
-  # the paragraph that must exist rather than about prose that already existed.
+  # A6's rule is RETIRED here for the same reason as A3's, and by the same change. `d50` required the
+  # recommendation FIRST; the line is now a fact and carries no recommendation at all, deliberately, until
+  # the cost note reaches the phase. Two of its legs were real coverage of obligations that survive -- that
+  # the line requests no input, and that it is short -- so they are CARRIED FORWARD into A7's row below
+  # rather than lost with the key that held them. `FORM50` stays: A7 reads the same paragraph. The row
+  # itself is GONE from this file rather than standing beside A7.
   FORM50="$(printf '%s' "$CP50" | awk '/\*\*The form is fixed/{f=1} f&&/^[[:space:]]*$/{exit} f')"
-  d50=""
+  # A7 -- WHEN either close writes the next position, the engine shall state that the close ends with one
+  # fixed line carrying cut availability, the position the sheet now declares, and where the next session
+  # resumes. Generated in the Conform phase from understand.md's Verifiable Criteria.
+  #
+  # Read over the FORM PARAGRAPH ALONE, for the reason d50's comment records at length: every element of a
+  # form has a second satisfier somewhere in this region, and keyed on the region this row would be green
+  # with the form's own requirement deleted. `d50` above is the RETIRED form -- recommendation-first -- and
+  # is GONE from this file. The two coexisted only between Conform and Step 3 of the change that wrote this
+  # row, which is what the baseline manifest records; a comment claiming they still stand beside each other
+  # would send the next reader looking for a row that is not here.
+  #
+  # `cut available` is the line's own marker and appears nowhere else in the engine, which is what makes it
+  # a discriminator and also what makes A12's home count possible. The fact-not-advice leg is the decision
+  # itself (D2): without it the recommendation walks back in as soon as someone reads the absence as an
+  # omission, which is why the deliberateness leg is here too -- the same guard c50 puts on Conform's
+  # chosen silence.
+  a7_50=""
   if [ -z "$FORM50" ]; then
-    d50=" [the bullet states no form paragraph for the announcement at all]"
+    a7_50=" [the bullet states no form paragraph for the close's line at all]"
   else
-    printf '%s' "$FORM50" | grep -qiE 'recommend' \
-      || d50=" [the form does not name the recommendation as the announcement's first element]"
-    # Keyed on the reason BOUND TO its length, not on the bare word: the paragraph's own closing sentence
-    # says a narrating close "buries its own reason", so a leg reading `reason` alone stays green with the
-    # requirement deleted. Same disease as the no-input leg above, found by reading the paragraph rather
-    # than by the mutation, which is the cheaper of the two ways to find it.
-    printf '%s' "$FORM50" | grep -qiE 'reason[^.]*one sentence|one sentence[^.]*reason' \
-      || d50="$d50 [it does not require the announcement to give its reason in one sentence]"
-    # `one sentence` is deliberately NOT an alternative here -- it is the leg above. A shortness leg that
-    # accepts it is satisfied by its neighbour and guards nothing of its own.
-    printf '%s' "$FORM50" | grep -qiE 'short|brief|few lines' \
-      || d50="$d50 [it does not require the announcement to be short]"
-    # The third element. Named in this row's own pass message from the first draft and guarded by nothing,
-    # which is the same over-claim the label of a row is most likely to carry: the elements a reader counts
-    # in the message are not the legs the row runs.
-    printf '%s' "$FORM50" | grep -qiE 'where the next session picks up|pointer to the sheet' \
-      || d50="$d50 [it does not name where the next session resumes as the announcement's third element]"
+    printf '%s' "$FORM50" | grep -qi 'cut available' \
+      || a7_50=" [the form does not carry the line's own marker, so no surface can route to it and nothing can count its home]"
+    printf '%s' "$FORM50" | grep -qiE 'fact, not advice|a fact and not advice|not advice' \
+      || a7_50="$a7_50 [it does not say the line is a fact rather than advice]"
+    printf '%s' "$FORM50" | grep -qiE 'position the sheet now declares|position now declared|the position it has just written' \
+      || a7_50="$a7_50 [it does not name the position the sheet now declares as an element of the line]"
+    # TWO legs, because the alternation held two different facts and mutation showed only one of them was
+    # guarded: deleting "a pointer to the sheet's `next action:` and never a copy of it" left the row green
+    # on the surviving "where the next session picks up", so the line could have grown a COPY of the resume
+    # text and nothing objected. A copy is the failure -- the sheet is the one place that line lives, and an
+    # announcement carrying its own duplicate is state kept in two places at once.
+    printf '%s' "$FORM50" | grep -qiE 'where the next session picks up|next action:' \
+      || a7_50="$a7_50 [it does not name where the next session resumes as an element of the line]"
+    printf '%s' "$FORM50" | grep -qiE 'pointer to the sheet|never a copy' \
+      || a7_50="$a7_50 [it does not require that element to be a pointer rather than a copy of the sheet's line]"
+    printf '%s' "$FORM50" | grep -qiE 'deliberately absent|absence is a decision|until the (context-)?cost note reaches' \
+      || a7_50="$a7_50 [it does not say the recommendation is deliberately absent, so a later reader reads the absence as an omission and repairs it]"
+    # The two legs CARRIED FORWARD from the retired `d50`. They guarded obligations the new rule keeps, and
+    # they are here because the key that held them is gone: dropped with it, the form could start asking for
+    # an input or grow to a paragraph and nothing would object. `one sentence` is deliberately not an
+    # alternative to the shortness leg -- d50's own comment records that a shortness leg accepting it is
+    # satisfied by its neighbour and guards nothing of its own.
     printf '%s' "$FORM50" | grep -qiE 'requests? no input|no input is (requested|sought)' \
-      || d50="$d50 [it does not forbid the close from requesting an input]"
+      || a7_50="$a7_50 [it does not forbid the close from requesting an input]"
+    printf '%s' "$FORM50" | grep -qiE 'short|brief|few lines' \
+      || a7_50="$a7_50 [it does not require the line to be short]"
   fi
-  [ -z "$d50" ] && ok "the announcement's form is named: recommendation, reason, resume pointer, and no request" \
-                || bad "the announcement's form is named: recommendation, reason, resume pointer, and no request ($d50)"
+  [ -z "$a7_50" ] && ok "A7 the close's line is fixed: availability as a fact, the position now declared, and where the next session resumes" \
+                  || bad "A7 the close's line is fixed: availability as a fact, the position now declared, and where the next session resumes ($a7_50)"
 fi
 
-# A7 -- IF a surface other than the backlog protocol states the rule, THEN it shall route to it and not
-# restate it. COUNTED for the reason C49's d49 row already gives: the anti-drift design is that a second
-# statement cannot exist, and a check asking only whether the rule is present anywhere is satisfied by every
-# copy at once. The gate is the fact that selects a STATEMENT rather than a citation -- a document that
-# merely routes to the rule never has to name what makes a session expensive.
+# `e50` is RETIRED here: it required the gate to be stated in exactly ONE file, and the gate is now stated
+# in none. A8's `GONE50` above is that count with the direction inverted AND the reach widened, which is
+# why this is a replacement rather than a deletion. `GATE50` itself survives -- A8 reads it, and the pattern is the
+# retired wording's definition, which is exactly what an absence check needs.
 GATE50='(become|becomes|has become) expensive|crossed the (context-)?cost threshold'
-# The reach is the DISTRIBUTION boundary, not just the engine's own source: `template/` is what an adopting
-# project receives and `docs/` is what its operator reads, so a copy landing in either makes the invariant
-# false on the surfaces furthest from anyone who would notice. Neither carries protocol prose today, which
-# is exactly when a boundary is cheap to draw.
-HOME50="$(grep -rliE "$GATE50" "$ROOT/global/protocols/" "$ROOT/global/skills/" "$ROOT/template/" "$ROOT/docs/" 2>/dev/null | wc -l | tr -d ' ')"
-e50=""
-[ "$HOME50" -eq 1 ] || e50=" [the gate is stated in $HOME50 engine, template or docs files, not exactly one]"
-grep -qiE "$GATE50" "$BL50" 2>/dev/null || e50="$e50 [the backlog protocol, which is its home, does not state it]"
-[ -z "$e50" ] && ok "the gate is stated in the backlog protocol and nowhere else" \
-              || bad "the gate is stated in the backlog protocol and nowhere else ($e50)"
-
-# A1+A2, on the surfaces that PERFORM the act rather than the prose that describes it. Every other row in
-# this block reads backlog.md or lifecycle.md, so the whole mechanism could be deleted from the three
-# surfaces a session actually follows and the suite would not move -- which is how the Understand half of it
-# shipped with no guard at all. The precedent is one block up and explicit: C49's e49 guards this for the
-# audit command, on the reasoning that a surface which marches on defeats a cut stated only in prose.
-#
-# Two legs pulling opposite ways, the same pair e49 uses: the surface must carry the ACT, and must NOT carry
-# the RULE. The gate leg is deliberately keyed on the routing paraphrase (`grown costly`) and never on the
-# canonical wording -- e50 above requires the canonical gate to exist in exactly ONE file, so a surface that
-# satisfied this leg with the home phrasing would turn that row red. The two rows are a pair: this one says
-# the condition must be named here, e50 says it must be specified only there.
-for s50 in "global/protocols/understand.md" "global/skills/understand/SKILL.md" "global/protocols/execute.md"; do
-  g50=""
-  grep -qiE 'close the phase|the close of Execute' "$ROOT/$s50" 2>/dev/null \
-    || g50=" [it names no close that advances the sheet to the next position]"
-  grep -qiE 'end the turn|ends the turn' "$ROOT/$s50" 2>/dev/null \
-    || g50="$g50 [its close does not say the turn ends there]"
-  grep -qiE 'grown costly' "$ROOT/$s50" 2>/dev/null \
-    || g50="$g50 [its close is not gated on the sitting having grown costly]"
-  grep -qiE '(become|becomes|has become) expensive|crossed the (context-)?cost threshold' "$ROOT/$s50" 2>/dev/null \
-    && g50="$g50 [it states the gate in the home protocol's own wording instead of routing to it]"
-  grep -q 'next action:' "$ROOT/$s50" 2>/dev/null \
-    && g50="$g50 [it restates the announcement's own obligation instead of routing to it]"
-  [ -z "$g50" ] && ok "$s50 carries the gated close and routes the rule" \
-                || bad "$s50 carries the gated close and routes the rule ($g50)"
-done
-
+# The `s50` loop is RETIRED here and replaced by A10 below, which sweeps the same three surfaces. Its
+# gate leg required each of them to carry the routing paraphrase `grown costly`, so it asserted the very
+# condition this change removes -- and its own comment explains that the paraphrase was chosen to keep
+# e50's home count at one, a pairing that no longer has a partner. A10 keeps the two-legs-pulling-opposite-
+# ways shape it shared with `e49`, and re-points the gate leg from requiring the condition to forbidding it.
 # A4, on the command that lands in the re-entry the close of Understand creates. The plan command is the
 # only one of the three whose whole share of this mechanism is arriving to find the work already done, so
 # it is guarded on that and not on a close it does not have.
@@ -10019,6 +10123,155 @@ grep -qiE 'close of Execute|Execute closes' "$MAP50" 2>/dev/null \
   || f50="$f50 [it does not name the close of Execute as the other]"
 [ -z "$f50" ] && ok "the map names three sittings and both boundaries" \
               || bad "the map names three sittings and both boundaries ($f50)"
+
+# A8 -- IF any installed file conditions the announcement on the session having become expensive, THEN the
+# check shall fail. Generated in the Conform phase from understand.md's Verifiable Criteria.
+#
+# This is `e50` INVERTED, not a second copy of it: e50 requires exactly one statement of the gate, this
+# row requires none. Both are here through Conform on purpose -- one green, one red -- so the baseline
+# shows which rule replaced which; Step 3 retires e50 in the same change that turns this green. The
+# reach is e50's own, and for its reason: `template/` is what an adopting project receives and `docs/` is
+# what its operator reads, so a gate surviving in either makes the invariant false where nobody looks.
+#
+# THE REACH is A12's, not the retired `e50`'s, and the widening is the row. `e50` swept four directories
+# and this row inherited them while its own message claims "no installed file" -- and `global/CLAUDE.md`
+# IS installed (`install.sh:427` fetches it to `~/.claude/CLAUDE.md`, the file read on every turn of every
+# project), as are `global/workflows/`, `global/ralph/`, `global/hooks/`, `global/scripts/` and
+# `README.md`. So the retired gate could be written back into the most-read installed file in the engine
+# with this row green, which is the one thing the decision behind it was taken to prevent. A12 twelve
+# rows down had already chosen the wider reach; two sibling rows of one change disagreeing about what
+# "installed" means is how a guard comes to claim a reach it does not have.
+#
+# THE PATTERN carries the routing paraphrases too, and that is the second half. The retired condition was
+# written two ways: canonically here, and as `grown costly` / `still cheap` on the surfaces that routed to
+# it. A10 forbids the paraphrases on the three surfaces it sweeps -- and `global/skills/verify/SKILL.md`,
+# the fifth surface that carried the condition, is in no loop at all, so it could have regrown the gate in
+# paraphrase with every row green. Measured before widening: all three paraphrases have zero hits across
+# the installed surface, so this costs nothing today and closes the hole permanently.
+#
+# `grown expensive` is deliberately NOT in the pattern. `global/hooks/context-cost-note.py` opens with
+# "the session has grown expensive" -- that hook's whole subject IS session cost, it is legitimate, and
+# C49's `f49` control exists to keep it exactly as it is. A negative leg that reddens the file another
+# leg protects is a leg that will be deleted rather than obeyed.
+GATE50_ANY="$GATE50"'|grown costly|grew costly|still cheap'
+# The sweep roots are PROVEN to exist before the count is trusted. With `2>/dev/null` swallowing grep's
+# errors, a renamed or missing directory yields no hits, the count is zero, and a search that never
+# happened reports as a pass -- the failure mode an absence check is least able to notice, because its
+# green state and its broken state look identical.
+# ONE definition of "the installed surface", shared by A8 and A12 below. Two hand-rolled copies landed in
+# this change and disagreed -- A8 swept four directories, A12 swept `global/` plus README.md -- and the
+# narrower one is what let the retired gate survive in the most-read installed file. A concept written
+# out longhand twice is a concept that will be written out differently twice.
+INSTALLED50_1="$ROOT/global/"; INSTALLED50_2="$ROOT/template/"; INSTALLED50_3="$ROOT/docs/"; INSTALLED50_4="$ROOT/README.md"
+GONEROOTS50="$INSTALLED50_1 $INSTALLED50_2 $INSTALLED50_3 $INSTALLED50_4"
+g8_50=""
+for r50 in $GONEROOTS50; do
+  [ -e "$r50" ] || g8_50="$g8_50 [the sweep root $r50 does not exist, so its absence of hits proves nothing]"
+done
+GONE50="$(grep -rliE "$GATE50_ANY" "$INSTALLED50_1" "$INSTALLED50_2" "$INSTALLED50_3" "$INSTALLED50_4" 2>/dev/null | wc -l | tr -d ' ')"
+[ "$GONE50" -eq 0 ] || g8_50="$g8_50 [$GONE50 installed file(s) still state the retired gate or one of its paraphrases]"
+if [ -z "$g8_50" ]; then
+  ok "A8 no installed file gates the close's line on the session having become expensive"
+else
+  bad "A8 no installed file gates the close's line on the session having become expensive ($g8_50)"
+fi
+
+# A10 -- WHERE a surface other than the backlog protocol carries a close, that surface shall state the
+# fixed line, shall not gate it on cost, and shall not restate the rule. Generated in the Conform phase
+# from understand.md's Verifiable Criteria.
+#
+# The `s50` loop re-keyed, and running beside it through Conform for the same reason A8 runs beside e50.
+# Four legs, two pulling each way -- the shape `s50` and `e49` already use: the surface must carry the
+# ACT (a close that ends the turn and names the line), and must NOT carry the RULE. The marker leg is
+# deliberately NEGATIVE here: `cut available` is the line's own wording and A12 requires exactly ONE home
+# for it, so a surface satisfying its own leg with the canonical marker would turn A12 red. This row says
+# the line must be named here, A12 says it must be spelled only there.
+# THE LOOP IS DERIVED, not a list of three paths, and that is what makes the Observable true: the promise
+# is that "a fifth uncounted copy cannot grow", and a hard-coded list can only ever check the four copies
+# somebody already found by hand. Any installed file that carries a close is swept -- so a surface added
+# next year is checked the day it appears, with nobody remembering to add it here. The engine's own
+# discipline for exactly this is that a row is COMPUTED: the guard declares the rule that recognises a
+# member, never the members.
+#
+# A member is a file that names one of the two closes AND says a turn ends there -- the shape a surface
+# carrying a close has, and one no mere citation has. The home is excluded by name: it is where the line
+# is specified, so the negative legs below would refuse it by construction.
+# Case-INSENSITIVE, like the per-surface legs below. Written case-sensitive first, the derivation missed
+# `global/protocols/execute.md` outright -- its heading is `## The close of Execute`, capital T -- so the
+# sweep silently dropped a surface it was built to find, and the floor leg is what caught it. That is the
+# whole argument for the floor: a derived set that quietly selects too little looks exactly like a clean run.
+S10SET50="$(grep -rliE 'close the phase|the close of Execute' "$INSTALLED50_1" "$INSTALLED50_2" 2>/dev/null \
+  | while IFS= read -r c50f; do grep -qiE 'end the turn|ends the turn' "$c50f" 2>/dev/null && printf '%s\n' "${c50f#$ROOT/}"; done \
+  | grep -v '^global/protocols/backlog\.md$' | sort)"
+# The derivation must SELECT something, and the three surfaces already known to carry a close are the
+# floor. A derived sweep that silently matches nothing is the failure mode that replaces a stale list
+# with an empty one.
+n10_50="$(printf '%s\n' "$S10SET50" | grep -c . | tr -d ' ')"
+[ "$n10_50" -ge 3 ] \
+  && ok "A10 the close-carrying surfaces are derived, not listed ($n10_50 found)" \
+  || bad "A10 the close-carrying surfaces are derived, not listed (found $n10_50, expected at least the three known)"
+for s10_50 in $S10SET50; do
+  k50=""
+  grep -qiE 'close the phase|the close of Execute' "$ROOT/$s10_50" 2>/dev/null \
+    || k50=" [it names no close that advances the sheet to the next position]"
+  grep -qiE 'end the turn|ends the turn' "$ROOT/$s10_50" 2>/dev/null \
+    || k50="$k50 [its close does not say the turn ends there]"
+  grep -qiE 'fixed line|fixed cut line' "$ROOT/$s10_50" 2>/dev/null \
+    || k50="$k50 [its close does not say it ends with the fixed line]"
+  grep -qiE 'grown costly|still cheap' "$ROOT/$s10_50" 2>/dev/null \
+    && k50="$k50 [its close is still gated on the sitting having grown costly]"
+  grep -qi 'cut available' "$ROOT/$s10_50" 2>/dev/null \
+    && k50="$k50 [it spells the line out instead of routing to the one home that specifies it]"
+  grep -q 'next action:' "$ROOT/$s10_50" 2>/dev/null \
+    && k50="$k50 [it restates the close's own obligation instead of routing to it]"
+  [ -z "$k50" ] && ok "A10 $s10_50 states the fixed line and routes the rule" \
+                || bad "A10 $s10_50 states the fixed line and routes the rule ($k50)"
+done
+
+# A11 -- IF the lifecycle map claims the closes stay silent on a sitting that never grew costly, THEN the
+# check shall fail. Generated in the Conform phase from understand.md's Verifiable Criteria.
+#
+# Its own row rather than a leg of `f50`: f50 is about what the map must SAY (three sittings, both
+# boundaries) and this is about what it must no longer say, so a shared row would report a true claim
+# missing when a false one is merely present. The map is the one surface that asserts the silence as a
+# property of the closes rather than routing to it, which is why it needs a leg and the other routers do
+# not -- theirs is A10's.
+# Both inflections, and the reason is a gap mutation found: the pattern read `grew costly` alone, which is
+# the wording the MAP happened to use ("on a sitting that never grew costly") -- while every routing surface
+# said `grown costly`. So the map could have regrown the claim with one word changed and this row stayed
+# green. A negative leg is only as wide as the ways the claim can be written, which is why the widening
+# belongs here rather than in a future reader's memory. `stay silent` is the claim's own verb, keyed loosely
+# on purpose: it catches a re-add that avoids the cost words altogether.
+# The file is PROVEN READABLE before its silence is believed. An absence check over a path that cannot be
+# read finds nothing and reports green, so a renamed or deleted map would certify the very claim this row
+# forbids -- and this is the only row standing between the map and a re-added cost condition.
+a11_50=""
+[ -r "$MAP50" ] || a11_50=" [the lifecycle map cannot be read, so its silence proves nothing]"
+grep -qiE 'grew costly|grown costly|still cheap|stays? silent (on|while|where)' "$MAP50" 2>/dev/null \
+  && a11_50="$a11_50 [the map still claims the closes stay silent on a sitting that never grew costly]"
+[ -z "$a11_50" ] && ok "A11 the map no longer claims the closes stay silent on a sitting that never grew costly" \
+                 || bad "A11 the map no longer claims the closes stay silent on a sitting that never grew costly ($a11_50)"
+
+# A12 -- The engine shall count the homes of the announcement obligation, and the count shall be exactly
+# one. Generated in the Conform phase from understand.md's Verifiable Criteria; it is the remedy the
+# Icebox entry on this gap was taken for -- nothing counted the obligation's homes, though the map
+# asserts it lives in one place "and nowhere else", and that absent count is why four restatements of the
+# retired condition were found by hand rather than by this suite.
+#
+# COUNTED, not merely found, for the reason C22's and C43's home guards both give: the anti-drift design
+# is that a second statement cannot exist, and a check asking only whether the rule is present anywhere
+# is satisfied by every copy at once. Keyed on the line's own marker, which is what selects a STATEMENT
+# of the line over a surface that merely routes to it -- a router never has to spell the line out, which
+# is exactly what A10's negative leg requires of the three of them.
+MARK50='cut available'
+# The SAME installed surface A8 sweeps, by the same four names: the two rows count opposite things over
+# one reach, and a reach that drifts between them is how one row came to promise what the other did not.
+HOMEOB50="$(grep -rli "$MARK50" "$INSTALLED50_1" "$INSTALLED50_2" "$INSTALLED50_3" "$INSTALLED50_4" 2>/dev/null | wc -l | tr -d ' ')"
+l50=""
+[ "$HOMEOB50" -eq 1 ] || l50=" [the close's line is spelled out in $HOMEOB50 installed files, not exactly one]"
+grep -qi "$MARK50" "$BL50" 2>/dev/null || l50="$l50 [the backlog protocol, which is its home, does not spell it out]"
+[ -z "$l50" ] && ok "A12 the close's line has exactly one home, and it is the backlog protocol" \
+              || bad "A12 the close's line has exactly one home, and it is the backlog protocol ($l50)"
 
 # C51 — a discovery is owned by the work that found it, killed with a written reason, or staged in that
 # work's own papers. Generated in the Conform phase from understand.md's Verifiable Criteria.
@@ -13355,6 +13608,239 @@ EOF62
                   || bad "A8 the merged template names the case that omits its review section:$a8_62"
 
 fi
+
+echo "== C63: a phase reads how much supervision the task was granted, and says what it changes there =="
+# Conformance: the supervision level is written at activation and, today, read by nothing -- a task marked
+# Supervised runs exactly like one marked Auto. Generated in the Conform phase from understand.md's
+# Verifiable Criteria; each row names the criterion it comes from. One row is a CONTROL in the sense
+# C48/C49 already use: it pins behaviour this task must NOT make reachable, so it is green from the start
+# by construction rather than by achievement.
+BL63="$ROOT/global/protocols/backlog.md"
+MAP63="$ROOT/global/protocols/lifecycle.md"
+C63_SKILLS="understand plan verify"
+PRECOND63="The phase precondition"
+
+# The rule's own block and one bolded clause of it. A local pair rather than C22's, so this block stands
+# on its own -- the same reason C22 gives for defining `poff22` instead of reusing C14's. The narrowing to
+# a clause is not stylistic: five facts share this block, and a block-wide grep lets any one of them stand
+# in for any other, which is the failure this harness has now caught eight times.
+PBLK63="$(awk -v h="^### $PRECOND63" '$0 ~ h {f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^#+ /){f=0} f' "$BL63")"
+pclause63() { printf '%s\n' "$PBLK63" | awk -v s="$1" '/^- \*\*/{ if(g) exit; g=($0 ~ s) } g' | tr '\n' ' '; }
+
+# A1a -- the home. WHEN a phase command states its step 2, the engine shall state that the command reads
+# the task's `autonomy:` line and names the level and its source. This is the half that lives in the
+# protocol; the per-command half is A1b below.
+#
+# The LEAD is asserted with it, and that is not tidiness: the block opens by saying a command tests "two
+# things", and a third bullet landing under a lead that still says two is a document contradicting itself
+# on the count a reader uses to know whether they have read all of it. The two legs are paired on one row
+# because either alone certifies half a rule -- a bullet under a stale lead, or a corrected lead over a
+# bullet that was never written.
+AUT63="$(pclause63 'autonomy read')"
+a1_63=""
+[ -n "$PBLK63" ] || a1_63=" [the phase precondition block could not be located: every row below would be about an empty string]"
+[ -n "$AUT63" ] || a1_63="$a1_63 [the block states no autonomy-read bullet]"
+printf '%s' "$AUT63" | grep -q 'autonomy:' \
+  || a1_63="$a1_63 [the bullet does not name the sheet line the command reads]"
+printf '%s' "$AUT63" | grep -qiE 'names the level|state the level|says the level' \
+  || a1_63="$a1_63 [it does not oblige the command to name the level]"
+printf '%s' "$AUT63" | grep -qiE 'source it read|where it read|and the source' \
+  || a1_63="$a1_63 [it does not oblige the command to name the source it read the level from]"
+# Scoped to the LEAD PARAGRAPH -- the block's text before its first bullet -- and the narrowing is the
+# leg. Read over the whole block this was HOLLOW, proven by mutation: the form paragraph further down
+# says "The announcement carries three things and no more", about the close's line and not about what a
+# command reads, so the lead could be reverted to two and the row stayed green on a neighbour's count.
+# Worse than merely hollow: Step 3 rewrites that paragraph, so the leg would have flipped red later for
+# a reason having nothing to do with the fact it names.
+LEAD63="$(printf '%s\n' "$PBLK63" | awk '/^- \*\*/{exit} {print}' | tr '\n' ' ')"
+printf '%s' "$LEAD63" | grep -qiE '(reads|tests) (three|3) things' \
+  || a1_63="$a1_63 [the block's lead still says a command reads two things, so the count contradicts its own bullets]"
+[ -z "$a1_63" ] && ok "A1a the precondition states the autonomy read, and its lead counts it" \
+                || bad "A1a the precondition states the autonomy read, and its lead counts it ($a1_63)"
+
+# A1b + B1 + A3b -- the three commands perform it, in the step that runs at entry. Scoped to step 2 with
+# the shared `vstep` extractor, because the operative instruction the command reads at runtime is that
+# one: the protocol states the rule, the command performs it -- and a file-wide grep here is satisfied by
+# any later mention, which is the shape of a guard reporting on nothing.
+#
+# Three legs per command, each its own row, and the reason they are not one row with three legs is the
+# per-leg mutation rule: read as one, the level leg is satisfied by the default leg's own sentence, since
+# both name Guided. Kept separate, each has to be mutated on its own.
+for s63 in $C63_SKILLS; do
+  f63="$ROOT/global/skills/$s63/SKILL.md"
+  if [ ! -f "$f63" ]; then
+    bad "A1b $s63 reads the sheet's autonomy line at entry (file missing: $f63)"
+    bad "B1 $s63 says what the level changes for its own phase (file missing)"
+    bad "A3b $s63 defaults to Guided out loud where the sheet declares no level (file missing)"
+    continue
+  fi
+  st63="$(vstep "$f63" 2)"
+
+  # NOT a loose `autonomy`: the word will appear in the routing citation once the bullet exists, so a
+  # bare match is green on the pointer alone -- the command citing a rule it never performs. The FIELD
+  # with its colon is what a command that actually reads the sheet names.
+  # The second leg was `sheet|state.md` and had to go before the baseline was frozen: step 2 ALREADY
+  # names the task's sheet, for the phase precondition it has always tested, so that leg was green on a
+  # neighbour's word before a line of this task existed -- and would have gone on passing with the
+  # autonomy read deleted. What is actually new is the REPORT: the command tells the operator the level.
+  # Keyed on `the level`, which occurs nowhere in any of the three steps today.
+  r63=""
+  [ -n "$st63" ] || r63=" [step 2 could not be extracted]"
+  printf '%s' "$st63" | grep -q 'autonomy:' \
+    || r63="$r63 [it does not name the sheet line it reads]"
+  printf '%s' "$st63" | grep -qiE '(name|names|state|says|say)[a-z]* the level' \
+    || r63="$r63 [it reads the level without reporting it, so the operator cannot see what supervision the run assumed]"
+  # The SOURCE, restored as its own leg. At Conform this was keyed on a bare `sheet` and was hollow --
+  # step 2 already names the task's sheet for the precondition it has always tested -- so it was re-keyed
+  # to the report and the source obligation was left with no leg at all. That is a coverage loss, not a
+  # simplification: the protocol's bullet obliges the command to name where it read the level, and only
+  # the protocol half was guarded. Keyed on the phrase that binds the two, which no pre-existing sentence
+  # in any of the three steps carries.
+  printf '%s' "$st63" | grep -qiE 'sheet it was read from|read from the sheet|the sheet it came from' \
+    || r63="$r63 [it does not name where the level was read from, so a read level is indistinguishable from an assumed one]"
+  # The ROUTE, also its own leg. A2 forbids a second TABLE of the levels; nothing required the command to
+  # send the reader anywhere for them. Both halves of "route, restate nothing" are needed: the ban alone
+  # is satisfied by a command that states no levels and names no owner either, which leaves the reader to
+  # guess where the levels live.
+  printf '%s' "$st63" | grep -qiE 'lifecycle map' \
+    || r63="$r63 [it does not route the levels to the lifecycle map, so the ban on restating them sends the reader nowhere]"
+  [ -z "$r63" ] && ok "A1b $s63 reads the sheet's autonomy line at entry" \
+                || bad "A1b $s63 reads the sheet's autonomy line at entry ($r63)"
+
+  # B1. The branch that is pure discipline and therefore the first to be dropped: a level that changes
+  # nothing for this phase is still said, WITH that verdict. Without it a command silently omits the
+  # level exactly where the operator cannot tell omission from "nothing to report" -- and silence is not
+  # a check that happened, which is the rule this engine states about its own legs.
+  n63=""
+  printf '%s' "$st63" | grep -qiE 'changes nothing|nothing changes|no effect here|changes nothing here' \
+    || n63=" [it does not say what happens where the level changes nothing for this phase]"
+  [ -z "$n63" ] && ok "B1 $s63 says the level even where it changes nothing for its own phase" \
+                || bad "B1 $s63 says the level even where it changes nothing for its own phase ($n63)"
+
+  # A3b. The default, said out loud, per command. Two legs on one row on purpose: the level and the fact
+  # that it is a default. Keyed on `default` bound to Guided, because `Guided` alone occurs in any
+  # sentence about levels and would be green with the defaulting clause deleted -- the shape of hollow
+  # leg C50's comments record four of.
+  # PAIRED with the absent-level branch on one line, not a bare `Guided` -- which was HOLLOW in two of
+  # the three commands, proven by mutation: `plan` and `verify` both say "at Guided and Supervised
+  # nothing changes here" when reporting what the level changes for their own phase, so the default's own
+  # Guided could be deleted and the leg stayed green on that sentence. `understand` has no such phrase
+  # and would have caught nothing. The pair is the same shape A3a uses one row down, and for the reason
+  # b49's comment gives: the rule and its absence share every noun, so only the binding discriminates.
+  d63=""
+  printf '%s' "$st63" | grep -qiE '(no level|no autonomy|declares no|absent)[^.]*Guided' \
+    || d63=" [the absent-level branch does not itself name Guided as what the command proceeds as]"
+  printf '%s' "$st63" | grep -qiE 'default' \
+    || d63="$d63 [it does not say it is defaulting, so the operator cannot tell a read level from an assumed one]"
+  [ -z "$d63" ] && ok "A3b $s63 defaults to Guided out loud where the sheet declares no level" \
+                || bad "A3b $s63 defaults to Guided out loud where the sheet declares no level ($d63)"
+done
+
+# A3a -- the default's home. WHERE the task's sheet declares no autonomy level, the engine shall state
+# that the command proceeds as Guided and says that it is defaulting. Its own row rather than a leg of
+# A1a, so the bullet can lose the default without losing the read and the report says which went.
+a3_63=""
+printf '%s' "$AUT63" | grep -qiE 'no autonomy|declares no level|absent' \
+  || a3_63=" [the bullet states no branch for a sheet that declares no level]"
+printf '%s' "$AUT63" | grep -qiE '(no autonomy|declares no level|absent)[^.]*Guided|Guided[^.]*(no autonomy|declares no level|absent)' \
+  || a3_63="$a3_63 [the absent-level branch does not itself carry Guided as the verdict]"
+printf '%s' "$AUT63" | grep -qi 'default' \
+  || a3_63="$a3_63 [it does not oblige the command to say it is defaulting]"
+[ -z "$a3_63" ] && ok "A3a the absent-level branch is stated, and carries Guided as its own verdict" \
+                || bad "A3a the absent-level branch is stated, and carries Guided as its own verdict ($a3_63)"
+
+# A2 -- CONTROL. The engine shall state the autonomy levels in the lifecycle map and in no other installed
+# file, the skills included. Green from the start by construction: measured before a line of this task was
+# written, the map carries three rows and nothing else carries two.
+#
+# It is a control and still worth its row, because what makes the copy REACHABLE is this task: a command
+# that must act on the level is one sentence away from listing the levels, and the existing map-home guard
+# does not sweep `global/skills/` at all -- so a phase skill may state the whole table, the very three rows
+# whose loss in two copies bought that guard, with every row of it green. This row is the narrowest thing
+# that closes the reachable half without pre-judging a later task of this epic.
+#
+# Keyed on the TABLE and never on any mention of a level -- deliberately, and the reason is a decision
+# already frozen in this epic: a later row moves the Supervised per-step rule INTO the execute skill, so a
+# guard keyed on mentions would refuse that change. `rows-only` is the existing idiom for exactly this
+# distinction: a level LEADING a table cell is a description, a level in prose is a mention.
+rows63() { grep -icE "^\| *\*{0,2}(Auto|Guided|Supervised)\b" "$1" 2>/dev/null | tr -d ' '; }
+# NUL-delimited, never a word-split string. `$ROOT` is absolute and a checkout path may contain a space,
+# which an unquoted `for f in $SET63` splits into fragments that name no file -- and every fragment fails
+# the `[ -f ]` guard, so the loop `continue`s over all of them and the sweep examines NOTHING while
+# reporting green. A control that silently inspects zero files is worse than no control: it certifies the
+# copy it was built to forbid. Found by review, not by a failing run, because no failing run is possible.
+copies63=""
+while IFS= read -r -d '' f63b; do
+  [ -f "$f63b" ] || continue
+  [ "$(rows63 "$f63b")" -ge 2 ] && copies63="$copies63 ${f63b#$ROOT/}"
+done < <(
+  find "$ROOT/global/skills" -name 'SKILL.md' -print0 2>/dev/null
+  find "$ROOT/global/protocols" -name '*.md' ! -name 'lifecycle.md' -print0 2>/dev/null
+  find "$ROOT/template/.ai-flow" -name '*.md' -print0 2>/dev/null
+  find "$ROOT/docs" -name '*.md' -print0 2>/dev/null
+  printf '%s\0' "$ROOT/global/CLAUDE.md" "$ROOT/template/CLAUDE.md" "$ROOT/README.md"
+)
+# The sweep must have SEEN something. Zero files examined is the failure the NUL-delimiting prevents, and
+# a count is what proves the prevention rather than assuming it.
+seen63=0
+while IFS= read -r -d '' f63c; do [ -f "$f63c" ] && seen63=$((seen63+1)); done < <(
+  find "$ROOT/global/skills" -name 'SKILL.md' -print0 2>/dev/null
+  printf '%s\0' "$ROOT/global/CLAUDE.md" "$ROOT/README.md"
+)
+c2_63=""
+[ "$(rows63 "$MAP63")" -ge 2 ] || c2_63=" [the lifecycle map no longer states the levels as a table, so there is no home to route to]"
+[ -z "$copies63" ] || c2_63="$c2_63 [a second table of the levels lives in:$copies63]"
+[ "$seen63" -ge 3 ] || c2_63="$c2_63 [the sweep examined $seen63 files, so its verdict is about nothing]"
+[ -z "$c2_63" ] && ok "A2 control: the autonomy levels are a table in the lifecycle map and in no other installed file" \
+                || bad "A2 control: the autonomy levels are a table in the lifecycle map and in no other installed file ($c2_63)"
+
+# B2 -- IF the sheet declares Auto, THEN `verify` shall skip the multi-agent review and name the sheet as
+# what told it to. The unsourced assertion the ticket names: the skip clause states the level as a fact
+# about the task with no source at all, so a run cannot tell a level it read from one it assumed. Scoped
+# to the clause, because `Auto` and `sheet` both occur elsewhere in that command and a file-wide pair of
+# greps is satisfied by any two unrelated lines.
+SKV63="$ROOT/global/skills/verify/SKILL.md"
+# Scoped with `vstep` to step 5, the step that DECIDES the skip -- not by a file-wide grep for the
+# clause's words, which is what the frozen row asked for and what a first pass would write. The read
+# added to step 2 says "Auto skips the multi-agent review" and names `autonomy:` in the same sentence,
+# so a file-wide pair of greps is satisfied by that line alone and this row would be green with step 5
+# untouched: the leg would certify a source the skip clause never names. The narrowing implements the
+# frozen direction rather than weakening it -- what is asserted and which way is unchanged.
+N_SKIP63="$(grep -nE '^[0-9]+\. \*\*Decide whether to skip' "$SKV63" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/')"
+SKIP63="$([ -n "$N_SKIP63" ] && vstep "$SKV63" "$N_SKIP63")"
+b2_63=""
+[ -n "$SKIP63" ] || b2_63=" [the skip clause could not be located]"
+# A KEEP-leg, green from the start and named as such: the clause already says `Auto-level tasks`, and
+# what this row is about is the missing source. It stays because the repair rewrites this very sentence,
+# and a rewrite that named the sheet while dropping the level would satisfy the source leg alone.
+printf '%s' "$SKIP63" | grep -qiE 'Auto' \
+  || b2_63="$b2_63 [the skip clause does not name the Auto level]"
+printf '%s' "$SKIP63" | grep -qiE "sheet|state\.md|autonomy:" \
+  || b2_63="$b2_63 [it names no source for the level, so an assumed level is indistinguishable from a read one]"
+# The REACHABILITY of the branch, added in the Verify phase. The clause described a skip for a level whose
+# ordinary path never arrives at this phase, so as written it documented a run that does not happen; the
+# only way here is an operator asking for it directly, and a rule that does not say so reads as routine.
+printf '%s' "$SKIP63" | grep -qiE 'skips it|path itself skips|operator asked|asked for this phase' \
+  || b2_63="$b2_63 [it does not say the ordinary Auto path skips this phase, so it documents a run that never happens]"
+[ -z "$b2_63" ] && ok "B2 verify's skip names the sheet as what told it the level" \
+                || bad "B2 verify's skip names the sheet as what told it the level ($b2_63)"
+
+# B3 -- IF the sheet declares Auto, THEN `plan` shall plan inline and write no plan artifact. The one
+# level-dependent behaviour this command has, and the one a reader would otherwise have to infer from the
+# lifecycle map's table -- which is precisely the inference A2 stops the command from short-cutting by
+# copying the table. Both halves on one row: "inline" without "no artifact" leaves the command writing a
+# plan.md it was told not to write, which is the failure the level exists to prevent.
+SKP63="$ROOT/global/skills/plan/SKILL.md"
+st2_63="$(vstep "$SKP63" 2)"
+b3_63=""
+printf '%s' "$st2_63" | grep -qiE 'inline' \
+  || b3_63=" [it does not say an Auto task is planned inline]"
+printf '%s' "$st2_63" | grep -qiE 'no plan artifact|writes no plan|no plan\.md|without writing' \
+  || b3_63="$b3_63 [it does not say no plan artifact is written]"
+[ -z "$b3_63" ] && ok "B3 the plan command states that Auto plans inline and writes no artifact" \
+                || bad "B3 the plan command states that Auto plans inline and writes no artifact ($b3_63)"
+
+echo ""
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"

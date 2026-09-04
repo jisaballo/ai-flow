@@ -197,9 +197,9 @@ of them is the conversation. A phase that inherits a conversation it cannot use 
 candidate that is refused is the one whose next phase names prior conversation among its own inputs.
 
 The cut is a **habit**, not a gate. What performs the announcement is the write that advances the sheet to
-the position the next phase will declare, and what those writes announce, oblige, refuse to ask, and when
-they stay silent — including on a sitting that never grew costly — is stated in the backlog protocol
-(`### The phase precondition`) and nowhere else, including the operator's way out of it. The quick and auto
+the position the next phase will declare, and what those writes announce, oblige and refuse to ask is
+stated in the backlog protocol (`### The phase precondition`) and nowhere else, including the operator's
+way out of it. The quick and auto
 paths never reach those writes.
 
 What the cut destroys is the only thing to guard against: a conversation ends and takes with it every

@@ -254,20 +254,55 @@ stated here for the same reason the ladder is: three commands each holding their
 accepted positions is three copies that drift, and a command that accepts what another refuses is
 worse than no check at all.
 
-A phase command tests two things — after it has resolved its task, and before it does any of the
-phase's work. Both are read from the task's own sheet and its papers, never from what the session
-remembers.
+A phase command reads three things — after it has resolved its task, and before it does any of the
+phase's work. Two of the three are tested and can refuse the run; the third is read and reports. All
+three come from the task's own sheet and its papers, never from what the session remembers.
 
 - **Accepted positions.** `understand` runs on any position not later than its own: open below on
   purpose, because the first position the opening ceremony writes sits beneath it, and a leg that
   accepted only its own position would refuse the ordinary path — the one every task takes, straight
   from being opened into being understood. `plan` runs on UNDERSTAND or PLAN.
-  `verify` runs on EXECUTE or VERIFY.
+  `verify` runs on EXECUTE or VERIFY. `execute` runs on EXECUTE, which is the position `plan` writes
+  when Conform closes — the same write the clean-pass bullet below already describes, so the position it
+  accepts is one something in the chain actually produces. Its own command does not exist yet, and the
+  check is performed meanwhile by a manual run: the plan protocol names that run as the real carrier and
+  the command as a convenience over it, which is what keeps a position stated ahead of its command from
+  reading as unreachable and being deleted by the next editor who looks for who enforces it.
+- **The autonomy read.** The supervision level the task was granted is read from the same sheet, from its
+  `autonomy:` line, and it is read **before the material leg is tested** — not by preference: the level
+  decides what that leg may require, so a run that tested the material first would refuse an Auto task for
+  lacking papers an Auto task never produces. The read itself refuses nothing — a level is a fact about how
+  the run behaves, never a reason to stop it — and it still comes first, because the leg that does refuse
+  cannot be evaluated without it. The command **names the level and the
+  source it read it from**, then says what that level changes **for its own phase**; where it changes
+  nothing there, it says so, because a level left unsaid is indistinguishable from a level nobody looked
+  for, and the operator has nothing to correct. Where the sheet declares no level at all — a sheet
+  written before the field, or one whose line was lost — the command proceeds as **Guided** and says it
+  is defaulting, which is the map's own answer for an ambiguous classification; announcing the default is
+  what separates a level that was read from one that was assumed. The levels themselves belong to the
+  lifecycle map and are restated neither here nor in any command: what a command carries is the branch
+  its own phase takes, and a command one sentence away from listing the levels is how the map grows the
+  second copy its own home guard exists to prevent.
 - **The material leg.** A phase that consumes what an earlier one produced checks it is there: `plan`
   needs `understand.md`; `verify` needs `plan.md` and the Criteria Coverage table inside it, which is
-  the mapping the audit inherits instead of rebuilding. `understand` consumes no artifact and so has
-  no material leg — said out loud, because a silence is not a check that happened.
-- **On disagreement.** Either leg failing is reported before anything is written: the phase the sheet
+  the mapping the audit inherits instead of rebuilding — **except where the level says no artifact was
+  produced**: at **Auto** the plan is inline, so `plan` consumes nothing and its leg requires nothing, and
+  `verify` is not reached by that path at all. The exemption is the leg's own principle rather than a
+  concession to it: what a phase must find is what it *consumes*, which is why `understand` has no leg and
+  why an inline plan has nothing to be missing. Without it the engine refuses every Auto task at its
+  second phase while its own map promises that path runs — the level being read one bullet earlier is what
+  makes this decidable at all. `execute` needs that same `plan.md` and its
+  Criteria Coverage table, and the conformance baseline manifest as well — the frozen contract the work
+  is measured against, without which a step that quietly rewrote a stub has nothing to be caught by. The
+  manifest is not required where Conform was legitimately skipped, and which runs those are is the plan
+  protocol's own list (`## Conformance Tests` > `### When to skip`) — cited, never summarised here, and
+  never counted: a count of another document's cases is wrong the moment it gains one. What matters at
+  this end is that the list reaches ordinary full-path work and not only the quick path, so demanding a
+  manifest here would refuse a lawful task — which is why dropping the exemption as a caveat turns a
+  working phase into a blocked one. `understand` consumes no artifact and so
+  has no material leg — said out loud, because a silence is not a check that happened.
+- **On disagreement.** Either *tested* leg failing — the position or the material, never the autonomy
+  read, which refuses nothing — is reported before anything is written: the phase the sheet
   declares, the phase that was asked for, and the material that is missing, named as a file. Then the
   command waits. No artifact is written until the operator answers. A warning printed and walked past
   is the defect with a note attached, and the operator has nothing to judge the answer with unless
@@ -302,18 +337,23 @@ remembers.
   silence is a decision rather than an omission. What a cut costs is the account of *why* something was done: the next
   session can answer only from what was written, which is what `## Ruled out` above exists to catch.
 
-  **Neither close announces on a session that is still cheap.** The announcement is owed only where this
-  session has already **become expensive**, which the engine measures and says out loud on its own: the
-  context-cost note fires at its thresholds and is delivered into the session, so the close reads a fact it
-  already holds instead of counting anything.
-  Where the session has not yet become expensive, the position is written and **nothing is announced**.
-  A cut there would pay the fixed cost of a fresh start to discard almost nothing, and advice that is wrong
-  on the cheap case is advice that stops being read on the expensive one.
+  **Both closes state the line on every sitting, the short ones included.** There is no threshold to cross
+  and nothing for the close to measure: it reports whether the sitting can end here and the operator
+  decides. What this replaced spoke only where the engine had judged the sitting costly — a judgement made
+  on a signal the operator can see and the phase cannot — so the operator paid a turn asking whether
+  stopping was possible at all, which is the measured cost that bought the change.
+  Saying it always is what makes it a fact rather than a suggestion: a line that appears only sometimes is
+  one whose absence has to be interpreted, and guidance that is wrong on the short sitting is guidance that
+  stops being read on the long one.
 
-  **The form is fixed, and it is short.** The announcement carries three things and no more: the
-  **recommendation**, first; the **reason**, in one sentence — what this session is carrying that the phase
-  ahead will not read; and where the next session picks up, which is a pointer to the sheet's `next action:`
-  and never a copy of it. It **requests no input**. The precondition's own legs, the rung the task was
+  **The form is fixed, and it is short.** The line carries three things and no more: **cut available** —
+  whether this sitting can end here — stated as a fact, not advice; the position the sheet now declares;
+  and where the next session picks up, which is a pointer to the sheet's `next action:` and never a copy of
+  it. It **requests no input**. There is no recommendation, and its absence is a decision rather than an
+  omission: the signal that would justify one is the context-cost note, which is delivered to the operator
+  and not to the phase, so advice offered here would be inferred from turn count rather than measured — and
+  a note that is wrong once is a note that stops being read. A recommendation belongs in this line on the
+  day the phase can see that signal, and not before. The precondition's own legs, the rung the task was
   resolved by and the ladder are not part of it: those are the run's report, and a close that narrates them
   buries its own reason under procedure. A turn ended with the operator's instruction unserved is itself a
   request to repeat it, so a close given no form to end in is one the model fills with a question — which is

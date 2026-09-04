@@ -1,5 +1,16 @@
 # Execute Phase Protocol
 
+**Which task, and whether this phase may run on it**: the phase runs on the task this checkout owns.
+Resolve it by the ladder in the backlog protocol (`## State Files` → `### Resolving the task`) — stated
+there and only there — and stop rather than choose if it ends without one. Then test the phase
+precondition (same document, `### The phase precondition`), stated there and only there too, so this
+document names no accepted position and no leg of its own.
+
+This phase has **no command**, so unlike its three siblings the manual run is not a fallback here — it is
+the only carrier the check has. Stated at the head rather than left to the close below, because a phase
+given a position it accepts and papers it insists on, with nothing at its entry that reads them, has a
+rule and no reader: the row would be satisfied by the document that declares it and performed by nobody.
+
 ## Model Delegation
 
 The orchestrator (main model running the session) decides execution strategy per step. No rigid rules — holistic assessment.
@@ -133,10 +144,10 @@ This keeps understand.md as the accurate source of truth for the Verify phase an
 
 ## The close of Execute
 
-**After Spec Sync, the phase closes**: advance the sheet to the position Verify will declare, and where this
-sitting has grown costly, announce the cut and end the turn. This is the second of the chain's two cut points
-(`lifecycle.md` > `## Sessions`); what the close writes, announces, and when it stays silent is stated in the
-backlog protocol's `### The phase precondition` and only there — route to it, never restate it.
+**After Spec Sync, the phase closes**: advance the sheet to the position Verify will declare, end with the
+fixed line, and end the turn. This is the second of the chain's two cut points (`lifecycle.md` >
+`## Sessions`); what that line carries, and what else the close owes, is stated in the backlog protocol's
+`### The phase precondition` and only there — route to it, never restate it.
 
 It hangs on the close of the phase and **not** on Spec Sync. Spec Sync's own conformant behaviour where there
 are no divergences is to skip and say nothing (step 3 above), so a close riding it would be indistinguishable
