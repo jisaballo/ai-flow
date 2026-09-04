@@ -342,7 +342,7 @@ The global CLAUDE.md includes command keywords that trigger phases. You can cust
 
 ## Adapting Commit Messages
 
-The default commit format is `type(scope): description`. Customize in the Commit Protocol section of your global CLAUDE.md if your team uses a different convention.
+The default commit format is `type(scope): description`. It is stated in the commit step of `protocols/execute.md`, the loop that performs it — customize it there if your team uses a different convention.
 
 ## Team Adoption
 

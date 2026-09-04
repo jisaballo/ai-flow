@@ -77,22 +77,19 @@ every turn of every project, so a copy kept here is the engine's most expensive 
 
 ### Commit Protocol
 
-**CRITICAL: DO NOT commit until user explicitly validates and approves.**
+**This manual states no commit rule of its own — it routes.** Nothing distributes this file: the
+installer writes it only when absent and the drift guard excludes it as user-owned, so a rule kept here
+drifts against the copy the phases actually read, silently and for as long as nobody diffs the two. Each
+fact below therefore lives with the mechanism that performs it:
 
-**Inside a linked worktree the gate is the branch, not each commit** — commits are free there and the user's approval sits before the merge, at move 1 of the closing ceremony (backlog protocol), which owns the rule; that ceremony runs when the task closes, never per commit. In the coordinator the gate below applies unchanged.
-
-- Work stays uncommitted during development and iterations
-- Only commit when user explicitly approves
-- If user requests changes, continue iterating without committing
-- Exception: In multi-step plans, you may commit individual steps but STILL ask first
-- **Auto level exception**: Auto tasks may commit without pre-approval IF all tests pass. User validates post-commit and can revert.
-- Atomic commits: `type(scope): description` with Co-Authored-By line
-- Each commit must pass tests (TDD validation)
-
-**Post-Commit (mandatory):**
-After every successful task commit, **immediately** run the closing ceremony (read backlog protocol) — do NOT move to the next task first. For quick tasks the close is the merge plus its row in the Quick Tasks table of STATE.md, written in the coordinator (no backlog archive needed).
-
-**Quick task commit format:** `type(scope): quick - description` (see quick-path protocol).
+- **When a commit happens, and the single approval that covers the task's work** — `protocols/backlog.md`,
+  `## Closing a Workstream`: the preamble states the gate, move 1 is the approval.
+- **What follows a task's last commit** — the same section: that ceremony runs immediately, never after
+  the next task has started.
+- **The atomic format, and that a commit must be green** — `protocols/execute.md`, the commit step of the
+  Execute Step Protocol, which is the loop that performs both.
+- **What the Auto level changes** — `protocols/lifecycle.md`, the autonomy table.
+- **A quick task's commit format** — `protocols/quick-path.md`.
 
 ### Session Continuity
 
@@ -133,7 +130,7 @@ After every successful task commit, **immediately** run the closing ceremony (re
 - Architectural decisions (new patterns, state shape)
 
 ### Never (hard stops)
-- Commit without user validation — in the coordinator; inside a front the gate is the branch (see Commit Protocol)
+- Publish without user validation — the approval is move 1 of the closing ceremony (backlog protocol), and it covers the task's work in either kind of checkout. Commits themselves are free per step
 - Skip or disable tests
 - Commit secrets, credentials, or .env files
 - Delete user data or drop tables/collections

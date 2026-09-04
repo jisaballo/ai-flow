@@ -1992,10 +1992,26 @@ fi
 # descriptions and is asserted on the map instead, by the archive row of the paper-trail block. Narrowing
 # this check is therefore not a coverage loss but a relocation: the fact moved from a file nothing
 # distributes to one the installer delivers and the drift guard compares.
-# What stays here is the rule the operator actually reads after committing; routing the phase step alone
-# would leave that rule pointing past moves 1-3 of the ceremony.
-POST_ROUTE_RE='immediately\*\* run the closing ceremony'
-manroutes() { grep -qE "$POST_ROUTE_RE" "$1"; }
+# The RULE itself has now left this file too, and is stated in the closing protocol with the ceremony it
+# triggers. So what the manual owes here is the pointer, and the pointer is what both copies are judged
+# on; the rule's own text is guarded where it now lives. Narrowing this to a route is not a coverage loss
+# — it is the same relocation this pair already absorbed once, one step further.
+#
+# Scoped to the section and RELATIONAL: the manual names what follows a task's last commit AND names the
+# owner it routes to. A bare mention of either is satisfied by any neighbouring bullet in a section that
+# is now nothing but routes.
+POST_ROUTE_RE='(after|follows)[^.]{0,60}last commit|last commit[^.]{0,80}(ceremony|immediately)'
+# The section extractor is INLINE and not `msect`, which is defined two hundred lines below this leg and
+# would be an unset command here: the call would fail, the section would read empty, and the row would
+# report a stale manual on a manual it never opened.
+manroutes() {
+  local sec
+  sec="$(awk '/^### Commit Protocol/{f=1;next} (f && /^#+ /){exit} f' "$1" | tr -s ' \n' '  ')"
+  [ -n "$sec" ] || return 1
+  printf '%s' "$sec" | grep -qiE "$POST_ROUTE_RE" || return 1
+  printf '%s' "$sec" | grep -qi 'backlog.md'      || return 1
+  return 0
+}
 twin3="$HOME/.claude/CLAUDE.md"
 if manroutes global/CLAUDE.md; then
   ok "the shipped manual routes the post-commit rule to the closing ceremony"
@@ -2248,43 +2264,51 @@ mf_guard() {
 }
 manfact mf_guard "the off-plan guard offers a parallel front as a third way out, and routes the other two to their ceremonies"
 
-# Fact 3a — the commit gate names where it changes and who owns the change, and explains nothing itself.
-# The negative half is the point: this epic has twice paid for one fact living in two documents, so the
-# ceremony's reasoning appearing here is a failure even though every positive phrase is still present.
+# Fact 3a — the section routes and states no commit rule of its own. It used to state the gate, with an
+# exception for the worktree; there is no exception now, because commits are free in every checkout and
+# the single approval sits at the close. What the section owes is a pointer per fact and nothing else.
+#
+# The NEGATIVE half is the point, and it is the half this epic has twice paid for: a rule living in two
+# documents, one of which nothing distributes. The four owners are named individually because a section
+# that routes three facts and quietly keeps the fourth is the exact shape the relocation was for.
 mf_commit_gate() {
-  local s x
+  local s
   s="$(msect "$1" '^### Commit Protocol' | tr -s ' \n' '  ')"
   [ -n "$s" ] || return 1
-  # The exception's own statement, not the section around it. Scoped to the section, the citation checks
-  # passed on text that predates the rule: the Post-Commit paragraph already said "run the closing
-  # ceremony (read backlog protocol) ... in the coordinator", so the half of the criterion that demands a
-  # pointer to the owner could not fail, and an exception stated with no pointer at all read green.
-  x="$(msect "$1" '^### Commit Protocol' | grep -m1 -iE 'gate is the branch|not each commit|not per commit')"
-  [ -n "$x" ] || return 1
-  printf '%s' "$x" | grep -qiE 'worktree|front'          || return 1
-  printf '%s' "$x" | grep -qi  'closing ceremony'        || return 1
-  printf '%s' "$x" | grep -qiE 'backlog protocol|move 1' || return 1
-  # The coordinator's rule is untouched, and saying so is what keeps the exception from reading global.
-  printf '%s' "$x" | grep -qi  'coordinator'             || return 1
-  # The owner's explanation stays with the owner — a section-wide check, because a copy of it anywhere
-  # in the block is the drift this guards.
-  printf '%s' "$s" | grep -qi  'disposable by construction' && return 1
+  printf '%s' "$s" | grep -qi 'backlog.md'    || return 1
+  printf '%s' "$s" | grep -qi 'execute.md'    || return 1
+  printf '%s' "$s" | grep -qi 'lifecycle.md'  || return 1
+  printf '%s' "$s" | grep -qi 'quick-path.md' || return 1
+  # The section's own former sentences. A manual that grows one of them back has two homes again, and the
+  # drift is silent by construction: nothing distributes this file, so the two copies never meet.
+  printf '%s' "$s" | grep -qiE 'do not commit until|only commit when|stays uncommitted|still ask first' \
+    && return 1
+  # WHY the rule cannot live here, kept with the route. Without it the section reads as a plain index and
+  # the next editor puts a rule back for convenience, which is how it got here the first time.
+  printf '%s' "$s" | grep -qiE 'nothing distributes|never updates|not distributed|only when absent' || return 1
   return 0
 }
-manfact mf_commit_gate "the commit gate names where it changes and cites the ceremony that owns the change"
+manfact mf_commit_gate "the manual routes each commit fact to its owner, states none itself, and says why"
 
-# Fact 3b — the hard stop carries the same condition as the gate three sections above it. Asserted on its
-# own, which is strictly stronger than "fails when the gate has the exception and the stop does not": the
-# suite that asserts only the caller lets the callee contradict it, which is how one procedure ends
-# up stated two ways in one document.
+# Fact 3b — the hard stop is about PUBLISHING, and it names the approval that lifts it. Asserted on its
+# own, which is strictly stronger than "fails when the routed section and the stop disagree": the suite
+# that asserts only the caller lets the callee contradict it, which is how one procedure ends up stated
+# two ways in one document.
+#
+# The subject is the leg that matters. Committing is now free per step, so a stop still forbidding it
+# forbids what the engine's own loop prescribes — a manual contradicting the protocol it routes to, which
+# is worse than the drift the route was built to remove.
 mf_commit_stop() {
-  local b; b="$(mbul "$1" '^### Never' 'Commit without user validation')"
+  local b; b="$(mbul "$1" '^### Never' 'without user validation')"
   [ -n "$b" ] || return 1
-  # 'see Commit Protocol' alone is a cross-reference, not a condition: the stop would still read
-  # unconditionally, which is the exact state this criterion exists to catch.
-  printf '%s' "$b" | grep -qiE 'coordinator|in(side)? a front|gate is the branch' || return 1
+  printf '%s' "$b" | grep -qiE 'publish|push'                            || return 1
+  printf '%s' "$b" | grep -qi  'commit without user validation'          && return 1
+  # A cross-reference is not an approval: without naming where the approval is given, the stop reads as
+  # absolute and the reader has no way to discover what lifts it.
+  printf '%s' "$b" | grep -qiE 'closing ceremony|move 1|backlog protocol' || return 1
+  return 0
 }
-manfact mf_commit_stop "the hard stop carries the same condition as the commit gate it repeats"
+manfact mf_commit_stop "the hard stop forbids publishing without validation and names the approval that lifts it"
 
 # Fact 4 — both resume entries resolve the task by the one written ladder, and neither reproduces a rung.
 # A second statement of the rungs is a copy that drifts, which is the whole reason the ladder has one home.
