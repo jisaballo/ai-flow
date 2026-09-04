@@ -13,6 +13,51 @@ FAIL=0
 ok()   { echo "  [ok]   $1"; PASS=$((PASS+1)); }
 bad()  { echo "  [FAIL] $1"; FAIL=$((FAIL+1)); }
 
+# Does one sentence of $1 carry every pattern given after it? Prints 1, 0, or E.
+#
+# The form a proximity claim about prose takes at the legs that were moved to it. The `a[^.]{0,140}b`
+# bridge is still written at other sites in this file and this helper asserts nothing about those. Two
+# reasons it exists: a bounded repeat over a negated class compiles to an automaton the stricter of the
+# two search engines a developer may have refuses outright, and a refusal read as "nothing found" reports
+# a rule these documents still carry as one they lost; and a character count was only ever an
+# approximation of "in one sentence" that a rewrite ten characters longer breaks.
+#
+# The boundary is the period and only the period: the region's own line breaks are flattened first, so no
+# leg can go red because unchanged words were re-wrapped. A period inside a filename splits a sentence
+# here, exactly as it did for the bridge.
+#
+# Three things it gives up against the bridge, and the third has already produced a hollow leg in this
+# file: the order of the parts; the ceiling on how far apart they may sit; and any ability to tell one
+# clause from another inside a long sentence — where two cases are joined by a semicolon, the wrong case's
+# clause answers the leg. So cut the region to the clause, bind a part to the mechanism that distinguishes
+# that case, and size every leg by splitting its own clause and watching it go red.
+#
+# `E` is the answer that is neither 1 nor 0: no patterns to test, or a pattern the engine refused. It
+# fails the callers' `= 1` test so the leg reports, and the reason goes to stderr — a refusal counted as
+# an absence is the exact defect this helper was written to remove, and reproducing it one level down
+# would be worse than the bridge.
+insent() {  # $1 = region, $2… = patterns; 1 when one sentence of the region carries all of them
+  local region="$1"; shift
+  [ "$#" -ge 1 ] || { echo 'insent: called with no patterns' >&2; printf 'E'; return; }
+  [ -n "$region" ] || { printf '0'; return; }
+  local sent p all rc
+  while IFS= read -r sent; do
+    all=1
+    for p in "$@"; do
+      printf '%s' "$sent" | grep -qiE "$p"; rc=$?
+      case "$rc" in
+        0) ;;
+        1) all=0; break ;;
+        *) echo "insent: the search engine refused a pattern (status $rc): $p" >&2; printf 'E'; return ;;
+      esac
+    done
+    [ "$all" = 1 ] && { printf '1'; return; }
+  done <<SENTENCES
+$(printf '%s' "$region" | tr '\n' ' ' | tr '.' '\n')
+SENTENCES
+  printf '0'
+}
+
 # A usable sandbox, or a named cause and a stopped run. `mktemp -d` failing is a broken environment, not
 # a failing test: the substitution yields an empty string, every fixture path under it collapses to the
 # filesystem root, and the section then scores whatever the greps make of files that were never written.
@@ -7672,12 +7717,26 @@ esac
 if [ -n "$M6CUT42" ] && [ "$M6CUT42" != "$M6_42" ]; then
   # Each layout bound to the mechanism claim that distinguishes it, not named by a bare word: the words
   # alone were carried by a neighbouring sentence, so the pair could be deleted whole with this green.
+  #
+  # Both layouts sit in ONE sentence, joined by a semicolon, and each half repeats the other's vocabulary
+  # — `ignored paths` stands beside `the pattern file selects nothing` in the committed half. Read whole,
+  # a same-sentence leg cannot tell which half made the claim, and the committed clause alone would answer
+  # the ignored leg. So the region is cut at the semicolon and each leg reads its own clause only, which is
+  # this block's own idiom, already used to cut the third-layout sentence away. The cut is asserted: a
+  # rewrite that separates the two layouts leaves both halves equal to the whole and the legs weaker than
+  # they read, and that is reported rather than passed over.
+  M6IGN42="${M6CUT42%%; where the project*}"
+  M6COM42="${M6CUT42#*; where the project}"
   m42c=""
-  printf '%s' "$M6CUT42" | grep -qiE 'ignor[a-z]*[^.]{0,140}pattern file' \
+  [ "$M6IGN42" != "$M6CUT42" ] || m42c="$m42c layout-clause-cut-found-nothing"
+  [ "$(insent "$M6IGN42" 'ignor[a-z]*' 'pattern file' 'wholesale|the copy')" = 1 ] \
     || m42c="$m42c ignored-layout-not-bound-to-the-pattern-file"
-  printf '%s' "$M6CUT42" | grep -qiE 'commit[a-z]*[^.]{0,140}(git carried|selects nothing)' \
+  [ "$(insent "$M6COM42" 'commit[a-z]*' 'git carried|selects nothing')" = 1 ] \
     || m42c="$m42c committed-layout-not-bound-to-its-cause"
-  printf '%s' "$M6CUT42" | grep -qiE 'prun[a-z]*[^.]{0,200}(both|either|each)[^.]{0,20}layout' \
+  # `every folder` is the object of the prune, and it is what keeps the both-layouts half from answering
+  # the first part on its own: that half carries `the prune does not`, so with a bare verb the leg stayed
+  # green with its two halves in different sentences — measured, not supposed.
+  [ "$(insent "$M6CUT42" 'prun[a-z]*' 'every folder' 'both|either|each' 'layout')" = 1 ] \
     || m42c="$m42c prune-not-required-on-both-layouts"
   [ -z "$m42c" ] && ok "the seed-and-prune move names both layouts and the prune required on each" \
                  || bad "the seed-and-prune move names both layouts and the prune required on each (:$m42c)"
@@ -10864,7 +10923,7 @@ else
   c13_73=""
   [ "$(n73 "$ICE73F" '(two|second) deferrals?|deferred twice')" -ge 1 ] \
     || c13_73="$c13_73 [two deferrals is not stated as a signal]"
-  [ "$(n73 "$ICE73F" '((two|second) deferrals?|deferred twice)[^.]{0,240}(promot[^.]{0,120}retir|retir[^.]{0,120}promot)')" -ge 1 ] \
+  [ "$(insent "$ICE73F" '(two|second) deferrals?|deferred twice' 'promot' 'retir')" = 1 ] \
     || c13_73="$c13_73 [the signal does not offer the operator both outcomes]"
   [ "$(n73 "$ICE73F" 'signal, not|not an act|no automatic|never automatic')" -ge 1 ] \
     || c13_73="$c13_73 [nothing says the signal performs no act — the reaper this epic refused]"
@@ -11353,11 +11412,11 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
   [ "$(n55 "$SZB55" '8,?000')" -ge 1 ]  || c9_55="$c9_55 [the section states no soft word threshold]"
   [ "$(n55 "$SZB55" '15,?000')" -ge 1 ] || c9_55="$c9_55 [the section states no firm word threshold]"
   [ "$(n55 "$SZB55" 'three causes')" -ge 1 ] || c9_55="$c9_55 [the cause list is not stated to be three]"
-  # The third cause and its refusal of the prune, as an ordered co-occurrence. Two independent greps would
-  # pass prose that names the cause and then offers a prune for it anyway, which is the whole reason the
-  # cause is being written down: a note pointing at a remedy that does not apply teaches its reader to
-  # stop reading it.
-  [ "$(n55 "$SZB55" '(open|ready)[^.]{0,120}(essay|row)[^.]{0,200}(not a prune|no prune|pruning does not|cannot be pruned)')" -ge 1 ] \
+  # The third cause and its refusal of the prune, in one sentence. Two independent searches over the
+  # section would pass prose that names the cause and then offers a prune for it anyway, which is the
+  # whole reason the cause is being written down: a note pointing at a remedy that does not apply teaches
+  # its reader to stop reading it.
+  [ "$(insent "$SZB55" 'open|ready' 'essay|row' 'not a prune|no prune|pruning does not|cannot be pruned')" = 1 ] \
     || c9_55="$c9_55 [the third cause is not named with its remedy refused in the same breath]"
   [ -z "$c9_55" ] && ok "A9 the size rule names three causes and the third's remedy is not a prune" \
                   || bad "A9 the size rule names three causes and the third's remedy is not a prune:$c9_55"
@@ -11523,11 +11582,14 @@ else
   c5_56=""
   [ -n "$CONS56" ] || c5_56="$c5_56 [the consolidation's proof bullet could not be extracted]"
   [ "$(o56 "retire" "$CONS56")" = "1" ] || c5_56="$c5_56 [retirement is not stated exactly once]"
-  [ "$(n56 'weaken[^.]{0,160}red[^.]{0,160}retire|retire[^.]{0,160}weaken[^.]{0,160}red' "$CONS56")" -ge 1 ] \
+  [ "$(insent "$CONS56" 'weaken' '`red`' 'retire')" = 1 ] \
     || c5_56="$c5_56 [retirement is not tied to a weakening that went red]"
-  # Tied to the RED run, because that is the case this task exists for. Untied, the bullet's own
+  # Tied to the RED run, because that is the case this leg exists for. Untied, the bullet's own
   # `add-check` + `green` sentence answered the leg and the red one could be deleted with the row green.
-  [ "$(n56 'add-check[^.]{0,60}red[^.]{0,200}(stands|keeps|kept|demonstrat)' "$CONS56")" -ge 1 ] \
+  # The token is matched as the document writes it — backticked. Bare `red` is three characters that
+  # `declared` and `restored` both carry, and this same bullet uses both words, so the green sentence
+  # would sit one ordinary word away from answering a leg about the red one.
+  [ "$(insent "$CONS56" 'add-check' '`red`' 'stands|keeps|kept|demonstrat')" = 1 ] \
     || c5_56="$c5_56 [a new check that went red does not keep its finding]"
   [ -z "$c5_56" ] && ok "A5 a finding is retired only where existing code was weakened and the suite went red" \
                   || bad "A5 a finding is retired only where existing code was weakened and the suite went red:$c5_56"
