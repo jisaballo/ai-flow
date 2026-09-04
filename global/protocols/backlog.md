@@ -771,25 +771,39 @@ merge is one move. Only the coordinator runs it, and it runs one front at a time
 half of `## Opening a Workstream` above: what that ceremony declared, created and seeded is what this
 one validates, collects and takes down.
 
-It runs at **every task close**, not once per front: moves 6 and 7 are its tail and run only when the
+It runs at **every task close**, not once per front: moves 7 and 8 are its tail and run only when the
 front has no next task, because a worktree holds a workstream — an epic with its serial chain inside —
 and lives across the tasks in it.
 
-With a single front open — the ordinary case — moves 2, 3 and 6 have nothing to do: the task was worked in
+With a single front open — the ordinary case — moves 2, 3 and 7 have nothing to do: the task was worked in
 the coordinator, so its papers are already there, there is no branch to merge, and there is no second
 checkout to take down. The ceremony then reduces to what closing has always been. Naming only the two that
 need no second checkout reads as though the merge always has work, which turns the ordinary close into a
 ritual with a dead move in it.
+
+**Commits are free per step, in every checkout.** A step that passes its Verify command is committed
+where it stands — the front's disposable branch and the coordinator's trunk alike — and nothing is asked
+between steps. What the operator approves is the task's *work*, once, at move 1, and one approval is all
+the ceremony has. The approval can sit there because the publishing move is where the work stops being
+undoable by hand: until it is published a commit is local history, and a `reset` reaches it. The rule is
+stated here, with the ceremony that enforces it, rather than in the manual — the one engine file the
+installer never updates and the drift guard never compares, so a rule kept there drifts against the only
+copy anyone reads.
+
+**This ceremony follows the task's last commit immediately**, and never the next task's first step. A task
+left closed-but-unarchived is one whose papers, roster row and trunk all disagree about whether it is done.
 
 **The order is the protection.** Nothing merges before the coordinator holds the papers, and nothing is
 recorded as done before it is in the trunk — so a ceremony interrupted at any move leaves either work
 still to do or work already safe, never a lie in the record. Nothing enforces the order: the task's own
 sheet is where an interrupted close is written down, and the roster is the queue.
 
-1. **The user validates the branch.** Inside a front commits are free — the branch is disposable by
-   construction — so what the user approves is the branch and not each commit, and nothing merges
-   without it. In the coordinator the per-commit rule of the Commit Protocol is untouched: there is no
-   branch to approve.
+1. **The user validates the work.** Commits are free per step in every checkout (see above), so what is
+   approved here is the task's work as a whole and never each commit: the front's branch where the task
+   was worked in one, the task's own commits on the trunk where it was worked in the coordinator.
+   Nothing merges without it and nothing is published without it. This is the ceremony's only approval,
+   and it is the same approval either way — a second gated move would force a reader to work out which
+   of the two was theirs, in the coordinator as much as in a front.
 
 2. **The coordinator collects the task's papers.** `artifacts/T-XXX/` is written in the checkout where
    the task is worked and lives outside version control, so it does not travel with the branch and the
@@ -834,7 +848,20 @@ sheet is where an interrupted close is written down, and the roster is the queue
    work remains, which is why this move sits before the tail and not after it. It runs at **every
    task close**, a quick task's included, and carries none of the condition the two moves below it do.
 
-6. **The front's working copy is dismantled by whatever created it** — the counterpart of the ownership
+6. **The trunk is published.** Until this move runs, work the ceremony has just finished landing sits on
+   one machine and exists for nobody else — which is a third lie, distinct from the two the moves above
+   prevent: not that the work is unfinished, and not that it is uninstalled, but that it is unreachable.
+   It runs in the coordinator, on the trunk the merge landed in, and it **reports what it published** —
+   the branch and how far it moved — because a push that says nothing is indistinguishable from one that
+   never ran. Where there is no remote, or no remote trunk resolves, there is nothing to publish to: the
+   move **says so and the ceremony continues**, which is the same answer the audit gives an unresolvable
+   remote trunk rather than inventing a zero. If the push itself cannot complete — a diverged trunk, no
+   permission — the ceremony **stops** here with the front's roster row still in place, the shape the
+   move above already uses: the ledger is written by now, so the row is the only thing left saying work
+   remains. It runs at **every task close**, a quick task's included, and carries none of the condition
+   the two moves below it do.
+
+7. **The front's working copy is dismantled by whatever created it** — the counterpart of the ownership
    condition in step 5 of the opening, and what created it is read from that front's **roster row**,
    where move 7 of the opening wrote it. Claude Code's `ExitWorktree` removes only what `EnterWorktree`
    created **in this session** and is a declared no-op for anything else, so it takes down a front opened
@@ -845,7 +872,7 @@ sheet is where an interrupted close is written down, and the roster is the queue
    `git worktree list`. Never before move 2: removing the checkout destroys the task's papers, and git
    cannot restore what it never tracked. Runs only when the front has no next task.
 
-7. **The front's roster row is removed** — the coordinator's last write, and the roster's own proof that
+8. **The front's roster row is removed** — the coordinator's last write, and the roster's own proof that
    the front is closed. Not while `git worktree list` still names that front's checkout: the row is then
    the only thing left saying work remains. Runs only when the front has no next task.
 
@@ -917,7 +944,7 @@ reaches into the checkout where the task was worked to delete a copy of what it 
    the papers it needs gone and git unable to restore what it never tracked.
 6. Remove task from BACKLOG.md (move from Done to nowhere — it's in the archive now)
 7. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
-8. Leave the workstream row to move 7 of `## Closing a Workstream`, its sole owner: the row is removed
+8. Leave the workstream row to move 8 of `## Closing a Workstream`, its sole owner: the row is removed
    only when the front has no next task, and a front continuing its chain keeps its row with the task
    field advanced (coordinator only — other open fronts keep theirs). **The same act rewrites the front's
    mutable label** where its tool offers one, to the task the row now names — this is the only statement
@@ -950,7 +977,7 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
    open, and a sweep cannot tell those apart.
 4. Remove all epic tasks from BACKLOG.md Done section
 5. Move the epic row to `archive/EPICS.md` + its Execution Order block to `archive/EXECUTION-ORDERS.md` (Size Budget)
-6. **Verify** the roster holds no row for a front of this epic — move 7 of `## Closing a Workstream` is
+6. **Verify** the roster holds no row for a front of this epic — move 8 of `## Closing a Workstream` is
    the only remover, and by now it has run for each of them. A row still there names a front that is
    still open: name it and stop, rather than removing it here (rows of fronts outside the epic stay).
 

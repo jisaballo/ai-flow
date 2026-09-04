@@ -1798,15 +1798,19 @@ if [ -n "$CLO" ]; then
       *valid*)               seq="$seq V" ;;
       *collect*|*harvest*)   seq="$seq C" ;;
       *merge*)               seq="$seq M" ;;
-      *record*|*ledger*)     seq="$seq L" ;;
       *distribut*|*effect*)  seq="$seq X" ;;
+      *record*|*ledger*)     seq="$seq L" ;;
+      # Before the record arm, and the ordering is load-bearing: a publishing move whose lead sentence
+      # happened to say "the record" would be filed as the ledger and the sequence would read green with
+      # the new move classified as an old one. The heads are kept free of each other's words as well.
+      *publish*)             seq="$seq P" ;;
       *dismantl*|*worktree*) seq="$seq D" ;;
       *roster*|*row*)        seq="$seq R" ;;
       *)                     seq="$seq ?" ;;
     esac
     i=$((i+1))
   done
-  [ "$seq" = " V C M L X D R" ] \
+  [ "$seq" = " V C M L X P D R" ] \
     && ok "the protocol defines the ceremony that closes a front" \
     || bad "the protocol defines the ceremony that closes a front (moves unnamed or out of order:$seq)"
 
@@ -1838,17 +1842,31 @@ if [ -n "$CLO" ]; then
 
   # The condition belongs to BOTH tail moves. Stated once in a preamble it reads as a caveat; carried
   # by each move it is what the operator reads at the moment of acting.
-  if printf '%s' "$(clomove 6)" | grep -qiE 'no next task|has no next|last task' \
-     && printf '%s' "$(clomove 7)" | grep -qiE 'no next task|has no next|last task'; then
+  #
+  # The tail is the LAST TWO moves, derived from the count already read above — never the literal 6 and 7.
+  # Keyed on the literals, inserting the publishing move shifted the tail underneath them: one leg went
+  # red for the right reason while the other landed on the dismantling move and passed for the wrong one,
+  # which is a guard reporting on a move it was not written about.
+  if printf '%s' "$(clomove $((nclo-1)))" | grep -qiE 'no next task|has no next|last task' \
+     && printf '%s' "$(clomove "$nclo")" | grep -qiE 'no next task|has no next|last task'; then
     ok "a front with a next task keeps its checkout and its roster row"
   else
     bad "a front with a next task keeps its checkout and its roster row"
   fi
 
-  mpair 6 'never before' 'destroy' \
-    "dismantling the checkout before the collection destroys the task's papers"
-  mpair 1 'valid' 'nothing merges|before .*merge|does not merge' \
-    "the user validates the branch before anything merges"
+  # Located by the move's own ACT, not by its number: the assertion is about dismantling, and a number
+  # is only ever a proxy for it that stops being true at the next insertion.
+  ndis="$(printf '%s\n' "$CLO" | awk '/^[0-9]+\. /{h=tolower($0); if (h ~ /dismantl/) {print $0+0; exit}}')"
+  if [ -n "$ndis" ]; then
+    mpair "$ndis" 'never before' 'destroy' \
+      "dismantling the checkout before the collection destroys the task's papers"
+  else
+    bad "dismantling the checkout before the collection destroys the task's papers (no dismantling move)"
+  fi
+  # One approval, and it covers the task's work in either kind of checkout — not the branch alone, which
+  # is what this leg asserted while the coordinator still had a per-commit gate of its own.
+  mpair 1 'validates the work|approves' 'nothing merges|before .*merge|does not merge' \
+    "the user validates the task's work before anything merges"
 
   M4="$(clomove 4)"
   if printf '%s' "$M4" | grep -qi 'quick' \
@@ -1922,16 +1940,21 @@ fi
 # above it — which is what the Icebox write-back did. The two bounds below are the step's own number and
 # the number that does not exist yet; a renumber that leaves them behind does not fail here, it silently
 # extracts the wrong step, which is why the checklist's own step count is asserted elsewhere.
+#
+# The move the citations must NAME is read from the ceremony, not written down here. Spelled as a literal,
+# this leg is wrong the moment a move is inserted anywhere above the roster row — and wrong in the
+# direction that passes: it would go on demanding the number the prose used to carry.
 ARC7="$(awk '/^### After ARCHIVE \(single task\)/{f=1;next} (f && /^#+ /){f=0} f' "$BLG4" | awk '/^9\./{f=0} /^8\./{f=1} f' | tr '\n' ' ' | tr -s ' ')"
 EPI6="$(awk '/^### After Epic completion/{f=1;next} (f && /^#+ /){f=0} f' "$BLG4" | awk '/^7\./{f=0} /^6\./{f=1} f' | tr '\n' ' ' | tr -s ' ')"
 # The NUMBER, not just a reference to the ceremony. Read as an alternation it was blind to the fact it
 # claims: both citations name "move N of `## Closing a Workstream`", so a half-renumber left pointing at
 # the wrong move still matched the section title and read green.
+NCLO4="$(awk '/^## Closing a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG4" | grep -cE '^[0-9]+\. ')"
 if printf '%s' "$ARC7" | grep -qiE 'no next task' \
-   && printf '%s' "$ARC7" | grep -qiE 'move 7' \
+   && printf '%s' "$ARC7" | grep -qiE "move $NCLO4" \
    && printf '%s' "$ARC7" | grep -qiE 'Closing a Workstream' \
    && ! printf '%s' "$ARC7" | grep -qiE '^8\. (Remove|Delete) ' \
-   && printf '%s' "$EPI6" | grep -qiE 'move 7' \
+   && printf '%s' "$EPI6" | grep -qiE "move $NCLO4" \
    && printf '%s' "$EPI6" | grep -qiE 'only remover|Closing a Workstream' \
    && ! printf '%s' "$EPI6" | grep -qiE '^6\. (Remove|Delete) '; then
   ok "both checklists leave the roster row to the ceremony's last move"
@@ -2861,10 +2884,13 @@ if [ -n "$D5" ]; then
 
   # The condition belongs to the tail and NOT here: a quick task's close and a front's non-final close
   # both distribute. The positive half is load-bearing — a bare negative passes on a deleted sentence.
+  # The tail is the ceremony's LAST TWO moves, derived from its own count. Written as 6 and 7 this leg
+  # was green over the publishing move's insertion while pointing one move short of the tail it names.
+  nclo6="$(printf '%s\n' "$CLO6" | grep -cE '^[0-9]+\. ')"
   if printf '%s' "$D5" | grep -qiE 'every (task )?close|each (task )?close|always' \
      && ! printf '%s' "$D5" | grep -qiE 'no next task|has no next|last task' \
-     && printf '%s' "$(dmove 6)" | grep -qiE 'no next task|has no next|last task' \
-     && printf '%s' "$(dmove 7)" | grep -qiE 'no next task|has no next|last task'; then
+     && printf '%s' "$(dmove $((nclo6-1)))" | grep -qiE 'no next task|has no next|last task' \
+     && printf '%s' "$(dmove "$nclo6")" | grep -qiE 'no next task|has no next|last task'; then
     ok "the distribution move runs at every close, unlike the tail"
   else
     bad "the distribution move runs at every close, unlike the tail"
@@ -4524,14 +4550,20 @@ printf '%s' "$REF24" | grep -qiE 'every (surviving )?finding'   && a13="$a13 ove
   && ok "the lifecycle states which findings are adversarially refuted" \
   || bad "the lifecycle states which findings are adversarially refuted (missing:$a13)"
 
-# A14 — the ceremony as the newcomer reads it. Three claims the protocol makes and the summary dropped:
-# move 1 has no branch to approve in the coordinator, the last two moves run only when the front has no
-# next task, and the single-front clause must not spell move numbers — the sibling guard derives them
-# precisely because a move inserted anywhere renumbers the rest, and the copy a newcomer reads had them
-# hardcoded with nothing reading them.
+# A14 — the ceremony as the newcomer reads it. Four claims the protocol makes and the summary dropped:
+# move 1 approves the task's WORK and does so once, the ceremony ends by publishing, the last two moves
+# run only when the front has no next task, and the single-front clause must not spell move numbers — the
+# sibling guard derives them precisely because a move inserted anywhere renumbers the rest, and the copy a
+# newcomer reads had them hardcoded with nothing reading them.
+#
+# The first claim used to be the coordinator's per-commit exception, and it is not a rename: that exception
+# no longer exists anywhere in the engine, so a summary still carrying it would be describing a gate the
+# protocol dropped. What replaces it is the fact that took its place.
 a14=""
 [ -n "$ARC24" ] || a14="$a14 section-absent"
-printf '%s' "$ARC24" | grep -qiE 'no branch to approve|per-commit'   || a14="$a14 move1-coordinator"
+printf '%s' "$ARC24" | grep -qiE 'validates the work|approves is the task|the task.s work' \
+  || a14="$a14 move1-one-approval"
+printf '%s' "$ARC24" | grep -qi 'publish'                            || a14="$a14 publishing-move"
 printf '%s' "$ARC24" | grep -qiE 'no next task|has no next'          || a14="$a14 tail-conditional"
 printf '%s' "$ARC24" | grep -qiE 'moves? [0-9], |moves? [0-9] and'   && a14="$a14 hardcoded-numbers"
 [ -z "$a14" ] \
@@ -4658,7 +4690,11 @@ else
 fi
 
 # --- the dismantling move ------------------------------------------------
-M6C_25="$(c25 6)"
+# Located by the act, and the roster move below as the ceremony's last: both were keyed on the literals 6
+# and 7, which the publishing move's insertion moved out from under them.
+n25="$(printf '%s\n' "$CLO25" | grep -cE '^[0-9]+\. ')"
+ndis25="$(printf '%s\n' "$CLO25" | awk '/^[0-9]+\. /{h=tolower($0); if (h ~ /dismantl/) {print $0+0; exit}}')"
+M6C_25="$(c25 "${ndis25:-0}")"
 if [ -n "$M6C_25" ]; then
   printf '%s' "$M6C_25" | grep -qiE 'whatever created (it|the checkout)' \
     && printf '%s' "$M6C_25" | grep -qiE 'worktree list' \
@@ -4675,7 +4711,7 @@ fi
 
 # The condition move 7 now waits on. Its sibling in move 6 is asserted above; a correction nothing
 # asserts can be reverted with the suite green, and this one was added by the same change.
-printf '%s' "$(c25 7)" | grep -qiE 'worktree list' \
+printf '%s' "$(c25 "$n25")" | grep -qiE 'worktree list' \
   && ok "the roster row waits on the repository's worktree listing" \
   || bad "the roster row waits on the repository's worktree listing"
 
@@ -5559,7 +5595,8 @@ grep -qiE 'predates the \*\*tool\*\* column|predates the tool column' "$BLG31" \
 
 # A8 — the reader. Ownership had no reader at all: the move said "whatever created it" and nothing
 # recorded what that was.
-printf '%s' "$(c31 6)" | grep -qiE 'roster' \
+ndis31="$(printf '%s\n' "$CLO31" | awk '/^[0-9]+\. /{h=tolower($0); if (h ~ /dismantl/) {print $0+0; exit}}')"
+printf '%s' "$(c31 "${ndis31:-0}")" | grep -qiE 'roster' \
   && ok "the dismantling move reads the creator from the roster row" \
   || bad "the dismantling move reads the creator from the roster row"
 
@@ -8617,27 +8654,34 @@ else
   ok "the closing ceremony's move count is read, not assumed"
 fi
 
-# Row 3 (A3) — the coordinator's per-commit exception in closing move 1, which no assertion in this
-# harness read before this section existed: the fact was deletable with the suite green. Two-armed, like
-# rows 1 and 4 — the fact present must match, the fact removed with a decoy planted must not.
+# Row 3 (A3) — what the one approval in closing move 1 COVERS in the coordinator, which no assertion in
+# this harness read before this section existed: the fact was deletable with the suite green. Two-armed,
+# like rows 1 and 4 — the fact present must match, the fact removed with a decoy planted must not.
+#
+# The row used to name the coordinator's per-commit exception. That exception is gone: commits are free in
+# every checkout now, and the same single approval covers the work wherever it was done. What survives is
+# the half that mattered — move 1 must still say what it is approving in the coordinator, which is the
+# task's own commits on the trunk, or the generalisation quietly drops the checkout it was written for.
 M1_46="$(mv46 "$CLO46" 1)"
-PAT46C='coordinator[^.]{0,60}(per-commit|no branch to approve)'
+PAT46C='coordinator[^.]{0,80}trunk|trunk[^.]{0,80}coordinator'
 if [ -z "$M1_46" ]; then
-  bad "closing move 1 states the coordinator's per-commit exception (move not extracted)"
+  bad "closing move 1 names the coordinator's commits as what the approval covers there (move not extracted)"
 else
-  # The mutation plants the matched word in a neighbouring sentence while removing the fact, so a guard
-  # answered by mere co-presence is caught here rather than years later by the edit that hollows it.
+  # The mutation removes the fact and plants the matched word in a NEIGHBOURING SENTENCE — past a period,
+  # which the pattern's own [^.] class cannot cross. A guard answered by mere co-presence of "coordinator"
+  # and "trunk" anywhere in the move passes the mutant and is caught here, rather than years later by the
+  # edit that hollows it.
   MUT46C="$(printf '%s' "$M1_46" \
-    | sed 's/ In the coordinator the per-commit rule[^.]*\.//' \
-    | sed 's/Inside a front commits are free/Inside a front per-commit approval is free/')"
+    | sed "s/, the task's own commits on the trunk where it was worked in the coordinator//" \
+    | sed 's/in the coordinator as much as in a front\./in the coordinator as much as in a front. The trunk is no different./')"
   if ! printf '%s' "$M1_46" | grep -qiE "$PAT46C"; then
-    bad "closing move 1 states the coordinator's per-commit exception (absent from the protocol)"
-  elif [ "$MUT46C" = "$M1_46" ] || ! printf '%s' "$MUT46C" | grep -q 'per-commit approval'; then
-    bad "closing move 1 states the coordinator's per-commit exception (mutation did not apply)"
+    bad "closing move 1 names the coordinator's commits as what the approval covers there (absent from the protocol)"
+  elif [ "$MUT46C" = "$M1_46" ] || ! printf '%s' "$MUT46C" | grep -q 'no different'; then
+    bad "closing move 1 names the coordinator's commits as what the approval covers there (mutation did not apply)"
   elif ! printf '%s' "$MUT46C" | grep -qiE "$PAT46C"; then
-    ok "closing move 1 states the coordinator's per-commit exception"
+    ok "closing move 1 names the coordinator's commits as what the approval covers there"
   else
-    bad "closing move 1 states the coordinator's per-commit exception (absent, or matched from a neighbour)"
+    bad "closing move 1 names the coordinator's commits as what the approval covers there (absent, or matched from a neighbour)"
   fi
 fi
 
@@ -13839,6 +13883,208 @@ printf '%s' "$st2_63" | grep -qiE 'no plan artifact|writes no plan|no plan\.md|w
   || b3_63="$b3_63 [it does not say no plan artifact is written]"
 [ -z "$b3_63" ] && ok "B3 the plan command states that Auto plans inline and writes no artifact" \
                 || bad "B3 the plan command states that Auto plans inline and writes no artifact ($b3_63)"
+
+echo ""
+
+echo "== C64: one approval covers the task's work, and the close ends by publishing the trunk =="
+# Conformance: today the coordinator asks before every commit, and the close ends without publishing -- so
+# a three-step task stops three times and a task recorded as done can sit unpublished on the machine while
+# the next one starts. Generated in the Conform phase from understand.md's Verifiable Criteria; each row
+# names the criterion it comes from.
+BL64="$ROOT/global/protocols/backlog.md"
+MAN64="$ROOT/global/CLAUDE.md"
+EXE64="$ROOT/global/protocols/execute.md"
+QP64="$ROOT/global/protocols/quick-path.md"
+
+# The ceremony's moves, extracted locally. A local pair rather than C17's `clomove`, for the reason C63
+# gives for defining its own extractors: this block must stand on its own, so an edit to another section's
+# helper cannot silently change what these rows are about.
+CLO64="$(awk '/^## Closing a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BL64")"
+mv64() { printf '%s\n' "$CLO64" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
+NMV64="$(printf '%s\n' "$CLO64" | grep -cE '^[0-9]+\. ')"
+# The publishing move is located by its own ACT and never by arithmetic. Keyed on the number, every row
+# below would land on the distribution move while the publishing move does not exist -- and B4 would pass
+# on the neighbour's own stop sentence, which is a row certifying a fact nobody wrote.
+NPUB64="$(printf '%s\n' "$CLO64" | awk '/^[0-9]+\. /{h=tolower($0); if (h ~ /publish/ && h !~ /distribut/ && h !~ /effect/) {print $0+0; exit}}')"
+PUB64=""
+[ -n "$NPUB64" ] && PUB64="$(mv64 "$NPUB64")"
+
+# A1 -- the gate's home. The system shall state the commit gate in `global/protocols/backlog.md` and not
+# in `global/CLAUDE.md`. Both halves on one row: the positive alone leaves the manual free to keep its own
+# copy, which is the drift this task exists to remove, and the negative alone leaves the rule homeless.
+# The positive is RELATIONAL -- "commits are free" already occurs in move 1, scoped to a front, so a bare
+# presence check was green before a line of this task existed.
+GATE64="$(printf '%s' "$CLO64" | tr -s ' \n' '  ')"
+MSEC64="$(msect "$MAN64" '^### Commit Protocol' | tr -s ' \n' '  ')"
+a1_64=""
+[ -n "$CLO64" ] || a1_64=" [the closing ceremony could not be located: every row below would be about an empty string]"
+printf '%s' "$GATE64" | grep -qiE 'commits are free[^.]{0,90}(every checkout|either checkout|wherever|whichever)' \
+  || a1_64="$a1_64 [the closing protocol does not state that commits are free per step in every checkout]"
+printf '%s' "$GATE64" | grep -qiE 'immediately|before the next task|never .{0,40}next task first' \
+  || a1_64="$a1_64 [the closing protocol does not carry the post-commit obligation that left the manual]"
+printf '%s' "$MSEC64" | grep -qiE 'do not commit until|only commit when|stays uncommitted|still ask first' \
+  && a1_64="$a1_64 [the manual still states when to commit, so the rule has two homes]"
+[ -z "$a1_64" ] && ok "A1 the commit gate is stated by the ceremony that enforces it, and the manual states none" \
+                || bad "A1 the commit gate is stated by the ceremony that enforces it, and the manual states none ($a1_64)"
+
+# A2 -- WHEN the closing ceremony is read, the system shall yield validate -> collect -> merge -> record
+# -> distribute -> publish -> dismantle -> roster. The count is READ from the protocol, never enumerated:
+# a literal bound stops at its last index, so a move appended past it is never looked at.
+seq64=""
+i64=1
+while [ "$i64" -le "$NMV64" ]; do
+  case "$(printf '%s\n' "$CLO64" | grep -E "^$i64\. " | head -1 | tr 'A-Z' 'a-z')" in
+    *valid*)               seq64="$seq64 V" ;;
+    *collect*|*harvest*)   seq64="$seq64 C" ;;
+    *merge*)               seq64="$seq64 M" ;;
+    *distribut*|*effect*)  seq64="$seq64 X" ;;
+    # Ahead of the record arm for the reason C17's twin states: a lead sentence carrying another role's
+    # word would file this move as that role, and the sequence would read green over the wrong reading.
+    *publish*)             seq64="$seq64 P" ;;
+    *record*|*ledger*)     seq64="$seq64 L" ;;
+    *dismantl*|*worktree*) seq64="$seq64 D" ;;
+    *roster*|*row*)        seq64="$seq64 R" ;;
+    *)                     seq64="$seq64 ?" ;;
+  esac
+  i64=$((i64+1))
+done
+[ "$seq64" = " V C M L X P D R" ] \
+  && ok "A2 the ceremony publishes between the distribution and its tail" \
+  || bad "A2 the ceremony publishes between the distribution and its tail (moves unnamed or out of order:$seq64)"
+
+# A3 -- the "no next task" condition sits on the two TAIL moves and not on the publishing move, and each
+# position is DERIVED from the ceremony's own move count. Keying a leg on a literal number is the failure
+# IB-001 names: after an insertion the leg lands on a different move and passes for the wrong reason.
+a3_64=""
+if [ -z "$NPUB64" ]; then
+  a3_64=" [the ceremony carries no publishing move]"
+else
+  [ "$NPUB64" -eq $((NMV64-2)) ] \
+    || a3_64="$a3_64 [the publishing move is $NPUB64 of $NMV64, so it does not sit immediately before the two tail moves]"
+  printf '%s' "$PUB64" | grep -qiE 'every (task )?close|each (task )?close|always' \
+    || a3_64="$a3_64 [the publishing move does not say it runs at every close]"
+  printf '%s' "$PUB64" | grep -qiE 'no next task|has no next|last task' \
+    && a3_64="$a3_64 [the publishing move carries the tail's condition, so a front with a next task would never publish]"
+fi
+printf '%s' "$(mv64 $((NMV64-1)))" | grep -qiE 'no next task|has no next|last task' \
+  || a3_64="$a3_64 [the first tail move drops its condition]"
+printf '%s' "$(mv64 "$NMV64")" | grep -qiE 'no next task|has no next|last task' \
+  || a3_64="$a3_64 [the second tail move drops its condition]"
+[ -z "$a3_64" ] && ok "A3 the tail keeps its condition at its new position, and the publishing move does not take it" \
+                || bad "A3 the tail keeps its condition at its new position, and the publishing move does not take it ($a3_64)"
+
+# A4 -- WHILE a hard stop forbids publishing without validation, the system shall name the approval that
+# lifts it. Asserted on the stop's own bullet: a stop that merely cross-references the gate still reads
+# unconditionally, which is the state `mf_commit_stop` was written to catch and this row inherits.
+NB64="$(mbul "$MAN64" '^### Never' 'without user validation')"
+a4_64=""
+[ -n "$NB64" ] || a4_64=" [no hard stop about validation was found]"
+printf '%s' "$NB64" | grep -qiE 'publish|push' \
+  || a4_64="$a4_64 [the hard stop still forbids committing, which the engine now does freely per step]"
+printf '%s' "$NB64" | grep -qiE 'closing ceremony|move 1|backlog protocol' \
+  || a4_64="$a4_64 [it does not name where the approval that lifts it is given]"
+[ -z "$a4_64" ] && ok "A4 the hard stop forbids publishing without validation and names the approval that lifts it" \
+                || bad "A4 the hard stop forbids publishing without validation and names the approval that lifts it ($a4_64)"
+
+# A5 -- IF closing move 1 is reworded to drop the approval it now covers in both kinds of checkout, THEN
+# the suite shall fail. Two-armed like C46's rows: the fact present must match, and the fact removed must
+# not -- the decoy leaves "the work" standing in a neighbouring sentence, so a guard answered by mere
+# co-presence of "validates" and "work" is caught here rather than years later by the edit that hollows it.
+M1_64="$(mv64 1)"
+PAT64='(validates|approves|validation of) the work'
+if [ -z "$M1_64" ]; then
+  bad "A5 closing move 1 states the one approval that covers the task's work in either checkout (move not extracted)"
+else
+  # A plain substitution, with no alternation: BSD sed's basic regex has no `\|`, so a pattern written
+  # with one silently matches nothing and the row reports its own mutation as unapplied rather than
+  # judging the fact. The arm below catches exactly that, which is how this was found.
+  MUT64="$(printf '%s' "$M1_64" | sed 's/validates the work/validates the branch/')"
+  if ! printf '%s' "$M1_64" | grep -qiE "$PAT64"; then
+    bad "A5 closing move 1 states the one approval that covers the task's work in either checkout (absent from the protocol)"
+  elif [ "$MUT64" = "$M1_64" ]; then
+    bad "A5 closing move 1 states the one approval that covers the task's work in either checkout (mutation did not apply)"
+  elif ! printf '%s' "$MUT64" | grep -qiE "$PAT64"; then
+    ok "A5 closing move 1 states the one approval that covers the task's work in either checkout"
+  else
+    bad "A5 closing move 1 states the one approval that covers the task's work in either checkout (matched from a neighbour)"
+  fi
+fi
+
+# B1 + O2 -- WHEN a plan step passes its Verify command, the system shall commit it without asking for
+# approval, and the execute loop shall carry the atomic format and the tests-per-commit rule that left the
+# manual. The negative leg is the one that matters: a step 4 that commits AND still cites the old gate is
+# a loop stating two rules, which is exactly the drift the relocation is for.
+ST4_64="$(awk '/^### Execute Step Protocol/{f=1;next} (f && /^#+ /){exit} f' "$EXE64" | awk '/^4\. /{g=1} g' | tr '\n' ' ' | tr -s ' ')"
+b1_64=""
+[ -n "$ST4_64" ] || b1_64=" [step 4 of the Execute Step Protocol could not be extracted]"
+printf '%s' "$ST4_64" | grep -qiE 'commit the step|commits the step|commit it' \
+  || b1_64="$b1_64 [step 4 does not commit the step]"
+printf '%s' "$ST4_64" | grep -qiE 'do not commit|user must validate|Commit Protocol from CLAUDE' \
+  && b1_64="$b1_64 [step 4 still withholds the commit for an approval]"
+printf '%s' "$ST4_64" | grep -qi 'type(scope)' \
+  || b1_64="$b1_64 [step 4 does not carry the atomic commit format that left the manual]"
+printf '%s' "$ST4_64" | grep -qiE 'must pass|passing tests|tests pass' \
+  || b1_64="$b1_64 [step 4 does not carry the tests-per-commit rule that left the manual]"
+[ -z "$b1_64" ] && ok "B1 the execute loop commits its step, cites no approval, and holds the two rules that left the manual" \
+                || bad "B1 the execute loop commits its step, cites no approval, and holds the two rules that left the manual ($b1_64)"
+
+# B2 -- WHEN the ceremony reaches its publishing move, the system shall publish the trunk and report what
+# it published. The report is the leg, not the push: a move that pushes silently leaves the operator with
+# no way to tell a publish that happened from one that was skipped -- the same reason move 5 states its
+# own no-op out loud.
+b2_64=""
+if [ -z "$PUB64" ]; then
+  b2_64=" [the ceremony carries no publishing move]"
+else
+  printf '%s' "$PUB64" | grep -qiE 'trunk' \
+    || b2_64="$b2_64 [the move does not name the trunk as what it publishes]"
+  printf '%s' "$PUB64" | grep -qiE 'report|says what|names what|shows what' \
+    || b2_64="$b2_64 [the move publishes without reporting what it published]"
+fi
+[ -z "$b2_64" ] && ok "B2 the publishing move publishes the trunk and reports what it published" \
+                || bad "B2 the publishing move publishes the trunk and reports what it published ($b2_64)"
+
+# B3 -- IF the trunk has no remote to publish to, THEN the system shall say so and continue the ceremony.
+# The RELATION is the fact: "says so" alone would be satisfied by the stop rule one sentence away, and
+# "continues" alone by any sentence about the ceremony carrying on.
+b3_64=""
+if [ -z "$PUB64" ]; then
+  b3_64=" [the ceremony carries no publishing move]"
+else
+  printf '%s' "$PUB64" | grep -qiE 'no remote|remote .{0,30}(does not|cannot) resolve|no remote trunk|unresolvable' \
+    || b3_64="$b3_64 [the move does not name the case where there is nothing to publish to]"
+  printf '%s' "$PUB64" | grep -qiE '(says?|states?) so[^.]{0,60}(continue|carries on|does not stop)|continue[^.]{0,60}says? so' \
+    || b3_64="$b3_64 [it does not say that an absent remote is stated and the ceremony continues]"
+fi
+[ -z "$b3_64" ] && ok "B3 an unresolvable remote trunk is stated, and the ceremony continues" \
+                || bad "B3 an unresolvable remote trunk is stated, and the ceremony continues ($b3_64)"
+
+# B4 -- IF the publish cannot complete, THEN the system shall stop the ceremony with the front's roster
+# row still in place. The same shape move 5 already uses for an unprovable distribution, and the reason is
+# the same: the record is written by then, so the row is the only thing left saying work remains.
+b4_64=""
+if [ -z "$PUB64" ]; then
+  b4_64=" [the ceremony carries no publishing move]"
+else
+  printf '%s' "$PUB64" | grep -qiE 'stops?|halts?' \
+    || b4_64="$b4_64 [a refused publish does not stop the ceremony]"
+  printf '%s' "$PUB64" | grep -qiE 'roster row|row (is )?still|row in place' \
+    || b4_64="$b4_64 [it does not leave the front's roster row in place, so nothing is left saying work remains]"
+fi
+[ -z "$b4_64" ] && ok "B4 a refused publish stops the ceremony with the roster row in place" \
+                || bad "B4 a refused publish stops the ceremony with the roster row in place ($b4_64)"
+
+# O4 -- the quick path's guarantee sits at the close, not before each commit. Both halves, because the
+# negative alone is satisfied by deleting the bullet: a guarantee removed is not a guarantee moved.
+QG64="$(msect "$QP64" '^## Guarantees Maintained' | tr -s ' \n' '  ')"
+o4_64=""
+[ -n "$QG64" ] || o4_64=" [the Guarantees section could not be located]"
+printf '%s' "$QG64" | grep -qiE 'validation before commit|validate before commit' \
+  && o4_64="$o4_64 [the guarantee still sits before each commit]"
+printf '%s' "$QG64" | grep -qiE 'at the close|before the close|closing ceremony|at its close' \
+  || o4_64="$o4_64 [the guarantee does not name the close as where the approval sits]"
+[ -z "$o4_64" ] && ok "O4 the quick path's approval sits at the close, not before each commit" \
+                || bad "O4 the quick path's approval sits at the close, not before each commit ($o4_64)"
 
 echo ""
 

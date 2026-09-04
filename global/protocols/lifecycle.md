@@ -152,16 +152,19 @@ Archiving is a **ceremony**, not a cleanup: it runs at every task close, one fro
 the coordinator. **The order is the protection** — nothing is recorded as done before it is in the trunk.
 The backlog protocol owns the order and owns these moves:
 
-1. The user validates the branch — inside a front commits are free, so what gets approved is the branch.
-   In the coordinator there is no branch to approve, and the per-commit rule stands unchanged there
+1. The user validates the work — commits are free per step in every checkout, so what gets approved is
+   the task's work as a whole and never each commit: the branch in a front, the task's own commits on the
+   trunk in the coordinator. One approval, and the ceremony has no other
 2. The coordinator collects the task's papers, which live outside version control and never travel with
    the branch
 3. The merge lands in the coordinator
 4. The record is written: `archive/T-XXX/summary.md`, the row out of BACKLOG.md, `artifacts/T-XXX/` deleted
 5. **The work is put into effect** — the project's own distribution command runs. Committed is not
    installed: a close that ends before this leaves the work non-existent for the sessions it governs
-6. The front's working copy is dismantled — only when the front has no next task
-7. The front's roster row is removed, the coordinator's last write — only when the front has no next task
+6. **The trunk is published** — at every close, a quick task's included. Landed is not reachable: a close
+   that ends before this leaves the work sitting on one machine
+7. The front's working copy is dismantled — only when the front has no next task
+8. The front's roster row is removed, the coordinator's last write — only when the front has no next task
 
 With a single front open, the collect, merge and dismantle moves have nothing to do: the task was worked in
 the coordinator, so its papers are already there, and there is no branch to merge and no second checkout to
