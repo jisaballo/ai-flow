@@ -62,7 +62,7 @@ close. A quick task never writes to BACKLOG.md's `## Icebox` itself.
 
 - TDD validation (tests must pass)
 - Atomic commits
-- User validation before commit
+- User validation of the work at the close, once — not before each commit
 - The closing row in the Quick Tasks table
 - Code comments stand alone — no task IDs in source (Execute protocol > Code Comments & Provenance)
 

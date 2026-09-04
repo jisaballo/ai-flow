@@ -78,7 +78,13 @@ For each step:
    - If tests fail -> Intentional change? Fix test. Unexpected? Fix code. (Conformance specs are the exception — see below.)
    - **Bounded Retry**: Max 3 fix attempts for the same test/error. After 3 failures, STOP and escalate to user with: what was tried, what failed, what the likely root cause is. Do not continue iterating blindly.
    - All tests MUST pass before proceeding
-4. **Stage changes** (do NOT commit — follow Commit Protocol from CLAUDE.md. User must validate first.)
+4. **Commit the step.** A step whose Verify command passes is committed where it stands, and nothing is
+   asked between steps — the approval for the task's work is given once, at move 1 of the closing
+   ceremony (backlog protocol), which owns the gate and states why it sits there. Two rules ride on this
+   commit and are the loop's own:
+   - **Atomic**: `type(scope): description`, with the `Co-Authored-By` line. One step, one commit.
+   - **Green**: the commit must pass tests. Step 3 above is what proves it, and a step that cannot get
+     there is escalated by its own Bounded Retry rather than committed red.
 
 ### Conformance Contracts Exception
 
