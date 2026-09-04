@@ -14052,6 +14052,39 @@ printf '%s' "$ST4_64" | grep -qiE 'must pass|passing tests|tests pass' \
 [ -z "$b1_64" ] && ok "B1 the execute loop commits its step, cites no approval, and holds the two rules that left the manual" \
                 || bad "B1 the execute loop commits its step, cites no approval, and holds the two rules that left the manual ($b1_64)"
 
+# B1b -- the lifecycle map's own EXECUTE list agrees with the owner it summarises. The map is what a
+# session opens at activation, so a retired rule surviving there is the copy that wins in practice. Nothing
+# read this line: before this leg, `grep -n 'Stage changes' test/validate.sh` returned zero rows, while B1
+# above bans the identical idiom one file over -- path-scoped, so none of it reached the map. Both halves,
+# because the negative alone passes on a deleted list and the positive alone on a list that commits while
+# still telling the reader not to.
+LCM64="$ROOT/global/protocols/lifecycle.md"
+LC64="$(awk '/^### 7\. EXECUTE/{f=1;next} (f && /^#+ /){exit} f' "$LCM64" \
+  | awk '/^[0-9]+\. /{p=1} p' | tr '\n' ' ' | tr -s ' ')"
+b1b_64=""
+[ -n "$LC64" ] || b1b_64=" [the map's EXECUTE step list could not be extracted]"
+printf '%s' "$LC64" | grep -qiE 'commit' \
+  || b1b_64="$b1b_64 [the map's execute list does not commit the step]"
+printf '%s' "$LC64" | grep -qiE 'stage changes|do not commit' \
+  && b1b_64="$b1b_64 [the map's execute list still withholds the commit, contradicting execute.md step 4]"
+[ -z "$b1b_64" ] && ok "B1b the lifecycle map's execute list commits the step, as execute.md does" \
+                 || bad "B1b the lifecycle map's execute list commits the step, as execute.md does ($b1b_64)"
+
+# B1c -- freeing the commit must not cancel a gate this loop does not own. The clause replaced here
+# ("nothing is asked between steps") was wider than the fact step 4 needed, which is that the COMMIT seeks
+# no approval. Read literally it also cancelled Supervised's rule -- a step-boundary gate, never the
+# commit's -- which `lifecycle.md`'s autonomy table owns and this epic keeps rather than retires (T-098
+# moves it into the execute skill; T-104 leaves the table standing until it does). The positive leg is
+# what makes this more than a banned phrase: step 4 has to CEDE the gate, not merely stop mentioning it.
+b1c_64=""
+[ -n "$ST4_64" ] || b1c_64=" [step 4 of the Execute Step Protocol could not be extracted]"
+printf '%s' "$ST4_64" | grep -qiE 'nothing is asked between steps' \
+  && b1c_64="$b1c_64 [step 4 cancels every between-step gate, including the one the autonomy table owns]"
+printf '%s' "$ST4_64" | grep -qiE 'lifecycle\.md|autonomy table' \
+  || b1c_64="$b1c_64 [step 4 does not cede the between-step gate to the level's owner]"
+[ -z "$b1c_64" ] && ok "B1c the execute loop frees the commit without cancelling the level's own gate" \
+                 || bad "B1c the execute loop frees the commit without cancelling the level's own gate ($b1c_64)"
+
 # B2 -- WHEN the ceremony reaches its publishing move, the system shall publish the trunk and report what
 # it published. The report is the leg, not the push: a move that pushes silently leaves the operator with
 # no way to tell a publish that happened from one that was skipped -- the same reason move 5 states its

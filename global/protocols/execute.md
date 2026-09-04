@@ -78,10 +78,14 @@ For each step:
    - If tests fail -> Intentional change? Fix test. Unexpected? Fix code. (Conformance specs are the exception — see below.)
    - **Bounded Retry**: Max 3 fix attempts for the same test/error. After 3 failures, STOP and escalate to user with: what was tried, what failed, what the likely root cause is. Do not continue iterating blindly.
    - All tests MUST pass before proceeding
-4. **Commit the step.** A step whose Verify command passes is committed where it stands, and nothing is
-   asked between steps — the approval for the task's work is given once, at move 1 of the closing
-   ceremony (backlog protocol), which owns the gate and states why it sits there. Two rules ride on this
-   commit and are the loop's own:
+4. **Commit the step.** A step whose Verify command passes is committed where it stands, and the commit
+   seeks no approval of its own — the approval for the task's work is given once, at move 1 of the closing
+   ceremony (backlog protocol), which owns the gate and states why it sits there. Where the task's level
+   sets a gate between steps — `protocols/lifecycle.md`'s autonomy table, which owns the levels — that
+   gate is untouched: it governs whether the next step begins, never whether this one is committed. The
+   two are one stop only while the commit is withheld for approval, which is what this step retires; the
+   distinction is stated because a clause wide enough to free the commit is wide enough to cancel a rule
+   this loop does not own. Two rules ride on this commit and are the loop's own:
    - **Atomic**: `type(scope): description`, with the `Co-Authored-By` line. One step, one commit.
    - **Green**: the commit must pass tests. Step 3 above is what proves it, and a step that cannot get
      there is escalated by its own Bounded Retry rather than committed red.

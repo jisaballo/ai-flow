@@ -111,7 +111,7 @@ This phase bridges planning and execution. The tests become the contract.
 2. Make changes
 3. Run the step's Verify command
 4. Handle failures (bounded retry: max 3 attempts per error)
-5. Stage changes (do NOT commit)
+5. Commit the step — `protocols/execute.md` owns the commit, its format and its green precondition
 
 **Guardrails**:
 - **Bounded Retry**: 3 failures on the same error → stop and escalate
