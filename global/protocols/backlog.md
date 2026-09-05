@@ -337,23 +337,37 @@ three come from the task's own sheet and its papers, never from what the session
   silence is a decision rather than an omission. What a cut costs is the account of *why* something was done: the next
   session can answer only from what was written, which is what `## Ruled out` above exists to catch.
 
-  **Both closes state the line on every sitting, the short ones included.** There is no threshold to cross
-  and nothing for the close to measure: it reports whether the sitting can end here and the operator
-  decides. What this replaced spoke only where the engine had judged the sitting costly — a judgement made
-  on a signal the operator can see and the phase cannot — so the operator paid a turn asking whether
-  stopping was possible at all, which is the measured cost that bought the change.
+  **Both closes state the line on every sitting, the short ones included.** **No threshold decides whether
+  the line is spoken**: it is owed whatever the numbers say. What this replaced spoke only where the engine
+  had judged the sitting costly — a judgement made on a signal the operator can see and the phase could
+  not — so the operator paid a turn asking whether stopping was possible at all, which is the measured cost
+  that bought the change.
   Saying it always is what makes it a fact rather than a suggestion: a line that appears only sometimes is
   one whose absence has to be interpreted, and guidance that is wrong on the short sitting is guidance that
   stops being read on the long one.
+  What the close measures is therefore **not whether to speak but what to recommend** once it has, and the
+  two are kept apart deliberately: a condition allowed to reach the first of them is a condition that
+  silences the line, which is the whole of what this paragraph replaced.
 
-  **The form is fixed, and it is short.** The line carries three things and no more: **cut available** —
-  whether this sitting can end here — stated as a fact, not advice; the position the sheet now declares;
-  and where the next session picks up, which is a pointer to the sheet's `next action:` and never a copy of
-  it. It **requests no input**. There is no recommendation, and its absence is a decision rather than an
-  omission: the signal that would justify one is the context-cost note, which is delivered to the operator
-  and not to the phase, so advice offered here would be inferred from turn count rather than measured — and
-  a note that is wrong once is a note that stops being read. A recommendation belongs in this line on the
-  day the phase can see that signal, and not before. The precondition's own legs, the rung the task was
+  **The form is fixed, and it is short.** It is one paragraph and stays one: the rule below is read over
+  this paragraph alone, because every element of the form has a second satisfier elsewhere in this bullet,
+  and a blank line inside it silently drops whatever follows out of what is read. The line carries three
+  things and no more: **cut available** — whether this sitting can end here — stated as a fact, not advice,
+  and it **recommends the cut** wherever the context this session has accumulated exceeds what a fresh
+  session would start with; the position the sheet now declares; and where the next session picks up, which
+  is a pointer to the sheet's `next action:` and never a copy of it. It **requests no input**. That bar is a
+  **comparison and not a threshold**, and both of its quantities are handed to the phase on every prompt by
+  the hook that measures them, so nothing is written down here and nothing can go stale — the day a fresh
+  session starts from somewhere else, the rule is still right. It was derived rather than chosen, and what
+  that bought is on the record: the number this paragraph was about to record as a judgement sat three to
+  four times past the simulated break-even, and turn count, which is what an unmeasured rule would have
+  keyed on, predicts that break-even three to four times more loosely than context does. Below the bar the
+  close **states no recommendation at all**, which is not the same as reassurance — an absence carries no
+  claim, while a line calling the sitting cheap is one more thing to be wrong about, and a line that is
+  wrong once stops being read. Cost is also not the only reason to stay, and the recommendation must not be
+  read as licence to cut anywhere: it stops being the binding constraint early, and what keeps a cut from
+  being taken at every possible stop is quality — which is why the chain permits one only at the two
+  boundaries where a handoff artifact already exists. The precondition's own legs, the rung the task was
   resolved by and the ladder are not part of it: those are the run's report, and a close that narrates them
   buries its own reason under procedure. A turn ended with the operator's instruction unserved is itself a
   request to repeat it, so a close given no form to end in is one the model fills with a question — which is

@@ -10071,8 +10071,17 @@ else
     || a3p_50=" [nothing says the line is owed on every sitting, so the rule that emits it has no home]"
   printf '%s' "$CP50" | grep -qiE 'short ones included|cheap or expensive|cheap ones included|the short ones' \
     || a3p_50="$a3p_50 [the short sitting is not named as included, which is the case the retired rule excluded]"
-  printf '%s' "$CP50" | grep -qiE 'no threshold|nothing (for the close )?to measure|nothing to measure' \
-    || a3p_50="$a3p_50 [it does not deny the threshold, so the paragraph can shrink to an adverb that no longer replaces anything]"
+  # RE-KEYED, and the retired alternation is named rather than quietly dropped. It accepted `nothing to
+  # measure`, and the close now measures: what is unconditional is the LINE, what is measured is the
+  # recommendation inside it. Left as it was, the paragraph could be written back to "nothing for the
+  # close to measure" and stay green while contradicting the rule two paragraphs down — green, which is
+  # worse than unguarded. The direction it held is unchanged and stays first: the EMISSION is denied a
+  # threshold. The second leg is what the re-key adds, and it is the half that stops a condition creeping
+  # back onto whether the line is spoken at all — which is the failure the whole paragraph replaced.
+  printf '%s' "$CP50" | grep -qiE 'no threshold decides|owed whatever the numbers' \
+    || a3p_50="$a3p_50 [it does not deny that a threshold decides whether the line is spoken]"
+  printf '%s' "$CP50" | grep -qiE 'not whether to speak but what to recommend|whether to speak[^.]*what to recommend' \
+    || a3p_50="$a3p_50 [it does not separate what the close measures from whether the line is owed, so a condition can creep back onto the emission]"
   [ -z "$a3p_50" ] && ok "A3' the line is owed on every sitting, the short ones named, and the threshold denied" \
                    || bad "A3' the line is owed on every sitting, the short ones named, and the threshold denied ($a3p_50)"
 
@@ -10134,8 +10143,24 @@ else
       || a7_50="$a7_50 [it does not name where the next session resumes as an element of the line]"
     printf '%s' "$FORM50" | grep -qiE 'pointer to the sheet|never a copy' \
       || a7_50="$a7_50 [it does not require that element to be a pointer rather than a copy of the sheet's line]"
-    printf '%s' "$FORM50" | grep -qiE 'deliberately absent|absence is a decision|until the (context-)?cost note reaches' \
-      || a7_50="$a7_50 [it does not say the recommendation is deliberately absent, so a later reader reads the absence as an omission and repairs it]"
+    # RE-KEYED. It required the recommendation to be *deliberately absent*, and the recommendation is now
+    # made — the signal it waited for reaches the phase, which is the condition this very paragraph named
+    # as the day it would. Left standing, the leg pins the engine to prose that contradicts the rule
+    # beside it, and pins it GREEN, so the change could not ship without the suite objecting to it.
+    # What replaces it is the pairing the new rule needs: the recommendation is made, and it is made on a
+    # COMPARISON rather than on a number — the half a later editor spends first, because a constant reads
+    # as more concrete than a rule.
+    #
+    # FLATTENED, unlike the legs above, and only because it has to be: both phrases straddle a line break
+    # in the paragraph as it is wrapped today. A leg keyed on where someone pressed return reports a rule
+    # missing while it stands — this suite has now been bitten by that twice in one change.
+    FLATF50="$(printf '%s' "$FORM50" | tr -s ' \n' '  ')"
+    printf '%s' "$FLATF50" | grep -qiE 'recommends? (the )?cut|recommend cutting' \
+      || a7_50="$a7_50 [the line makes no recommendation, so the signal the phase is now handed changes nothing]"
+    printf '%s' "$FLATF50" | grep -qiE 'comparison and not a threshold|comparison, not a threshold' \
+      || a7_50="$a7_50 [it does not say the bar is a comparison rather than a threshold, so a constant can be written back in]"
+    printf '%s' "$FLATF50" | grep -qiE 'deliberately absent|until the (context-)?cost note reaches' \
+      && a7_50="$a7_50 [the retired sentence still says the recommendation is absent, contradicting the rule beside it]"
     # The two legs CARRIED FORWARD from the retired `d50`. They guarded obligations the new rule keeps, and
     # they are here because the key that held them is gone: dropped with it, the form could start asking for
     # an input or grow to a paragraph and nothing would object. `one sentence` is deliberately not an
@@ -10244,6 +10269,14 @@ grep -qiE 'close of Execute|Execute closes' "$MAP50" 2>/dev/null \
 # "the session has grown expensive" -- that hook's whole subject IS session cost, it is legitimate, and
 # C49's `f49` control exists to keep it exactly as it is. A negative leg that reddens the file another
 # leg protects is a leg that will be deleted rather than obeyed.
+#
+# THIS ROW SURVIVES the close gaining a recommendation, and the reason is written here because without it
+# the next reader meets a row forbidding a cost condition beside a rule that states one, and deletes the
+# row as contradicted. The two are different rules. What this forbids is the RETIRED gate: a condition on
+# whether the line is SPOKEN at all, inferred from how expensive the sitting felt. What the close now
+# carries is a condition on what the line RECOMMENDS, computed from two quantities the hook measures and
+# hands over. The line is still owed on every sitting -- A3' is the positive half of exactly that -- and
+# the retired vocabulary appears nowhere, which is what this row counts.
 GATE50_ANY="$GATE50"'|grown costly|grew costly|still cheap'
 # The sweep roots are PROVEN to exist before the count is trusted. With `2>/dev/null` swallowing grep's
 # errors, a renamed or missing directory yields no hits, the count is zero, and a search that never
@@ -10336,6 +10369,11 @@ done
 # The file is PROVEN READABLE before its silence is believed. An absence check over a path that cannot be
 # read finds nothing and reports green, so a renamed or deleted map would certify the very claim this row
 # forbids -- and this is the only row standing between the map and a re-added cost condition.
+#
+# UNAFFECTED by the close gaining a recommendation, for A8's reason one row up: what the map may not claim
+# is that the closes STAY SILENT on a cheap sitting, and they do not -- the line is owed always, and only
+# the recommendation inside it is conditional. A reader who reads this row as contradicted by the new bar
+# has confused the emission with its content, which is the confusion A3''s second leg now guards.
 a11_50=""
 [ -r "$MAP50" ] || a11_50=" [the lifecycle map cannot be read, so its silence proves nothing]"
 grep -qiE 'grew costly|grown costly|still cheap|stays? silent (on|while|where)' "$MAP50" 2>/dev/null \
@@ -14475,7 +14513,11 @@ w65="$(model65 "$OUTA65" | wc -w | tr -d ' ')"
 # The form paragraph ALONE, for the reason C50's own rows record at length: every element of the line has
 # a second satisfier somewhere in `### The phase precondition`, and a row keyed on the region would be
 # green with the form's own requirement deleted.
-FORM65="$(awk '/\*\*The form is fixed/{f=1} f&&/^[[:space:]]*$/{exit} f' "$BL65" 2>/dev/null)"
+# FLATTENED at the source, so every leg below is keyed on the words and not on where the paragraph was
+# wrapped. Written line-wise first, two legs reported the rule missing while it stood — the same defect
+# O3 had, in the same change, and the second time is what says it belongs at the extraction rather than
+# in each reader's memory.
+FORM65="$(awk '/\*\*The form is fixed/{f=1} f&&/^[[:space:]]*$/{exit} f' "$BL65" 2>/dev/null | tr -s ' \n' '  ')"
 
 # A9 -- WHILE the accumulated context exceeds a fresh session's starting cost, the phase close shall
 # recommend cutting at this stop; and WHILE it does not, the close shall state no recommendation.
