@@ -1507,7 +1507,7 @@ if [ -n "$CER" ]; then
   # The forward citation, by NUMBER. The suite already treats an unpinned numeric cross-reference as a
   # defect one section down — a half-renumber leaves a citation pointing at the wrong move while the
   # section title still matches — and this rule mints two such citations, one in each direction.
-  pair 5 'step 8' 'After ARCHIVE' "the label rewrite cites the step that performs it"
+  pair 5 'step 7' 'After ARCHIVE' "the label rewrite cites the step that performs it"
 else
   bad "the protocol defines the ceremony that opens a workstream"
   bad "a single open front has nothing to weigh and nothing to create (no section)"
@@ -1871,13 +1871,16 @@ if [ -n "$CLO" ]; then
       # happened to say "the record" would be filed as the ledger and the sequence would read green with
       # the new move classified as an old one. The heads are kept free of each other's words as well.
       *publish*)             seq="$seq P" ;;
+      # The papers' own move. Ahead of the dismantling arm for the reason the publish arm gives above:
+      # this head speaks of a checkout, and the arm that owns that word would swallow it whole.
+      *delet*)               seq="$seq K" ;;
       *dismantl*|*worktree*) seq="$seq D" ;;
       *roster*|*row*)        seq="$seq R" ;;
       *)                     seq="$seq ?" ;;
     esac
     i=$((i+1))
   done
-  [ "$seq" = " V C M L X P D R" ] \
+  [ "$seq" = " V C M L X P K D R" ] \
     && ok "the protocol defines the ceremony that closes a front" \
     || bad "the protocol defines the ceremony that closes a front (moves unnamed or out of order:$seq)"
 
@@ -2024,7 +2027,7 @@ NCLO4="$(awk '/^## Closing a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; ne
 if printf '%s' "$ARC7" | grep -qiE 'no next task' \
    && printf '%s' "$ARC7" | grep -qiE "move $NCLO4" \
    && printf '%s' "$ARC7" | grep -qiE 'Closing a Workstream' \
-   && ! printf '%s' "$ARC7" | grep -qiE '^8\. (Remove|Delete) ' \
+   && ! printf '%s' "$ARC7" | grep -qiE "^$NROW7\. (Remove|Delete) " \
    && printf '%s' "$EPI6" | grep -qiE "move $NCLO4" \
    && printf '%s' "$EPI6" | grep -qiE 'only remover|Closing a Workstream' \
    && ! printf '%s' "$EPI6" | grep -qiE '^6\. (Remove|Delete) '; then
@@ -3944,13 +3947,24 @@ else
   bad "rung 2 admits the released claim and scopes 'alone' to the sheets declaring no branch (no rung)"
 fi
 
+# The preamble used to carve out the one step that reached into another checkout. That step is now a move
+# of the ceremony, so the carve-out is not merely stale — kept, it would send a reader looking inside this
+# checklist for an act no step here performs. Both halves: the checklist is wholly the ledger writer's, and
+# the act that left is named where it went, or the preamble states a scope with no account of the exception
+# every earlier reader was told about.
 PRE23="$(awk '/^### After ARCHIVE/{f=1;next} /^[0-9]+\. /{f=0} f' "$BLG23" | tr '\n' ' ' | tr -s ' ')"
 if [ -n "$PRE23" ]; then
-  printf '%s' "$PRE23" | grep -qiE 'except step 5|reaches into the checkout' \
-    && ok "the checklist preamble carves out the step that leaves the coordinator" \
-    || bad "the checklist preamble carves out the step that leaves the coordinator"
+  p23=""
+  printf '%s' "$PRE23" | grep -qiE 'except step [0-9]' \
+    && p23="$p23 [the preamble still carves out a step that no longer deletes anything]"
+  printf '%s' "$PRE23" | grep -qiE 'nothing here reaches|reaches into no|no step (here )?reaches' \
+    || p23="$p23 [the preamble does not state that no step here leaves the coordinator]"
+  printf '%s' "$PRE23" | grep -qiE 'move [0-9]+ of the ceremony|move [0-9]+ of .## Closing' \
+    || p23="$p23 [the preamble does not name where the act that left went]"
+  [ -z "$p23" ] && ok "the checklist preamble keeps the whole checklist inside the coordinator" \
+                || bad "the checklist preamble keeps the whole checklist inside the coordinator ($p23)"
 else
-  bad "the checklist preamble carves out the step that leaves the coordinator (no preamble)"
+  bad "the checklist preamble keeps the whole checklist inside the coordinator (no preamble)"
 fi
 
 # The index a reader consults for what happens to the sheet at archive. The review's prover added this
@@ -10937,13 +10951,20 @@ else
   # own reason. A count-only row would pass both mutations. Both patterns name the ACT, not a step number:
   # this task renumbers the checklist, and a row keyed on the numbers would have to be rewritten by the very
   # change it is meant to judge.
+  # The two acts no longer share a section: the write-back is a step of this checklist, which move 4 runs,
+  # and the deletion is a move of the ceremony. So the comparison is between the MOVE that runs the
+  # checklist and the move that deletes — read from the ceremony, both by their act. Comparing line numbers
+  # inside the checklist would now find only one of the two and report the other as deleted prose.
+  CLOA72="$(awk '/^## Closing a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BK72")"
   a1wb72="$(printf '%s\n' "$ARC72" | grep -niE 'Icebox write-back' | head -1 | cut -d: -f1)"
-  a1del72="$(printf '%s\n' "$ARC72" | grep -niE '\*\*Delete\*\* .artifacts/T-XXX' | head -1 | cut -d: -f1)"
+  a1rec72="$(step_no 'record is written' "$CLOA72")" || a1rec72=""
+  a1del72="$(step_no 'delet' "$CLOA72")"             || a1del72=""
   c1_72=""
   [ -n "$a1wb72" ]  || c1_72="$c1_72 [the checklist carries no Icebox write-back move]"
+  [ -n "$a1rec72" ] || c1_72="$c1_72 [the ceremony carries no move that writes the record, so the checklist runs nowhere]"
   [ -n "$a1del72" ] || c1_72="$c1_72 [the move that deletes the task's papers did not match]"
-  if [ -n "$a1wb72" ] && [ -n "$a1del72" ] && [ "$a1wb72" -ge "$a1del72" ]; then
-    c1_72="$c1_72 [the write-back is ordered at or after the deletion of the papers it publishes from]"
+  if [ -n "$a1rec72" ] && [ -n "$a1del72" ] && [ "$a1rec72" -ge "$a1del72" ]; then
+    c1_72="$c1_72 [the checklist's own move is ordered at or after the deletion of the papers it publishes from]"
   fi
   [ -z "$c1_72" ] && ok "A1 the write-back runs before the papers it publishes from are deleted" \
                   || bad "A1 the write-back runs before the papers it publishes from are deleted ($c1_72)"
@@ -11046,7 +11067,7 @@ else
   # from its step's own act, so a renumber moves them together; what a derived count would give up is the
   # one reading nothing else notices — a step appearing or vanishing, which is precisely the event that
   # renumbers the rest. Deriving both would leave the pair agreeing with each other about anything.
-  [ "$steps72" -eq 8 ] || c10_72="$c10_72 [the checklist has $steps72 numbered steps, not the eight its citations are written against]"
+  [ "$steps72" -eq 7 ] || c10_72="$c10_72 [the checklist has $steps72 numbered steps, not the seven its citations are written against]"
   # The acts, and the numbers they currently occupy. A literal here is the failure IB-001 records: after a
   # renumber the leg lands on a different step and passes for the wrong reason, with its own name still
   # claiming the step it no longer reads.
@@ -14182,6 +14203,9 @@ NMV64="$(printf '%s\n' "$CLO64" | grep -cE '^[0-9]+\. ')"
 NPUB64="$(printf '%s\n' "$CLO64" | awk '/^[0-9]+\. /{h=tolower($0); if (h ~ /publish/ && h !~ /distribut/ && h !~ /effect/) {print $0+0; exit}}')"
 PUB64=""
 [ -n "$NPUB64" ] && PUB64="$(mv64 "$NPUB64")"
+# The papers' deletion, located by its act for the same reason: it is what now sits between the publish
+# and the tail, and every leg that used to measure the publish against the end measures it through this.
+NDEL64="$(step_no 'delet' "$CLO64")" || NDEL64=""
 
 # A1 -- the gate's home. The system shall state the commit gate in `global/protocols/backlog.md` and not
 # in `global/CLAUDE.md`. Both halves on one row: the positive alone leaves the manual free to keep its own
@@ -14216,13 +14240,16 @@ while [ "$i64" -le "$NMV64" ]; do
     # word would file this move as that role, and the sequence would read green over the wrong reading.
     *publish*)             seq64="$seq64 P" ;;
     *record*|*ledger*)     seq64="$seq64 L" ;;
+    # The papers' own move, ahead of the dismantling arm: this head speaks of a checkout, and the arm
+    # that owns that word would file the deletion as the dismantling and read the sequence green.
+    *delet*)               seq64="$seq64 K" ;;
     *dismantl*|*worktree*) seq64="$seq64 D" ;;
     *roster*|*row*)        seq64="$seq64 R" ;;
     *)                     seq64="$seq64 ?" ;;
   esac
   i64=$((i64+1))
 done
-[ "$seq64" = " V C M L X P D R" ] \
+[ "$seq64" = " V C M L X P K D R" ] \
   && ok "A2 the ceremony publishes between the distribution and its tail" \
   || bad "A2 the ceremony publishes between the distribution and its tail (moves unnamed or out of order:$seq64)"
 
@@ -14233,8 +14260,12 @@ a3_64=""
 if [ -z "$NPUB64" ]; then
   a3_64=" [the ceremony carries no publishing move]"
 else
-  [ "$NPUB64" -eq $((NMV64-2)) ] \
-    || a3_64="$a3_64 [the publishing move is $NPUB64 of $NMV64, so it does not sit immediately before the two tail moves]"
+  # The publish is followed by the papers' deletion and then the tail, so its distance from the end is
+  # three and not two. Both ends stay derived: what this leg is about is that the publish precedes every
+  # unconditional move that can still stop the ceremony, and a literal would have to be rewritten by the
+  # next insertion rather than fail on it.
+  [ -n "$NDEL64" ] && [ "$NPUB64" -lt "$NDEL64" ] && [ "$NDEL64" -eq $((NMV64-2)) ] \
+    || a3_64="$a3_64 [the publish is move $NPUB64 and the deletion move $NDEL64 of $NMV64, so the publish does not precede the deletion that precedes the tail]"
   printf '%s' "$PUB64" | grep -qiE 'every (task )?close|each (task )?close|always' \
     || a3_64="$a3_64 [the publishing move does not say it runs at every close]"
   printf '%s' "$PUB64" | grep -qiE 'no next task|has no next|last task' \

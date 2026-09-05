@@ -59,7 +59,7 @@ touch.
 **two** sites — the count is the fact, for the reason **Checkout** above gives about its own four. The
 closing ceremony's **dismantling** move: the ownership condition says the checkout is removed by whatever
 created it, and this column is the only thing that says what that was. And the archive checklist's
-**step 8**, whose label rewrite has first to ask whether that tool offers a mutable label at all; it runs
+**step 7**, whose label rewrite has first to ask whether that tool offers a mutable label at all; it runs
 in the coordinator, which has nothing else to learn the front's tool from. The coordinator's own row has
 nothing to name — nothing created it.
 
@@ -718,7 +718,7 @@ what activation has always been, plus the declaration in step 2.
    made at every opening yields inconsistent names, and inconsistency reads worse at a glance than a
    boring uniform scheme. The **current task** goes on whatever **mutable label** the tool offers, and is
    rewritten there by the act that already advances the roster's task field (`### After ARCHIVE (single
-   task)`, step 8) rather than by an act of its own. Where the tool **offers no** such label, nothing is
+   task)`, step 7) rather than by an act of its own. Where the tool **offers no** such label, nothing is
    added and the **roster is the glance** — said out loud, because a silence here reads as a step somebody
    forgot rather than as the floor it is. And a creation-time name that seeds several fields at once names
    the **path**, **never the branch**: a front's branch is **task-scoped** for the reason `## State Files`
@@ -782,11 +782,11 @@ merge is one move. Only the coordinator runs it, and it runs one front at a time
 half of `## Opening a Workstream` above: what that ceremony declared, created and seeded is what this
 one validates, collects and takes down.
 
-It runs at **every task close**, not once per front: moves 7 and 8 are its tail and run only when the
+It runs at **every task close**, not once per front: moves 8 and 9 are its tail and run only when the
 front has no next task, because a worktree holds a workstream — an epic with its serial chain inside —
 and lives across the tasks in it.
 
-With a single front open — the ordinary case — moves 2, 3 and 7 have nothing to do: the task was worked in
+With a single front open — the ordinary case — moves 2, 3 and 8 have nothing to do: the task was worked in
 the coordinator, so its papers are already there, there is no branch to merge, and there is no second
 checkout to take down. The ceremony then reduces to what closing has always been. Naming only the two that
 need no second checkout reads as though the merge always has work, which turns the ordinary close into a
@@ -807,6 +807,12 @@ left closed-but-unarchived is one whose papers, roster row and trunk all disagre
 recorded as done before it is in the trunk — so a ceremony interrupted at any move leaves either work
 still to do or work already safe, never a lie in the record. Nothing enforces the order: the task's own
 sheet is where an interrupted close is written down, and the roster is the queue.
+
+**Which is why the papers survive every move that can stop the ceremony.** The sentence above designates
+them as the carrier, and a carrier must outlive every stop it is designated for — so nothing destroys
+them while a later move can still halt. That is what puts their deletion at the end and not in the
+record: the ceremony has grown two stops past the merge, and the deletion's own reason for sitting late
+was written when the merge was the last thing that could fail.
 
 1. **The user validates the work.** Commits are free per step in every checkout (see above), so what is
    approved here is the task's work as a whole and never each commit: the front's branch where the task
@@ -871,7 +877,22 @@ sheet is where an interrupted close is written down, and the roster is the queue
    remains. It runs at **every task close**, a quick task's included, and carries none of the condition
    the two moves below it do.
 
-7. **The front's working copy is dismantled by whatever created it** — the counterpart of the ownership
+7. **The task's papers are deleted.** `artifacts/T-XXX/` goes, in **every checkout that holds it** and
+   not only the coordinator's. A task worked in a linked worktree leaves a copy there, and the tail below
+   takes that checkout down only where the front's chain ends: a front continuing its chain keeps the
+   copy, the next task's sheet claims the same branch, and the checkout is left with two claims and no
+   way to say which task it is on. Locate the front's checkout the way move 2 does, which is the one
+   place that rule is written. What makes this safe is that the record is already written: the archive
+   checklist's summary step ran inside move 4, so what is deleted is a copy of what the archive holds.
+   Which is why it happens **here and not earlier — never before the collection, and never at collection
+   time**: what can still fail is not the merge alone but the merge, the distribution and the publish,
+   and a front stopped at any of the three is a front still working that task, with the papers it needs
+   gone and git unable to restore what it never tracked. It runs at **every task close** and carries
+   none of the condition the two moves below it do — a quick task keeps no papers, so it has nothing
+   here to delete, and the move **says so** rather than reading as a step somebody skipped.
+   The two moves below it are conditional; this one never is.
+
+8. **The front's working copy is dismantled by whatever created it** — the counterpart of the ownership
    condition in step 5 of the opening, and what created it is read from that front's **roster row**,
    where move 7 of the opening wrote it. Claude Code's `ExitWorktree` removes only what `EnterWorktree`
    created **in this session** and is a declared no-op for anything else, so it takes down a front opened
@@ -879,10 +900,11 @@ sheet is where an interrupted close is written down, and the roster is the queue
    another front-end — is removed by that tool's own means, or by `git worktree remove`, which is also
    what a row naming no tool leaves the move with. What says the
    move happened is the repository's own answer, not the tool's: the checkout no longer appears in
-   `git worktree list`. Never before move 2: removing the checkout destroys the task's papers, and git
-   cannot restore what it never tracked. Runs only when the front has no next task.
+   `git worktree list`. Never before move 2: removing the checkout destroys the task's papers before the
+   coordinator holds them, and git cannot restore what it never tracked. Runs only when the front has no
+   next task.
 
-8. **The front's roster row is removed** — the coordinator's last write, and the roster's own proof that
+9. **The front's roster row is removed** — the coordinator's last write, and the roster's own proof that
    the front is closed. Not while `git worktree list` still names that front's checkout: the row is then
    the only thing left saying work remains. Runs only when the front has no next task.
 
@@ -893,8 +915,9 @@ sheet is where an interrupted close is written down, and the roster is the queue
 ### After ARCHIVE (single task)
 
 This checklist is what move 4 of `## Closing a Workstream` runs, and it runs in the coordinator:
-the ledger has one writer, and every step below is that writer at work — except step 5, which also
-reaches into the checkout where the task was worked to delete a copy of what it just archived.
+the ledger has one writer, and every step below is that writer at work. Nothing here reaches into
+another checkout — the one act that did is now move 7 of the ceremony, which is the only move of the
+close that touches a checkout the coordinator does not own.
 
 1. **Steering update**: did the task teach or modify a domain rule? -> edit the rule in the steering file's **body** AND regenerate its `## Nano` line **in the same edit** — an edit that touches only one of the two is incomplete. No new rule learned -> skip.
 2. **product.md write-back**: copy every rule from understand.md's `New business rules minted` into product.md's Business Rules (with T-XXX provenance); update the Glossary if the task sharpened a term. A business rule that stays only in the archived artifact will be re-asked or re-assumed. None minted -> skip.
@@ -938,30 +961,22 @@ reaches into the checkout where the task was worked to delete a copy of what it 
    Nothing staged and nothing touched -> skip, and say which of the two halves was empty. It is not a
    prompt offering two empty lists.
 
-   **Why it sits here.** It publishes **from** the task's papers, and step 5 below deletes them: ordered
-   after that move it would have no source to read. That is also why the position is not a preference —
-   any position that satisfies it renumbers the steps beneath, and the citations were moved with them.
+   **Why it sits here.** It publishes **from** the task's papers, and move 7 of the closing ceremony
+   deletes them: this checklist runs inside move 4, so the papers are still there to read from, and no
+   step below it may be allowed to outlive them. That is also why the position is not a preference — any
+   position that satisfies it renumbers the steps beneath, and the citations move with them.
 4. Generate `archive/T-XXX/summary.md` (see Archive Summary template)
-5. **Delete** `artifacts/T-XXX/` entirely — in **every checkout that holds it**, not only here. A task
-   worked in a linked worktree leaves a copy there, and the ceremony's tail removes that checkout only
-   when the front has no next task: a front continuing its chain keeps the copy, the next task's sheet
-   claims the same branch, and the checkout is left with two claims and no way to say which task it is
-   on. Locate the front's checkout the way move 2 of the closing ceremony locates it, which is the one
-   place that rule is written. What makes this safe is that the record is already written: step 4
-   generated the summary, so what is deleted is a copy of what the archive holds. Which is also why it
-   happens **here and not earlier — never before the collection, and never at collection time**: move 3
-   can still stop the ceremony, and a front whose merge failed is a front still working that task, with
-   the papers it needs gone and git unable to restore what it never tracked.
-6. Remove task from BACKLOG.md (move from Done to nowhere — it's in the archive now)
-7. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
-8. Leave the workstream row to move 8 of `## Closing a Workstream`, its sole owner: the row is removed
+5. Remove task from BACKLOG.md (move from Done to nowhere — it's in the archive now)
+6. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
+7. Leave the workstream row to move 9 of `## Closing a Workstream`, its sole owner: the row is removed
    only when the front has no next task, and a front continuing its chain keeps its row with the task
    field advanced (coordinator only — other open fronts keep theirs). **The same act rewrites the front's
    mutable label** where its tool offers one, to the task the row now names — this is the only statement
    of the continuing case, so a label left to an act of its own is a label nobody would ever rewrite, and
    the front would go on announcing a task that closed here. Where the tool offers none there is nothing
    to rewrite and the row is the whole of it (see move 5 of `## Opening a Workstream`). The task's
-   `state.md` went with `artifacts/T-XXX/` in step 5.
+   `state.md` is still here: it goes with `artifacts/T-XXX/` at move 7 of the ceremony, two moves after
+   this checklist has finished.
 
 ### Business-Miss Rule
 
@@ -981,13 +996,16 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
    precisely why the list it governs reached 23 entries outliving five closed epics — a door reachable only
    by a ceremony most entries never live to see is a door that is shut.
 2. Generate `archive/E-XXX-[slug].md` (see Epic archive template) — surviving Icebox promotions go under "What Was NOT Done"
-3. **Verify** that `artifacts/` retains no folder of a task of this epic — deleting is the per-task
-   close's own move (step 5 above), which knows what it archived. If a folder is still there, name it
-   and stop: it belongs either to a task closed without its checklist or to a front that is still
-   open, and a sweep cannot tell those apart.
+3. **Verify** that `artifacts/` retains no folder of a task of this epic — deleting is move 7 of
+   `## Closing a Workstream`, which runs after the publish and knows what it archived. If a folder is
+   still there, name it and stop: it belongs to a task closed without its checklist, to a front that is
+   still open, or to a **close halted after the record** — the deletion is the last thing the ceremony
+   does, so a close stopped at the distribution or the publish leaves exactly this folder behind, and
+   a sweep cannot tell the three apart. Naming all three is the whole of the move: a diagnosis offering
+   two sends the operator to re-run a checklist that already ran.
 4. Remove all epic tasks from BACKLOG.md Done section
 5. Move the epic row to `archive/EPICS.md` + its Execution Order block to `archive/EXECUTION-ORDERS.md` (Size Budget)
-6. **Verify** the roster holds no row for a front of this epic — move 8 of `## Closing a Workstream` is
+6. **Verify** the roster holds no row for a front of this epic — move 9 of `## Closing a Workstream` is
    the only remover, and by now it has run for each of them. A row still there names a front that is
    still open: name it and stop, rather than removing it here (rows of fronts outside the epic stay).
 

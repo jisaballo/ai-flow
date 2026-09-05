@@ -158,13 +158,17 @@ The backlog protocol owns the order and owns these moves:
 2. The coordinator collects the task's papers, which live outside version control and never travel with
    the branch
 3. The merge lands in the coordinator
-4. The record is written: `archive/T-XXX/summary.md`, the row out of BACKLOG.md, `artifacts/T-XXX/` deleted
+4. The record is written: `archive/T-XXX/summary.md`, the row out of BACKLOG.md, and the task's line
+   struck in its epic's Execution Order block by the same act that removes the row
 5. **The work is put into effect** — the project's own distribution command runs. Committed is not
    installed: a close that ends before this leaves the work non-existent for the sessions it governs
 6. **The trunk is published** — at every close, a quick task's included. Landed is not reachable: a close
    that ends before this leaves the work sitting on one machine
-7. The front's working copy is dismantled — only when the front has no next task
-8. The front's roster row is removed, the coordinator's last write — only when the front has no next task
+7. **The task's papers are deleted** — `artifacts/T-XXX/` goes, in every checkout that holds it, and
+   only here. The papers are where an interrupted close is written down, so nothing destroys them while
+   a later move can still stop: what can fail by now is the merge, the distribution and the publish
+8. The front's working copy is dismantled — only when the front has no next task
+9. The front's roster row is removed, the coordinator's last write — only when the front has no next task
 
 With a single front open, the collect, merge and dismantle moves have nothing to do: the task was worked in
 the coordinator, so its papers are already there, and there is no branch to merge and no second checkout to
