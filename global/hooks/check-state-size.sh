@@ -122,6 +122,23 @@ if [ -z "$EVENT_NAME" ] && [ -n "$STOP_PAYLOAD" ] && ! command -v python3 >/dev/
   esac
 fi
 
+# Escaping for the path that has no parser to serialise with. `printf` splices this text into a JSON
+# string literal, and until now its validity rested on a comment asking nobody in particular to keep
+# quotes, backslashes and newlines out of every report this file can produce. That is not a contract, it
+# is a hope: the accumulator joins reports with a raw newline, which is already illegal inside a JSON
+# string, so the first run carrying two reports emitted a malformed document. The failure is silent and
+# total — the harness drops it and the note reaches neither audience, on exactly the sessions the note
+# exists for.
+#
+# Three characters is the whole job here: backslash first, so it cannot double-escape what the next
+# substitution adds, then the quote, then real newlines folded to their escape. Every report this file
+# builds is ASCII prose and counts, so nothing else can appear.
+json_escape() {  # $1 = raw text -> the same text safe inside a JSON string literal
+  printf '%s' "$1" \
+    | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' \
+    | awk 'NR>1 { printf "\\n" } { printf "%s", $0 }'
+}
+
 # TWO BUCKETS, and the split is the whole of what this guard now decides. A report goes to `blockers`
 # when its remedy is bounded and doable in the turn it is raised: trim the narrative, delete one
 # changelog line, fix one permission. It goes to `notes` when the remedy is not bounded — which is true
@@ -406,8 +423,9 @@ print(json.dumps({"systemMessage": sys.argv[1],
                   "hookSpecificOutput": {"hookEventName": sys.argv[2],
                                          "additionalContext": sys.argv[1]}}))' "$notes" "$NOTE_EVENT"
     else
+      esc_notes="$(json_escape "$notes")"
       printf '{"systemMessage": "%s", "hookSpecificOutput": {"hookEventName": "%s", "additionalContext": "%s"}}\n' \
-        "$notes" "$NOTE_EVENT" "$notes"
+        "$esc_notes" "$NOTE_EVENT" "$esc_notes"
     fi
   fi
   exit 0
@@ -454,8 +472,9 @@ print(json.dumps({"systemMessage": sys.argv[1],
                   "hookSpecificOutput": {"hookEventName": sys.argv[2],
                                          "additionalContext": sys.argv[1]}}))' "$report" "$NOTE_EVENT"
   else
+    esc_report="$(json_escape "$report")"
     printf '{"systemMessage": "%s", "hookSpecificOutput": {"hookEventName": "%s", "additionalContext": "%s"}}\n' \
-      "$report" "$NOTE_EVENT" "$report"
+      "$esc_report" "$NOTE_EVENT" "$esc_report"
   fi
 fi
 exit 0

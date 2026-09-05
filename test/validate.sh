@@ -11773,6 +11773,23 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
   printf '%s\n' '{"attachment":{"type":"hook_success","stdout":"{\"systemMessage\": \"ai-flow ledger size note [8000] — BACKLOG.md is 8001 words\"}"}}' > "$TR55S"
   o55="$(run55 "$P55F" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$TR55S\"}")"
   case "$o55" in *systemMessage*) c6_55="$c6_55 [a delivery recorded as hook_success/stdout did not lay the mark]" ;; esac
+
+  # The THIRD delivery record, and it is the one this split created: the model half is written back as
+  # `hook_additional_context`, and its `content` is a LIST. Nothing here drove it — the only two fixtures
+  # in the file that carry the type drive the sibling hook — so `hook_additional_context` could be dropped
+  # from DELIVERY, or the list-join could be deleted and the content matched by accidental stringification,
+  # and this section would stay green while the note repeated on every prompt of every real session. The
+  # list is the half that gets forgotten: a reader that adds the type and keeps stringifying matches by
+  # accident, and the accident stops the day the harness wraps that list in anything.
+  TR55L="$T55/spoken-model.jsonl"
+  # The mark is SPLIT ACROSS elements, at a space, and that is the whole discriminating power of the leg.
+  # With the mark whole inside one element, `"%s" % the_list` still contains it contiguously — the accident
+  # works, and deleting the join leaves the row green, which is how the first version of this fixture was
+  # caught. Split, only the join reconstitutes it: joined with a single space the mark is there, while the
+  # stringified list reads `['ai-flow ledger size note', '[8000] — ...']` and never carries it whole.
+  printf '%s\n' '{"attachment":{"type":"hook_additional_context","content":["ai-flow ledger size note","[8000] — BACKLOG.md is 8001 words"]}}' > "$TR55L"
+  o55="$(run55 "$P55F" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$TR55L\"}")"
+  case "$o55" in *systemMessage*) c6_55="$c6_55 [a note already delivered to the model was spoken again, so the mark is not read from the model half]" ;; esac
   # And PER THRESHOLD, which is the criterion's own wording and which no leg above varies: every one of
   # them drives 8,001 words against an [8000] mark. Dropping the threshold from the mark and searching the
   # bare prefix passes all of them, and permanently silences the firm note on any session that had already
@@ -11846,6 +11863,43 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
     o55="$( cd "$P55M" && printf '%s' "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$TR55\"}" | PATH="$NP55" bash "$GRD55" 2>"$T55/err" )"; rc55=$?
     [ "$rc55" = 0 ] || c8_55="$c8_55 [with no python3 the guard refused instead of speaking (exit $rc55)]"
     case "$o55" in *systemMessage*) : ;; *) c8_55="$c8_55 [with no python3 the note fell silent — the one direction it must not fail in]" ;; esac
+    # PARSED, and by the harness's own python3 rather than the guard's — the guard is the thing denied a
+    # parser here, not this row. Until this leg the only emission path in the file that hand-builds its
+    # JSON was also the only one nothing validated: a `case` glob matches `systemMessage` inside a document
+    # that is not JSON at all, so the note could reach neither audience with the row green.
+    printf '%s' "$o55" | python3 -c 'import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(1)
+sys.exit(0 if isinstance(d, dict) else 1)' 2>/dev/null \
+      || c8_55="$c8_55 [the hand-built delivery is not valid JSON, so the harness drops it and both audiences lose the note]"
+    # And the MODEL half, which is the whole point of the task: without this leg the parser-less path could
+    # keep delivering an operator-only note — the defect this change exists to remove — and pass.
+    case "$o55" in *additionalContext*) : ;; *) c8_55="$c8_55 [with no python3 the note reaches the operator but not the model, which is the sweeper]" ;; esac
+    # The ESCAPER ITSELF, driven directly, because no fixture can reach it through the ledger: every report
+    # this file emits states a measured count and never the content it measured, so no quote in a
+    # BACKLOG.md can ever land in the note. Written as a fixture it was a leg that proved nothing — dropping
+    # the escaper left it green, which is how it was caught.
+    #
+    # What makes the escaper load-bearing anyway is the accumulator: `add_note` joins reports with a raw
+    # newline, which is illegal inside a JSON string, so the first run carrying two reports emits a
+    # malformed document and the note reaches neither audience. The function is extracted and fed the three
+    # characters that break the literal, which is the honest way to test a thing whose caller cannot yet
+    # produce them.
+    JE55="$(awk '/^json_escape\(\) \{/{f=1} f{print} f&&/^\}$/{exit}' "$GRD55")"
+    if [ -z "$JE55" ]; then
+      c8_55="$c8_55 [the parser-less path's escaper could not be located, so nothing proves it escapes]"
+    else
+      ( eval "$JE55"
+        printf '{"m": "%s"}' "$(json_escape 'he said "hi" with a \ backslash
+and a second line')" ) > "$T55/esc.json" 2>/dev/null
+      python3 -c 'import json,sys
+d = json.load(open(sys.argv[1]))
+t = d["m"]
+assert chr(34) in t and chr(92) in t and chr(10) in t, "the escaper dropped what it was meant to carry"' "$T55/esc.json" 2>/dev/null \
+        || c8_55="$c8_55 [a report carrying a quote, a backslash or a newline breaks the hand-built JSON, silently]"
+    fi
     [ -z "$c8_55" ] && ok "A8 with no python3 the note speaks rather than falling silent" \
                     || bad "A8 with no python3 the note speaks rather than falling silent:$c8_55"
   fi
@@ -14477,6 +14531,9 @@ printf '%s' "$(model65 "$OUTA65")" | grep -qF "$M65" \
 #
 # The fixture's delivery record is `hook_additional_context` with a LIST-valued `content`, which is what
 # the harness was measured to write for the new channel and is outside the reader's accepted types today.
+# The mark is SPLIT ACROSS two elements, at a space: with it whole inside one element, stringifying the
+# list still carries it contiguously, so the accident this row exists to forbid would pass the row. Only
+# the join reconstitutes a split mark.
 # Keyed on the shape rather than on the type name because the list is the half that gets forgotten: a
 # reader that adds the type and keeps stringifying the content matches by accident, and an accident that
 # happens to work is the failure this row exists to make visible.
@@ -14486,7 +14543,7 @@ printf '%s' "$(model65 "$OUTA65")" | grep -qF "$M65" \
 # spoken mark takes the close's own signal away with it -- green under a one-legged row.
 TXB65="$T65/spoken.jsonl"
 mk_tx65 "$TXB65" 160 <<TXB65EOF
-{"type":"attachment","attachment":{"type":"hook_additional_context","content":["$M65 — already said."]}}
+{"type":"attachment","attachment":{"type":"hook_additional_context","content":["ai-flow context note","[150] — already said."]}}
 TXB65EOF
 OUTB65="$(run65 "$TXB65" UserPromptSubmit)"
 # The suppression leg reads the WHOLE emission and not the model half, so it is live before the channel
