@@ -35,10 +35,11 @@ if [ -n "$gitdir" ] && [ -n "$common" ] && [ "$(canon_dir "$gitdir")" != "$(cano
   exit 0
 fi
 
-# The Stop payload, read once, before any check runs. Three siblings at this event already read it and
-# this guard was the only one that did not — measured: `diff-size-guard.py`, `drift-check.sh` and
-# `context-cost-note.py` all resolve `stop_hook_active`, and this file read stdin nowhere while being one
-# of the three that refuse. The cost of that gap is not a missed report but a loop: on a refusal the
+# The Stop payload, read once, before any check runs. This guard was the only one at this event that did
+# not read it — measured when that was true of three siblings; `context-cost-note.py` has since left
+# `Stop` altogether and resolves the event rather than this field, and `diff-size-guard.py` resolves it on
+# its refusing half only, so the count at this event is now `drift-check.sh` and that conditional half.
+# The gap this closed was this file's, and closing it is what the rest of this comment is about. The cost of that gap is not a missed report but a loop: on a refusal the
 # harness re-delivers the stop, and a guard that cannot tell a re-delivery from a first delivery refuses
 # again, and again, for as long as the condition holds. Reported from the field as the guard firing
 # "mid-requirement" — which is what a loop looks like from the outside, since every turn close meets it.
@@ -151,12 +152,14 @@ $1"; else notes="$1"; fi; }
 # Whether this session has already been told about a given threshold. The note's own text is the mark, so
 # there is no sentinel file: no path to choose, no session-versus-checkout scope to decide between, and
 # nothing left behind to clean up. What makes that possible is that the harness records a delivered
-# systemMessage back into the session's own transcript, in two independent records — the
-# `hook_system_message` it becomes, and the verbatim `stdout` kept beside the hook's exit status.
+# message back into the session's own transcript, in three independent records — the
+# `hook_system_message` the operator half becomes, the `hook_additional_context` the model half becomes,
+# and the verbatim `stdout` kept beside the hook's exit status.
 # Measured on this project's real transcripts before this was written: 73 of the first and 45,821 of the
-# second, and one of them read back verbatim as the sibling note's own JSON.
+# third, and one of them read back verbatim as the sibling note's own JSON. The second arrived with the
+# split, and its `content` is a LIST, which is why the reader joins it rather than matching by accident.
 #
-# The mark is read ONLY out of those two records, and that restriction is the whole of what makes it mean
+# The mark is read ONLY out of those records, and that restriction is the whole of what makes it mean
 # anything. An unanchored search of the file counts every other way the text can arrive — a user naming
 # it, an assistant quoting it, a tool result grepping it — and this engine's own conformance suite holds
 # marks verbatim while being the Verify command of every step of every task here. Under a plain text

@@ -10138,7 +10138,12 @@ else
   # the line requests no input, and that it is short -- so they are CARRIED FORWARD into A7's row below
   # rather than lost with the key that held them. `FORM50` stays: A7 reads the same paragraph. The row
   # itself is GONE from this file rather than standing beside A7.
-  FORM50="$(printf '%s' "$CP50" | awk '/\*\*The form is fixed/{f=1} f&&/^[[:space:]]*$/{exit} f')"
+  # FLATTENED at the extraction, exactly as C65's FORM65 is, and for the third time in one task: a leg
+  # keyed line-wise over hard-wrapped prose answers on where someone pressed return. Eight of the eleven
+  # legs below used to read this unflattened while three got a flattened copy through a local variable --
+  # so the same paragraph was being judged two ways in one row block. The fix belongs at the extraction,
+  # which is where the other two occurrences ended up.
+  FORM50="$(printf '%s' "$CP50" | awk '/\*\*The form is fixed/{f=1} f&&/^[[:space:]]*$/{exit} f' | tr -s ' \n' '  ')"
   # A7 -- WHEN either close writes the next position, the engine shall state that the close ends with one
   # fixed line carrying cut availability, the position the sheet now declares, and where the next session
   # resumes. Generated in the Conform phase from understand.md's Verifiable Criteria.
@@ -10185,12 +10190,11 @@ else
     # FLATTENED, unlike the legs above, and only because it has to be: both phrases straddle a line break
     # in the paragraph as it is wrapped today. A leg keyed on where someone pressed return reports a rule
     # missing while it stands — this suite has now been bitten by that twice in one change.
-    FLATF50="$(printf '%s' "$FORM50" | tr -s ' \n' '  ')"
-    printf '%s' "$FLATF50" | grep -qiE 'recommends? (the )?cut|recommend cutting' \
+    printf '%s' "$FORM50" | grep -qiE 'recommends? (the )?cut|recommend cutting' \
       || a7_50="$a7_50 [the line makes no recommendation, so the signal the phase is now handed changes nothing]"
-    printf '%s' "$FLATF50" | grep -qiE 'comparison and not a threshold|comparison, not a threshold' \
+    printf '%s' "$FORM50" | grep -qiE 'comparison and not a threshold|comparison, not a threshold' \
       || a7_50="$a7_50 [it does not say the bar is a comparison rather than a threshold, so a constant can be written back in]"
-    printf '%s' "$FLATF50" | grep -qiE 'deliberately absent|until the (context-)?cost note reaches' \
+    printf '%s' "$FORM50" | grep -qiE 'deliberately absent|until the (context-)?cost note reaches' \
       && a7_50="$a7_50 [the retired sentence still says the recommendation is absent, contradicting the rule beside it]"
     # The two legs CARRIED FORWARD from the retired `d50`. They guarded obligations the new rule keeps, and
     # they are here because the key that held them is gone: dropped with it, the form could start asking for
@@ -14398,9 +14402,14 @@ a1_65=""
 [ -n "$OUTA65" ] || a1_65=" [the cost note emits nothing at UserPromptSubmit]"
 printf '%s' "$(model65 "$OUTA65")" | grep -qF "$M65" \
   || a1_65="$a1_65 [the cost note's delivery carries no additionalContext the model can read]"
-grep -q 'additionalContext' "$LED65" \
+# Keyed on the JSON KEY and not on the word. Both files carry `hookSpecificOutput.additionalContext` in
+# their header prose -- dotted, in backticks, explaining the measurement -- so a bare word search was
+# satisfied by the explanation of the fix rather than by the fix, and stayed green with the whole
+# dual-audience object reverted in either hook. The quote-and-colon form appears only where the object is
+# actually built: four sites in the ledger guard, one in the diff guardrail, none in any comment.
+grep -q '"additionalContext":' "$LED65" \
   || a1_65="$a1_65 [the ledger guard's note half emits no additionalContext]"
-grep -q 'additionalContext' "$BRK65" \
+grep -q '"additionalContext":' "$BRK65" \
   || a1_65="$a1_65 [the diff guardrail's note half emits no additionalContext]"
 [ -z "$a1_65" ] && ok "A1 the note travels on the channel the model reads" \
                 || bad "A1 the note travels on the channel the model reads ($a1_65)"
@@ -14506,7 +14515,12 @@ if [ -n "$SPK65" ]; then
   # single mechanism first imagined, the leg reported the whole transcript still being read while the
   # bound was in place and working. A negative leg is only as wide as the ways the thing it wants can be
   # written, and the direction it must hold — the read is bounded — is unchanged.
-  printf '%s' "$SPK65" | grep -qE 'TAIL_BYTES|tail -n|bounded tail|LINE_CAP|line cap|deque' \
+  # The byte-addressed arm names the SEEK and not the constant. Keyed on `TAIL_BYTES` alone the leg
+  # matched the declaration, so deleting the seek that uses it left the row green while the reader parsed
+  # every line from byte zero again -- on every prompt now, not only at every close. A bound nobody seeks
+  # to is not a bound. The other arms stay: the direction is that the read is bounded, not that it is
+  # bounded this one way.
+  printf '%s' "$SPK65" | grep -qE 'seek\([^)]*TAIL_BYTES|tail -n|LINE_CAP|deque\(' \
     || a5_65="$a5_65 [it reads the whole transcript from the start rather than a bounded tail]"
 fi
 [ -z "$a5_65" ] && ok "A5 the mark reader refuses a transcript that is not a regular file" \
@@ -14662,7 +14676,10 @@ fi
 a10_65=""
 [ -n "$FORM65" ] || a10_65=" [the form paragraph for the close's line could not be located]"
 if [ -n "$FORM65" ]; then
-  printf '%s' "$FORM65" | grep -qiE 'derived|comparison|compares|exceeds' \
+  # Keyed on the DERIVATION claim, not on the words `comparison` or `exceeds` loose in the paragraph:
+  # A9's own sentence carries both, so the old alternation was satisfied by prose A9 already guards and
+  # the derivation sentence could be deleted whole with this row still green.
+  printf '%s' "$FORM65" | grep -qiE 'comparison and not a threshold|nothing is written down|cannot go stale' \
     || a10_65="$a10_65 [it does not say the bar is a comparison between the two supplied quantities]"
   printf '%s' "$FORM65" | grep -qE '[0-9]' \
     && a10_65="$a10_65 [the paragraph records a number, so the bar is fitted and will go stale]"
