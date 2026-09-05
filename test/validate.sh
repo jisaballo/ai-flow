@@ -425,7 +425,11 @@ else
 fi
 
 # --- the diff brake ------------------------------------------------------
-brake() { ( cd "$1" && printf '{}' | python3 "$HK/diff-size-guard.py" 2>&1 ); }
+# The payload DECLARES `Stop`, where the ceilings live and where a refusal is possible. It used to send
+# `{}` and lean on the hook treating an unplaceable event as the refusing half — the very default that
+# let a refusal reach the prompt event, now removed. A fixture that says which occasion it means is what
+# the split needs from both sides.
+brake() { ( cd "$1" && printf '{"hook_event_name":"Stop"}' | python3 "$HK/diff-size-guard.py" 2>&1 ); }
 
 if [ "$PY3" = 1 ]; then
   P5="$T11/p5"; mkproj "$P5" main
@@ -579,6 +583,33 @@ if [ "$PY3" = 1 ]; then
   [ -z "$err" ] || a5n="$a5n [the note wrote to stderr, which is discarded at exit 0]"
   [ -z "$a5n" ] && ok "A5 a ceiling and a note in one change speak at their own events, neither carrying the other" \
                 || bad "A5 a ceiling and a note in one change speak at their own events, neither carrying the other ($a5n)"
+
+  # A13 -- an event this hook cannot place is not an occasion to block anything.
+  #
+  # The ceilings refuse at `Stop`, where a refusal costs a turn-close. This hook is registered at the
+  # prompt event too, and there the same exit 2 stops the operator's message from being sent -- over a
+  # report whose remedy is not bounded by the turn. So a payload that ARRIVED and could not be read must
+  # not reach the refusing half at all: it cannot say which event it is at, and only one of the two can
+  # absorb a block.
+  #
+  # The row exists because the change that introduced this had NO row. Both halves of the split were
+  # written together, the sibling guardian's half was covered by C55 A4, and this one was covered by
+  # nothing -- proved by making the hook refuse at every event and watching the whole suite stay green.
+  # Two legs pulling opposite ways, because the negative alone is satisfied by a hook that stopped
+  # refusing anywhere at all, which is the same defect with the blast radius inverted.
+  N13="$T11/n13"; mkbig "$N13" big.py 1050
+  nlines 200 >> "$N13/big.py"
+  a13=""
+  o13="$( cd "$N13" && printf '{"stop_hook_active":true' | python3 "$HK/diff-size-guard.py" 2>&1 )"; rc13=$?
+  [ "$rc13" = 0 ] \
+    || a13="$a13 [an unplaceable payload reached the refusing half, which at the note's event costs the operator their prompt (exit $rc13)]"
+  o13c="$(brake "$N13")"; rc13c=$?
+  [ "$rc13c" = 2 ] \
+    || a13="$a13 [CONTROL: the ceiling no longer refuses at the event where refusing IS possible (exit $rc13c)]"
+  printf '%s' "$o13c" | grep -q 'step ceiling' \
+    || a13="$a13 [CONTROL: the refusal at Stop no longer names the ceiling it broke]"
+  [ -z "$a13" ] && ok "A13 an event the hook cannot place is not an occasion to block" \
+                || bad "A13 an event the hook cannot place is not an occasion to block ($a13)"
 
   # Derived from the hook's own source: rename the key or change the default there and this row names
   # every home that lags. The default is accepted in either spelling the prose uses (1000 / 1,000).
@@ -11503,6 +11534,10 @@ mk55() {  # $1 = dir, $2 = roster fn, $3 = total words in the ledger
 # The guard run with a payload on stdin, the two streams kept apart. $1 = cwd, $2 = payload.
 # stdout lands in the caller's substitution; stderr is diverted to a file the caller reads by name.
 run55() { ( cd "$1" && printf '%s' "$2" | bash "$GRD55" 2>"$T55/err" ); }
+# The two occasions, named rather than implied. A bare `{}` used to stand for a close and worked only
+# because the guard treated any event it could not place as the refusing half -- the default that let a
+# refusal reach the prompt event, now removed. A fixture that means a close says so.
+STOP55='{"hook_event_name":"Stop"}'
 # The note half runs at `UserPromptSubmit` and the refusing half at `Stop`, so every row below says which
 # one it is exercising. A note row driven on an empty payload measures the refusing half and reports the
 # note missing when it is merely elsewhere; a refusal row driven at the note's event gets exit 0 and no
@@ -11648,12 +11683,18 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
   case "$o55" in *systemMessage*) c4_55="$c4_55 [a re-delivered stop still spoke on stdout]" ;; esac
   # The control. Without it a guard that had gone silent for every payload would pass the row above, and
   # the whole section would be measuring a guard that no longer guards.
-  o55="$(run55 "$P55D" '{}')"; rc55=$?
+  o55="$(run55 "$P55D" "$STOP55")"; rc55=$?
   [ "$rc55" = 2 ] || c4_55="$c4_55 [a first-delivery stop over a violating roster no longer refuses (exit $rc55)]"
-  # Malformed is ABSENT, and absent reports: a truncated payload carrying those characters must never be
-  # read as an instruction to go quiet, which is why the field is parsed and not matched as text.
+  # Malformed is ABSENT, and absent REPORTS. RE-KEYED, and the claim is unchanged -- what moved is the
+  # channel the report leaves on, because the guard now runs at two events and a truncated payload cannot
+  # say which. It required exit 2. A refusal is a block, and a block at the note's event stops the
+  # operator's prompt over a report they cannot act on there; so an unplaceable run reports EVERYTHING it
+  # found, refusals included, as a note on stdout at exit 0. The direction this leg has always held --
+  # a truncated payload is never read as permission to go quiet -- is what the replacement asserts, and it
+  # asserts it harder: silence now fails the row whichever bucket the report came from.
   o55="$(run55 "$P55D" '{"stop_hook_active":true')"; rc55=$?
-  [ "$rc55" = 2 ] || c4_55="$c4_55 [a truncated payload was read as an instruction to go quiet (exit $rc55)]"
+  [ "$rc55" = 0 ] || c4_55="$c4_55 [an unplaceable payload blocked, which at the note's event costs the prompt (exit $rc55)]"
+  case "$o55" in *"closed-work narrative"*) : ;; *) c4_55="$c4_55 [a truncated payload was read as an instruction to go quiet]" ;; esac
   [ -z "$c4_55" ] && ok "A4 a re-delivered stop is answered with silence, blockers included" \
                   || bad "A4 a re-delivered stop is answered with silence, blockers included:$c4_55"
 
@@ -11666,7 +11707,7 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
   # one fixture, because two would prove only that each half works alone.
   P55E="$T55/e"; mk55 "$P55E" vio55 8001
   c5_55=""
-  o55="$(run55 "$P55E" '{}')"; rc55=$?
+  o55="$(run55 "$P55E" "$STOP55")"; rc55=$?
   e55="$(cat "$T55/err")"
   [ "$rc55" = 2 ] || c5_55="$c5_55 [the blocker no longer refuses at its own event (exit $rc55)]"
   case "$e55" in *"closed-work narrative"*) : ;; *) c5_55="$c5_55 [the blocking report was dropped]" ;; esac
@@ -11739,31 +11780,31 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
   # permission cases are gated on the same capability probe C45 documents.
   c7_55=""
   P55G="$T55/g"; mk55 "$P55G" vio55 100
-  o55="$(run55 "$P55G" '{}')"; rc55=$?; e55="$(cat "$T55/err")"
+  o55="$(run55 "$P55G" "$STOP55")"; rc55=$?; e55="$(cat "$T55/err")"
   [ "$rc55" = 2 ] || c7_55="$c7_55 [closed-work narrative no longer refuses (exit $rc55)]"
   case "$e55" in *"closed-work narrative"*) : ;; *) c7_55="$c7_55 [the narrative report is not on stderr]" ;; esac
   case "$o55" in *systemMessage*) c7_55="$c7_55 [the narrative report moved to stdout, where a refusal is not read]" ;; esac
   P55H="$T55/h"; mkproj "$P55H" main; mkdir -p "$P55H/.ai-flow"; ros55 > "$P55H/.ai-flow/STATE.md"
   { printf '# Backlog\n\n'; log55 5; } > "$P55H/.ai-flow/BACKLOG.md"
-  o55="$(run55 "$P55H" '{}')"; rc55=$?; e55="$(cat "$T55/err")"
+  o55="$(run55 "$P55H" "$STOP55")"; rc55=$?; e55="$(cat "$T55/err")"
   [ "$rc55" = 2 ] || c7_55="$c7_55 [the changelog ceiling no longer refuses (exit $rc55)]"
   case "$e55" in *"5 session-close"*) : ;; *) c7_55="$c7_55 [the changelog report is not on stderr]" ;; esac
   if [ "$UNREAD55" = 1 ]; then
     P55I="$T55/i"; mk55 "$P55I" vio55 100
     chmod 000 "$P55I/.ai-flow/STATE.md"
-    o55="$(run55 "$P55I" '{}')"; rc55=$?; e55="$(cat "$T55/err")"
+    o55="$(run55 "$P55I" "$STOP55")"; rc55=$?; e55="$(cat "$T55/err")"
     chmod 644 "$P55I/.ai-flow/STATE.md"
     [ "$rc55" = 2 ] || c7_55="$c7_55 [an unreadable roster no longer refuses (exit $rc55)]"
     case "$e55" in *STATE.md*) : ;; *) c7_55="$c7_55 [the unreadable-roster refusal is not on stderr]" ;; esac
     P55K="$T55/k"; mk55 "$P55K" ros55 100
     chmod 000 "$P55K/.ai-flow/BACKLOG.md"
-    o55="$(run55 "$P55K" '{}')"; rc55=$?; e55="$(cat "$T55/err")"
+    o55="$(run55 "$P55K" "$STOP55")"; rc55=$?; e55="$(cat "$T55/err")"
     chmod 644 "$P55K/.ai-flow/BACKLOG.md"
     [ "$rc55" = 2 ] || c7_55="$c7_55 [an unreadable ledger no longer refuses (exit $rc55)]"
     case "$e55" in *BACKLOG.md*) : ;; *) c7_55="$c7_55 [the unreadable-ledger refusal is not on stderr]" ;; esac
     P55L="$T55/l"; mk55 "$P55L" ros55 100
     chmod 000 "$P55L/.ai-flow"
-    o55="$(run55 "$P55L" '{}')"; rc55=$?
+    o55="$(run55 "$P55L" "$STOP55")"; rc55=$?
     chmod 745 "$P55L/.ai-flow"
     [ "$rc55" = 2 ] || c7_55="$c7_55 [an unenterable ledger directory no longer refuses (exit $rc55)]"
   fi

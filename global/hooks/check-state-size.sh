@@ -88,6 +88,7 @@ fi
 # the refusing half — which is the half that was here before any of this, and the safe fallback for a
 # payload nothing could be learned from.
 NOTE_EVENT="UserPromptSubmit"
+STOP_EVENT="Stop"
 EVENT_NAME=""
 TRANSCRIPT=""
 if [ -n "$STOP_PAYLOAD" ] && command -v python3 >/dev/null 2>&1; then
@@ -116,6 +117,7 @@ fi
 if [ -z "$EVENT_NAME" ] && [ -n "$STOP_PAYLOAD" ] && ! command -v python3 >/dev/null 2>&1; then
   case "$STOP_PAYLOAD" in
     *'"hook_event_name"'*"$NOTE_EVENT"*) EVENT_NAME="$NOTE_EVENT" ;;
+    *'"hook_event_name"'*"$STOP_EVENT"*) EVENT_NAME="$STOP_EVENT" ;;
   esac
 fi
 
@@ -408,8 +410,49 @@ print(json.dumps({"systemMessage": sys.argv[1],
   exit 0
 fi
 
-if [ -n "$blockers" ]; then
-  echo "$blockers" >&2
-  exit 2
+# A refusal is only ever issued where refusing is POSSIBLE, and that is a positive test rather than a
+# fallback. This guard is registered at two events now, and exit 2 does not mean the same thing at both:
+# at `Stop` it costs the operator a turn-close, at the note's event it stops their prompt from being sent.
+# Defaulting to the refusing half therefore aimed the one report whose remedy is unbounded at the one
+# event where the cost is unbounded too -- and the exit above says in words that this must never happen.
+#
+# Two shapes may refuse. A payload that positively names `Stop`, which is every real close. And NO payload
+# at all -- a hand run, or a harness older than the field -- where `Stop` is the only event this guard was
+# ever registered at, so the legacy behaviour is preserved exactly.
+if [ "$EVENT_NAME" = "$STOP_EVENT" ] || [ -z "$STOP_PAYLOAD" ]; then
+  if [ -n "$blockers" ]; then
+    echo "$blockers" >&2
+    exit 2
+  fi
+  exit 0
+fi
+
+# A payload ARRIVED and its event could not be placed. This run neither refuses nor goes quiet, and both
+# halves of that matter.
+#
+# It does not refuse, because it cannot tell which event it is at, and refusing at the note's event stops
+# the operator's prompt over a report whose remedy is not bounded by the turn.
+#
+# It does not go quiet either, and that is the invariant this file has always been built on: malformed is
+# ABSENT, and absent REPORTS. Reading a truncated payload as permission to say nothing is the one failure
+# every report here is shaped to avoid, because a guard that fails silent leaves nothing behind to find it
+# by. So everything found -- the refusals included -- goes out as a NOTE: one object, both audiences, exit
+# 0. Nothing is lost and nothing is blocked; what a refusal would have added is the block, and the block
+# is exactly what cannot be risked at an event nobody could name.
+report="$blockers"
+if [ -n "$notes" ]; then
+  if [ -n "$report" ]; then report="$report
+$notes"; else report="$notes"; fi
+fi
+if [ -n "$report" ]; then
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -c 'import json, sys
+print(json.dumps({"systemMessage": sys.argv[1],
+                  "hookSpecificOutput": {"hookEventName": sys.argv[2],
+                                         "additionalContext": sys.argv[1]}}))' "$report" "$NOTE_EVENT"
+  else
+    printf '{"systemMessage": "%s", "hookSpecificOutput": {"hookEventName": "%s", "additionalContext": "%s"}}\n' \
+      "$report" "$NOTE_EVENT" "$report"
+  fi
 fi
 exit 0

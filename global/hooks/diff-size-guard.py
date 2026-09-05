@@ -16,6 +16,7 @@ No-op outside ai-flow projects."""
 import sys, json, subprocess, re, os, stat
 
 EVENT = 'UserPromptSubmit'  # the note's event; the ceilings keep `Stop`, where a refusal is possible
+STOP_EVENT = 'Stop'         # named, because a refusal is issued only on a POSITIVE match against it
 
 STEP_THRESHOLD = 150   # one execution step: uncommitted work
 TASK_THRESHOLD = 400   # the whole task: the branch's distance from its base
@@ -230,17 +231,35 @@ def main():
     root = toplevel()
     if not root or not os.path.isdir(os.path.join(root, '.ai-flow')):
         sys.exit(0)  # ai-flow projects only
+    # The RAW text is kept, because a parse failure and a literal `{}` both leave `data` empty and the two
+    # must not be treated alike below: one is a payload that arrived and could not be read, the other is
+    # no payload at all.
     try:
-        data = json.load(sys.stdin)
+        raw = sys.stdin.read()
+    except Exception:
+        raw = ''
+    try:
+        data = json.loads(raw)
     except Exception:
         data = {}
     if not isinstance(data, dict):
         data = {}  # a non-object payload must not traceback a hook that runs every turn
     note_half = data.get('hook_event_name') == EVENT
+    # A refusal is only ever issued where refusing is POSSIBLE, and that is a positive test rather than a
+    # fallback -- the sibling guardian states the same rule at its own exit, for the same reason. This
+    # hook is registered at two events and exit 2 does not mean the same thing at both: at `Stop` it costs
+    # a turn-close, at the note's event it stops the operator's prompt from being sent. A payload that
+    # positively names `Stop` may refuse, and so may NO payload at all -- a hand run, or a harness older
+    # than the field, where `Stop` is the only event the ceilings were ever registered at. A payload that
+    # ARRIVED and could not be read may not: the ceilings are still there at the next close, and a blocked
+    # prompt is not a cost this report's remedy is worth.
+    may_refuse = data.get('hook_event_name') == STOP_EVENT or not raw.strip()
     # don't re-fire within the same stop/continue cycle. Only the ceilings can meet a re-delivery:
     # there is no such loop at the note's event, and no payload there carries the field.
     if not note_half and data.get('stop_hook_active'):
         sys.exit(0)
+    if not note_half and not may_refuse:
+        sys.exit(0)  # an event this hook cannot place is not an occasion to block anything
 
     try:
         new_files = untracked_files(root)
