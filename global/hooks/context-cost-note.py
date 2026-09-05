@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Stop hook (ai-flow only): says once, without ever blocking, that the session has grown expensive
-enough that cutting it pays -- and names the two things a cut destroys.
+"""UserPromptSubmit hook (ai-flow only): says once, without ever blocking, that the session has grown
+expensive enough that cutting it pays -- and names the two things a cut destroys.
 
 Why this exists at all. Measured over 285 transcripts: cache-read is ~70% of the price-weighted bill,
 and cache-read IS context size x turns, so what a turn *does* barely moves its cost -- only how much
@@ -12,23 +12,41 @@ thing -- turn 1 already costs 43-47k for the system prompt, the project's own in
 definitions. That floor is why the honest number is a quarter to a third, not a half, and it is the
 number this hook is worth keeping for.
 
-Why it recommends instead of refusing. Its three siblings at this event exit 2, which stops the turn
-from ending. Blocking mid-Execute costs more than the tokens it saves, so this one exits 0 on every
-path -- and that choice decides the channel, because a Stop hook that exits 0 has its stderr discarded
-by the harness. A message written to stderr here would reach nobody. The one channel that carries a
-message without blocking is a top-level `systemMessage` on stdout, which is what this writes.
+Why it recommends instead of refusing. Blocking mid-Execute costs more than the tokens it saves, so this
+exits 0 on every path.
+
+Which channel, and why it is not the obvious one. The note is addressed to the model -- it asks for two
+lines to be written to a sheet before the session ends -- so a channel the model cannot read delivers
+nothing, however faithfully the harness records it. Two facts were measured live, on this harness, with
+distinct marks carried through a multi-turn session, and BOTH are needed:
+
+  - The EVENT. A `Stop` hook's exit-0 output never enters the model's context. It is recorded -- the
+    harness writes a full-content `hook_system_message` for it -- and recorded is not delivered, which is
+    why the transcript could not decide this question and a live session had to.
+  - The FIELD. `systemMessage` is the operator's channel at EVERY event, this one included. Moving the
+    event while keeping the field ships a note that still reaches nobody.
+
+So the note travels as ONE object carrying both: `systemMessage` for the person, who keeps seeing exactly
+what they saw before, and `hookSpecificOutput.additionalContext` for the model, which was reproduced
+verbatim in the following turn's answer and stays readable for the rest of the session.
 """
 import sys, json, os, glob, re
 
 FIRST, SECOND = 150, 300
 
+# The one event this hook serves, named once and read by both the guard below and the emission, so the
+# two cannot come to disagree about which channel this is. An install that still registers the hook at
+# its old event keeps that entry after an update -- the installer is additive and never removes -- so the
+# guard is not hypothetical: it meets the stale registration on the very next session.
+EVENT = "UserPromptSubmit"
+
 # The note's own text is the mark that says it has already spoken. What makes reading it back possible is
-# that the harness records a delivered systemMessage into the session's own transcript, in two independent
-# records: the hook_system_message it becomes, and the verbatim stdout kept beside the hook's exit status.
-# So the mark needs no sentinel file -- no path to choose, no scope to decide between session and
-# checkout, nothing left behind to clean up.
+# that the harness records a delivered message into the session's own transcript, in three independent
+# records: the hook_system_message the operator half becomes, the hook_additional_context the model half
+# becomes, and the verbatim stdout kept beside the hook's exit status. So the mark needs no sentinel file
+# -- no path to choose, no scope to decide between session and checkout, nothing left behind to clean up.
 #
-# It is read ONLY out of those two records, and that restriction is the whole of what makes the mark
+# It is read ONLY out of those records, and that restriction is the whole of what makes the mark
 # mean anything. An unanchored search of the file counts every OTHER way the text can arrive: a user who
 # names it, an assistant that quotes it, a tool result that greps it. The engine's own conformance suite
 # holds both marks verbatim, and that file is the Verify command of every step of every task here -- so
@@ -42,9 +60,12 @@ FIRST, SECOND = 150, 300
 # line: the same rule this engine already states for the sheet's declarations and for the write guard,
 # where a later line quoting the field is an example and never the declaration.
 MARK = "ai-flow context note [%d]"
-# The two records the harness itself writes when it delivers a hook's message. Nothing a session says
-# can forge either one: they are the harness's account of a hook having run, not text in a conversation.
-DELIVERY = ("hook_system_message", "hook_success")
+# The records the harness itself writes when it delivers a hook's message. Nothing a session says can
+# forge any of them: they are the harness's account of a hook having run, not text in a conversation.
+# `hook_additional_context` is the model half's own record and was measured to carry its content as a
+# LIST -- so a reader that accepts the type and keeps stringifying the content matches by accident, and
+# the accident stops the day the harness wraps that list in anything. The list is handled in `read`.
+DELIVERY = ("hook_system_message", "hook_success", "hook_additional_context")
 
 
 def note(threshold: int, turns: int, seen) -> str:
@@ -77,9 +98,10 @@ def note(threshold: int, turns: int, seen) -> str:
 def transcript_for(payload, cwd):
     """The path the session names, else the newest record for this working copy.
 
-    The declared path is the primary and was measured present on every Stop payload; the fallback is
-    there because a gap in it must cost a missed note and never a wrong one, and a hook that gave up at
-    the first absent key would go silent for a whole session without saying so."""
+    The declared path is the primary and was measured present on every payload at this event, alongside
+    `cwd`, `session_id` and `prompt`; the fallback is there because a gap in it must cost a missed note
+    and never a wrong one, and a hook that gave up at the first absent key would go silent for a whole
+    session without saying so."""
     p = payload.get("transcript_path")
     if isinstance(p, str) and os.path.isfile(p):
         return p
@@ -115,7 +137,10 @@ def read(path):
                 # Only the harness's own delivery records are read, and only their message-bearing
                 # fields -- `content` for the delivered message, `stdout` for the verbatim output kept
                 # beside the exit status. Anything else in the file is a session talking about the mark.
-                spoken = "%s%s" % (att.get("content") or "", att.get("stdout") or "")
+                content = att.get("content")
+                if isinstance(content, list):
+                    content = " ".join(str(x) for x in content)
+                spoken = "%s%s" % (content or "", att.get("stdout") or "")
                 for t in (FIRST, SECOND):
                     if MARK % t in spoken:
                         seen.add(t)
@@ -179,8 +204,8 @@ def _run():
         return  # a payload this hook cannot read is not a session it may judge
     if not isinstance(payload, dict):
         return
-    if payload.get("stop_hook_active"):
-        return  # the stop is already being re-delivered; speaking again would only be louder
+    if payload.get("hook_event_name") != EVENT:
+        return  # an install that still registers this at its old event: not this hook's occasion
 
     cwd = payload.get("cwd") or os.getcwd()
     if not isinstance(cwd, str):
@@ -210,7 +235,13 @@ def _run():
     # come back through.
     crossed = SECOND if turns >= SECOND else (FIRST if turns >= FIRST else None)
     if crossed is not None and crossed not in seen:
-        print(json.dumps({"systemMessage": note(crossed, turns, seen)}))
+        # ONE object, two audiences. Both halves carry the same text, so the mark the suppression above
+        # reads back is found whichever record the harness happens to write.
+        text = note(crossed, turns, seen)
+        print(json.dumps({
+            "systemMessage": text,
+            "hookSpecificOutput": {"hookEventName": EVENT, "additionalContext": text},
+        }))
 
 
 def main():
@@ -221,7 +252,7 @@ def main():
     candidates, and the write to stdout itself -- and each raises for reasons this hook does not control
     (a working directory deleted under a running session, a transcript rotated away between the glob and
     the stat, a closed pipe). An uncaught raise here leaves a non-zero status, and a non-zero status at
-    this event stops the operator's turn from ending: the one thing this hook exists not to do. Guarding
+    this event stops the operator's prompt from being sent: the one thing this hook exists not to do. Guarding
     the outside makes the invariant structural instead of enumerated -- there is no path left to forget.
     """
     try:

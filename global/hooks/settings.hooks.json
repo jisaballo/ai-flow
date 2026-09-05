@@ -19,6 +19,24 @@
       ]
     }
   ],
+  "UserPromptSubmit": [
+    {
+      "hooks": [
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/check-state-size.sh"
+        },
+        {
+          "type": "command",
+          "command": "python3 $HOME/.claude/hooks/diff-size-guard.py"
+        },
+        {
+          "type": "command",
+          "command": "python3 $HOME/.claude/hooks/context-cost-note.py"
+        }
+      ]
+    }
+  ],
   "Stop": [
     {
       "hooks": [
@@ -33,10 +51,6 @@
         {
           "type": "command",
           "command": "bash $HOME/.claude/hooks/drift-check.sh"
-        },
-        {
-          "type": "command",
-          "command": "python3 $HOME/.claude/hooks/context-cost-note.py"
         }
       ]
     }

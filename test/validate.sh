@@ -492,10 +492,14 @@ fi
 
 # --- the file-size note --------------------------------------------------
 # A third measure beside the two ceilings: the size a touched file ends up at. It is a note, never a
-# ceiling — alone it exits 0 and travels as a systemMessage on stdout; beside a ceiling breach it rides
-# the ceiling's stderr line. Channels are asserted separately here because the two are the contract:
-# the combined-output helper above cannot tell a note that blocked from one that did not.
-brake_out() { ( cd "$1" && printf '{}' | python3 "$HK/diff-size-guard.py" 2>"$T11/note-err" ); }
+# ceiling, and it now sits at its own event — the ceilings refuse at `Stop`, the note is addressed to the
+# model and travels at `UserPromptSubmit`, carrying `systemMessage` for the operator and
+# `hookSpecificOutput.additionalContext` for the model in one object. The helper DECLARES that event,
+# which the ceilings' helper above deliberately does not: an empty payload is the ceilings' occasion, and
+# a helper that declared nothing would exercise the refusing half while claiming to measure the note.
+# Channels are asserted separately here because the two are the contract: the combined-output helper
+# above cannot tell a note that blocked from one that did not.
+brake_out() { ( cd "$1" && printf '{"hook_event_name":"UserPromptSubmit"}' | python3 "$HK/diff-size-guard.py" 2>"$T11/note-err" ); }
 # A repo whose base commit already holds one large file, on a branch: the shape the note exists for is
 # a small change to a file that was big before the task began, so neither ceiling fires.
 mkbig() {  # $1 = dir, $2 = path of the big file, $3 = its committed line count
@@ -556,15 +560,25 @@ if [ "$PY3" = 1 ]; then
     bad "A4 the project layer sets the threshold (exit $rc, stdout: ${out:-<empty>})"
   fi
 
+  # A5 -- RE-KEYED. It required the note to ride the ceiling's stderr line, and that merge is GONE with
+  # the event split: the note has a channel of its own, so it is never on the refusing run's stream to be
+  # lost, and the merge was the one delivery that laid no mark. What replaces it is the separation the
+  # split creates, which nothing else here would notice: on ONE fixture breaching both, each half speaks
+  # at its own event and neither carries the other's report.
   N5="$T11/n5"; mkbig "$N5" big.py 1050
   nlines 200 >> "$N5/big.py"
+  a5n=""
+  out="$(brake "$N5")"; rc=$?
+  [ "$rc" = 2 ] || a5n="$a5n [the ceiling no longer refuses at its own event (exit $rc)]"
+  printf '%s' "$out" | grep -q 'step ceiling' || a5n="$a5n [the refusal does not name the ceiling]"
+  printf '%s' "$out" | grep -q 'big.py' && a5n="$a5n [the refusal still carries the note, which now has a channel of its own]"
   out="$(brake_out "$N5")"; rc=$?; err="$(cat "$T11/note-err")"
-  if [ "$rc" = 2 ] && printf '%s' "$err" | grep -q 'step ceiling' && printf '%s' "$err" | grep -q 'big.py' \
-     && ! printf '%s' "$out" | grep -q 'systemMessage'; then
-    ok "A5 beside a ceiling the note rides the blocking line"
-  else
-    bad "A5 beside a ceiling the note rides the blocking line (exit $rc, stderr: ${err:-<empty>})"
-  fi
+  [ "$rc" = 0 ] || a5n="$a5n [the note refused at its own event, where a refusal blocks the prompt (exit $rc)]"
+  printf '%s' "$out" | grep -q 'big.py' || a5n="$a5n [the note is lost on a change that also breaches a ceiling]"
+  printf '%s' "$out" | grep -q 'additionalContext' || a5n="$a5n [the note reaches the operator but not the model]"
+  [ -z "$err" ] || a5n="$a5n [the note wrote to stderr, which is discarded at exit 0]"
+  [ -z "$a5n" ] && ok "A5 a ceiling and a note in one change speak at their own events, neither carrying the other" \
+                || bad "A5 a ceiling and a note in one change speak at their own events, neither carrying the other ($a5n)"
 
   # Derived from the hook's own source: rename the key or change the default there and this row names
   # every home that lags. The default is accepted in either spelling the prose uses (1000 / 1,000).
@@ -8361,9 +8375,13 @@ mkdir -p "$P45C/.ai-flow"; ros45 > "$P45C/.ai-flow/STATE.md"; printf '# Backlog\
 # its own claim, that a ledger over the budget does not pass in silence; C55 holds the channel, the two
 # thresholds and the once-per-session mark. The fixture is the filler alone, with no heading, so its count
 # is exactly 8,001 — one word over. The boundary itself is C55 A3's row, not this one's.
+# The payload DECLARES the note's event, which the refusal rows around it deliberately do not: the note
+# half runs at `UserPromptSubmit` and the refusing half at `Stop`, so a row measuring the note over an
+# empty payload measures the other half and reports the note missing when it is merely elsewhere.
+UPS45='{"hook_event_name":"UserPromptSubmit"}'
 P45D="$T45/d"; mkproj "$P45D" main
 mkdir -p "$P45D/.ai-flow"; ros45 > "$P45D/.ai-flow/STATE.md"; nwords 8001 > "$P45D/.ai-flow/BACKLOG.md"
-out45="$( cd "$P45D" && bash "$GRD45" 2>&1 )"; rc45=$?
+out45="$( cd "$P45D" && printf '%s' "$UPS45" | bash "$GRD45" 2>&1 )"; rc45=$?
 a4_45=""
 [ "$rc45" = 0 ] || a4_45="$a4_45 [a backlog over the word budget did not let the turn close (exit $rc45)]"
 case "$out45" in *"8001 words"*) : ;; *) a4_45="$a4_45 [the note does not state the measured size]" ;; esac
@@ -8413,11 +8431,11 @@ ae_45=""
 P45M="$T45/m"; mkproj "$P45M" main
 mkdir -p "$P45M/.ai-flow"; ros45 > "$P45M/.ai-flow/STATE.md"
 nwords 8000 > "$P45M/.ai-flow/BACKLOG.md"
-out45="$( cd "$P45M" && bash "$GRD45" 2>&1 )"; rc45=$?
+out45="$( cd "$P45M" && printf '%s' "$UPS45" | bash "$GRD45" 2>&1 )"; rc45=$?
 [ "$rc45" = 0 ] || ae_45="$ae_45 [a backlog of exactly 8,000 words did not pass (exit $rc45)]"
 case "$out45" in *systemMessage*) ae_45="$ae_45 [8,000 words spoke, so the budget fires one word early]" ;; esac
 nwords 8001 > "$P45M/.ai-flow/BACKLOG.md"
-out45="$( cd "$P45M" && bash "$GRD45" 2>&1 )"; rc45=$?
+out45="$( cd "$P45M" && printf '%s' "$UPS45" | bash "$GRD45" 2>&1 )"; rc45=$?
 [ "$rc45" = 0 ] || ae_45="$ae_45 [8,001 words refused instead of speaking (exit $rc45)]"
 case "$out45" in *systemMessage*) : ;; *) ae_45="$ae_45 [8,001 words stayed silent, so the budget fires one word late]" ;; esac
 [ -z "$ae_45" ] && ok "the size budget speaks at 8,001 and passes at 8,000" \
@@ -8428,17 +8446,20 @@ case "$out45" in *systemMessage*) : ;; *) ae_45="$ae_45 [8,001 words stayed sile
 # on the exit code, which is 2 whether one report survives or five. Without this row a regression that
 # keeps only the last report ships green and the operator loses the line naming the actual blocker.
 #
-# It now also covers the case the two buckets create, which is the harder one: the size note is no longer
-# a blocker, so a run holding both a blocker and a note has to refuse for the blocker AND carry the note
-# with it. Both travel on stderr there, because a hook exiting 2 has its stdout JSON unread — routing the
-# note to "its own" channel regardless would lose it on exactly the runs that already had something wrong.
+# RE-KEYED. Its second half required the size note to travel on the blocker's stderr line, and that merge
+# is GONE with the event split — the note has a channel of its own, so there is nothing to lose on the
+# refusing run and nothing that could be delivered there without laying its mark. The accumulator claim
+# survives untouched and is what this row is for, so it is now driven with TWO BLOCKERS rather than a
+# blocker and a note: that is the shape the accumulator exists for, and the retired pairing was never
+# testing it. The separation the split creates is C11's A5 row, on the sibling that has both halves.
 af_45=""
 P45N="$T45/n"; mkproj "$P45N" main
-mkdir -p "$P45N/.ai-flow"; vio45 > "$P45N/.ai-flow/STATE.md"; nwords 8001 > "$P45N/.ai-flow/BACKLOG.md"
+mkdir -p "$P45N/.ai-flow"; vio45 > "$P45N/.ai-flow/STATE.md"
+{ printf '# Backlog\n\n'; log45 5; } > "$P45N/.ai-flow/BACKLOG.md"
 out45="$( cd "$P45N" && bash "$GRD45" 2>&1 )"; rc45=$?
-[ "$rc45" = 2 ] || af_45="$af_45 [a blocker beside a note did not refuse (exit $rc45)]"
+[ "$rc45" = 2 ] || af_45="$af_45 [two blockers in one run did not refuse (exit $rc45)]"
 case "$out45" in *"closed-work narrative"*) : ;; *) af_45="$af_45 [the roster report was dropped]" ;; esac
-case "$out45" in *"8001 words"*) : ;; *) af_45="$af_45 [the size report was dropped]" ;; esac
+case "$out45" in *"5 session-close"*) : ;; *) af_45="$af_45 [the changelog report was dropped]" ;; esac
 [ -z "$af_45" ] && ok "two violations in one run both reach the operator" \
                 || bad "two violations in one run both reach the operator:$af_45"
 
@@ -9224,7 +9245,7 @@ if [ -n "${B48:-}" ]; then
 
   # A1 -- WHEN the count first reaches 150 and no note stands, exactly one note goes to stdout, exit 0.
   mk_tx48 "$TX48" 150
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$TX48\",\"stop_hook_active\":false}"
+  run48 "$B48/proj" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$TX48\",\"stop_hook_active\":false}"
   a48=""
   printf '%s' "$OUT48" | grep -q 'systemMessage' || a48="$a48 [no systemMessage on stdout]"
   case "$OUT48" in *"$M48_1"*) : ;; *) a48="$a48 [the first threshold's marker is absent]" ;; esac
@@ -9234,7 +9255,7 @@ if [ -n "${B48:-}" ]; then
 
   # A2 -- WHILE that note already stands in the session's own record, it is never written again.
   printf '{"type":"attachment","attachment":{"type":"hook_system_message","content":"%s ..."}}\n' "$M48_1" >> "$TX48"
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$TX48\",\"stop_hook_active\":false}"
+  run48 "$B48/proj" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$TX48\",\"stop_hook_active\":false}"
   b48=""
   case "$OUT48" in *"$M48_1"*) b48=" [the first note was written a second time]" ;; esac
   [ "$RC48" -eq 0 ] || b48="$b48 [exited $RC48, not 0]"
@@ -9244,7 +9265,7 @@ if [ -n "${B48:-}" ]; then
   # A3 -- WHEN the count reaches the second threshold and only the first note stands, the second fires.
   mk_tx48 "$B48/proj/tx2.jsonl" 300
   printf '{"type":"attachment","attachment":{"type":"hook_system_message","content":"%s ..."}}\n' "$M48_1" >> "$B48/proj/tx2.jsonl"
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/tx2.jsonl\",\"stop_hook_active\":false}"
+  run48 "$B48/proj" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$B48/proj/tx2.jsonl\",\"stop_hook_active\":false}"
   c48=""
   case "$OUT48" in *"$M48_2"*) : ;; *) c48=" [the second threshold did not fire]" ;; esac
   case "$OUT48" in *"$M48_1"*) c48="$c48 [the first note repeated]" ;; esac
@@ -9260,24 +9281,28 @@ if [ -n "${B48:-}" ]; then
   # own rule states -- it reports clean on the paths it never walked. Each path below is one the hook
   # returns from, plus the one it speaks from, because an exit code is a promise on the loud path too.
   d48=""
-  run48 "$B48/bare" '{"hook_event_name":"Stop","stop_hook_active":false}'
+  run48 "$B48/bare" '{"hook_event_name":"UserPromptSubmit","stop_hook_active":false}'
   [ "$RC48" -eq 0 ] || d48="$d48 [outside an ai-flow checkout it exited $RC48]"
-  run48 "$B48/proj" '{"hook_event_name":"Stop","transcript_path":"/nonexistent/x.jsonl","stop_hook_active":false}'
+  run48 "$B48/proj" '{"hook_event_name":"UserPromptSubmit","transcript_path":"/nonexistent/x.jsonl","stop_hook_active":false}'
   [ "$RC48" -eq 0 ] || d48="$d48 [on an unreachable transcript it exited $RC48]"
   run48 "$B48/proj" 'not json at all'
   [ "$RC48" -eq 0 ] || d48="$d48 [on a broken payload it exited $RC48]"
   run48 "$B48/proj" '["a","list","is","not","an","object"]'
   [ "$RC48" -eq 0 ] || d48="$d48 [on a non-object payload it exited $RC48]"
   mk_tx48 "$B48/proj/tx6.jsonl" 400
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/tx6.jsonl\",\"stop_hook_active\":true}"
-  [ "$RC48" -eq 0 ] || d48="$d48 [on a re-delivered stop it exited $RC48]"
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/tx6.jsonl\",\"stop_hook_active\":false}"
+  # The re-delivered-stop path is GONE with the field that read it: there is no re-delivery loop at this
+  # hook's event and no payload there carries `stop_hook_active`. What replaced it is the path an
+  # additive installer makes reachable on every existing install — an invocation at the event this hook
+  # left, which it must survive as quietly as it survives everything else here.
+  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/tx6.jsonl\"}"
+  [ "$RC48" -eq 0 ] || d48="$d48 [at an event that is not its own it exited $RC48]"
+  run48 "$B48/proj" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$B48/proj/tx6.jsonl\",\"stop_hook_active\":false}"
   [ "$RC48" -eq 0 ] || d48="$d48 [on the path where it actually speaks it exited $RC48]"
   [ -z "$d48" ] && ok "every path exits 0, including the ones that emit nothing" \
                 || bad "every path exits 0, including the ones that emit nothing ($d48)"
 
   # A5 -- IF neither route reaches a transcript, THEN silence. The gap must fall on the harmless side.
-  run48 "$B48/proj" '{"hook_event_name":"Stop","transcript_path":"/nonexistent/x.jsonl","stop_hook_active":false}'
+  run48 "$B48/proj" '{"hook_event_name":"UserPromptSubmit","transcript_path":"/nonexistent/x.jsonl","stop_hook_active":false}'
   e48=""
   [ -n "$OUT48" ] && case "$OUT48" in *systemMessage*) e48=" [a note was emitted with no transcript to count]" ;; esac
   e48="$e48$(ran48)"
@@ -9301,27 +9326,24 @@ if [ -n "${B48:-}" ]; then
   # A7 -- WHERE the checkout has no .ai-flow, no note. The note points at a paper that only exists here.
   cp "$TX48" "$B48/bare/tx.jsonl" 2>/dev/null
   mk_tx48 "$B48/bare/tx.jsonl" 400
-  run48 "$B48/bare" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/bare/tx.jsonl\",\"stop_hook_active\":false}"
+  run48 "$B48/bare" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$B48/bare/tx.jsonl\",\"stop_hook_active\":false}"
   g48=""
   case "$OUT48" in *systemMessage*) g48=" [a note was emitted in a checkout the engine does not govern]" ;; esac
   g48="$g48$(ran48)"
   [ -z "$g48" ] && ok "a checkout the engine does not govern gets no note" \
                 || bad "a checkout the engine does not govern gets no note ($g48)"
 
-  # A8 -- WHEN stop_hook_active is true the note stays silent: the rule this repository already carries
-  # as "a refusal the surrounding system is already re-delivering is not repeated by the guard".
-  mk_tx48 "$B48/proj/tx3.jsonl" 400
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/tx3.jsonl\",\"stop_hook_active\":true}"
-  h48=""
-  case "$OUT48" in *systemMessage*) h48=" [a re-delivered stop produced another note]" ;; esac
-  h48="$h48$(ran48)"
-  [ -z "$h48" ] && ok "a re-delivered stop does not re-deliver the note" \
-                || bad "a re-delivered stop does not re-deliver the note ($h48)"
+  # A8 is RETIRED and the row is GONE from this file rather than standing weakened beside its
+  # replacement. It required silence on a re-delivered stop, and there is no such thing at this hook's
+  # event: nothing re-delivers a prompt, and no payload there carries the field the rule was keyed on.
+  # What answers for the same class of invocation now is the event check, which is guarded one row up in
+  # A4's enumeration and, in its own right, by the row asserting that an invocation at an event this hook
+  # does not serve exits 0 and emits nothing.
 
   # A9 -- The note names both labels it sends the operator to. Without this the note and the sheet drift
   # apart in silence: the note would keep pointing at a field the template no longer declares.
   mk_tx48 "$B48/proj/tx4.jsonl" 150
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/tx4.jsonl\",\"stop_hook_active\":false}"
+  run48 "$B48/proj" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$B48/proj/tx4.jsonl\",\"stop_hook_active\":false}"
   i48=""
   case "$OUT48" in *hypothesis*) : ;; *) i48=" [the note does not name the hypothesis label]" ;; esac
   case "$OUT48" in *alternative*) : ;; *) i48="$i48 [the note does not name the alternative label]" ;; esac
@@ -9337,7 +9359,7 @@ if [ -n "${B48:-}" ]; then
     printf '{"type":"assistant","isSidechain":true,"message":{"usage":{"input_tokens":1,"output_tokens":1}}}\n' >> "$B48/proj/tx5.jsonl"
     n48=$((n48+1))
   done
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/tx5.jsonl\",\"stop_hook_active\":false}"
+  run48 "$B48/proj" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$B48/proj/tx5.jsonl\",\"stop_hook_active\":false}"
   j48=""
   case "$OUT48" in *systemMessage*) j48=" [100 main-loop turns plus 100 subagent turns crossed the threshold]" ;; esac
   j48="$j48$(ran48)"
@@ -9354,7 +9376,7 @@ if [ -n "${B48:-}" ]; then
   mk_tx48 "$B48/proj/tx7.jsonl" 200
   printf '{"type":"assistant","message":{"content":[{"type":"text","text":"as in %s, quoted"}]}}\n' "$M48_1" >> "$B48/proj/tx7.jsonl"
   printf '{"type":"user","message":{"content":"why did %s not fire"}}\n' "$M48_1" >> "$B48/proj/tx7.jsonl"
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/tx7.jsonl\",\"stop_hook_active\":false}"
+  run48 "$B48/proj" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$B48/proj/tx7.jsonl\",\"stop_hook_active\":false}"
   m48=""
   case "$OUT48" in *"$M48_1"*) : ;; *) m48=" [a session that merely quotes the mark was treated as already noted]" ;; esac
   [ -z "$m48" ] && ok "quoting the mark is not the same as having been told" \
@@ -9366,13 +9388,13 @@ if [ -n "${B48:-}" ]; then
   # the SOFTER note on the very next close, because the first threshold's mark had never been written.
   # Both closes are asserted here: the one that speaks, and the one after it that must not.
   mk_tx48 "$B48/proj/tx8.jsonl" 400
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/tx8.jsonl\",\"stop_hook_active\":false}"
+  run48 "$B48/proj" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$B48/proj/tx8.jsonl\",\"stop_hook_active\":false}"
   n48b=""
   case "$OUT48" in *"$M48_2"*) : ;; *) n48b=" [a late-arriving session was not told at the level it had reached]" ;; esac
   case "$OUT48" in *"$M48_1"*) n48b="$n48b [it was told at the softer level instead]" ;; esac
   # the harness's own delivery record, which is the only shape the mark may be read from
   printf '{"type":"attachment","attachment":{"type":"hook_system_message","content":"%s ..."}}\n' "$M48_2" >> "$B48/proj/tx8.jsonl"
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/tx8.jsonl\",\"stop_hook_active\":false}"
+  run48 "$B48/proj" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$B48/proj/tx8.jsonl\",\"stop_hook_active\":false}"
   case "$OUT48" in *systemMessage*) n48b="$n48b [something followed the note that said it was the last]" ;; esac
   n48b="$n48b$(ran48)"
   [ -z "$n48b" ] && ok "the firmer note is terminal, and nothing softer follows it" \
@@ -9384,13 +9406,13 @@ if [ -n "${B48:-}" ]; then
   # message that misdescribes the conversation the operator just had is how one stops being read.
   # Observed on a live 318-turn session, which heard "the second and last time" as the only thing said.
   mk_tx48 "$B48/proj/txC.jsonl" 400
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/txC.jsonl\",\"stop_hook_active\":false}"
+  run48 "$B48/proj" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$B48/proj/txC.jsonl\",\"stop_hook_active\":false}"
   y48=""
   case "$OUT48" in *"second and last"*) y48=" [a session hearing the note for the first time was told it was the second]" ;; esac
   case "$OUT48" in *"not again"*) : ;; *) y48="$y48 [the note does not say it will not come back]" ;; esac
   mk_tx48 "$B48/proj/txD.jsonl" 400
   printf '{"type":"attachment","attachment":{"type":"hook_system_message","content":"%s ..."}}\n' "$M48_1" >> "$B48/proj/txD.jsonl"
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/txD.jsonl\",\"stop_hook_active\":false}"
+  run48 "$B48/proj" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$B48/proj/txD.jsonl\",\"stop_hook_active\":false}"
   case "$OUT48" in *"second and last"*) : ;; *) y48="$y48 [a session that HAD been told first was not told this was the second]" ;; esac
   y48="$y48$(ran48)"
   [ -z "$y48" ] && ok "the note's claim about its own history is true either way it arrives" \
@@ -9402,7 +9424,7 @@ if [ -n "${B48:-}" ]; then
   mk_tx48 "$B48/proj/tx9.jsonl" 400
   printf '{"type":"attachment","attachment":{"type":"hook_system_message","content":"%s ..."}}\n' "$M48_1" >> "$B48/proj/tx9.jsonl"
   printf '{"type":"attachment","attachment":{"type":"hook_success","hookName":"Stop","stdout":"{\\"systemMessage\\":\\"%s ...\\"}"}}\n' "$M48_2" >> "$B48/proj/tx9.jsonl"
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/tx9.jsonl\",\"stop_hook_active\":false}"
+  run48 "$B48/proj" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$B48/proj/tx9.jsonl\",\"stop_hook_active\":false}"
   o48=""
   case "$OUT48" in *systemMessage*) o48=" [a note was emitted with both thresholds already spoken]" ;; esac
   o48="$o48$(ran48)"
@@ -9418,10 +9440,10 @@ if [ -n "${B48:-}" ]; then
   mk_tx48 "$B48/proj/txA.jsonl" 200
   p48=""
   # declared inside the project while the process sits outside one -> the note is owed
-  run48 "$B48/bare" "{\"hook_event_name\":\"Stop\",\"cwd\":\"$B48/proj\",\"transcript_path\":\"$B48/proj/txA.jsonl\",\"stop_hook_active\":false}"
+  run48 "$B48/bare" "{\"hook_event_name\":\"UserPromptSubmit\",\"cwd\":\"$B48/proj\",\"transcript_path\":\"$B48/proj/txA.jsonl\",\"stop_hook_active\":false}"
   case "$OUT48" in *systemMessage*) : ;; *) p48=" [a declared ai-flow directory was ignored in favour of the process's own]" ;; esac
   # declared outside while the process sits inside -> silence is owed
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"cwd\":\"$B48/bare\",\"transcript_path\":\"$B48/proj/txA.jsonl\",\"stop_hook_active\":false}"
+  run48 "$B48/proj" "{\"hook_event_name\":\"UserPromptSubmit\",\"cwd\":\"$B48/bare\",\"transcript_path\":\"$B48/proj/txA.jsonl\",\"stop_hook_active\":false}"
   case "$OUT48" in *systemMessage*) p48="$p48 [a note went to a declared directory the engine does not govern]" ;; esac
   p48="$p48$(ran48)"
   [ -z "$p48" ] && ok "the declared working directory decides, not the hook's own" \
@@ -9431,7 +9453,7 @@ if [ -n "${B48:-}" ]; then
   # the search is a loop, and until now no fixture entered the loop body: the rows above test a
   # directory that IS the project root and one whose whole ancestry has none. The sessions most likely
   # to run long are exactly the ones sitting a few directories down.
-  run48 "$B48/proj/deep/deeper" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/txA.jsonl\",\"stop_hook_active\":false}"
+  run48 "$B48/proj/deep/deeper" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$B48/proj/txA.jsonl\",\"stop_hook_active\":false}"
   q48=""
   case "$OUT48" in *systemMessage*) : ;; *) q48=" [a session two directories inside the project was treated as outside it]" ;; esac
   q48="$q48$(ran48)"
@@ -9445,7 +9467,7 @@ if [ -n "${B48:-}" ]; then
   if command -v git >/dev/null 2>&1; then
     mkdir -p "$B48/proj/nested"
     ( cd "$B48/proj/nested" && git init -q . 2>/dev/null && git config user.email t@t && git config user.name t ) || true
-    run48 "$B48/proj/nested" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/txA.jsonl\",\"stop_hook_active\":false}"
+    run48 "$B48/proj/nested" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$B48/proj/txA.jsonl\",\"stop_hook_active\":false}"
     r48=""
     case "$OUT48" in *systemMessage*) r48=" [the climb passed the nested checkout's own boundary]" ;; esac
     r48="$r48$(ran48)"
@@ -9465,7 +9487,7 @@ if [ -n "${B48:-}" ]; then
     printf '{"type":"user","message":{"usage":{"input_tokens":1,"output_tokens":1}}}\n' >> "$B48/proj/txB.jsonl"
     t48=$((t48+1))
   done
-  run48 "$B48/proj" "{\"hook_event_name\":\"Stop\",\"transcript_path\":\"$B48/proj/txB.jsonl\",\"stop_hook_active\":false}"
+  run48 "$B48/proj" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$B48/proj/txB.jsonl\",\"stop_hook_active\":false}"
   u48=""
   case "$OUT48" in *systemMessage*) u48=" [100 assistant turns plus 100 non-assistant records crossed the threshold]" ;; esac
   u48="$u48$(ran48)"
@@ -9484,7 +9506,7 @@ if [ -n "${B48:-}" ]; then
     mk_tx48 "$HB48/.claude/projects/$SLUG48/new.jsonl" 200
     touch -t 200001010000 "$HB48/.claude/projects/$SLUG48/old.jsonl"
     v48=""
-    OUT48="$( cd "$B48/proj" && printf '{"hook_event_name":"Stop","cwd":"%s","stop_hook_active":false}' "$B48/proj" \
+    OUT48="$( cd "$B48/proj" && printf '{"hook_event_name":"UserPromptSubmit","cwd":"%s","stop_hook_active":false}' "$B48/proj" \
               | HOME="$HB48" python3 "$NOTE48" 2>/dev/null )"; RC48=$?
     case "$OUT48" in *systemMessage*) : ;; *) v48=" [the fallback did not find the newest record for this working copy]" ;; esac
     [ "$RC48" -eq 0 ] || v48="$v48 [it exited $RC48]"
@@ -11443,6 +11465,12 @@ mk55() {  # $1 = dir, $2 = roster fn, $3 = total words in the ledger
 # The guard run with a payload on stdin, the two streams kept apart. $1 = cwd, $2 = payload.
 # stdout lands in the caller's substitution; stderr is diverted to a file the caller reads by name.
 run55() { ( cd "$1" && printf '%s' "$2" | bash "$GRD55" 2>"$T55/err" ); }
+# The note half runs at `UserPromptSubmit` and the refusing half at `Stop`, so every row below says which
+# one it is exercising. A note row driven on an empty payload measures the refusing half and reports the
+# note missing when it is merely elsewhere; a refusal row driven at the note's event gets exit 0 and no
+# refusal at all. The refusal rows keep their empty payload deliberately — that is the refusing half's
+# own occasion, and it is also what the malformed and re-delivery rows below need.
+UPS55='{"hook_event_name":"UserPromptSubmit"}'
 
 if ! T55="$(mktemp -d 2>/dev/null)" || [ ! -d "$T55" ]; then
   bad "A1 a backlog over its word budget is noted, not refused (no sandbox: mktemp -d failed)"
@@ -11475,7 +11503,7 @@ else
   # Three legs, and the stdout one is the criterion's whole point: exit 0 alone is also what a guard that
   # simply stopped measuring would give, and a note on stderr at exit 0 is a note the harness discards.
   P55A="$T55/a"; mk55 "$P55A" ros55 8001
-  o55="$(run55 "$P55A" '{}')"; rc55=$?
+  o55="$(run55 "$P55A" "$UPS55")"; rc55=$?
   e55="$(cat "$T55/err")"
   c1_55=""
   [ "$rc55" = 0 ] || c1_55="$c1_55 [a backlog over the word budget did not let the turn close (exit $rc55)]"
@@ -11511,7 +11539,7 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
   # second threshold is decoration: the firm note carries its own threshold in its mark, so a guard that
   # spoke the soft form at 15,001 fails here on the mark rather than on the prose.
   P55B="$T55/b"; mk55 "$P55B" ros55 15001
-  o55="$(run55 "$P55B" '{}')"; rc55=$?
+  o55="$(run55 "$P55B" "$UPS55")"; rc55=$?
   c2_55=""
   [ "$rc55" = 0 ] || c2_55="$c2_55 [the firm note refused instead of speaking (exit $rc55)]"
   case "$o55" in *"15001 words"*) : ;; *) c2_55="$c2_55 [the firm note does not state the measurement]" ;; esac
@@ -11527,15 +11555,15 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
   case "$o55" in *"ledger size note [8000]"*) c2_55="$c2_55 [the soft note was spoken beside the firm one]" ;; esac
   TR55F="$T55/firm-spoken.jsonl"
   printf '%s\n' '{"attachment":{"type":"hook_system_message","content":"ai-flow ledger size note [15000] — BACKLOG.md is 15001 words"}}' > "$TR55F"
-  o55="$(run55 "$P55B" "{\"transcript_path\":\"$TR55F\"}")"
+  o55="$(run55 "$P55B" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$TR55F\"}")"
   case "$o55" in *systemMessage*) c2_55="$c2_55 [with the firm note already spoken the guard fell back to the soft one]" ;; esac
   # And FIRM IN PROSE, not only in the mark. The approved contract promises the guardian speaks "softly
   # above one threshold, firmly above a higher one"; a firm form that differs from the soft one by its
   # numbers and a machine-readable mark alone delivers the second threshold as decoration, and the
   # operator whose ledger has doubled reads the sentence the 8,001-word operator already read.
   P55B2="$T55/b2"; mk55 "$P55B2" ros55 8001
-  o55b="$(run55 "$P55B2" '{}')"
-  o55="$(run55 "$P55B" '{}')"
+  o55b="$(run55 "$P55B2" "$UPS55")"
+  o55="$(run55 "$P55B" "$UPS55")"
   firmonly55=""
   case "$o55"  in *"firm threshold"*) firmonly55=1 ;; esac
   case "$o55b" in *"firm threshold"*) firmonly55="" ;; esac
@@ -11547,22 +11575,22 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
   # The edge itself, because a budget driven only well above and well below it ships an off-by-one either
   # way. This is the row C45's line-budget boundary row becomes.
   P55C="$T55/c"; mk55 "$P55C" ros55 8000
-  o55="$(run55 "$P55C" '{}')"; rc55=$?
+  o55="$(run55 "$P55C" "$UPS55")"; rc55=$?
   c3_55=""
   [ "$rc55" = 0 ] || c3_55="$c3_55 [a backlog of exactly 8,000 words did not pass (exit $rc55)]"
   case "$o55" in *systemMessage*) c3_55="$c3_55 [8,000 words spoke, so the budget fires one word early]" ;; esac
   mk55 "$P55C" ros55 8001 >/dev/null 2>&1
-  o55="$(run55 "$P55C" '{}')"
+  o55="$(run55 "$P55C" "$UPS55")"
   case "$o55" in *systemMessage*) : ;; *) c3_55="$c3_55 [8,001 words stayed silent, so the budget fires one word late]" ;; esac
   # The SECOND threshold has an edge too, and this task introduced it in exactly the state this row was
   # written to condemn: driven at 15,001 by A2 and at 8,000-8,001 here, so the 15,000 point is never
   # touched and `-gt 15000` could become `-ge 15000` with the whole suite green.
   mk55 "$P55C" ros55 15000 >/dev/null 2>&1
-  o55="$(run55 "$P55C" '{}')"
+  o55="$(run55 "$P55C" "$UPS55")"
   case "$o55" in *"ledger size note [8000]"*) : ;; *) c3_55="$c3_55 [exactly 15,000 words did not take the soft level]" ;; esac
   case "$o55" in *"ledger size note [15000]"*) c3_55="$c3_55 [15,000 words took the firm level, so the firm budget fires one word early]" ;; esac
   mk55 "$P55C" ros55 15001 >/dev/null 2>&1
-  o55="$(run55 "$P55C" '{}')"
+  o55="$(run55 "$P55C" "$UPS55")"
   case "$o55" in *"ledger size note [15000]"*) : ;; *) c3_55="$c3_55 [15,001 words did not take the firm level, so the firm budget fires one word late]" ;; esac
   [ -z "$c3_55" ] && ok "A3 the word budget speaks at 8,001 and stays silent at 8,000" \
                   || bad "A3 the word budget speaks at 8,001 and stays silent at 8,000:$c3_55"
@@ -11591,20 +11619,29 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
   [ -z "$c4_55" ] && ok "A4 a re-delivered stop is answered with silence, blockers included" \
                   || bad "A4 a re-delivered stop is answered with silence, blockers included:$c4_55"
 
-  # --- A5: a blocker and a note in one run --------------------------------------
-  # IF both stand, THEN the run exits 2 and BOTH reports reach stderr. The note joins the blocker on
-  # stderr rather than being suppressed or written to a stdout nothing reads at exit 2: what the operator
-  # must act on is the blocker, and losing the note silently on a session that is already going badly is
-  # the failure this row exists to prevent. It is C45's "two reports in one run" row, retargeted.
+  # --- A5: a blocker and a note in one run, RE-KEYED ----------------------------
+  # It required the note to join the blocker on stderr, and that merge is GONE: the note has an event of
+  # its own now, so it is never on the refusing run's stream to be lost — which is what the merge existed
+  # to prevent — and it is no longer delivered by a route that lays no mark, which is what the merge cost.
+  # The claim that replaces it is the one the split creates and nothing else here would see: ONE ledger
+  # breaching both, each half speaking at its own event, neither carrying the other's report. Driven on
+  # one fixture, because two would prove only that each half works alone.
   P55E="$T55/e"; mk55 "$P55E" vio55 8001
+  c5_55=""
   o55="$(run55 "$P55E" '{}')"; rc55=$?
   e55="$(cat "$T55/err")"
-  c5_55=""
-  [ "$rc55" = 2 ] || c5_55="$c5_55 [a blocker beside a note did not refuse (exit $rc55)]"
+  [ "$rc55" = 2 ] || c5_55="$c5_55 [the blocker no longer refuses at its own event (exit $rc55)]"
   case "$e55" in *"closed-work narrative"*) : ;; *) c5_55="$c5_55 [the blocking report was dropped]" ;; esac
-  case "$e55" in *"8001 words"*) : ;; *) c5_55="$c5_55 [the size note was dropped instead of joining the blocker]" ;; esac
-  [ -z "$c5_55" ] && ok "A5 two reports in one run both reach the operator, on stderr" \
-                  || bad "A5 two reports in one run both reach the operator, on stderr:$c5_55"
+  case "$e55" in *"8001 words"*) c5_55="$c5_55 [the refusal still carries the note, which now has an event of its own]" ;; esac
+  case "$o55" in *systemMessage*) c5_55="$c5_55 [the refusing run wrote to stdout, which a hook exiting 2 has unread]" ;; esac
+  o55="$(run55 "$P55E" "$UPS55")"; rc55=$?
+  e55="$(cat "$T55/err")"
+  [ "$rc55" = 0 ] || c5_55="$c5_55 [the note refused at its own event, where a refusal stops the prompt (exit $rc55)]"
+  case "$o55" in *"8001 words"*) : ;; *) c5_55="$c5_55 [the note is lost on a ledger that also carries a blocker]" ;; esac
+  case "$o55" in *additionalContext*) : ;; *) c5_55="$c5_55 [the note reaches the operator but not the model, which is the sweeper]" ;; esac
+  case "$e55" in *"closed-work narrative"*) c5_55="$c5_55 [the note's run carried the blocker, which cannot refuse there]" ;; esac
+  [ -z "$c5_55" ] && ok "A5 a blocker and a note in one ledger speak at their own events, neither carrying the other" \
+                  || bad "A5 a blocker and a note in one ledger speak at their own events, neither carrying the other:$c5_55"
 
   # --- A6: once per session -----------------------------------------------------
   # WHILE a threshold's note already stands in this session's transcript, it is not delivered again. The
@@ -11619,13 +11656,13 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
   TR55B="$T55/unspoken.jsonl"
   printf '%s\n' '{"type":"assistant","message":{"usage":{}}}' > "$TR55B"
   c6_55=""
-  o55="$(run55 "$P55F" "{\"transcript_path\":\"$TR55\"}")"
+  o55="$(run55 "$P55F" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$TR55\"}")"
   case "$o55" in *systemMessage*) c6_55="$c6_55 [the note was spoken twice in one session]" ;; esac
-  o55="$(run55 "$P55F" "{\"transcript_path\":\"$TR55B\"}")"
+  o55="$(run55 "$P55F" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$TR55B\"}")"
   case "$o55" in *systemMessage*) : ;; *) c6_55="$c6_55 [a session that never heard the note did not hear it]" ;; esac
   # A transcript that cannot be read must fall to SPEAKING. A missed note is harmless; a note suppressed
   # on a session that never heard it is the direction this must never fail in.
-  o55="$(run55 "$P55F" "{\"transcript_path\":\"$T55/does-not-exist.jsonl\"}")"
+  o55="$(run55 "$P55F" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$T55/does-not-exist.jsonl\"}")"
   case "$o55" in *systemMessage*) : ;; *) c6_55="$c6_55 [an unreadable transcript silenced the note]" ;; esac
   # THE ANCHORING ITSELF, which the three legs above cannot see: each of them is satisfied by a plain text
   # search of the whole file — the mark is found where it is found, and absent where it is absent. The one
@@ -11637,7 +11674,7 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
   TR55Q="$T55/quoted.jsonl"
   printf '%s\n' '{"type":"user","message":{"content":"why did ai-flow ledger size note [8000] not fire"}}' > "$TR55Q"
   printf '%s\n' '{"type":"user","toolUseResult":{"stdout":"ai-flow ledger size note [8000] — BACKLOG.md is 8001 words"}}' >> "$TR55Q"
-  o55="$(run55 "$P55F" "{\"transcript_path\":\"$TR55Q\"}")"
+  o55="$(run55 "$P55F" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$TR55Q\"}")"
   case "$o55" in *systemMessage*) : ;; *) c6_55="$c6_55 [the mark was found outside a delivery record, so a quote of it silences the note]" ;; esac
   # The OTHER delivery record, and it is the common one: the measurement behind this design found 73
   # `hook_system_message` records and 45,821 `hook_success` ones, the mark living in `stdout` there. With
@@ -11645,14 +11682,14 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
   # concatenation — leaves the suite green while the note repeats every turn on every real session.
   TR55S="$T55/spoken-success.jsonl"
   printf '%s\n' '{"attachment":{"type":"hook_success","stdout":"{\"systemMessage\": \"ai-flow ledger size note [8000] — BACKLOG.md is 8001 words\"}"}}' > "$TR55S"
-  o55="$(run55 "$P55F" "{\"transcript_path\":\"$TR55S\"}")"
+  o55="$(run55 "$P55F" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$TR55S\"}")"
   case "$o55" in *systemMessage*) c6_55="$c6_55 [a delivery recorded as hook_success/stdout did not lay the mark]" ;; esac
   # And PER THRESHOLD, which is the criterion's own wording and which no leg above varies: every one of
   # them drives 8,001 words against an [8000] mark. Dropping the threshold from the mark and searching the
   # bare prefix passes all of them, and permanently silences the firm note on any session that had already
   # heard the soft one — the normal progression this design expects.
   P55F2="$T55/f2"; mk55 "$P55F2" ros55 15001
-  o55="$(run55 "$P55F2" "{\"transcript_path\":\"$TR55\"}")"
+  o55="$(run55 "$P55F2" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$TR55\"}")"
   case "$o55" in *"ledger size note [15000]"*) : ;; *) c6_55="$c6_55 [the soft note already spoken silenced the firm one, so the mark is not per-threshold]" ;; esac
   [ -z "$c6_55" ] && ok "A6 a threshold already spoken in this session is not spoken again" \
                   || bad "A6 a threshold already spoken in this session is not spoken again:$c6_55"
@@ -11715,7 +11752,9 @@ sys.exit(0 if isinstance(d, dict) and isinstance(d.get("systemMessage"), str) el
     echo "  [skip] A8: python3 is reachable even under the stripped PATH, so absence cannot be staged here."
   else
     P55M="$T55/m"; mk55 "$P55M" ros55 8001
-    o55="$( cd "$P55M" && printf '%s' "{\"transcript_path\":\"$TR55\"}" | PATH="$NP55" bash "$GRD55" 2>"$T55/err" )"; rc55=$?
+    # With no parser there is no event read either, and the guard must still reach its note half —
+    # otherwise this row is green on the refusing half's silence, which is not what it claims to measure.
+    o55="$( cd "$P55M" && printf '%s' "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$TR55\"}" | PATH="$NP55" bash "$GRD55" 2>"$T55/err" )"; rc55=$?
     [ "$rc55" = 0 ] || c8_55="$c8_55 [with no python3 the guard refused instead of speaking (exit $rc55)]"
     case "$o55" in *systemMessage*) : ;; *) c8_55="$c8_55 [with no python3 the note fell silent — the one direction it must not fail in]" ;; esac
     [ -z "$c8_55" ] && ok "A8 with no python3 the note speaks rather than falling silent" \
@@ -14149,6 +14188,395 @@ printf '%s' "$QG64" | grep -qiE 'at the close|before the close|closing ceremony|
                 || bad "O4 the quick path's approval sits at the close, not before each commit ($o4_64)"
 
 echo ""
+echo "== C65: every non-blocking note reaches the model, and the close reads the numbers it is given =="
+# Conformance: three guardrail notes are printed for the operator and never enter the model's context, so
+# the actor the note is addressed to cannot act on it; and the phase close, by its own written rule,
+# therefore states no recommendation about stopping. Generated in the Conform phase from understand.md's
+# Verifiable Criteria; each row names the criterion it comes from. Two rows are CONTROLS in the sense
+# C48/C49 already use -- they pin behaviour this task must NOT take away, so they are green from the start
+# by construction rather than by achievement.
+#
+# The behavioural rows RUN the hooks rather than reading them, and that is the row's whole point: the
+# ticket that opened this task diagnosed the defect from the transcript's own delivery records and was
+# wrong, because the harness writes a full-content record for a message it never shows the model. What a
+# hook WRITES is therefore not evidence of what a hook DELIVERS, and a suite keyed on the source would
+# have certified the same false conclusion. What is asserted here is the shape of the object on stdout,
+# which is the one thing the harness reads.
+BL65="$ROOT/global/protocols/backlog.md"
+NOTE65="$HK/context-cost-note.py"
+LED65="$HK/check-state-size.sh"
+BRK65="$HK/diff-size-guard.py"
+REG65="$HK/settings.hooks.json"
+RDM65="$HK/README.md"
+M65='ai-flow context note [150]'
+
+# The two ends of the curve, and neither is decoration: the FLOOR is what a fresh session would start
+# with and the LAST record is what this session is carrying, and the derived bar the close is handed is
+# exactly the comparison between those two. Chosen distinct and two-digit-distinctive so a row can find
+# each in the delivered text without pinning how the hook formats it -- `87k`, `87,000` and `87000` all
+# carry `87`, and a leg keyed on the formatting would fail the first time someone rounded it.
+FLOOR65=41000
+CTX65=87000
+
+if [ "$PY3" = 0 ]; then
+  echo "  [skip] C65 (python3 unavailable)"
+else
+T65="$T11/c65"; mkdir -p "$T65"
+P65="$T65/proj"; mkdir -p "$P65/.ai-flow"
+
+# A transcript of $2 main-loop turns rising from the floor to the carried context, plus any extra raw
+# records given on stdin -- which is how the delivery records a dedupe row needs get in without this
+# builder having to know what they look like.
+mk_tx65() {  # $1 = path, $2 = turns
+  : > "$1"
+  local i=1 ctx
+  while [ "$i" -le "$2" ]; do
+    if [ "$i" = 1 ]; then ctx="$FLOOR65"; else ctx="$CTX65"; fi
+    printf '{"type":"assistant","message":{"usage":{"input_tokens":12,"cache_read_input_tokens":%s}}}\n' "$ctx" >> "$1"
+    i=$((i+1))
+  done
+  cat >> "$1"
+}
+
+run65() {  # $1 = transcript, $2 = event -> the hook's stdout
+  printf '{"hook_event_name":"%s","transcript_path":"%s","cwd":"%s","session_id":"s65","prompt":"go"}' \
+    "$2" "$1" "$P65" | ( cd "$P65" && python3 "$NOTE65" 2>/dev/null )
+}
+
+# The two halves of the delivery, read the way the harness reads them. `additionalContext` is taken
+# through a list branch as well as a string one because that is the shape the harness was measured to
+# write it back as, and a reader that only handles the string matches the other by accidental
+# stringification -- an accident is not a contract.
+model65() {
+  printf '%s' "$1" | python3 -c 'import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+if not isinstance(d, dict):
+    sys.exit(0)
+h = d.get("hookSpecificOutput") or {}
+c = h.get("additionalContext") if isinstance(h, dict) else None
+if isinstance(c, list):
+    c = " ".join(str(x) for x in c)
+sys.stdout.write(c or "")' 2>/dev/null
+}
+oper65() {
+  printf '%s' "$1" | python3 -c 'import json,sys
+try:
+    d = json.load(sys.stdin)
+except Exception:
+    sys.exit(0)
+sys.stdout.write((d.get("systemMessage") or "") if isinstance(d, dict) else "")' 2>/dev/null
+}
+
+TXA65="$T65/crossed.jsonl"; mk_tx65 "$TXA65" 160 </dev/null
+OUTA65="$(run65 "$TXA65" UserPromptSubmit)"
+
+# A1 -- WHEN a guardrail emits a note without refusing, the engine shall emit it on `UserPromptSubmit`
+# carrying `hookSpecificOutput.additionalContext`. Generated in the Conform phase from understand.md's
+# Verifiable Criteria.
+#
+# One row, three legs, one per note carrier, because the rule is about the CLASS and a row per hook lets
+# two of them move while the third is forgotten with every row still green. The first leg runs the hook;
+# the other two read the emission site, because their fixtures are a git checkout and a ledger over
+# budget and the claim under test here is the channel, not the condition that opens it -- each of those
+# two conditions already has its own section in this file.
+a1_65=""
+[ -n "$OUTA65" ] || a1_65=" [the cost note emits nothing at UserPromptSubmit]"
+printf '%s' "$(model65 "$OUTA65")" | grep -qF "$M65" \
+  || a1_65="$a1_65 [the cost note's delivery carries no additionalContext the model can read]"
+grep -q 'additionalContext' "$LED65" \
+  || a1_65="$a1_65 [the ledger guard's note half emits no additionalContext]"
+grep -q 'additionalContext' "$BRK65" \
+  || a1_65="$a1_65 [the diff guardrail's note half emits no additionalContext]"
+[ -z "$a1_65" ] && ok "A1 the note travels on the channel the model reads" \
+                || bad "A1 the note travels on the channel the model reads ($a1_65)"
+
+# A2 -- The engine shall register no note-only guardrail on an event whose exit-0 output the model cannot
+# read. Generated in the Conform phase from understand.md's Verifiable Criteria.
+#
+# PARSED, never grepped, and the reason is this file's own subject: `context-cost-note.py` appears in the
+# registration whichever event it sits under, so a text search proves only that the string is present and
+# would be green with the hook still bound to the channel that reaches nobody. Two legs pull the other
+# way and they are the CONTROL half of this row: the two guardrails that also refuse keep their `Stop`
+# registration, because moving a refusal to a prompt event would take away the block entirely.
+reg65() {  # $1 = event, $2 = hook file name -> how many registrations
+  python3 -c 'import json,sys
+try:
+    d = json.load(open(sys.argv[1]))
+except Exception:
+    print("E"); sys.exit(0)
+n = 0
+for g in (d.get(sys.argv[2]) or []):
+    for h in (g.get("hooks") or []):
+        if sys.argv[3] in (h.get("command") or ""):
+            n += 1
+print(n)' "$REG65" "$1" "$2" 2>/dev/null || printf 'E'
+}
+a2_65=""
+[ "$(reg65 Stop context-cost-note.py)" = 0 ] \
+  || a2_65=" [the note-only guardrail is still registered at Stop, where its exit-0 output reaches nobody]"
+[ "$(reg65 UserPromptSubmit context-cost-note.py)" = 1 ] \
+  || a2_65="$a2_65 [it is not registered exactly once at the event the model reads]"
+[ "$(reg65 UserPromptSubmit check-state-size.sh)" = 1 ] \
+  || a2_65="$a2_65 [the ledger guard's note half is not registered at the event the model reads]"
+[ "$(reg65 UserPromptSubmit diff-size-guard.py)" = 1 ] \
+  || a2_65="$a2_65 [the diff guardrail's note half is not registered at the event the model reads]"
+[ "$(reg65 Stop check-state-size.sh)" = 1 ] \
+  || a2_65="$a2_65 [CONTROL: the ledger guard lost the Stop registration its refusal needs]"
+[ "$(reg65 Stop diff-size-guard.py)" = 1 ] \
+  || a2_65="$a2_65 [CONTROL: the diff guardrail lost the Stop registration its refusal needs]"
+[ -z "$a2_65" ] && ok "A2 no note-only guardrail is registered on a channel the model cannot read" \
+                || bad "A2 no note-only guardrail is registered on a channel the model cannot read ($a2_65)"
+
+# A3 -- WHEN a note is emitted, the engine shall carry the same mark in both halves, so the reader that
+# suppresses a repeat finds it in either. Generated in the Conform phase from understand.md's Verifiable
+# Criteria.
+#
+# The operator half is the leg that matters here and it is the one a careless move deletes: the point of
+# carrying two fields in one object is that the person keeps seeing exactly what they see today. A row
+# asserting only the model half would call a regression to a model-only note a success.
+a3_65=""
+printf '%s' "$(oper65 "$OUTA65")" | grep -qF "$M65" \
+  || a3_65=" [the operator's half no longer carries the mark, so the move cost the person their note]"
+printf '%s' "$(model65 "$OUTA65")" | grep -qF "$M65" \
+  || a3_65="$a3_65 [the model's half does not carry the mark, so a repeat cannot be suppressed from it]"
+[ -z "$a3_65" ] && ok "A3 both halves of a note carry the same mark" \
+                || bad "A3 both halves of a note carry the same mark ($a3_65)"
+
+# A4 -- WHILE a threshold stands already spoken in the session's transcript, the engine shall emit no
+# second note for that threshold. Generated in the Conform phase from understand.md's Verifiable Criteria.
+#
+# The fixture's delivery record is `hook_additional_context` with a LIST-valued `content`, which is what
+# the harness was measured to write for the new channel and is outside the reader's accepted types today.
+# Keyed on the shape rather than on the type name because the list is the half that gets forgotten: a
+# reader that adds the type and keeps stringifying the content matches by accident, and an accident that
+# happens to work is the failure this row exists to make visible.
+#
+# The second leg is the row's other half: suppression must silence the NOTE and not the delivery. The
+# always-on line is owed on every prompt, threshold or no threshold, so a hook that returns early on a
+# spoken mark takes the close's own signal away with it -- green under a one-legged row.
+TXB65="$T65/spoken.jsonl"
+mk_tx65 "$TXB65" 160 <<TXB65EOF
+{"type":"attachment","attachment":{"type":"hook_additional_context","content":["$M65 — already said."]}}
+TXB65EOF
+OUTB65="$(run65 "$TXB65" UserPromptSubmit)"
+# The suppression leg reads the WHOLE emission and not the model half, so it is live before the channel
+# it guards exists: measured against the half this change is about to create, the leg is satisfied by that
+# half being empty and proves nothing until the step that fills it -- a stub that cannot fail on the code
+# it was written against is a stub that was never sized.
+a4_65=""
+printf '%s' "$OUTB65" | grep -qF "$M65" \
+  && a4_65=" [the note is spoken a second time for a threshold the transcript already records]"
+[ -n "$(model65 "$OUTB65")" ] \
+  || a4_65="$a4_65 [suppressing the note also silenced the line the close is owed on every prompt]"
+[ -z "$a4_65" ] && ok "A4 a threshold already spoken is not spoken again" \
+                || bad "A4 a threshold already spoken is not spoken again ($a4_65)"
+
+# A5 -- IF `transcript_path` names anything that is not a regular file, THEN the ledger guard's mark
+# reader shall answer *not yet spoken* without opening it. Generated in the Conform phase from
+# understand.md's Verifiable Criteria; it is the remedy the Icebox entry on this reader was taken for.
+#
+# Read over the FUNCTION BODY and not the file, and structural rather than behavioural, for one reason
+# each. The body, because `check-state-size.sh` tests file readability in three other places and a
+# file-wide search is satisfied by any of them while this reader still opens a directory. Structural,
+# because both the guarded and the unguarded reader answer 1 -- *not yet spoken* is the direction every
+# failure here takes on purpose -- so the two are indistinguishable from outside, and what this row is
+# actually about is the unbounded read behind that identical answer.
+SPK65="$(awk '/^spoken_already\(\)/{f=1} f{print} f&&/^}$/{exit}' "$LED65")"
+a5_65=""
+[ -n "$SPK65" ] || a5_65=" [the mark reader's body could not be located, so its guards prove nothing]"
+if [ -n "$SPK65" ]; then
+  printf '%s' "$SPK65" | grep -qE '\-f "?\$(TRANSCRIPT|\{TRANSCRIPT)|isfile' \
+    || a5_65="$a5_65 [it does not refuse a transcript path that is not a regular file]"
+  # The alternation names every shape a bounded read takes here rather than one of them: written to the
+  # single mechanism first imagined, the leg reported the whole transcript still being read while the
+  # bound was in place and working. A negative leg is only as wide as the ways the thing it wants can be
+  # written, and the direction it must hold — the read is bounded — is unchanged.
+  printf '%s' "$SPK65" | grep -qE 'TAIL_BYTES|tail -n|bounded tail|LINE_CAP|line cap|deque' \
+    || a5_65="$a5_65 [it reads the whole transcript from the start rather than a bounded tail]"
+fi
+[ -z "$a5_65" ] && ok "A5 the mark reader refuses a transcript that is not a regular file" \
+                || bad "A5 the mark reader refuses a transcript that is not a regular file ($a5_65)"
+
+# A6 -- WHEN a prompt is submitted, the engine shall supply the model with the session's accumulated
+# context and a fresh session's starting cost, whether or not any threshold has been crossed. Generated
+# in the Conform phase from understand.md's Verifiable Criteria.
+#
+# The fixture is deliberately BELOW every threshold. That is the gap the operator raised and the one
+# measurement could not answer: a note that persists once delivered answers every close AFTER the
+# threshold, and nothing at all answered a close at turn 30 -- which is where the simulated break-even
+# actually sits. A row run at 160 turns would be green on the threshold note alone.
+TXC65="$T65/quiet.jsonl"; mk_tx65 "$TXC65" 30 </dev/null
+OUTC65="$(run65 "$TXC65" UserPromptSubmit)"
+MC65="$(model65 "$OUTC65")"
+a6_65=""
+[ -n "$MC65" ] || a6_65=" [nothing is supplied to the model on a prompt that crosses no threshold]"
+printf '%s' "$MC65" | grep -q "${CTX65%000}" \
+  || a6_65="$a6_65 [it does not carry the context this session is accumulating]"
+printf '%s' "$MC65" | grep -q "${FLOOR65%000}" \
+  || a6_65="$a6_65 [it does not carry what a fresh session would start with, so no comparison is possible]"
+printf '%s' "$MC65" | grep -qF "$M65" \
+  && a6_65="$a6_65 [it spoke the threshold note on a session that crossed no threshold]"
+[ -z "$a6_65" ] && ok "A6 the context and the fresh-session floor are supplied on every prompt" \
+                || bad "A6 the context and the fresh-session floor are supplied on every prompt ($a6_65)"
+
+# A7 -- IF a guardrail refuses, THEN it shall refuse at `Stop`, on stderr, with exit 2. CONTROL: it pins
+# the healthy half against being carried along by the move, and is green from the start.
+#
+# Three legs, and the third is the one a half-done move breaks: a run that blocks must put NOTHING on
+# stdout, because a `Stop` hook exiting 2 has its stdout unread -- so a refusal that started emitting the
+# new object beside its stderr line would be losing the object silently while looking correct here.
+P7_65="$T65/led"; mkproj "$P7_65" main >/dev/null 2>&1
+mkdir -p "$P7_65/.ai-flow"
+printf '# Session State\n\n## Workstreams\n\n| Workstream | Task |\n|---|---|\n| coordinator | T-001 |\n' \
+  > "$P7_65/.ai-flow/STATE.md"
+{ echo '# Backlog'; echo ''
+  echo '> 2026-01-01 — one.'; echo '> 2026-02-01 — two.'
+  echo '> 2026-03-01 — three.'; echo '> 2026-04-01 — four.'; } > "$P7_65/.ai-flow/BACKLOG.md"
+OUT7_65="$( cd "$P7_65" && printf '{"hook_event_name":"Stop"}' | bash "$LED65" 2>"$T65/err7" )"; rc7_65=$?
+a7_65=""
+[ "$rc7_65" = 2 ] || a7_65=" [the refusal no longer exits 2 at Stop (exit $rc7_65)]"
+grep -q 'changelog entries' "$T65/err7" 2>/dev/null \
+  || a7_65="$a7_65 [the refusal does not name its cause on stderr, which is the only stream a Stop refusal is read from]"
+[ -z "$OUT7_65" ] || a7_65="$a7_65 [the refusing run wrote to stdout, which a Stop hook exiting 2 has unread]"
+[ -z "$a7_65" ] && ok "A7 the refusing half still refuses at Stop, on stderr" \
+                || bad "A7 the refusing half still refuses at Stop, on stderr ($a7_65)"
+
+# A8 -- IF a hook is invoked at an event that is not the one it serves, THEN it shall exit 0 and emit
+# nothing. Generated in the Conform phase from understand.md's Verifiable Criteria.
+#
+# Not a hypothetical: the installer is additive and never removes, so every existing install keeps its
+# `Stop` entry after an update and the hook meets that event on the very next session. The transcript is
+# the one that DOES cross a threshold, so a hook that ignored the event would speak here -- keyed on the
+# quiet transcript the row would be green with no event check written at all.
+OUTD65="$(run65 "$TXA65" Stop)"; rcd65=$?
+a8_65=""
+[ "$rcd65" = 0 ] || a8_65=" [it does not exit 0 at an event that is not its own (exit $rcd65)]"
+[ -z "$OUTD65" ] || a8_65="$a8_65 [it emitted something at an event that is not its own]"
+[ -z "$a8_65" ] && ok "A8 a hook at an event that is not its own exits 0 and says nothing" \
+                || bad "A8 a hook at an event that is not its own exits 0 and says nothing ($a8_65)"
+
+# O2 -- The cost note's delivered text is at most 70 words, against ~130 today.
+#
+# Measured on the DELIVERED text and not on the source, which is the only measurement that means
+# anything here: the note is assembled from a template and a computed clause, so a word count taken over
+# the file counts the template's own punctuation and misses the clause. The whole delivery is counted,
+# the always-on line included -- that line rides in the same object on the turn a threshold is crossed,
+# and a bound that excluded it would let the saving be spent on the thing delivered every single turn.
+w65="$(model65 "$OUTA65" | wc -w | tr -d ' ')"
+[ "${w65:-0}" -ge 1 ] && [ "${w65:-0}" -le 70 ] \
+  && ok "O2 the cost note is at most 70 words" \
+  || bad "O2 the cost note is at most 70 words (delivered $w65)"
+
+# --- the close reads the numbers it is now given ---------------------------
+#
+# The form paragraph ALONE, for the reason C50's own rows record at length: every element of the line has
+# a second satisfier somewhere in `### The phase precondition`, and a row keyed on the region would be
+# green with the form's own requirement deleted.
+FORM65="$(awk '/\*\*The form is fixed/{f=1} f&&/^[[:space:]]*$/{exit} f' "$BL65" 2>/dev/null)"
+
+# A9 -- WHILE the accumulated context exceeds a fresh session's starting cost, the phase close shall
+# recommend cutting at this stop; and WHILE it does not, the close shall state no recommendation.
+# Generated in the Conform phase from understand.md's Verifiable Criteria.
+#
+# FOUR legs, and the fourth is a retirement rather than a requirement. `recommendation` alone is no
+# discriminator: the paragraph carries the word today, in the sentence that says there is none and in the
+# one promising there will be on the day the signal arrives. So the positive leg is keyed on the ACT, and
+# the retired sentence is keyed negatively -- left standing beside the new rule, the paragraph would say
+# both that the recommendation is deliberately absent and that it is made, and the next reader repairs
+# the contradiction by deleting whichever half they met first.
+a9_65=""
+[ -n "$FORM65" ] || a9_65=" [the form paragraph for the close's line could not be located]"
+if [ -n "$FORM65" ]; then
+  printf '%s' "$FORM65" | grep -qiE 'recommends? (the )?cut|recommend cutting|recommends stopping' \
+    || a9_65="$a9_65 [the close does not recommend the cut, so the signal it is now handed changes nothing]"
+  printf '%s' "$FORM65" | grep -qiE 'exceeds[^.]*fresh session|fresh session would start|starting (cost|context)' \
+    || a9_65="$a9_65 [it does not condition the recommendation on the comparison the phase is handed]"
+  printf '%s' "$FORM65" | grep -qiE 'no recommendation|recommends nothing|states none|says nothing about' \
+    || a9_65="$a9_65 [it does not say the close stays quiet below the bar, so the recommendation reads as unconditional]"
+  printf '%s' "$FORM65" | grep -qiE 'deliberately absent|absence is a decision|until the (context-)?cost note reaches' \
+    && a9_65="$a9_65 [the retired sentence still says the recommendation is deliberately absent, contradicting the rule beside it]"
+fi
+[ -z "$a9_65" ] && ok "A9 the close recommends the cut only while the numbers say it pays" \
+                || bad "A9 the close recommends the cut only while the numbers say it pays ($a9_65)"
+
+# A10 -- The engine shall derive the close's bar by comparing those two supplied quantities, and shall
+# record no fitted constant for it. Generated in the Conform phase from understand.md's Verifiable
+# Criteria.
+#
+# Two legs pulling opposite ways, which is what an anti-drift rule needs: the positive alone is satisfied
+# by prose that calls a written-down number "derived", and the negative alone is satisfied by deleting
+# the bar altogether. The negative is a digit search over the paragraph rather than a list of the
+# candidate numbers, because a constant nobody predicted is exactly the one that gets written -- the
+# operator's own 100 was three to four times past the measured break-even and was about to be recorded.
+a10_65=""
+[ -n "$FORM65" ] || a10_65=" [the form paragraph for the close's line could not be located]"
+if [ -n "$FORM65" ]; then
+  printf '%s' "$FORM65" | grep -qiE 'derived|comparison|compares|exceeds' \
+    || a10_65="$a10_65 [it does not say the bar is a comparison between the two supplied quantities]"
+  printf '%s' "$FORM65" | grep -qE '[0-9]' \
+    && a10_65="$a10_65 [the paragraph records a number, so the bar is fitted and will go stale]"
+fi
+[ -z "$a10_65" ] && ok "A10 the close's bar is derived and no constant is recorded" \
+                 || bad "A10 the close's bar is derived and no constant is recorded ($a10_65)"
+
+# O3 -- `global/protocols/backlog.md` no longer claims the cost note is delivered to the operator and not
+# to the phase.
+#
+# Whole-file and not the paragraph, deliberately: the claim is the justification the retired rule leaned
+# on, and a justification left anywhere in the document is one a later reader will follow back to the
+# rule it justifies. It is false as of the first step of this change.
+# FLATTENED before it is searched, and that is the row and not a detail. Written line-wise it was GREEN
+# against the live sentence, which wraps between `delivered to the operator` and `and not to the phase` --
+# so an absence check reported the claim gone while it stood, in a document whose every paragraph is
+# wrapped. A negative leg over prose that is not flattened first is a leg keyed on where someone pressed
+# return.
+FLAT65="$(tr -s ' \n' '  ' < "$BL65")"
+o3_65=""
+printf '%s' "$FLAT65" | grep -qiE 'delivered to the operator and not to the phase|the phase (cannot|can not) see (that|the) signal' \
+  && o3_65=" [the protocol still claims the cost note never reaches the phase]"
+[ -z "$o3_65" ] && ok "O3 the protocol no longer claims the note reaches only the operator" \
+                || bad "O3 the protocol no longer claims the note reaches only the operator ($o3_65)"
+
+# O4 -- CONTROL. The close's line stays within the three things its fixed form already allows and gains
+# no fourth. Green from the start by construction: the recommendation rides INSIDE the availability
+# element rather than beside it, so what this row pins is the decision not to grow the line -- which is
+# the one thing a rewrite adding a recommendation is most likely to spend.
+o4_65=""
+[ -n "$FORM65" ] || o4_65=" [the form paragraph for the close's line could not be located]"
+printf '%s' "$FORM65" | grep -qiE 'three things and no more|carries three things' \
+  || o4_65="$o4_65 [the form no longer bounds the line to three things]"
+printf '%s' "$FORM65" | grep -qiE 'requests? no input|no input is (requested|sought)' \
+  || o4_65="$o4_65 [the form no longer forbids the close from requesting an input]"
+[ -z "$o4_65" ] && ok "O4 the close's line gains no fourth element" \
+                || bad "O4 the close's line gains no fourth element ($o4_65)"
+
+# O1 -- Every row of `global/hooks/README.md` names the event(s) its hook is actually registered at.
+#
+# Read from the row's EVENT CELL and not from the row, because every one of these rows discusses events
+# in its prose -- the ledger guard's row explains what a `Stop` hook exiting 2 does with its stdout -- so
+# a row-wide search would report the column correct while it still says the opposite of the registration.
+ev65() {  # $1 = hook name -> its Event cell
+  awk -F'|' -v h="$1" 'index($2, h) { print $3; exit }' "$RDM65"
+}
+o1_65=""
+printf '%s' "$(ev65 context-cost-note)" | grep -q 'UserPromptSubmit' \
+  || o1_65=" [the cost note's row does not name the event it is registered at]"
+printf '%s' "$(ev65 context-cost-note)" | grep -q 'Stop' \
+  && o1_65="$o1_65 [the cost note's row still names the event it left]"
+printf '%s' "$(ev65 check-state-size)" | grep -q 'UserPromptSubmit' \
+  || o1_65="$o1_65 [the ledger guard's row does not name the event its note half runs at]"
+printf '%s' "$(ev65 check-state-size)" | grep -q 'Stop' \
+  || o1_65="$o1_65 [the ledger guard's row lost the event its refusal runs at]"
+printf '%s' "$(ev65 diff-size-guard)" | grep -q 'UserPromptSubmit' \
+  || o1_65="$o1_65 [the diff guardrail's row does not name the event its note half runs at]"
+printf '%s' "$(ev65 diff-size-guard)" | grep -q 'Stop' \
+  || o1_65="$o1_65 [the diff guardrail's row lost the event its refusal runs at]"
+[ -z "$o1_65" ] && ok "O1 every hook row names the event it is registered at" \
+                || bad "O1 every hook row names the event it is registered at ($o1_65)"
+fi
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"

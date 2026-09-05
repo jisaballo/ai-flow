@@ -1,11 +1,21 @@
 #!/usr/bin/env python3
-"""Stop hook (ai-flow only): nudges once when a change outgrows the Diff Size Guardrail.
-Two ceilings, both measured in the checkout the session runs in — primary or linked worktree:
+"""Two halves at two events (ai-flow only): nudges once when a change outgrows the Diff Size Guardrail.
+
+Two ceilings at `Stop`, both measured in the checkout the session runs in — primary or linked worktree:
 the step (what is not committed yet) and the task (everything this branch added since its base,
-commits included, which the step measure cannot see). And one note, which never blocks: a touched
-file that the change has grown past a healthy size — the shape ten small diffs build with every
-ceiling green. No-op outside ai-flow projects."""
+commits included, which the step measure cannot see). They refuse, on stderr, with exit 2.
+
+And one note at `UserPromptSubmit`, which never blocks: a touched file that the change has grown past a
+healthy size — the shape ten small diffs build with every ceiling green. It sits at the other event
+because it is addressed to the model, which is what must decompose before adding, and a hook's exit-0
+output at `Stop` never enters the model's context however faithfully the harness records it. Measured
+live: only `hookSpecificOutput.additionalContext` reaches the model, and `systemMessage` reaches the
+person at either event — so the note carries both, and neither audience loses anything.
+
+No-op outside ai-flow projects."""
 import sys, json, subprocess, re, os, stat
+
+EVENT = 'UserPromptSubmit'  # the note's event; the ceilings keep `Stop`, where a refusal is possible
 
 STEP_THRESHOLD = 150   # one execution step: uncommitted work
 TASK_THRESHOLD = 400   # the whole task: the branch's distance from its base
@@ -226,8 +236,10 @@ def main():
         data = {}
     if not isinstance(data, dict):
         data = {}  # a non-object payload must not traceback a hook that runs every turn
-    # don't re-fire within the same stop/continue cycle
-    if data.get('stop_hook_active'):
+    note_half = data.get('hook_event_name') == EVENT
+    # don't re-fire within the same stop/continue cycle. Only the ceilings can meet a re-delivery:
+    # there is no such loop at the note's event, and no payload there carries the field.
+    if not note_half and data.get('stop_hook_active'):
         sys.exit(0)
 
     try:
@@ -251,11 +263,6 @@ def main():
     except Exception:
         sys.exit(0)
 
-    notices = []
-    if step_total > STEP_THRESHOLD:
-        notices.append(
-            f"step ceiling exceeded — {step_total} uncommitted LOC (excl. tests, limit {STEP_THRESHOLD})"
-        )
     # The task total only ever grows — committing raises it and nothing lowers it — so without an
     # acknowledgement the notice would block the end of every turn for the rest of the task. Firing
     # records the total; it speaks again only once the branch has grown another step's worth past it.
@@ -264,6 +271,42 @@ def main():
     # step's worth of growth as well, and a project with a low threshold would never hear it.
     ack_file = ack_path(root)
     spoken = acknowledged(ack_file) if ack_file else {}
+
+    def record(reported):
+        """Mark ONLY what this run actually delivered.
+
+        Load-bearing now that the two halves sit at two events, and it is the failure the sibling
+        guardian already shipped once in the other direction: a mark laid for a message that was never
+        delivered silences it for the rest of the session, and a delivery that lays none repeats
+        forever. The record is shared by both halves, so a run that wrote the ceilings' key while the
+        note went out at the other event would silence a note nobody had read."""
+        if not reported or not ack_file:
+            return
+        spoken.update(reported)
+        try:
+            with open(ack_file, 'w') as f:
+                f.writelines(f"{n}\t{p}\n" for p, n in sorted(spoken.items()))
+        except Exception:
+            pass
+
+    if note_half:
+        to_note = [(p, n) for p, n in large if outgrown(spoken.get(p), n)]
+        if to_note:
+            record(dict(to_note))
+            # ONE object, two audiences: `systemMessage` for the person, who sees exactly what they saw
+            # before, and `additionalContext` for the model, which is the actor the note asks to act.
+            text = "Diff guardrail note: " + file_note(to_note, threshold) + "."
+            print(json.dumps({
+                "systemMessage": text,
+                "hookSpecificOutput": {"hookEventName": EVENT, "additionalContext": text},
+            }))
+        sys.exit(0)
+
+    notices = []
+    if step_total > STEP_THRESHOLD:
+        notices.append(
+            f"step ceiling exceeded — {step_total} uncommitted LOC (excl. tests, limit {STEP_THRESHOLD})"
+        )
     task_notice = (
         task_total is not None
         and task_total > TASK_THRESHOLD
@@ -276,32 +319,15 @@ def main():
             f"task is intentionally this big, or it should be split into a follow-up task"
         )
 
-    to_note = [(p, n) for p, n in large if outgrown(spoken.get(p), n)]
-    reported = dict(to_note)
-    if task_notice:
-        reported[TASK_KEY] = task_total
-    if reported and ack_file:
-        spoken.update(reported)
-        try:
-            with open(ack_file, 'w') as f:
-                f.writelines(f"{n}\t{p}\n" for p, n in sorted(spoken.items()))
-        except Exception:
-            pass
-
     if notices:
-        # A Stop hook exiting 2 has its stdout unread, so the note travels here, beside the ceilings.
+        record({TASK_KEY: task_total} if task_notice else {})
         print(
             "Diff guardrail: " + "; ".join(notices) + ". "
             "Per your rule, pause and evaluate: is this intentionally large, or should the step be "
-            "split / committed?"
-            + (" Also noted — " + file_note(to_note, threshold) + "." if to_note else ""),
+            "split / committed?",
             file=sys.stderr,
         )
         sys.exit(2)
-    if to_note:
-        # Alone, the note must not block — and a Stop hook exiting 0 has its stderr discarded, so the
-        # only channel that reaches the session is a top-level systemMessage on stdout.
-        print(json.dumps({"systemMessage": "Diff guardrail note: " + file_note(to_note, threshold) + "."}))
     sys.exit(0)
 
 

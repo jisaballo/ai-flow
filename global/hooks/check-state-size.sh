@@ -1,20 +1,27 @@
 #!/usr/bin/env bash
-# ai-flow STATE.md + BACKLOG.md guardian (Stop hook).
-# Blocks session stop if:
+# ai-flow STATE.md + BACKLOG.md guardian. Two halves at two events.
+#
+# At `Stop` it BLOCKS session stop if:
 #   - STATE.md carries narrative of closed work outside its two sanctioned records
 #   - BACKLOG.md holds >3 session-close changelog entries
-# and NOTES, without blocking, when:
+# At `UserPromptSubmit` it NOTES, without blocking, when:
 #   - BACKLOG.md is over its size budget (8,000 words, firmer at 15,000)
 # No-op in any project without an .ai-flow/, so it's safe globally.
+#
+# Why the note sits at the other event. It asks for the ledger to be swept, and the sweeper is the
+# model — so a channel the model cannot read delivers nothing, however faithfully the harness records
+# it. Measured live on this harness: a hook's exit-0 output at `Stop` never enters the model's context,
+# and neither does a `systemMessage` at any event; only `hookSpecificOutput.additionalContext` does. The
+# note therefore carries BOTH fields in one object, so the operator keeps seeing exactly what they saw
+# before. The refusals stay at `Stop` because that is the only event where refusing is possible.
 #
 # It reports at most once per request. Where the payload says the stop is one the harness is
 # re-delivering after a refusal, the guard exits quietly rather than turning one refusal into a loop.
 #
-# The size note is additionally once per session per threshold, with ONE exception, stated because a
-# documented invariant that silently does not hold reads as a broken mark rather than an unreachable one:
-# the mark is the harness's record of having DELIVERED the note, and only a stdout delivery is recorded.
-# A note carried out on stderr beside a blocker is therefore never marked, and returns at the next close.
-# It fails towards speaking, which is the direction this whole mechanism is built to fail in.
+# The size note is additionally once per session per threshold, and the exception that used to qualify
+# that is GONE with the mechanism that produced it: the note no longer rides a blocker's stderr line, so
+# there is no longer a delivery that lays no mark. Every delivery of the note is now recorded, which is
+# what makes "once per session per threshold" true rather than approximately true.
 
 # The ledger belongs to the coordinator checkout. A linked worktree only ever holds a copy of it,
 # so policing that copy would report the coordinator's hygiene where nothing can fix it.
@@ -69,20 +76,47 @@ except Exception:
 sys.exit(0 if isinstance(d, dict) and d.get("stop_hook_active") is True else 1)' && exit 0
 fi
 
-# The transcript the size note reads its own prior delivery out of. Extracted from the same payload,
-# separately from the field above, because the two answers are needed at different moments and a single
-# parse would have to survive being asked for both — the field above must be able to exit the script.
-# Absent, unreadable and unparseable all collapse to the empty string here, and every one of them makes
-# the note speak: see `spoken_already` below for why that is the only safe direction.
+# The event this run was invoked at, and the transcript the size note reads its own prior delivery out
+# of. Taken in ONE parse because both are values and neither can exit the script — unlike the field
+# above, whose whole purpose is to exit, which is why it keeps a parse of its own. One parse rather than
+# two is also one interpreter start rather than two, and this hook now runs at every prompt as well as
+# at every close.
+#
+# Absent, unreadable and unparseable all collapse to the empty string for both, and for the transcript
+# every one of them makes the note speak: see `spoken_already` below for why that is the only safe
+# direction. For the event, an empty answer is not this hook's note event, so the run falls through to
+# the refusing half — which is the half that was here before any of this, and the safe fallback for a
+# payload nothing could be learned from.
+NOTE_EVENT="UserPromptSubmit"
+EVENT_NAME=""
 TRANSCRIPT=""
 if [ -n "$STOP_PAYLOAD" ] && command -v python3 >/dev/null 2>&1; then
-  TRANSCRIPT="$(printf '%s' "$STOP_PAYLOAD" | python3 -c 'import json, sys
+  PARSED="$(printf '%s' "$STOP_PAYLOAD" | python3 -c 'import json, sys
 try:
     d = json.load(sys.stdin)
 except Exception:
     d = {}
-p = d.get("transcript_path") if isinstance(d, dict) else None
-print(p if isinstance(p, str) else "")' 2>/dev/null || true)"
+if not isinstance(d, dict):
+    d = {}
+for key in ("hook_event_name", "transcript_path"):
+    v = d.get(key)
+    print(v if isinstance(v, str) else "")' 2>/dev/null || true)"
+  EVENT_NAME="$(printf '%s\n' "$PARSED" | sed -n 1p)"
+  TRANSCRIPT="$(printf '%s\n' "$PARSED" | sed -n 2p)"
+fi
+
+# Where there is no parser the event is matched as TEXT, and that is a deliberate exception to the rule
+# the field above states rather than a lapse from it. The two fields fail in opposite directions. A
+# misread `stop_hook_active` goes QUIET — a false all-clear over a ledger this guard was about to report
+# on — so it is parsed or it is not read at all. A misread event only sends a report to the wrong half of
+# a guard that is registered at BOTH events, so it arrives at the next turn instead of this one. Without
+# this arm the note is not late but absent: no parser means no event, no event means the refusing half,
+# and the refusing half does not carry the note since the split. Silence for want of a parser is the one
+# direction every report here is built not to fail in, and this arm only exists on a machine with none.
+if [ -z "$EVENT_NAME" ] && [ -n "$STOP_PAYLOAD" ] && ! command -v python3 >/dev/null 2>&1; then
+  case "$STOP_PAYLOAD" in
+    *'"hook_event_name"'*"$NOTE_EVENT"*) EVENT_NAME="$NOTE_EVENT" ;;
+  esac
 fi
 
 # TWO BUCKETS, and the split is the whole of what this guard now decides. A report goes to `blockers`
@@ -94,10 +128,11 @@ fi
 # refuses the turn over a condition the operator cannot clear in that turn is a guard people learn to
 # route around, and it takes the four honest refusals down with it.
 #
-# The two buckets do NOT mean two channels unconditionally. Where anything blocks, everything travels on
-# stderr and the guard exits 2 — the note included, because a `Stop` hook exiting 2 has its stdout JSON
-# unread, and dropping the note there would lose it on precisely the sessions that are already going
-# badly. Only a note-only run takes the other channel. See the exit at the bottom.
+# The two buckets are now two EVENTS, and the merge that used to join them is gone. It existed because a
+# `Stop` hook exiting 2 has its stdout JSON unread, so a note-and-blocker run would have lost the note
+# entirely; with a channel of its own the note is never on that run's stream to be lost. Dropping the
+# merge also removes the one delivery that laid no mark, and with it the exception the header used to
+# have to state. See the exits at the bottom.
 blockers=""
 notes=""
 # Each appends one report to its own bucket, separating with a newline only when something is already
@@ -130,23 +165,48 @@ $1"; else notes="$1"; fi; }
 # EVERY failure returns 1, which means "not yet spoken", which means the note speaks. A missed
 # suppression costs a repeated line; a false suppression costs the note entirely, on a session that never
 # heard it. Absent transcript, unreadable file, half-flushed last line, no python3 — all of them land on
-# the side that talks.
+# the side that talks. The two guards below are that same direction made cheap rather than made safe:
+# they change no verdict, they only stop the guard doing expensive work to reach one it already knows.
+#
+# `-f` and not `-n`, and in the SHELL rather than in the parser: the criterion is that a path naming
+# anything but a regular file is answered WITHOUT being opened, and a directory handed to `open()` is
+# an exception raised after the interpreter has started. A named pipe is the case that costs more than a
+# wasted process — `open()` on one blocks until a writer appears, and a guard that hangs takes the
+# session's whole turn with it.
+#
+# And the read is BOUNDED to the tail. The transcripts this parses are the long ones by construction —
+# the note fires on sessions that have been going a while — and every line was parsed from the start of
+# the file, on every close, for a mark that is either in the file or is not. The bound is bytes and not
+# lines because bytes are what the seek can address without reading what it skips; the partial line the
+# seek lands inside is discarded, and the cost of the bound is the honest one: a mark older than the
+# tail reads as unspoken and the note is repeated once. That is the direction every other failure here
+# already takes.
 spoken_already() {  # $1 = threshold
-  [ -n "$TRANSCRIPT" ] || return 1
+  [ -f "$TRANSCRIPT" ] || return 1
   command -v python3 >/dev/null 2>&1 || return 1
   # stderr silenced for the reason the sibling parse above silences it: this runs BEFORE the note is
   # printed, and on the blocking path stderr is what the operator reads, so a stray byte from here either
   # prefixes the note or lands in the middle of a refusal.
   python3 - "$TRANSCRIPT" "$1" 2>/dev/null <<'MARKPY'
-import json, sys
+import json, os, sys
 
 path, mark = sys.argv[1], "ai-flow ledger size note [%s]" % sys.argv[2]
-DELIVERY = ("hook_system_message", "hook_success")
+# Three records now, not two: the model half of a delivery is written back as `hook_additional_context`,
+# and its `content` is a LIST, so it is joined below rather than matched by accidental stringification.
+DELIVERY = ("hook_system_message", "hook_success", "hook_additional_context")
+TAIL_BYTES = 4 * 1024 * 1024
 try:
     fh = open(path, errors="replace")
 except Exception:
     sys.exit(1)
 with fh:
+    try:
+        size = os.fstat(fh.fileno()).st_size
+        if size > TAIL_BYTES:
+            fh.seek(size - TAIL_BYTES)
+            fh.readline()  # the seek lands mid-line; that fragment is not a record
+    except Exception:
+        pass
     for line in fh:
         # A transcript is written while it is being read, so its last line can be half-flushed. A hook
         # that raised there would go silent for the rest of the session -- silent on a session that is,
@@ -160,7 +220,10 @@ with fh:
         att = rec.get("attachment")
         if not isinstance(att, dict) or att.get("type") not in DELIVERY:
             continue
-        if mark in "%s%s" % (att.get("content") or "", att.get("stdout") or ""):
+        content = att.get("content")
+        if isinstance(content, list):
+            content = " ".join(str(x) for x in content)
+        if mark in "%s%s" % (content or "", att.get("stdout") or ""):
             sys.exit(0)
 sys.exit(1)
 MARKPY
@@ -315,18 +378,13 @@ elif [ -f "$BACKLOG" ]; then
   fi
 fi
 
-# The two exits, and which stream each uses is decided by whether anything blocks — never by which bucket
-# a report came from. A `Stop` hook that exits 2 has its stderr fed back to the session and its stdout JSON
-# unread; one that exits 0 has its stderr DISCARDED and only a top-level systemMessage on stdout survives.
-# So a blocking run carries everything on stderr, the note included, and a note-only run carries the note
-# on stdout. Writing the note to its "own" channel regardless would lose it exactly when something else
-# had already gone wrong.
-if [ -n "$blockers" ]; then
-  echo "$blockers" >&2
-  [ -n "$notes" ] && echo "$notes" >&2
-  exit 2
-fi
-if [ -n "$notes" ]; then
+# The two exits, one per event, and each carries exactly one bucket. At the note's event the guard must
+# exit 0 whatever it found — a hook that refuses there stops the operator's prompt from being sent, which
+# is not a thing this report's remedy is worth — so the blockers are simply not this run's business and
+# are left for the close that follows. At `Stop` the refusals travel on stderr with exit 2, which is the
+# only stream a refusing hook is read from, and the note is not there to be lost with it.
+if [ "$EVENT_NAME" = "$NOTE_EVENT" ]; then
+  if [ -n "$notes" ]; then
   # Serialised by the parser wherever there is one, and hand-built only where there is not. The hand-built
   # form splices prose into a JSON string literal, so its validity rests on a contract no mechanism
   # enforces — and the failure it fails with is silent: a malformed document is not rejected loudly, the
@@ -335,11 +393,23 @@ if [ -n "$notes" ]; then
   # inside a JSON string, so the first second note ever added would break delivery with no edit here at
   # all. Where python3 is present none of that can happen; where it is absent the printf form is still the
   # only option, and the quote-free contract below is what keeps that path working.
-  if command -v python3 >/dev/null 2>&1; then
-    python3 -c 'import json, sys
-print(json.dumps({"systemMessage": sys.argv[1]}))' "$notes"
-  else
-    printf '{"systemMessage": "%s"}\n' "$notes"
+    # ONE object, two audiences, and the same text in both — so the mark `spoken_already` reads back is
+    # found whichever record the harness writes for this delivery.
+    if command -v python3 >/dev/null 2>&1; then
+      python3 -c 'import json, sys
+print(json.dumps({"systemMessage": sys.argv[1],
+                  "hookSpecificOutput": {"hookEventName": sys.argv[2],
+                                         "additionalContext": sys.argv[1]}}))' "$notes" "$NOTE_EVENT"
+    else
+      printf '{"systemMessage": "%s", "hookSpecificOutput": {"hookEventName": "%s", "additionalContext": "%s"}}\n' \
+        "$notes" "$NOTE_EVENT" "$notes"
+    fi
   fi
+  exit 0
+fi
+
+if [ -n "$blockers" ]; then
+  echo "$blockers" >&2
+  exit 2
 fi
 exit 0
