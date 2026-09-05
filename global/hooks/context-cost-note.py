@@ -29,6 +29,14 @@ distinct marks carried through a multi-turn session, and BOTH are needed:
 So the note travels as ONE object carrying both: `systemMessage` for the person, who keeps seeing exactly
 what they saw before, and `hookSpecificOutput.additionalContext` for the model, which was reproduced
 verbatim in the following turn's answer and stays readable for the rest of the session.
+
+And on EVERY prompt, threshold or none, the model half additionally carries two measured quantities: what
+this session is now dragging, and what a fresh one would start with. The operator half does not, so what
+the person sees is unchanged -- a line on every turn is noise to somebody who can already see the
+conversation. It is on every prompt because persistence answers only the sessions PAST a threshold, and
+the phase close that has to decide whether stopping pays is reached long before one: at turn 30 nothing
+answered it at all. Two numbers and no verdict, deliberately -- the close draws the conclusion, and a bar
+derived from two quantities cannot go stale the way a constant written down here would.
 """
 import sys, json, os, glob, re
 
@@ -83,16 +91,43 @@ def note(threshold: int, turns: int, seen) -> str:
     else:
         firmer = "This is said once, and not again. "
     return (
-        f"{MARK % threshold} — {turns} model turns in. {firmer}"
-        "Cutting the session here is now worth roughly a quarter to a third of what the rest of it "
-        "would cost, because almost the whole bill is the accumulated context being re-read every turn. "
-        "Cut at the NEXT PHASE BOUNDARY, not now: the handoff artifact already exists there, so the cut "
-        "costs nothing extra. Before cutting, write to the task's sheet the two things a cut destroys "
-        "and nothing else records — under `## Ruled out`, a `hypothesis:` line for anything tested and "
-        "killed, and an `alternative:` line for any route considered and rejected, with its reason. "
-        "Decisions taken are already on the sheet; these two are not, and they are what a session takes "
-        "with it when it ends."
+        f"{MARK % threshold} — {turns} turns. {firmer}"
+        "Cut at the NEXT PHASE BOUNDARY, where the handoff already exists. First write to the sheet's "
+        "`## Ruled out` what a cut destroys: a `hypothesis:` line for anything "
+        "tested and killed, an `alternative:` line for a route rejected, with its reason."
     )
+
+
+def k(n: int) -> str:
+    """Rounded to thousands, because the decision this feeds is a comparison and not an arithmetic.
+
+    A number reported to the token teaches its reader to treat it as exact, and it is not: it is one
+    record's accounting of one turn. Rounding says what the quantity is for."""
+    return "%dk" % (n // 1000) if n >= 1000 else str(n)
+
+
+def supply(floor: int, now: int) -> str:
+    """The two quantities the close compares, said in one line and with no verdict attached.
+
+    Model half only. The operator can see the conversation and does not need a line about it every turn;
+    what they get is unchanged, which is what makes this cost them nothing."""
+    return f"ai-flow context: {k(now)} carried, {k(floor)} to start fresh."
+
+
+def context(msg) -> int:
+    """One turn's whole input context: what was sent fresh, what was written to cache, what was read
+    from it. All three, because they partition the same quantity and any one of them alone moves for
+    reasons that are not growth -- a turn that happens to write cache reports a small read, and a reader
+    keyed on the read alone would report the session shrinking."""
+    u = msg.get("usage")
+    if not isinstance(u, dict):
+        return 0
+    total = 0
+    for key in ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens"):
+        v = u.get(key)
+        if isinstance(v, int):
+            total += v
+    return total
 
 
 def transcript_for(payload, cwd):
@@ -111,7 +146,11 @@ def transcript_for(payload, cwd):
 
 
 def read(path):
-    """One pass, returning the main-loop turn count and which marks already stand.
+    """One pass, returning the main-loop turn count, which marks already stand, and the two context
+    quantities: the FIRST counted turn's context, which is what a fresh session starts with, and the
+    LAST one's, which is what this session is carrying. Both come out of the records this already parses
+    -- measured, the context predicts the break-even three to four times more tightly than the turn
+    count does, and it was in the file all along.
 
     Turns are counted as assistant records carrying `usage`, which is the same quantity the thresholds
     were fitted on. Records marked isSidechain are skipped: a subagent's turns do not sit in this
@@ -124,6 +163,7 @@ def read(path):
     rest of the session -- silent on a session that is, by construction, a long one."""
     turns = 0
     seen = set()
+    floor = now = 0
     with open(path, errors="replace") as fh:
         for line in fh:
             try:
@@ -155,7 +195,11 @@ def read(path):
             msg = rec.get("message")
             if isinstance(msg, dict) and msg.get("usage"):
                 turns += 1
-    return turns, seen
+                size = context(msg)
+                if turns == 1:
+                    floor = size
+                now = size
+    return turns, seen, floor, now
 
 
 def governs(cwd: str) -> bool:
@@ -217,7 +261,7 @@ def _run():
     if not path:
         return
     try:
-        turns, seen = read(path)
+        turns, seen, floor, now = read(path)
     except Exception:
         return  # every gap falls on the side of no note; a false one is the failure that matters
 
@@ -234,14 +278,25 @@ def _run():
     # the session has already passed is never revisited, so there is nothing left for a lower note to
     # come back through.
     crossed = SECOND if turns >= SECOND else (FIRST if turns >= FIRST else None)
-    if crossed is not None and crossed not in seen:
-        # ONE object, two audiences. Both halves carry the same text, so the mark the suppression above
-        # reads back is found whichever record the harness happens to write.
-        text = note(crossed, turns, seen)
-        print(json.dumps({
-            "systemMessage": text,
-            "hookSpecificOutput": {"hookEventName": EVENT, "additionalContext": text},
-        }))
+    text = note(crossed, turns, seen) if crossed is not None and crossed not in seen else None
+
+    # The supplied line rides in the SAME object as the note rather than in one of its own, and the
+    # suppression above governs the note alone. Written the other way round -- an early return once the
+    # threshold's mark stands -- the session that most needs the close to see these numbers is the one
+    # that stops being given them, which is the session that has already been told it is expensive.
+    parts = [supply(floor, now)] if now else []
+    if text:
+        parts.append(text)
+    if not parts:
+        return
+
+    # ONE object, two audiences, and they carry different things on purpose. The mark is in both, so the
+    # suppression above finds it whichever record the harness writes; the supplied line is model-only,
+    # because the operator's view of this hook is meant to be exactly what it was.
+    out = {"hookSpecificOutput": {"hookEventName": EVENT, "additionalContext": " ".join(parts)}}
+    if text:
+        out["systemMessage"] = text
+    print(json.dumps(out))
 
 
 def main():
