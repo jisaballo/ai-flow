@@ -22,8 +22,8 @@ Quick tasks log to the "Quick Tasks Completed" table in STATE.md (not BACKLOG.md
 is the only written trace a quick task leaves.
 
 **The coordinator writes it, at the closing ceremony** (see the backlog protocol, `## Closing a
-Workstream`): a quick task has no papers to collect and no archive to write, so its close is the merge
-plus this row. A linked checkout never writes it — the ledger stays with the coordinator, and a row
+Workstream`): a quick task has no papers to collect and no archive to write, so its close is the merge,
+this row, and the two moves that run at **every** close — the distribution and the publish. A linked checkout never writes it — the ledger stays with the coordinator, and a row
 written into a worktree the ceremony is about to dismantle is a trace that does not survive the close.
 
 ```markdown

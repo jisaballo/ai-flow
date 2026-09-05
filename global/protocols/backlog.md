@@ -786,9 +786,8 @@ where it stands — the front's disposable branch and the coordinator's trunk al
 between steps. What the operator approves is the task's *work*, once, at move 1, and one approval is all
 the ceremony has. The approval can sit there because the publishing move is where the work stops being
 undoable by hand: until it is published a commit is local history, and a `reset` reaches it. The rule is
-stated here, with the ceremony that enforces it, rather than in the manual — the one engine file the
-installer never updates and the drift guard never compares, so a rule kept there drifts against the only
-copy anyone reads.
+stated here, with the ceremony that enforces it, rather than in the manual — which carries the reason it
+cannot live there, and carries it once.
 
 **This ceremony follows the task's last commit immediately**, and never the next task's first step. A task
 left closed-but-unarchived is one whose papers, roster row and trunk all disagree about whether it is done.

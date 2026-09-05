@@ -1782,10 +1782,11 @@ mpair() { # move, pattern A, pattern B, label
 }
 
 if [ -n "$CLO" ]; then
-  # The seven moves, each identified by its own lead and read in sequence. The ORDER is the fact this
+  # The eight moves, each identified by its own lead and read in sequence. The ORDER is the fact this
   # guards: a collection written after the merge changes the sequence while every presence grep in
-  # this section stays green. Distribution sits between the record and the tail: earlier it could block
-  # the ledger, later it would trail a tail that runs only on a front's last task.
+  # this section stays green. Distribution sits between the record and the publish: earlier it could
+  # block the ledger, later it would trail a tail that runs only on a front's last task. The publish
+  # then sits between the distribution and that tail, for the same two reasons in the same order.
   # The count is READ from the protocol, never enumerated here: a literal list stops at its last index,
   # so a move appended after the roster row is never looked at and the order check stays green over a
   # ceremony that grew. The expected sequence below still encodes the ceremony this engine ships; what
@@ -1901,7 +1902,7 @@ else
   bad "the collection is the sanctioned exception to never overwriting a task's papers (no section)"
   bad "a front with a next task keeps its checkout and its roster row (no section)"
   bad "dismantling the checkout before the collection destroys the task's papers (no section)"
-  bad "the user validates the branch before anything merges (no section)"
+  bad "the user validates the task's work before anything merges (no section)"
   bad "a quick task collects nothing and its row is written in the coordinator (no section)"
   bad "a single open front has nothing to collect and nothing to dismantle (no section)"
   bad "the ceremony has a single runner and merges one front at a time (no section)"
@@ -8603,7 +8604,7 @@ mv46() { printf '%s\n' "$1" | awk -v n="$2" '/^#+ /{cur=-1; next} /^[0-9]+\. /{c
 if [ -z "$CLO46" ] || [ -z "$OPN46" ]; then
   bad "the writers table's phase-field guard survives a reword of its own row (no section)"
   bad "the closing ceremony's move count is read, not assumed (no section)"
-  bad "closing move 1 states the coordinator's per-commit exception (no section)"
+  bad "closing move 1 names the coordinator's commits as what the approval covers there (no section)"
   bad "the seed-and-prune move's stop on live work survives a reword of move 6 (no section)"
   bad "the opening ceremony names its single runner (no section)"
   bad "a section that cannot create its sandbox says so (no section)"
