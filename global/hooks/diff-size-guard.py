@@ -7,10 +7,9 @@ commits included, which the step measure cannot see). They refuse, on stderr, wi
 
 And one note at `UserPromptSubmit`, which never blocks: a touched file that the change has grown past a
 healthy size — the shape ten small diffs build with every ceiling green. It sits at the other event
-because it is addressed to the model, which is what must decompose before adding, and a hook's exit-0
-output at `Stop` never enters the model's context however faithfully the harness records it. Measured
-live: only `hookSpecificOutput.additionalContext` reaches the model, and `systemMessage` reaches the
-person at either event — so the note carries both, and neither audience loses anything.
+because it is addressed to the MODEL, which is what must decompose before adding; which channel reaches
+the model is a measured fact this file does not own (see `global/hooks/README.md` > `## Which channel reaches whom`, which owns it). The
+note carries both halves in one object, so neither audience loses anything.
 
 No-op outside ai-flow projects."""
 import sys, json, subprocess, re, os, stat

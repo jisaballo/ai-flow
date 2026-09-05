@@ -15,20 +15,12 @@ number this hook is worth keeping for.
 Why it recommends instead of refusing. Blocking mid-Execute costs more than the tokens it saves, so this
 exits 0 on every path.
 
-Which channel, and why it is not the obvious one. The note is addressed to the model -- it asks for two
-lines to be written to a sheet before the session ends -- so a channel the model cannot read delivers
-nothing, however faithfully the harness records it. Two facts were measured live, on this harness, with
-distinct marks carried through a multi-turn session, and BOTH are needed:
-
-  - The EVENT. A `Stop` hook's exit-0 output never enters the model's context. It is recorded -- the
-    harness writes a full-content `hook_system_message` for it -- and recorded is not delivered, which is
-    why the transcript could not decide this question and a live session had to.
-  - The FIELD. `systemMessage` is the operator's channel at EVERY event, this one included. Moving the
-    event while keeping the field ships a note that still reaches nobody.
-
-So the note travels as ONE object carrying both: `systemMessage` for the person, who keeps seeing exactly
-what they saw before, and `hookSpecificOutput.additionalContext` for the model, which was reproduced
-verbatim in the following turn's answer and stays readable for the rest of the session.
+Which channel, and why it is not the obvious one. This note is addressed to the MODEL -- it asks for two
+lines to be written to a sheet before the session ends -- and which channel reaches the model is a measured
+fact this file does not own: see `global/hooks/README.md` > `## Which channel reaches whom`, which owns it. What follows from it here is
+the event and the shape: `UserPromptSubmit`, and ONE object carrying both halves, so the person keeps
+seeing exactly what they saw before. Injected context was measured to persist, so the note stays readable
+for the rest of the session rather than only on the turn it arrives.
 
 And on EVERY prompt, threshold or none, the model half additionally carries two measured quantities: what
 this session is now dragging, and what a fresh one would start with. The operator half does not, so what

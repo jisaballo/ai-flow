@@ -8,12 +8,10 @@
 #   - BACKLOG.md is over its size budget (8,000 words, firmer at 15,000)
 # No-op in any project without an .ai-flow/, so it's safe globally.
 #
-# Why the note sits at the other event. It asks for the ledger to be swept, and the sweeper is the
-# model — so a channel the model cannot read delivers nothing, however faithfully the harness records
-# it. Measured live on this harness: a hook's exit-0 output at `Stop` never enters the model's context,
-# and neither does a `systemMessage` at any event; only `hookSpecificOutput.additionalContext` does. The
-# note therefore carries BOTH fields in one object, so the operator keeps seeing exactly what they saw
-# before. The refusals stay at `Stop` because that is the only event where refusing is possible.
+# Why the note sits at the other event. It asks for the ledger to be swept, and the sweeper is the MODEL.
+# Which channel reaches the model is a measured fact this file does not own: see `global/hooks/README.md` > `## Which channel reaches whom`, which owns it.
+# What follows from it here: the note runs at `UserPromptSubmit` carrying both halves in one object, and
+# the refusals stay at `Stop`, the only event where refusing is possible.
 #
 # It reports at most once per request. Where the payload says the stop is one the harness is
 # re-delivering after a refusal, the guard exits quietly rather than turning one refusal into a loop.
@@ -78,16 +76,19 @@ sys.exit(0 if isinstance(d, dict) and d.get("stop_hook_active") is True else 1)'
 fi
 
 # The event this run was invoked at, and the transcript the size note reads its own prior delivery out
-# of. Taken in ONE parse because both are values and neither can exit the script — unlike the field
-# above, whose whole purpose is to exit, which is why it keeps a parse of its own. One parse rather than
-# two is also one interpreter start rather than two, and this hook now runs at every prompt as well as
-# at every close.
+# of. Taken in ONE parse, because two values out of one document need one reader.
+#
+# It is a SECOND parse only because the field above is a third thing: that one answers with an exit
+# status and this one with values, and merging them is possible — a parse can print a flag and the shell
+# can exit on it, exactly as the event is read here — but it would put the loop guard, the most heavily
+# guarded behaviour in this file, behind a rewrite that buys one interpreter start. The cost is named
+# rather than justified away: this hook runs at every prompt now as well as at every close, and it pays
+# two starts to do it.
 #
 # Absent, unreadable and unparseable all collapse to the empty string for both, and for the transcript
 # every one of them makes the note speak: see `spoken_already` below for why that is the only safe
-# direction. For the event, an empty answer is not this hook's note event, so the run falls through to
-# the refusing half — which is the half that was here before any of this, and the safe fallback for a
-# payload nothing could be learned from.
+# direction. For the event, an empty answer places the run at NEITHER half — it does not refuse and it
+# does not go quiet; see the exits at the bottom, which say what it does instead.
 NOTE_EVENT="UserPromptSubmit"
 STOP_EVENT="Stop"
 EVENT_NAME=""
@@ -137,6 +138,27 @@ json_escape() {  # $1 = raw text -> the same text safe inside a JSON string lite
   printf '%s' "$1" \
     | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' \
     | awk 'NR>1 { printf "\\n" } { printf "%s", $0 }'
+}
+
+# ONE object, two audiences, built in ONE place. Both exits below deliver this same shape -- the note at
+# its own event, and everything found at an event this guard could not place -- and it was written out
+# longhand at each of them, in two languages each: four independent guesses at one harness contract.
+# `systemMessage` is what the operator has always seen; `additionalContext` is the only field measured to
+# enter the model's context. The SAME text goes in both, so the mark `spoken_already` reads back is found
+# whichever record the harness writes for this delivery.
+emit_note() {  # $1 = the text both audiences receive
+  if command -v python3 >/dev/null 2>&1; then
+    python3 -c 'import json, sys
+print(json.dumps({"systemMessage": sys.argv[1],
+                  "hookSpecificOutput": {"hookEventName": sys.argv[2],
+                                         "additionalContext": sys.argv[1]}}))' "$1" "$NOTE_EVENT"
+  else
+    # Hand-built only where there is no parser to serialise with, and escaped because `printf` splices
+    # this text straight into two JSON string literals with nothing else checking it.
+    esc="$(json_escape "$1")"
+    printf '{"systemMessage": "%s", "hookSpecificOutput": {"hookEventName": "%s", "additionalContext": "%s"}}\n' \
+      "$esc" "$NOTE_EVENT" "$esc"
+  fi
 }
 
 # TWO BUCKETS, and the split is the whole of what this guard now decides. A report goes to `blockers`
@@ -415,18 +437,7 @@ if [ "$EVENT_NAME" = "$NOTE_EVENT" ]; then
   # inside a JSON string, so the first second note ever added would break delivery with no edit here at
   # all. Where python3 is present none of that can happen; where it is absent the printf form is still the
   # only option, and the quote-free contract below is what keeps that path working.
-    # ONE object, two audiences, and the same text in both — so the mark `spoken_already` reads back is
-    # found whichever record the harness writes for this delivery.
-    if command -v python3 >/dev/null 2>&1; then
-      python3 -c 'import json, sys
-print(json.dumps({"systemMessage": sys.argv[1],
-                  "hookSpecificOutput": {"hookEventName": sys.argv[2],
-                                         "additionalContext": sys.argv[1]}}))' "$notes" "$NOTE_EVENT"
-    else
-      esc_notes="$(json_escape "$notes")"
-      printf '{"systemMessage": "%s", "hookSpecificOutput": {"hookEventName": "%s", "additionalContext": "%s"}}\n' \
-        "$esc_notes" "$NOTE_EVENT" "$esc_notes"
-    fi
+    emit_note "$notes"
   fi
   exit 0
 fi
@@ -466,15 +477,6 @@ if [ -n "$notes" ]; then
 $notes"; else report="$notes"; fi
 fi
 if [ -n "$report" ]; then
-  if command -v python3 >/dev/null 2>&1; then
-    python3 -c 'import json, sys
-print(json.dumps({"systemMessage": sys.argv[1],
-                  "hookSpecificOutput": {"hookEventName": sys.argv[2],
-                                         "additionalContext": sys.argv[1]}}))' "$report" "$NOTE_EVENT"
-  else
-    esc_report="$(json_escape "$report")"
-    printf '{"systemMessage": "%s", "hookSpecificOutput": {"hookEventName": "%s", "additionalContext": "%s"}}\n' \
-      "$esc_report" "$NOTE_EVENT" "$esc_report"
-  fi
+  emit_note "$report"
 fi
 exit 0
