@@ -966,7 +966,18 @@ close that touches a checkout the coordinator does not own.
    step below it may be allowed to outlive them. That is also why the position is not a preference — any
    position that satisfies it renumbers the steps beneath, and the citations move with them.
 4. Generate `archive/T-XXX/summary.md` (see Archive Summary template)
-5. Remove task from BACKLOG.md (move from Done to nowhere — it's in the archive now)
+5. **Remove task from BACKLOG.md** (move from Done to nowhere — it's in the archive now). **The same act
+   strikes the task's line in its epic's Execution Order block**, and moves the epic's status from
+   `backlog` to `active` where it still reads the former — one edit, three levels, the idiom this checklist already uses for a
+   steering rule and its nano and for an Icebox entry and its index line. The row leaving the pending
+   list and the order line being struck are two readings of one fact, and a rule that needs a step of
+   its own carries its own way of being skipped: three closes in a row wrote the record, removed the row
+   and left the task listed as pending in its own epic's plan, each struck by hand afterwards. The struck
+   line takes the form the archived orders already use:
+   `` ~~**T-XXX**~~ — **done** (`sha`): one line of what shipped. See `archive/T-XXX/summary.md`. ``
+   An epic whose block carries **no numbered order list** — the Scope Contract requires Goal, Planned
+   Tasks and Non-Goals, never an order — has nothing to strike, and the step **says so** rather than
+   reading as an edit somebody forgot.
 6. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
 7. Leave the workstream row to move 9 of `## Closing a Workstream`, its sole owner: the row is removed
    only when the front has no next task, and a front continuing its chain keeps its row with the task
@@ -1013,7 +1024,10 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
 
 - `artifacts/` contains **only** `T-XXX/` folders for **active or in-progress** tasks — never completed
   ones, and this holds in **every checkout**, not only the coordinator's. A copy left behind in a front
-  is what puts two claims on one branch (see State Files)
+  is what puts two claims on one branch (see State Files). **A task whose close halted is in flight**,
+  and its folder is the invariant holding rather than breaking: the deletion is the ceremony's move 7,
+  so a close stopped at the distribution or the publish leaves the papers standing on purpose — they are
+  where the halt is written down, and what they say is that this task is not finished
 - No root-level files in `artifacts/` (no templates, no loose files)
 - No empty directories anywhere in `.ai-flow/`
 - BACKLOG.md Done section is **transient** — tasks stay there only until archived, not permanently
