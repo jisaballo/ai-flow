@@ -13,6 +13,27 @@ FAIL=0
 ok()   { echo "  [ok]   $1"; PASS=$((PASS+1)); }
 bad()  { echo "  [FAIL] $1"; FAIL=$((FAIL+1)); }
 
+# The number of the numbered item whose LEAD LINE performs an act. $1 = an ERE matched against the
+# lowercased lead line; $2 = the section's text.
+#
+# A step read by its literal number is silently wrong after a renumber: it extracts the neighbour that
+# now sits there, the neighbour answers the same legs, and the row goes on claiming it judged the step
+# its name still spells. That has happened twice in this file, and the second time one leg passed on the
+# wrong step while its twin went red -- which is luck, not a mechanism.
+#
+# When no item performs the act it prints NOTHING, names the act on stderr and returns 1. Never a default
+# index: a `:-0` fallback turns "the act is gone" into "the act is item zero", and item zero is the
+# section's preamble, which answers a surprising number of prose legs.
+step_no() {
+  local n
+  n="$(printf '%s\n' "$2" | awk -v p="$1" '/^[0-9]+\. /{h=tolower($0); if (h ~ p) {print $0+0; exit}}')"
+  if [ -z "$n" ]; then
+    echo "  step_no: no numbered item performs the act: $1" >&2
+    return 1
+  fi
+  printf '%s' "$n"
+}
+
 # Does one sentence of $1 carry every pattern given after it? Prints 1, 0, or E.
 #
 # The form a proximity claim about prose takes at the legs that were moved to it. The `a[^.]{0,140}b`
@@ -1982,15 +2003,19 @@ fi
 # steps before it were the only text carrying the condition — so the suite stayed green over a
 # contradiction on the contract's central fact. This reads the callee, not just the caller.
 #
-# It is the LAST step, and it is extracted by its number, so the numbers move whenever a move is inserted
-# above it — which is what the Icebox write-back did. The two bounds below are the step's own number and
-# the number that does not exist yet; a renumber that leaves them behind does not fail here, it silently
-# extracts the wrong step, which is why the checklist's own step count is asserted elsewhere.
+# It is the LAST step, and its number moves whenever a move is inserted above it — which is what the
+# Icebox write-back did, and what the deletion leaving the checklist does again. So it is located by the
+# ACT it performs and never by a literal: a renumber that leaves a literal behind does not fail here, it
+# silently extracts the wrong step. Absent the act, `step_no` names it and $ARC7 is empty, which every
+# leg below already reports as a different verdict than a wrong one.
 #
 # The move the citations must NAME is read from the ceremony, not written down here. Spelled as a literal,
 # this leg is wrong the moment a move is inserted anywhere above the roster row — and wrong in the
 # direction that passes: it would go on demanding the number the prose used to carry.
-ARC7="$(awk '/^### After ARCHIVE \(single task\)/{f=1;next} (f && /^#+ /){f=0} f' "$BLG4" | awk '/^9\./{f=0} /^8\./{f=1} f' | tr '\n' ' ' | tr -s ' ')"
+ARCS7="$(awk '/^### After ARCHIVE \(single task\)/{f=1;next} (f && /^#+ /){f=0} f' "$BLG4")"
+NROW7="$(step_no 'workstream row|roster row' "$ARCS7")" || NROW7=""
+ARC7=""
+[ -n "$NROW7" ] && ARC7="$(printf '%s\n' "$ARCS7" | awk -v n="$NROW7" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' ')"
 EPI6="$(awk '/^### After Epic completion/{f=1;next} (f && /^#+ /){f=0} f' "$BLG4" | awk '/^7\./{f=0} /^6\./{f=1} f' | tr '\n' ' ' | tr -s ' ')"
 # The NUMBER, not just a reference to the ceremony. Read as an alternation it was blind to the fact it
 # claims: both citations name "move N of `## Closing a Workstream`", so a half-renumber left pointing at
@@ -3807,9 +3832,23 @@ RUNG23="$(item23 4 "$LADDER23")"
 OPEN23="$(raw23 '^## Opening a Workstream')"
 MOVE23="$(item23 7 "$OPEN23")"
 ARCH23="$(raw23 '^### After ARCHIVE')"
-# The deletion step, by its number. It moves whenever a move is inserted above it — the Icebox write-back
-# did — and a stale number here does not fail, it extracts a neighbouring step that answers differently.
-STEP23="$(item23 5 "$ARCH23")"
+CLO23="$(raw23 '^## Closing a Workstream')"
+# NO BACKSLASH belongs in these patterns: they are handed to awk over `-v`, where an escape sequence the
+# language does not define is undefined behaviour — `\*` reached the matcher as a bare `*` and the whole
+# alternation stopped matching a step that had not moved, with nothing but the act-not-found line to say so.
+# The deletion of the papers, located by the ACT and never by a number: a stale number does not fail, it
+# extracts a neighbour that answers differently. WHERE the close states it — a move of the ceremony or a
+# step of the checklist — is asserted elsewhere; the three legs below read WHAT it says, which is the same
+# claim in either home, so the lookup takes the ceremony first and falls back to the checklist. The probe
+# is silenced and the fallback is not: one of the two must answer, and the failure names the act.
+DELACT23='delete[^a-z]*artifacts/t-xxx|papers are deleted|deletes the task.s papers'
+if NDEL23="$(step_no "$DELACT23" "$CLO23" 2>/dev/null)"; then
+  STEP23="$(item23 "$NDEL23" "$CLO23")"
+elif NDEL23="$(step_no "$DELACT23" "$ARCH23")"; then
+  STEP23="$(item23 "$NDEL23" "$ARCH23")"
+else
+  STEP23=""
+fi
 INV23="$(sec23 '^### Invariants')"
 
 # A1 — the rule lands where the sheet's shape is defined, in three parts that can each be deleted
@@ -7715,8 +7754,18 @@ else
   bad "the branch the merge needs is read from the located checkout, never from the roster (move not found)"
 fi
 
-# The deletion step, by its number: fifth since the Icebox write-back was inserted above it.
-A4_41="$(a41 5)"
+# The deletion of the papers, located by the ACT: its number moves whenever a move is inserted above it,
+# and its home moves once it becomes a move of the ceremony rather than a step of the checklist. Both legs
+# below are about what the deletion SAYS, which is the same claim in either home. The probe is silenced
+# and the fallback is not: one of the two must answer, and the failure names the act.
+DELACT41='delete[^a-z]*artifacts/t-xxx|papers are deleted|deletes the task.s papers'
+if NDEL41="$(step_no "$DELACT41" "$CLO41" 2>/dev/null)"; then
+  A4_41="$(c41 "$NDEL41")"
+elif NDEL41="$(step_no "$DELACT41" "$ARCH41")"; then
+  A4_41="$(a41 "$NDEL41")"
+else
+  A4_41=""
+fi
 if [ -n "$A4_41" ]; then
   # One home for the rule. This step both delegates to the collection move and restates its field, so
   # the restatement is the second copy — and a second copy is what the repository's own rule refuses.
@@ -10993,17 +11042,35 @@ else
   # one existing row extracts a step by its literal number and would simply read the wrong text.
   c10_72=""
   steps72="$(printf '%s\n' "$ARC72" | grep -cE '^[0-9]+\. ' | tr -d ' ')"
+  # The COUNT stays a literal, and it is the only thing here that does. Every position below is derived
+  # from its step's own act, so a renumber moves them together; what a derived count would give up is the
+  # one reading nothing else notices — a step appearing or vanishing, which is precisely the event that
+  # renumbers the rest. Deriving both would leave the pair agreeing with each other about anything.
   [ "$steps72" -eq 8 ] || c10_72="$c10_72 [the checklist has $steps72 numbered steps, not the eight its citations are written against]"
-  printf '%s\n' "$ARC72" | grep -qE '^8\..*workstream row' || c10_72="$c10_72 [step 8 is not the roster move the two forward citations name]"
-  printf '%s\n' "$ARC72" | grep -qE '^5\..*\*\*Delete\*\*'  || c10_72="$c10_72 [step 5 is not the deletion the preamble cites]"
-  printf '%s\n' "$ARC72" | grep -qE '^4\.[^0-9]*summary'    || c10_72="$c10_72 [step 4 is not the summary the deletion step cites]"
-  # Step 3 is pinned for the same reason 4, 5 and 8 are, and it was the hole a mutation found: a reorder
-  # confined to steps 1-3 keeps the count at 8, keeps 4/5/8 intact, and keeps A1 green (A1 derives both
-  # positions from the ACT), while both `step 3` citations — this protocol's own and understand.md's —
-  # end up naming the product.md write-back.
-  printf '%s\n' "$ARC72" | grep -qE '^3\..*Icebox write-back' || c10_72="$c10_72 [step 3 is not the write-back the two protocols cite]"
-  [ "$(grep -ciE 'step 7[^0-9].*label|label[^.]*step 7[^0-9]' "$BK72")" -eq 0 ] \
-    || c10_72="$c10_72 [a citation still sends the label rewrite to step 7]"
+  # The acts, and the numbers they currently occupy. A literal here is the failure IB-001 records: after a
+  # renumber the leg lands on a different step and passes for the wrong reason, with its own name still
+  # claiming the step it no longer reads.
+  nrow72="$(step_no 'workstream row|roster row' "$ARC72")" || nrow72=""
+  nsum72="$(step_no 'summary' "$ARC72")"                   || nsum72=""
+  nice72="$(step_no 'icebox write-back' "$ARC72")"         || nice72=""
+  if [ -z "$nrow72" ] || [ -z "$nsum72" ] || [ -z "$nice72" ]; then
+    c10_72="$c10_72 [a step the citations depend on performs no act this leg can find]"
+  else
+    # The relations the prose depends on, not the numbers it happens to have. The roster step is cited as
+    # the last one and the write-back's own reason is that it publishes from papers a later step destroys,
+    # so it must precede the summary that records them.
+    [ "$nrow72" -eq "$steps72" ] || c10_72="$c10_72 [the roster step is $nrow72 of $steps72, so it is not the last step its citations name]"
+    [ "$nice72" -lt "$nsum72" ]  || c10_72="$c10_72 [the Icebox write-back does not precede the summary, so it publishes from papers already recorded]"
+    # Every citation that sends a reader to a step must name the number that step actually holds. Derived
+    # on both sides: the old form spelled the wrong number as a literal, so it went stale the moment the
+    # step it forbade became the step the label rewrite legitimately sits on.
+    for pair72 in "label:$nrow72" "write-back:$nice72"; do
+      w72="${pair72%:*}"; n72e="${pair72##*:}"
+      strays72="$(grep -oiE "step [0-9]+[^.]{0,80}$w72|$w72[^.]{0,80}step [0-9]+" "$BK72" \
+                  | grep -oiE 'step [0-9]+' | tr 'A-Z' 'a-z' | grep -vxc "step $n72e" | tr -d ' ')"
+      [ "$strays72" -eq 0 ] || c10_72="$c10_72 [$strays72 citation(s) send the reader to a step that is not $n72e for: $w72]"
+    done
+  fi
   [ -z "$c10_72" ] && ok "A10 no citation names a step the checklist no longer has" \
                    || bad "A10 no citation names a step the checklist no longer has ($c10_72)"
 
