@@ -311,7 +311,6 @@ def main():
     if note_half:
         to_note = [(p, n) for p, n in large if outgrown(spoken.get(p), n)]
         if to_note:
-            record(dict(to_note))
             # ONE object, two audiences: `systemMessage` for the person, who sees exactly what they saw
             # before, and `additionalContext` for the model, which is the actor the note asks to act.
             text = "Diff guardrail note: " + file_note(to_note, threshold) + "."
@@ -319,6 +318,11 @@ def main():
                 "systemMessage": text,
                 "hookSpecificOutput": {"hookEventName": EVENT, "additionalContext": text},
             }))
+            # Marked AFTER the message is out, never before. `record` exists because a mark laid for a
+            # message nobody received silences it for the rest of the session -- and writing the mark first
+            # is that same failure with a shorter window: a closed pipe between the two lines leaves the
+            # file recorded as spoken and the note never delivered.
+            record(dict(to_note))
         sys.exit(0)
 
     notices = []

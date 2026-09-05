@@ -10143,6 +10143,12 @@ else
   # legs below used to read this unflattened while three got a flattened copy through a local variable --
   # so the same paragraph was being judged two ways in one row block. The fix belongs at the extraction,
   # which is where the other two occurrences ended up.
+  # The paragraph must stay ONE paragraph, and this extraction is why: it stops at the first blank line,
+  # so a blank line inserted inside the form silently drops everything after it out of what is read. That
+  # constraint used to be written into the protocol itself, addressed to whoever might reformat it -- an
+  # editing instruction about a grep, carried in a document the model reads at every close. It is gone from
+  # there, because it does not need saying: split the paragraph and the legs below go red on the spot, which
+  # is the mechanism enforcing the rule instead of the prose asking someone to remember it.
   FORM50="$(printf '%s' "$CP50" | awk '/\*\*The form is fixed/{f=1} f&&/^[[:space:]]*$/{exit} f' | tr -s ' \n' '  ')"
   # A7 -- WHEN either close writes the next position, the engine shall state that the close ends with one
   # fixed line carrying cut availability, the position the sheet now declares, and where the next session
@@ -14637,6 +14643,12 @@ w65="$(model65 "$OUTA65" | wc -w | tr -d ' ')"
 # wrapped. Written line-wise first, two legs reported the rule missing while it stood — the same defect
 # O3 had, in the same change, and the second time is what says it belongs at the extraction rather than
 # in each reader's memory.
+# The paragraph must stay ONE paragraph, and this extraction is why: it stops at the first blank line,
+# so a blank line inserted inside the form silently drops everything after it out of what is read. That
+# constraint used to be written into the protocol itself, addressed to whoever might reformat it -- an
+# editing instruction about a grep, carried in a document the model reads at every close. It is gone from
+# there, because it does not need saying: split the paragraph and the legs below go red on the spot, which
+# is the mechanism enforcing the rule instead of the prose asking someone to remember it.
 FORM65="$(awk '/\*\*The form is fixed/{f=1} f&&/^[[:space:]]*$/{exit} f' "$BL65" 2>/dev/null | tr -s ' \n' '  ')"
 
 # A9 -- WHILE the accumulated context exceeds a fresh session's starting cost, the phase close shall

@@ -141,7 +141,11 @@ def transcript_for(payload, cwd):
     if isinstance(p, str) and os.path.isfile(p):
         return p
     slug = re.sub(r"[^A-Za-z0-9]", "-", cwd)
-    found = glob.glob(os.path.join(os.path.expanduser("~/.claude/projects"), slug, "*.jsonl"))
+    # Regular files only, the same guard the sibling guardian's reader gained: `glob` answers with whatever
+    # carries the name, and `open()` on a FIFO blocks until a writer appears. A hook that hangs takes the
+    # turn with it, which is worse than every failure this hook is built to absorb.
+    found = [f for f in glob.glob(os.path.join(os.path.expanduser("~/.claude/projects"), slug, "*.jsonl"))
+             if os.path.isfile(f)]
     return max(found, key=os.path.getmtime) if found else None
 
 

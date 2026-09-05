@@ -349,10 +349,7 @@ three come from the task's own sheet and its papers, never from what the session
   two are kept apart deliberately: a condition allowed to reach the first of them is a condition that
   silences the line, which is the whole of what this paragraph replaced.
 
-  **The form is fixed, and it is short.** It is one paragraph and stays one: the rule below is read over
-  this paragraph alone, because every element of the form has a second satisfier elsewhere in this bullet,
-  and a blank line inside it silently drops whatever follows out of what is read. The line carries three
-  things and no more: **cut available** — whether this sitting can end here — stated as a fact, not advice,
+  **The form is fixed, and it is short.** The line carries three things and no more: **cut available** — whether this sitting can end here — stated as a fact, not advice,
   and it **recommends the cut** wherever the context this session has accumulated exceeds what a fresh
   session would start with; the position the sheet now declares; and where the next session picks up, which
   is a pointer to the sheet's `next action:` and never a copy of it. It **requests no input**. That bar is a
