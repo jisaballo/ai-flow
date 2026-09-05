@@ -106,12 +106,12 @@ def k(n: int) -> str:
     return "%dk" % (n // 1000) if n >= 1000 else str(n)
 
 
-def supply(floor: int, now: int) -> str:
+def supply(fresh: int, now: int) -> str:
     """The two quantities the close compares, said in one line and with no verdict attached.
 
     Model half only. The operator can see the conversation and does not need a line about it every turn;
     what they get is unchanged, which is what makes this cost them nothing."""
-    return f"ai-flow context: {k(now)} carried, {k(floor)} to start fresh."
+    return f"ai-flow context: {k(now)} carried, {k(fresh)} to start fresh."
 
 
 def context(msg) -> int:
@@ -147,10 +147,22 @@ def transcript_for(payload, cwd):
 
 def read(path):
     """One pass, returning the main-loop turn count, which marks already stand, and the two context
-    quantities: the FIRST counted turn's context, which is what a fresh session starts with, and the
-    LAST one's, which is what this session is carrying. Both come out of the records this already parses
-    -- measured, the context predicts the break-even three to four times more tightly than the turn
-    count does, and it was in the file all along.
+    quantities the close compares: what STARTING OVER would cost, and what this session is carrying.
+
+    What starting over costs is NOT the first turn's context. That is the bare floor -- system prompt,
+    project instructions, tool definitions -- and a session restarted there cannot work: it has to read
+    the task's papers back before it can do anything, and the measurement this rule was derived from
+    prices exactly that. Its own columns say so: a fresh-session start of 52k/57k/62k/67k/72k against
+    handoffs of 10k/15k/20k/25k/30k is the same 42k floor plus the handoff, every time. Keyed on the
+    bare floor the comparison is true from the second turn onward, so the close would recommend cutting
+    at essentially every close and the quiet branch could never be reached.
+
+    So the handoff is measured rather than assumed, out of the records this already parses: the LEANEST
+    working state this session ever had after its floor turn. Once a session has read back what it needs
+    to work, it sits at that level -- which is where a fresh one lands too, having read the same papers.
+    No constant is written down, so none can go stale. A session with a single counted turn has handed
+    nothing over yet and answers with what it is carrying, which reads as no recommendation rather than
+    as a recommendation on no evidence.
 
     Turns are counted as assistant records carrying `usage`, which is the same quantity the thresholds
     were fitted on. Records marked isSidechain are skipped: a subagent's turns do not sit in this
@@ -163,7 +175,7 @@ def read(path):
     rest of the session -- silent on a session that is, by construction, a long one."""
     turns = 0
     seen = set()
-    floor = now = 0
+    fresh = now = 0
     with open(path, errors="replace") as fh:
         for line in fh:
             try:
@@ -196,10 +208,16 @@ def read(path):
             if isinstance(msg, dict) and msg.get("usage"):
                 turns += 1
                 size = context(msg)
-                if turns == 1:
-                    floor = size
+                # Turn 1 is the bare floor and is deliberately NOT a candidate: nothing has been read
+                # back yet, so it prices a restart that could not resume the work.
+                if turns >= 2 and (fresh == 0 or size < fresh):
+                    fresh = size
                 now = size
-    return turns, seen, floor, now
+    # One counted turn: nothing has been handed over, so starting over costs what this costs. The close
+    # reads equality as no recommendation, which is the honest answer on a session with no history.
+    if not fresh:
+        fresh = now
+    return turns, seen, fresh, now
 
 
 def governs(cwd: str) -> bool:
@@ -261,7 +279,7 @@ def _run():
     if not path:
         return
     try:
-        turns, seen, floor, now = read(path)
+        turns, seen, fresh, now = read(path)
     except Exception:
         return  # every gap falls on the side of no note; a false one is the failure that matters
 
@@ -284,7 +302,7 @@ def _run():
     # suppression above governs the note alone. Written the other way round -- an early return once the
     # threshold's mark stands -- the session that most needs the close to see these numbers is the one
     # that stops being given them, which is the session that has already been told it is expensive.
-    parts = [supply(floor, now)] if now else []
+    parts = [supply(fresh, now)] if now else []
     if text:
         parts.append(text)
     if not parts:

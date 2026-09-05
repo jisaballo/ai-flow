@@ -14248,13 +14248,19 @@ REG65="$HK/settings.hooks.json"
 RDM65="$HK/README.md"
 M65='ai-flow context note [150]'
 
-# The two ends of the curve, and neither is decoration: the FLOOR is what a fresh session would start
-# with and the LAST record is what this session is carrying, and the derived bar the close is handed is
-# exactly the comparison between those two. Chosen distinct and two-digit-distinctive so a row can find
-# each in the delivered text without pinning how the hook formats it -- `87k`, `87,000` and `87000` all
-# carry `87`, and a leg keyed on the formatting would fail the first time someone rounded it.
-FLOOR65=41000
-CTX65=87000
+# THREE levels, not two, and the third is the whole correction. The bar the close is handed compares what
+# this session carries against what STARTING OVER would cost -- and starting over does not cost the bare
+# floor. A session restarted there cannot resume: it has to read the task's papers back first, and the
+# measurement this rule was derived from prices exactly that. Its own columns say so, a fresh-session
+# start of 52k/57k/62k/67k/72k against handoffs of 10k/15k/20k/25k/30k being the same floor plus the
+# handoff every time.
+#
+# So a fixture with only two levels cannot tell a correct bar from the degenerate one: keyed on the bare
+# floor the comparison is true from the second turn onward, the close recommends at every close, and a
+# two-level transcript agrees with both readings. The middle level is what separates them.
+BARE65=41000    # turn 1: the bare floor -- system prompt, instructions, tools. Never the bar.
+FRESH65=55000   # turn 2: the leanest working state, i.e. what a fresh session starts from
+CTX65=87000     # later turns: what this session is now carrying
 
 if [ "$PY3" = 0 ]; then
   echo "  [skip] C65 (python3 unavailable)"
@@ -14269,11 +14275,38 @@ mk_tx65() {  # $1 = path, $2 = turns
   : > "$1"
   local i=1 ctx
   while [ "$i" -le "$2" ]; do
-    if [ "$i" = 1 ]; then ctx="$FLOOR65"; else ctx="$CTX65"; fi
+    if [ "$i" = 1 ]; then ctx="$BARE65"
+    elif [ "$i" = 2 ]; then ctx="$FRESH65"
+    else ctx="$CTX65"; fi
     printf '{"type":"assistant","message":{"usage":{"input_tokens":12,"cache_read_input_tokens":%s}}}\n' "$ctx" >> "$1"
     i=$((i+1))
   done
   cat >> "$1"
+}
+
+# A session that has loaded its papers and done little since: the case the bar must NOT call a cut. Its
+# carried context sits at its own working level, so a correct bar reads them equal and recommends
+# nothing, while the bar keyed on the bare floor calls this a cut -- twelve to twenty-six turns before
+# the break-even it was supposedly derived from.
+mk_short65() {  # $1 = path, $2 = turns
+  : > "$1"
+  local i=1 ctx
+  while [ "$i" -le "$2" ]; do
+    if [ "$i" = 1 ]; then ctx=45000; else ctx=50000; fi
+    printf '{"type":"assistant","message":{"usage":{"input_tokens":0,"cache_read_input_tokens":%s}}}\n' "$ctx" >> "$1"
+    i=$((i+1))
+  done
+}
+
+# Each supplied quantity read BY ITS ROLE, never as a substring loose in the line. The row this serves
+# exists to catch an inversion of the very comparison the close's bar is, and a bare `grep -q 87` cannot
+# see one: proved, by swapping the hook's two arguments and watching the whole suite stay green.
+role65() {  # $1 = delivered text, $2 = carried|fresh -> that role's figure in thousands
+  printf '%s' "$1" | python3 -c 'import re, sys
+t = sys.stdin.read()
+pat = r"([0-9]+)k carried" if sys.argv[1] == "carried" else r"([0-9]+)k to start fresh"
+m = re.search(pat, t)
+sys.stdout.write(m.group(1) if m else "")' "$2" 2>/dev/null
 }
 
 run65() {  # $1 = transcript, $2 = event -> the hook's stdout
@@ -14449,16 +14482,48 @@ fi
 TXC65="$T65/quiet.jsonl"; mk_tx65 "$TXC65" 30 </dev/null
 OUTC65="$(run65 "$TXC65" UserPromptSubmit)"
 MC65="$(model65 "$OUTC65")"
+#
+# Each quantity is read BY ITS ROLE. The legs this replaces searched the delivered line for `87` and `41`
+# anywhere in it, which asserts the two numbers EXIST and binds neither to what it means -- so the row
+# stayed green with the two swapped, and a swap inverts the comparison the close's whole bar is. That is
+# not a hypothetical: it was proved by inverting the hook's two arguments, and the suite held at 868/0
+# with this row printing [ok]. A third leg pins the bar off the bare floor, which is the value the
+# fixture's turn 1 carries and the value a correct reading must never report.
 a6_65=""
 [ -n "$MC65" ] || a6_65=" [nothing is supplied to the model on a prompt that crosses no threshold]"
-printf '%s' "$MC65" | grep -q "${CTX65%000}" \
-  || a6_65="$a6_65 [it does not carry the context this session is accumulating]"
-printf '%s' "$MC65" | grep -q "${FLOOR65%000}" \
-  || a6_65="$a6_65 [it does not carry what a fresh session would start with, so no comparison is possible]"
+[ "$(role65 "$MC65" carried)" = "${CTX65%000}" ] \
+  || a6_65="$a6_65 [the carried figure is not the context this session has accumulated]"
+[ "$(role65 "$MC65" fresh)" = "${FRESH65%000}" ] \
+  || a6_65="$a6_65 [the start-fresh figure is not what a fresh session would start with, so the bar is wrong]"
+[ "$(role65 "$MC65" fresh)" = "${BARE65%000}" ] \
+  && a6_65="$a6_65 [it reports the BARE floor as the cost of starting over, which makes the cut pay from turn 2]"
 printf '%s' "$MC65" | grep -qF "$M65" \
   && a6_65="$a6_65 [it spoke the threshold note on a session that crossed no threshold]"
 [ -z "$a6_65" ] && ok "A6 the context and the fresh-session floor are supplied on every prompt" \
                 || bad "A6 the context and the fresh-session floor are supplied on every prompt ($a6_65)"
+
+# A11 -- CALIBRATION. The two quantities must not read as *cut recommended* on a session BELOW the
+# measured break-even. A6 above proves each figure is the right one on a session far past the bar; this
+# row is the other side, and without it the bar can be wrong in the one direction that costs something.
+#
+# The failure it exists for shipped once. Keyed on the bare turn-1 floor, `carried > start` holds from the
+# second turn of every session -- so the close recommended cutting always, criterion A9's quiet branch was
+# unreachable, and no row in the suite could see it because every fixture placed the session far past any
+# plausible bar. The fixture here is the missing region: a session that has read its papers back and done
+# little since, which the measurement says has NOT reached break-even.
+TXE65="$T65/short.jsonl"; mk_short65 "$TXE65" 8
+ME65="$(model65 "$(run65 "$TXE65" UserPromptSubmit)")"
+a11_65=""
+[ -n "$ME65" ] || a11_65=" [nothing is supplied on a short session, so the close has no signal at all]"
+c11_65="$(role65 "$ME65" carried)"; f11_65="$(role65 "$ME65" fresh)"
+if [ -n "$c11_65" ] && [ -n "$f11_65" ]; then
+  [ "$c11_65" -gt "$f11_65" ] \
+    && a11_65="$a11_65 [a session below the break-even reads as cut-recommended (${c11_65}k carried against ${f11_65}k to start fresh)]"
+else
+  a11_65="$a11_65 [the two quantities cannot be read by role, so the bar cannot be checked at all]"
+fi
+[ -z "$a11_65" ] && ok "A11 a session below the break-even does not read as cut-recommended" \
+                 || bad "A11 a session below the break-even does not read as cut-recommended ($a11_65)"
 
 # A7 -- IF a guardrail refuses, THEN it shall refuse at `Stop`, on stderr, with exit 2. CONTROL: it pins
 # the healthy half against being carried along by the move, and is green from the start.
