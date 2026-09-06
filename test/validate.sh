@@ -34,6 +34,17 @@ step_no() {
   printf '%s' "$n"
 }
 
+# How the close states the destruction of the task's papers, in every wording the protocol uses for it.
+# ONE home, because three blocks match on it and a fourth phrasing added to two of them silently narrows
+# the third: an absence leg is only as wide as the ways the claim can be written, and a leg answered by
+# none of them reports "the act is gone" when the act was merely reworded.
+#
+# NO BACKSLASH belongs in this pattern. It is handed to awk over `-v`, where an escape the language does
+# not define is undefined behaviour: written with `\*`, it reached the matcher as a bare `*`, the whole
+# alternation stopped matching an item that had not moved, and four green rows went red with nothing but
+# the act-not-found line to say why.
+DEL_ACT='delete[^a-z]*artifacts/t-xxx|papers are deleted|deletes the task.s papers'
+
 # Does one sentence of $1 carry every pattern given after it? Prints 1, 0, or E.
 #
 # The form a proximity claim about prose takes at the legs that were moved to it. The `a[^.]{0,140}b`
@@ -3824,7 +3835,7 @@ sec23() {  # a "### " section, fence-aware: the skeletons it quotes start lines 
 }
 item23() {  # one numbered item of a section, flattened: what an item must say is a property of that
             # item, never of a neighbour's words nor of where its prose happens to wrap
-  printf '%s\n' "$2" | awk -v s="^$1\\. " -v e="^$(($1 + 1))\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' \
+  printf '%s\n' "$2" | awk -v s="^$1\\\\. " -v e="^$(($1 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' \
     | tr '\n' ' ' | tr -s ' '
 }
 raw23() { awk -v h="$1" '$0 ~ h {f=1;next} /^```/{c=1-c; next} (c==0 && /^#+ /){f=0} f' "$BLG23"; }
@@ -3836,18 +3847,14 @@ OPEN23="$(raw23 '^## Opening a Workstream')"
 MOVE23="$(item23 7 "$OPEN23")"
 ARCH23="$(raw23 '^### After ARCHIVE')"
 CLO23="$(raw23 '^## Closing a Workstream')"
-# NO BACKSLASH belongs in these patterns: they are handed to awk over `-v`, where an escape sequence the
-# language does not define is undefined behaviour — `\*` reached the matcher as a bare `*` and the whole
-# alternation stopped matching a step that had not moved, with nothing but the act-not-found line to say so.
 # The deletion of the papers, located by the ACT and never by a number: a stale number does not fail, it
 # extracts a neighbour that answers differently. WHERE the close states it — a move of the ceremony or a
 # step of the checklist — is asserted elsewhere; the three legs below read WHAT it says, which is the same
 # claim in either home, so the lookup takes the ceremony first and falls back to the checklist. The probe
 # is silenced and the fallback is not: one of the two must answer, and the failure names the act.
-DELACT23='delete[^a-z]*artifacts/t-xxx|papers are deleted|deletes the task.s papers'
-if NDEL23="$(step_no "$DELACT23" "$CLO23" 2>/dev/null)"; then
+if NDEL23="$(step_no "$DEL_ACT" "$CLO23" 2>/dev/null)"; then
   STEP23="$(item23 "$NDEL23" "$CLO23")"
-elif NDEL23="$(step_no "$DELACT23" "$ARCH23")"; then
+elif NDEL23="$(step_no "$DEL_ACT" "$ARCH23")"; then
   STEP23="$(item23 "$NDEL23" "$ARCH23")"
 else
   STEP23=""
@@ -3959,8 +3966,16 @@ if [ -n "$PRE23" ]; then
     && p23="$p23 [the preamble still carves out a step that no longer deletes anything]"
   printf '%s' "$PRE23" | grep -qiE 'nothing here reaches|reaches into no|no step (here )?reaches' \
     || p23="$p23 [the preamble does not state that no step here leaves the coordinator]"
-  printf '%s' "$PRE23" | grep -qiE 'move [0-9]+ of the ceremony|move [0-9]+ of .## Closing' \
-    || p23="$p23 [the preamble does not name where the act that left went]"
+  # Bound to the number the DELETION actually holds, never to "some move of the closing ceremony": the
+  # preamble's own first sentence reads "what move 4 of `## Closing a Workstream` runs", and a leg spelled
+  # `move [0-9]+ of .## Closing` matched it — the `.` matches the backtick — so it was answered by prose
+  # that predates this rule, and the clause it was written to guard could be deleted with the row green.
+  if [ -z "$NDEL23" ]; then
+    p23="$p23 [the close states no deletion of the papers, so the preamble has no move to name]"
+  else
+    printf '%s' "$PRE23" | grep -qiE "move $NDEL23 of the ceremony|move $NDEL23 of .## Closing" \
+      || p23="$p23 [the preamble does not name move $NDEL23, where the act that left went]"
+  fi
   [ -z "$p23" ] && ok "the checklist preamble keeps the whole checklist inside the coordinator" \
                 || bad "the checklist preamble keeps the whole checklist inside the coordinator ($p23)"
 else
@@ -7726,7 +7741,7 @@ sec41() { awk -v h="$1" '$0 ~ h {f=1;next} /^```/{c=1-c; if(f) print; next} (c==
 # The checklist's items one at a time. The deletion step is item 4 and its neighbours talk about the same
 # papers in the same words, so a section-wide grep passes on a neighbour's sentence.
 ARCH41="$(awk '/^### After ARCHIVE/{f=1;next} /^#+ /{if(f) exit} f' "$BLG41")"
-a41() { printf '%s\n' "$ARCH41" | awk -v s="^$1\. " -v e="^$(($1 + 1))\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' | tr '\n' ' ' | tr -s ' '; }
+a41() { printf '%s\n' "$ARCH41" | awk -v s="^$1\\\\. " -v e="^$(($1 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' | tr '\n' ' ' | tr -s ' '; }
 
 M2_41="$(c41 2)"
 if [ -n "$M2_41" ]; then
@@ -7772,10 +7787,9 @@ fi
 # and its home moves once it becomes a move of the ceremony rather than a step of the checklist. Both legs
 # below are about what the deletion SAYS, which is the same claim in either home. The probe is silenced
 # and the fallback is not: one of the two must answer, and the failure names the act.
-DELACT41='delete[^a-z]*artifacts/t-xxx|papers are deleted|deletes the task.s papers'
-if NDEL41="$(step_no "$DELACT41" "$CLO41" 2>/dev/null)"; then
+if NDEL41="$(step_no "$DEL_ACT" "$CLO41" 2>/dev/null)"; then
   A4_41="$(c41 "$NDEL41")"
-elif NDEL41="$(step_no "$DELACT41" "$ARCH41")"; then
+elif NDEL41="$(step_no "$DEL_ACT" "$ARCH41")"; then
   A4_41="$(a41 "$NDEL41")"
 else
   A4_41=""
@@ -7808,7 +7822,11 @@ if [ -n "$CHK41" ]; then
   printf '%s' "$CHK41" | grep -qiE 'collection move'                      || m41e="$m41e collection-unnamed"
   printf '%s' "$CHK41" | grep -qiE 'dismantl'                             || m41e="$m41e dismantling-unnamed"
   printf '%s' "$CHK41" | grep -qiE 'last move'                            || m41e="$m41e last-move-unnamed"
-  printf '%s' "$CHK41" | grep -qiE 'deletion step|archive checklist'      || m41e="$m41e deletion-unnamed"
+  # The fourth reader by its ROLE, plus the negative on the home it left. The positive alone would have
+  # gone on passing on "the deletion step of the archive checklist" long after that step ceased to exist,
+  # which is how this paragraph came to certify an act at an address the protocol had already vacated.
+  printf '%s' "$CHK41" | grep -qiE 'deletion move'                        || m41e="$m41e deletion-move-unnamed"
+  printf '%s' "$CHK41" | grep -qiE 'deletion step|archive checklist'      && m41e="$m41e deletion-still-a-checklist-step"
   [ -z "$m41e" ] && ok "the checkout column is defined where it lives, and names all four sites that read it" \
                  || bad "the checkout column is defined where it lives, and names all four sites that read it (:$m41e)"
 
@@ -11085,11 +11103,34 @@ else
     # Every citation that sends a reader to a step must name the number that step actually holds. Derived
     # on both sides: the old form spelled the wrong number as a literal, so it went stale the moment the
     # step it forbade became the step the label rewrite legitimately sits on.
+    # Every citation, in every engine file that carries one, and with a FLOOR. Three things the form that
+    # stood here got wrong, and each of them answered "0 strays":
+    #  - it swept `$BK72` alone, so understand.md's own `Icebox write-back`, step N was never read;
+    #  - it was line-oriented, so a citation the file wraps was invisible;
+    #  - it bridged with `[^.]{0,80}`, a bounded repeat over a negated class -- which the stricter of the
+    #    two search engines a machine may carry REFUSES outright ("exceeds complexity limits"), on stderr,
+    #    exit 2, no output. That refusal is what this machine actually does, so the leg has been passing
+    #    here without ever examining a citation. An extraction that fails yields nothing, and nothing
+    #    satisfies every absence leg: the floor below is what makes the difference reportable.
+    # Sentences, not a bridge: flatten, split on the period, keep the sentences that name the term. A
+    # period inside a filename splits a sentence here, exactly as it does for `insent`.
     for pair72 in "label:$nrow72" "write-back:$nice72"; do
       w72="${pair72%:*}"; n72e="${pair72##*:}"
-      strays72="$(grep -oiE "step [0-9]+[^.]{0,80}$w72|$w72[^.]{0,80}step [0-9]+" "$BK72" \
-                  | grep -oiE 'step [0-9]+' | tr 'A-Z' 'a-z' | grep -vxc "step $n72e" | tr -d ' ')"
-      [ "$strays72" -eq 0 ] || c10_72="$c10_72 [$strays72 citation(s) send the reader to a step that is not $n72e for: $w72]"
+      found72=0; stray72=0
+      for f72 in "$BK72" "$UN72"; do
+        [ -r "$f72" ] || continue
+        while IFS= read -r c72; do
+          [ -n "$c72" ] || continue
+          found72=$((found72+1))
+          [ "$c72" = "step $n72e" ] || stray72=$((stray72+1))
+        done <<EOF
+$(tr '\n' ' ' < "$f72" | tr -s ' ' | tr '.' '\n' | grep -i -- "$w72" | grep -oiE 'step [0-9]+' | tr 'A-Z' 'a-z')
+EOF
+      done
+      [ "$found72" -ge 1 ] \
+        || c10_72="$c10_72 [no citation of the $w72 step was found in any engine file, so this leg judged nothing]"
+      [ "$stray72" -eq 0 ] \
+        || c10_72="$c10_72 [$stray72 citation(s) send the reader to a step that is not $n72e for: $w72]"
     done
   fi
   [ -z "$c10_72" ] && ok "A10 no citation names a step the checklist no longer has" \
@@ -14927,15 +14968,18 @@ INV66="$(awk '/^### Invariants/{f=1;next} (f && /^#+ /){f=0} f' "$BL66")"
 L966="$(awk '/^### 9\. ARCHIVE/{f=1;next} (f && /^#+ /){f=0} f' "$LC66")"
 
 itm66() { printf '%s\n' "$2" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
-# The number of the item whose LEAD LINE performs an act -- the derivation IB-001 asks for, and what every
-# position leg below is built on. It prints nothing when no item performs the act, and each caller tests
-# for that: a `:-0` fallback is the trap IB-029 names, turning "the act is gone" into "the act is item 0".
-act66() { printf '%s\n' "$2" | awk -v p="$1" '/^[0-9]+\. /{h=tolower($0); if (h ~ p) {print $0+0; exit}}'; }
+# The number of an item is derived by the file's ONE derivation, `step_no` -- the same one A5 below exists
+# to certify. A local twin of it was what stood here, and a block whose own row requires that derivation to
+# fail loudly cannot be the block that keeps a silent copy of it. What C63's standalone rule protects is the
+# REGION each row reads and the patterns it reads for; those stay local below. The probes are silenced where
+# a miss is a verdict this block reports in its own words, and every one of them is tested for.
+no66() { step_no "$1" "$2" 2>/dev/null || true; }
 
 NMV66="$(printf '%s\n' "$CLO66" | grep -cE '^[0-9]+\. ')"
-NPUB66="$(act66 'publish' "$CLO66")"
-NDEL66="$(act66 "delet|papers are (destroyed|thrown)" "$CLO66")"
-NROW66="$(act66 'remove task from backlog|removes? the task.s row' "$ARC66")"
+NSTP66="$(printf '%s\n' "$ARC66" | grep -cE '^[0-9]+\. ')"
+NPUB66="$(no66 'publish' "$CLO66")"
+NDEL66="$(no66 "delet|papers are (destroyed|thrown)" "$CLO66")"
+NROW66="$(no66 'remove task from backlog|removes? the task.s row' "$ARC66")"
 
 # A1 -- the ceremony shall carry a move that deletes the task's papers, positioned after the publishing
 # move and before the two moves conditioned on the front having no next task. Every position is DERIVED
@@ -14954,17 +14998,30 @@ else
     || a1_66="$a1_66 [the deletion move does not say it runs at every close]"
   printf '%s' "$(itm66 "$NDEL66" "$CLO66")" | grep -qiE 'no next task|has no next|last task' \
     && a1_66="$a1_66 [the deletion move carries the tail's condition, so a front with a next task would keep its papers]"
+  # The quick-task clause is the same 'a silence reads as a step somebody forgot' rule the distribution
+  # and publish moves carry and that C6 and C64 guard for them. Unguarded it is deletable while green.
+  printf '%s' "$(itm66 "$NDEL66" "$CLO66")" | grep -qi 'quick task' \
+    || a1_66="$a1_66 [the move does not say what a quick task, which keeps no papers, leaves it to delete]"
 fi
 [ -z "$a1_66" ] && ok "A1 the papers are deleted by a ceremony move after the publish and before the tail" \
                 || bad "A1 the papers are deleted by a ceremony move after the publish and before the tail ($a1_66)"
 
 # A2 -- the single-task archive checklist shall carry no step that deletes the task's papers. The negative
 # is the half that matters: a ceremony move added while the checklist keeps its own leaves two deletions.
-if printf '%s\n' "$ARC66" | grep -qE "^[0-9]+\. .*(\*\*Delete\*\*|delete) .artifacts/T-XXX/."; then
-  bad "A2 the archive checklist no longer deletes what it archived"
-else
-  ok "A2 the archive checklist no longer deletes what it archived"
-fi
+# Each step FLATTENED, and against every wording the close uses for the act (`DEL_ACT`, one home) rather
+# than one retired spelling on one physical line. The file hard-wraps, and the sentence anyone re-adding
+# this step would copy is the ceremony move's own -- "The task's papers are deleted. `artifacts/T-XXX/`
+# goes" -- which the line-oriented, case-sensitive `delete .artifacts` pattern that stood here matched
+# nowhere at all. An absence leg is only as wide as the ways the claim can be written.
+a2_66=""
+i2_66=1
+while [ "$i2_66" -le "$NSTP66" ]; do
+  printf '%s' "$(itm66 "$i2_66" "$ARC66")" | grep -qiE "$DEL_ACT" \
+    && a2_66="$a2_66 [step $i2_66 still deletes the papers the ceremony's move deletes]"
+  i2_66=$((i2_66+1))
+done
+[ -z "$a2_66" ] && ok "A2 the archive checklist no longer deletes what it archived" \
+                || bad "A2 the archive checklist no longer deletes what it archived ($a2_66)"
 
 # A3 -- the step that removes the task's row shall, in the SAME ACT, strike the task's line in its epic's
 # Execution Order block and set the epic's status where it still reads `backlog`. The coupling leg is an
@@ -14981,6 +15038,13 @@ else
     || a3_66="$a3_66 [the step does not set an epic still reading backlog to active]"
   printf '%s' "$ROW66" | grep -qiE 'no (numbered )?(order|Execution Order)|nothing to strike' \
     || a3_66="$a3_66 [the step says nothing about an epic whose block carries no order list]"
+  # The FORM is the actionable content of the rule -- it is what stops the next three closes striking the
+  # line three different ways, which is the inconsistency this row was raised over. Unasserted, the sha,
+  # the one line of what shipped and the pointer to the archive are all revertible with the suite green.
+  printf '%s' "$ROW66" | grep -qF '~~**T-XXX**~~' \
+    || a3_66="$a3_66 [the step does not give the struck line the form the archived orders already use]"
+  printf '%s' "$ROW66" | grep -qF 'archive/T-XXX/summary.md' \
+    || a3_66="$a3_66 [the struck line does not point at the task's archived summary]"
 fi
 [ -z "$a3_66" ] && ok "A3 the act that removes the row strikes the epic's order line and sets its status" \
                 || bad "A3 the act that removes the row strikes the epic's order line and sets its status ($a3_66)"
@@ -15075,15 +15139,23 @@ fi
 # the record move. Both halves: added beside a record move that still claims it, the map states it twice.
 o2_66=""
 NL66="$(printf '%s\n' "$L966" | grep -cE '^[0-9]+\. ')"
-NLD66="$(act66 'delet' "$L966")"
-NLR66="$(act66 'record' "$L966")"
+NLD66="$(no66 'delet' "$L966")"
+NLR66="$(no66 'record' "$L966")"
 [ -n "$L966" ] || o2_66=" [the lifecycle map's ARCHIVE section could not be located]"
 [ "$NL66" -eq "$NMV66" ] \
   || o2_66="$o2_66 [the map lists $NL66 moves and the ceremony has $NMV66]"
 [ -n "$NLD66" ] \
   || o2_66="$o2_66 [the map carries no move of its own for the deletion]"
+# An absent record move is a verdict this row cannot reach, never a leg that quietly passes: wrapped in a
+# bare `if [ -n ... ]`, "could not evaluate" and "evaluated clean" were the same answer. And the deletion
+# must be a move of its OWN -- the derivation takes the first item whose lead line carries the word, so a
+# record move that regained the deletion would answer both halves by itself and the pair would agree.
+[ -n "$NLR66" ] \
+  || o2_66="$o2_66 [the map carries no move that writes the record, so this row cannot read its second half]"
+[ -n "$NLD66" ] && [ "$NLD66" = "$NLR66" ] \
+  && o2_66="$o2_66 [the map's deletion is the record move itself, not a move of its own]"
 if [ -n "$NLR66" ]; then
-  printf '%s' "$(itm66 "$NLR66" "$L966")" | grep -qiE 'artifacts/T-XXX/. delet|delet' \
+  printf '%s' "$(itm66 "$NLR66" "$L966")" | grep -qiE 'delet' \
     && o2_66="$o2_66 [the map's record move still claims the deletion]"
 fi
 [ -z "$o2_66" ] && ok "O2 the lifecycle map lists the deletion as a move of its own" \

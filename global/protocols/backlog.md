@@ -29,9 +29,9 @@ section is last here, the exemption ran to end of file and a narrative appended 
 invisible.
 
 **Checkout** names where that front's working copy lives, and it is what locates the front. **Four**
-sites match it against the repository's own worktree listing: the collection move of the closing
-ceremony, that ceremony's dismantling move and its last move, and the deletion step of the archive
-checklist. Front-scoped and decided once, like Areas and Tool — and unlike a branch, which a front
+sites match it against the repository's own worktree listing, and all four are moves of the closing
+ceremony: its collection move, its deletion move, its dismantling move and its last move.
+Front-scoped and decided once, like Areas and Tool — and unlike a branch, which a front
 changes with every task in its chain, so a branch could never key this row: it would name the front's
 first task forever. The coordinator's own row names its own checkout and none of the four looks for it —
 a task worked there has its papers there already, nothing of it is dismantled, and its row is not a
@@ -856,12 +856,13 @@ was written when the merge was the last thing that could fail.
    that declares none has nothing to distribute, and the move **says so**: in a report, silence and a
    distribution that never happened read identically. It runs in the coordinator, on the trunk the
    merge just landed, and nowhere else — run from a front it would repoint what the installed
-   toolchain calls its source at a checkout the next move deletes, and the guard that watches for
+   toolchain calls its source at a checkout the ceremony's dismantling move removes, and the guard that watches for
    exactly this divergence goes quiet for good. The run **shows** the distribution took effect, by
    whatever check the project has; where there is no check it reports the result unproven rather than
    assuming it. If it cannot be shown to have landed, the ceremony **stops** here with the front's
-   roster row still in place — the record is written by now, so the row is the only thing left saying
-   work remains, which is why this move sits before the tail and not after it. It runs at **every
+   roster row still in place and the task's papers not yet deleted — the record is written by now, so
+   the row is what says work remains and the papers are where the halted move is written down. Which is
+   why this move sits before the tail, and before the deletion, rather than after either. It runs at **every
    task close**, a quick task's included, and carries none of the condition the two moves below it do.
 
 6. **The trunk is published.** Until this move runs, work the ceremony has just finished landing sits on
@@ -873,9 +874,10 @@ was written when the merge was the last thing that could fail.
    move **says so and the ceremony continues**, which is the same answer the audit gives an unresolvable
    remote trunk rather than inventing a zero. If the push itself cannot complete — a diverged trunk, no
    permission — the ceremony **stops** here with the front's roster row still in place, the shape the
-   move above already uses: the ledger is written by now, so the row is the only thing left saying work
-   remains. It runs at **every task close**, a quick task's included, and carries none of the condition
-   the two moves below it do.
+   move above already uses: the ledger is written by now, so the row is what says work remains and the
+   papers, which the move below has not reached, are where the halted move is written down. It runs at
+   **every task close**, a quick task's included, and carries none of the condition the two moves below
+   it do.
 
 7. **The task's papers are deleted.** `artifacts/T-XXX/` goes, in **every checkout that holds it** and
    not only the coordinator's. A task worked in a linked worktree leaves a copy there, and the tail below
@@ -916,8 +918,8 @@ was written when the merge was the last thing that could fail.
 
 This checklist is what move 4 of `## Closing a Workstream` runs, and it runs in the coordinator:
 the ledger has one writer, and every step below is that writer at work. Nothing here reaches into
-another checkout — the one act that did is now move 7 of the ceremony, which is the only move of the
-close that touches a checkout the coordinator does not own.
+another checkout — the one act that did is now move 7 of the ceremony, where it sits alongside the
+other moves of the close that reach outside the coordinator.
 
 1. **Steering update**: did the task teach or modify a domain rule? -> edit the rule in the steering file's **body** AND regenerate its `## Nano` line **in the same edit** — an edit that touches only one of the two is incomplete. No new rule learned -> skip.
 2. **product.md write-back**: copy every rule from understand.md's `New business rules minted` into product.md's Business Rules (with T-XXX provenance); update the Glossary if the task sharpened a term. A business rule that stays only in the archived artifact will be re-asked or re-assumed. None minted -> skip.
@@ -986,8 +988,9 @@ close that touches a checkout the coordinator does not own.
    of the continuing case, so a label left to an act of its own is a label nobody would ever rewrite, and
    the front would go on announcing a task that closed here. Where the tool offers none there is nothing
    to rewrite and the row is the whole of it (see move 5 of `## Opening a Workstream`). The task's
-   `state.md` is still here: it goes with `artifacts/T-XXX/` at move 7 of the ceremony, two moves after
-   this checklist has finished.
+   `state.md` is still here: it goes with `artifacts/T-XXX/` at move 7 of the ceremony, after this
+   checklist has finished. The relation a reader needs is *later*, not *later by N* — a distance written
+   out here is wrong the next time the ceremony gains a move, and nothing would notice.
 
 ### Business-Miss Rule
 
@@ -1010,9 +1013,9 @@ Every code-domain steering file opens with a `## Nano` block: one line per rule/
 3. **Verify** that `artifacts/` retains no folder of a task of this epic — deleting is move 7 of
    `## Closing a Workstream`, which runs after the publish and knows what it archived. If a folder is
    still there, name it and stop: it belongs to a task closed without its checklist, to a front that is
-   still open, or to a **close halted after the record** — the deletion is the last thing the ceremony
-   does, so a close stopped at the distribution or the publish leaves exactly this folder behind, and
-   a sweep cannot tell the three apart. Naming all three is the whole of the move: a diagnosis offering
+   still open, or to a **close halted after the record** — the deletion is the ceremony's last
+   unconditional move, running after every move that can stop it, so a close stopped at the distribution
+   or the publish leaves exactly this folder behind, and a sweep cannot tell the three apart. Naming all three is the whole of the move: a diagnosis offering
    two sends the operator to re-run a checklist that already ran.
 4. Remove all epic tasks from BACKLOG.md Done section
 5. Move the epic row to `archive/EPICS.md` + its Execution Order block to `archive/EXECUTION-ORDERS.md` (Size Budget)
