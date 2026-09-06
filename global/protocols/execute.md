@@ -84,14 +84,21 @@ For each step:
    ceremony (backlog protocol), which owns the gate and states why it sits there. Where the task's level
    sets a gate between steps — **Supervised**, whose criteria stay in `protocols/lifecycle.md`'s autonomy
    table, which owns the levels — that gate is untouched by the commit: it governs whether the next step
-   begins, never whether this one is committed. What it obliges is stated here, with the loop it governs:
-   show the diff of the step just finished, and wait for the operator before the next step begins. The
+   begins, never whether this one is committed, and what it obliges is item 5 below. The
    two are one stop only while the commit is withheld for approval, which is what this step retires; the
    distinction is stated because a clause wide enough to free the commit is wide enough to cancel a rule
    this loop does not own. Two rules ride on this commit and are the loop's own:
    - **Atomic**: `type(scope): description`, with the `Co-Authored-By` line. One step, one commit.
    - **Green**: the commit must pass tests. Step 3 above is what proves it, and a step that cannot get
      there is escalated by its own Bounded Retry rather than committed red.
+5. **Between steps.** Where the task's sheet declares **Supervised**, show the diff of the step just
+   finished and wait for the operator before the next step begins. **This is the gate's one home** — the
+   level table states which tasks earn the level and states none of this, and no command may restate it:
+   a phase command is one of this rulebook's four readers, so a copy kept there is a copy three of them
+   cannot see and all four can drift against. An item of the loop rather than a clause of the commit
+   above, because it shares no precondition with committing — it fires on the level, after the commit, at
+   the boundary — and a reader asking what happens *between* steps does not look under "Commit the step".
+   At every other level the loop goes straight back to 1.
 
 ### Conformance Contracts Exception
 

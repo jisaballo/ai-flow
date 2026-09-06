@@ -15334,6 +15334,34 @@ printf '%s' "$LOOP67" | grep -qi 'Supervised' \
 [ -z "$a5_67" ] && ok "A5 the supervised step-boundary gate lives with the loop it governs, not in the level table" \
                 || bad "A5 the supervised step-boundary gate lives with the loop it governs, not in the level table ($a5_67)"
 
+# A5b -- ADDED DURING VERIFY. A5 above asks whether the gate LEFT the level table for the loop; this asks
+# whether it ARRIVED at one home or at three. Its own row rather than a fourth leg on A5, which Conform
+# froze: the fact is new, so it earns its own red and A5 keeps the assert direction it was frozen with.
+#
+# The defect it was written against shipped inside this task, in the commit whose own message is "the gate
+# moves to the loop it governs". The map was stripped and the rulebook gained the mechanics -- and then the
+# command stated the same two-clause rule twice more, in wording that already differed from the protocol's
+# and from itself, two copies eight lines apart in a 33-line file whose opening paragraph declares it born
+# routing. Three homes, up from one, and every A5 leg green throughout: A5 reads the map and the rulebook
+# and never the command.
+#
+# The negative is FILE-WIDE, unlike A2's, and the difference is the point. A2 forbids an obligation that
+# has a legitimate home one step away, so a file-wide negative there would redden a correct command; here
+# no step of this command may spell the gate, so a scoped negative would only relocate the copy it found.
+# The positive is what keeps the row from being satisfied by a command that says nothing at all: silence
+# leaves the reader of a Supervised run with no idea a boundary exists.
+a5b_67=""
+if [ ! -f "$FE67" ]; then
+  a5b_67=" [the command does not exist]"
+else
+  grep -qiE 'show(ing)? the diff|wait for the operator' "$FE67" \
+    && a5b_67=" [the command spells the step-boundary gate instead of routing to the loop that owns it]"
+  printf '%s' "$(st67 "$FE67" 2)" | grep -q 'Execute Step Protocol' \
+    || a5b_67="$a5b_67 [it names the level's stop without sending the reader to the loop that states what the stop obliges]"
+fi
+[ -z "$a5b_67" ] && ok "A5b the command routes the step-boundary gate and spells none of it" \
+                 || bad "A5b the command routes the step-boundary gate and spells none of it ($a5b_67)"
+
 # A6a -- the rulebook's head. Re-keyed POSITIVELY to the siblings' own form: a leg keyed on the ABSENCE of
 # `only carrier` would redden the correct replacement, whose sentence is "never its only carrier". What is
 # forbidden is the ASSERTIVE form, and what is required is the sibling wording.
