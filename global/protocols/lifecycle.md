@@ -223,7 +223,7 @@ The level is classified at activation; the user confirms or adjusts it.
 |-------|----------|--------------|
 | **Auto** | Bug fix with a reproducible test, mechanical refactor, tests already green | Plan inline (no artifact), no understand→plan gate, no plan→execute gate, auto-commit if all tests pass. User validates post-commit. |
 | **Guided** (default) | New features, domain changes, moderate scope | All gates as defined in the full path. Default behavior. |
-| **Supervised** | Schema changes, new domain or library, **>5 files**, **architectural decisions** | All gates + step-by-step approval during Execute (show the diff per step, wait for the user before the next one) |
+| **Supervised** | Schema changes, new domain or library, **>5 files**, **architectural decisions** | All gates + step-by-step approval during Execute; what that boundary obliges is stated with the loop it governs, in the Execute protocol |
 
 **The gates each level runs:**
 - **Guided**: understand → plan (user approves), plan → conform (automatic), conform → execute (user approves the plan), execute → spec sync (automatic), execute → verify (automatic), verify → archive (user approves)

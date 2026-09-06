@@ -3531,9 +3531,14 @@ else
   bad "the phase is recorded before the phase's work, not after it"
 fi
 # The handover, and its reason. Without the reason the clause reads as a preference and the next editor
-# deletes it: the phase after plan has no command of its own, so nothing else can write it.
+# deletes it. RE-KEYED once the phase gained a command: the old reason -- that nothing else could write
+# the position, the phase after plan having no command -- became false the moment one existed, and a leg
+# still keyed on it would have demanded the engine keep saying something untrue. What is durable is the
+# reason underneath it: Conform's close is where the position becomes true, and nothing later in the
+# chain reaches back to record it, because a command reads the position it runs on and never writes it.
+# Keyed positively on that, never on the absence of the old phrase -- an absence leg passes on silence.
 if [ -n "$CLEAN22" ] && printf '%s' "$CLEAN22" | grep -q 'EXECUTE' \
-   && printf '%s' "$CLEAN22" | grep -qiE 'no command|has no command of its own'; then
+   && printf '%s' "$CLEAN22" | grep -qiE 'reaches back|never writes the one'; then
   ok "the handover to EXECUTE carries the reason it exists"
 else
   bad "the handover to EXECUTE carries the reason it exists"
@@ -3620,8 +3625,13 @@ printf '%s' "$EXE22" | grep -q 'Resolving the task' \
   || exe22="$exe22 [its entry does not route to the ladder that resolves the task]"
 printf '%s' "$EXE22" | grep -q "$PRECOND22" \
   || exe22="$exe22 [its entry does not route to the phase precondition, so the row execute was given has no reader]"
-printf '%s' "$EXE22" | grep -qiE 'no command|only carrier' \
-  || exe22="$exe22 [it does not say the manual run is the only carrier, which is what makes a check with no command performable]"
+# RE-KEYED with the command's arrival, and POSITIVELY, which is the whole point. The old key was
+# `no command|only carrier`; the replacement wording is the siblings' -- "never its only carrier" -- and
+# it CONTAINS the phrase the old leg searched for. Left alone the row would have gone on passing while
+# certifying the exact sentence this task retired, which is the hollow leg this harness has now caught
+# nine times. What the head must carry is the standing the three siblings give their own commands.
+printf '%s' "$EXE22" | grep -qiE 'convenience over this procedure|is a convenience' \
+  || exe22="$exe22 [its head does not give the command the standing its three siblings give theirs: a convenience over a manual run that remains the real carrier]"
 [ -z "$exe22" ] && ok "A5b execute.md routes to the precondition at its entry, and says what performs it" \
                 || bad "A5b execute.md routes to the precondition at its entry, and says what performs it ($exe22)"
 

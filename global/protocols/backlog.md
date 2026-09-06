@@ -250,7 +250,7 @@ contradict it. Two or more sheets and this case falls straight to rung 3.
 ### The phase precondition
 
 The ladder above answers *which task*. This answers *whether this phase may run on it*, and it is
-stated here for the same reason the ladder is: three commands each holding their own copy of the
+stated here for the same reason the ladder is: four commands each holding their own copy of the
 accepted positions is three copies that drift, and a command that accepts what another refuses is
 worse than no check at all.
 
@@ -264,10 +264,10 @@ three come from the task's own sheet and its papers, never from what the session
   from being opened into being understood. `plan` runs on UNDERSTAND or PLAN.
   `verify` runs on EXECUTE or VERIFY. `execute` runs on EXECUTE, which is the position `plan` writes
   when Conform closes — the same write the clean-pass bullet below already describes, so the position it
-  accepts is one something in the chain actually produces. Its own command does not exist yet, and the
-  check is performed meanwhile by a manual run: the plan protocol names that run as the real carrier and
-  the command as a convenience over it, which is what keeps a position stated ahead of its command from
-  reading as unreachable and being deleted by the next editor who looks for who enforces it.
+  accepts is one something in the chain actually produces. Its own command performs this check like its
+  siblings', and the manual run stands behind all four: a phase whose command is not installed is still
+  run, on the procedure its own protocol states, which is what keeps a position from reading as
+  unreachable and being deleted by the next editor who looks for who enforces it.
 - **The autonomy read.** The supervision level the task was granted is read from the same sheet, from its
   `autonomy:` line, and it is read **before the material leg is tested** — not by preference: the level
   decides what that leg may require, so a run that tested the material first would refuse an Auto task for
@@ -314,8 +314,9 @@ three come from the task's own sheet and its papers, never from what the session
 - **A clean pass.** Both legs holding, the command writes its own phase to the sheet before starting
   the work. That write is what makes this precondition mean anything: a field a mechanism refuses on
   must have a writer, or the first forgotten edit blocks correct work and teaches everyone to route
-  around the rule. `plan` additionally advances the sheet to EXECUTE when Conform closes, because the
-  phase after it has no command of its own and nothing else would ever record it.
+  around the rule. `plan` additionally advances the sheet to EXECUTE when Conform closes, because that
+  is where the position becomes true and nothing later in the chain reaches back to record it: the
+  command that runs on a position reads it, and never writes the one that admits it.
 
   **Two closes carry the end of the session with them: the close of Understand and the close of Execute.**
   Each writes the position the phase *after* it will declare — the close of Understand writes PLAN, the close

@@ -6,10 +6,11 @@ there and only there — and stop rather than choose if it ends without one. The
 precondition (same document, `### The phase precondition`), stated there and only there too, so this
 document names no accepted position and no leg of its own.
 
-This phase has **no command**, so unlike its three siblings the manual run is not a fallback here — it is
-the only carrier the check has. Stated at the head rather than left to the close below, because a phase
-given a position it accepts and papers it insists on, with nothing at its entry that reads them, has a
-rule and no reader: the row would be satisfied by the document that declares it and performed by nobody.
+A manual run performs the check; the command is a convenience over this procedure, never its only
+carrier — the same standing this phase's three siblings give theirs. Stated at the head rather than left
+to the close below, because a phase given a position it accepts and papers it insists on, with nothing at
+its entry that reads them, has a rule and no reader: the row would be satisfied by the document that
+declares it and performed by nobody.
 
 ## Model Delegation
 
@@ -51,7 +52,7 @@ The agent receives: CLAUDE.md, the task's state sheet (`artifacts/T-XXX/state.md
 
 ## Skills per Step — Lazy Load
 
-Before executing a step, invoke each skill declared in its plan `Skills:` line, if not already loaded this session. Lazy, per step — do NOT preload every declared skill upfront: irrelevant guidance dilutes the relevant one. If a step turns out to need a skill that was not declared, load it and note the miss for Verify.
+Before executing a step, invoke each skill declared in its plan `Skills:` line, if not already loaded this session. Lazy, per step — do NOT preload every declared skill upfront: irrelevant guidance dilutes the relevant one. If a step turns out to need a skill that was not declared, load it and write the miss to the task's sheet (`artifacts/T-XXX/state.md`), which is where Verify asks for it: the conversation that held it does not survive the close's cut, and the sheet is the one thing this loop already writes to.
 
 ## Steering Files
 
@@ -81,8 +82,10 @@ For each step:
 4. **Commit the step.** A step whose Verify command passes is committed where it stands, and the commit
    seeks no approval of its own — the approval for the task's work is given once, at move 1 of the closing
    ceremony (backlog protocol), which owns the gate and states why it sits there. Where the task's level
-   sets a gate between steps — `protocols/lifecycle.md`'s autonomy table, which owns the levels — that
-   gate is untouched: it governs whether the next step begins, never whether this one is committed. The
+   sets a gate between steps — **Supervised**, whose criteria stay in `protocols/lifecycle.md`'s autonomy
+   table, which owns the levels — that gate is untouched by the commit: it governs whether the next step
+   begins, never whether this one is committed. What it obliges is stated here, with the loop it governs:
+   show the diff of the step just finished, and wait for the operator before the next step begins. The
    two are one stop only while the commit is withheld for approval, which is what this step retires; the
    distinction is stated because a clause wide enough to free the commit is wide enough to cancel a rule
    this loop does not own. Two rules ride on this commit and are the loop's own:
