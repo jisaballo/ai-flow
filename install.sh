@@ -91,7 +91,7 @@ fetch_file() {
 }
 
 PROTOCOLS="understand plan execute verify quick-path backlog discover lifecycle"
-SKILLS="understand plan verify discover"
+SKILLS="understand plan execute verify discover"
 HOOKS="check-state-size.sh diff-size-guard.py git-safety.py understand-write-guard.py drift-check.sh context-cost-note.py"
 # Git's own hooks, which carry the two Never rules. They live under a subdirectory because that is
 # what core.hooksPath is pointed at, and because the drift guard's prefix map already covers the
@@ -373,7 +373,7 @@ install_tooling() {
     mkdir -p "$HOME/.claude/skills/$skill"
     fetch_file "global/skills/$skill/SKILL.md" "$HOME/.claude/skills/$skill/SKILL.md"
   done
-  echo "  [ok] Skills installed (/understand, /plan, /verify, /discover)"
+  echo "  [ok] Skills installed (/understand, /plan, /execute, /verify, /discover)"
 
   fetch_file "global/workflows/verify-review.js" "$HOME/.claude/workflows/verify-review.js"
   echo "  [ok] verify-review workflow installed"

@@ -2115,7 +2115,7 @@ fi
 echo "== C16: a phase command resolves the task its own checkout owns =="
 BLG5="global/protocols/backlog.md"
 RAIL="global/hooks/understand-write-guard.py"
-PHASE_SKILLS="understand plan verify"
+PHASE_SKILLS="understand plan execute verify"
 
 # The owner block, bounded at the next heading of any depth: the ladder is ONE fact with ONE home, and
 # a section-wide grep over State Files would pass on the neighbouring paragraph that already describes
@@ -3340,7 +3340,7 @@ VS22="global/skills/verify/SKILL.md"
 VP22="global/protocols/verify.md"
 HARNESS22="test/validate.sh"
 PRECOND22="The phase precondition"
-C22_SKILLS="understand plan verify"
+C22_SKILLS="understand plan execute verify"
 
 # The rule's own block, bounded at the next heading of any depth and fence-aware — the shape C14 and
 # C18 use for the task-diff definition and the mutation rule, and for the same reason: a file-wide grep
@@ -13997,7 +13997,7 @@ echo "== C63: a phase reads how much supervision the task was granted, and says 
 # by construction rather than by achievement.
 BL63="$ROOT/global/protocols/backlog.md"
 MAP63="$ROOT/global/protocols/lifecycle.md"
-C63_SKILLS="understand plan verify"
+C63_SKILLS="understand plan execute verify"
 PRECOND63="The phase precondition"
 
 # The rule's own block and one bolded clause of it. A local pair rather than C22's, so this block stands
@@ -15461,8 +15461,15 @@ else
   CLS67="$(awk '/^[0-9]+\. /{last=NR} {a[NR]=$0} END{for(i=last;i<=NR;i++) printf "%s ", a[i]}' "$FE67")"
   printf '%s' "$CLS67" | grep -qiE 'VERIFY|the position the audit' \
     || b4_67="$b4_67 [its close does not advance the sheet to the position the audit declares]"
+  # CORRECTED during Execute against C50's A10, which sweeps every installed surface carrying a close
+  # and forbids exactly this restatement. The leg as frozen demanded the `next action:` spelling and was
+  # unsatisfiable beside that rule -- a bad assumption at Conform, taken through the Replan Gate rather
+  # than by weakening either side. What the criterion wants is that the next sitting learns where to pick
+  # up; what the engine requires is that the obligation be ROUTED to its one home, not copied here.
+  printf '%s' "$CLS67" | grep -q "$PRECOND67" \
+    || b4_67="$b4_67 [its close does not route to the block that says what else the close writes]"
   printf '%s' "$CLS67" | grep -q 'next action:' \
-    || b4_67="$b4_67 [its close does not write where the next sitting picks up]"
+    && b4_67="$b4_67 [it spells the close's own obligation instead of routing to it, which C50's A10 forbids on every close-carrying surface]"
   printf '%s' "$CLS67" | grep -qiE 'fixed line|the line it states|announce' \
     || b4_67="$b4_67 [its close does not state the fixed announcement]"
   printf '%s' "$CLS67" | grep -qiE 'ends? the turn' \

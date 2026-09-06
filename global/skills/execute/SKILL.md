@@ -1,0 +1,33 @@
+---
+name: execute
+description: Run the ai-flow Execute phase for the active task — resolve the task, test the phase precondition, read the supervision level, then work the approved plan step by step against its conformance contracts, closing with Spec Sync. Use when the user says "execute", "ejecuta", or after a plan is approved. Requires an .ai-flow/ directory.
+---
+
+# ai-flow Execute Phase
+
+Runs the Execute phase of the ai-flow workflow. Works in any project that has `.ai-flow/`.
+
+This command is **born routing**. Its entry checks and its close are its own; everything between is the
+rulebook's sections, named in their order with a route each. The rulebook has four readers — this
+session, a delegated agent, the unattended runner and the quick path — so a rule that lived here would
+be invisible to three of them.
+
+## Steps
+
+1. **Read the protocol first**: `~/.claude/ai-flow/protocols/execute.md` (central engine). If the project has no `.ai-flow/` directory, it is not ai-flow — tell the user and stop.
+
+2. **Resolve the task**: the task is the one this checkout owns, not the one the session remembers. Follow the ladder in `~/.claude/ai-flow/protocols/backlog.md` (`## State Files` → `### Resolving the task`) — it is written there and only there, so do not reproduce its rungs here. State which task you resolved and the source it read (the task's sheet, or the shared roster when that is the rung that answered) before touching anything under `artifacts/`; if the ladder ends without a task, stop and say which rungs you tried. Then test the phase precondition (same document, `## State Files` → `### The phase precondition`) — written there and only there, so do not reproduce the accepted positions here, nor the papers this phase consumes: which material that is belongs to that block, and a command that spells it grows the second home the block exists to prevent. On a clean pass, write its own phase to the sheet before any of the phase's work — ordinarily the sheet already declares it, because the close of Conform set it and the plan gate fell there, so nothing is announced and the loop proceeds. Then read the sheet's `autonomy:` line and name the level, on the terms that same block states — what a run owes the operator when it reads a level, and what it does where the sheet declares none, are its rules and not this command's. What is this command's is what the level changes here: at **Supervised** the loop stops at every step boundary, step 6 showing the diff of the step just finished and waiting before the next begins; at **Guided** nothing changes here beyond the gates the level already sets; at **Auto** each green step commits without pausing, and touching a frozen contract escalates the task to Guided. The levels themselves are the lifecycle map's — route to it and restate no row of it. On a disagreement, report and wait — the position the sheet declares, the position that was asked for, and the material that is missing, named as a file the operator can look for — and no artifact is written while the run waits. If the operator says go, run without moving the line.
+
+3. **No artifact check.** This phase produces no artifact of its own: it edits the repository and writes progress to the task's sheet, both of which already exist. Said out loud rather than omitted, because a missing check reads exactly like a check somebody forgot — and the rule it would run, `Artifact Check Before Create`, has nothing here to act on.
+
+4. **Read the approved plan**: `.ai-flow/artifacts/T-XXX/plan.md` — its Mechanics steps, each with its `Verify` command and `Done` criterion, and its `Criteria Coverage` table. Then read `.ai-flow/artifacts/T-XXX/conformance-baseline/manifest.md`: those rows are the frozen contract this phase is measured against, and the goal of the whole phase is to make them green.
+
+5. **Decide the strategy per step**, on the terms `## Model Delegation` states — inline by default, delegated where the step is fully self-contained and mechanical. The choice is silent and needs no approval; when you delegate, say so. Before each step, load what its plan `Skills:` line declares and re-read what the `steering:` map names for the affected domains — lazily, per step, on the terms `## Skills per Step — Lazy Load` and `## Steering Files` own. A step that turns out to need guidance its plan step never declared: load it, and write the miss to the task's sheet, where the audit that asks for it can still read it after this sitting ends.
+
+6. **Work the loop**, once per plan step, exactly as `### Execute Step Protocol` states it: read the sources, make the change, run that step's `Verify` command, and commit the step where it stands. Four of its rules are the ones a run drops first, so route to them by name rather than trusting memory — **Bounded Retry** (three attempts on the same error, then stop and escalate with what was tried, what failed and the likely root cause), the **atomic** and **green** rules the commit carries, the **Conformance Contracts Exception** (a frozen row is never deleted, weakened or adjusted to match what was observed — a stub that is objectively wrong is the Replan Gate), and the **Diff Size Guardrail**. Where the sheet declares Supervised, this is the step that stops: show the diff of what the step just changed and wait for the operator before the next one begins.
+
+7. **Deviations and discoveries** follow `## Replan Gate` and `## Deviation Rules During Execution`. A broken plan assumption stops the run and updates the plan; a finding of your own goes through Discovery Triage, never to BACKLOG.md while the task is in flight.
+
+8. **Spec Sync**, on the terms `## Post-Execute: Spec Sync` states: review the diff against `understand.md`, append `## Implementation Decisions` where the implementation diverged from the spec, and skip it silently where it did not.
+
+9. **Close the phase**: advance the sheet to the position the audit will declare, end with the fixed line, and **end the turn**. This is the second of the chain's two cut points; what that line carries, what else the close writes, and what it refuses to ask are stated in `~/.claude/ai-flow/protocols/backlog.md` (`### The phase precondition`) and only there, so do not reproduce them here — a session told to carry on runs the audit as usual. The close rides this write rather than standing as a step of its own, because a habit announced beside an act that must happen anyway cannot be forgotten separately from that act.
