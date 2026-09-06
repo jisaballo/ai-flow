@@ -15487,6 +15487,34 @@ else
 fi
 [ -z "$b4_67" ] && ok "B4 the close writes the position, the resume line and the fixed announcement, then ends the turn" \
                 || bad "B4 the close writes the position, the resume line and the fixed announcement, then ends the turn ($b4_67)"
+
+# B5 -- ADDED DURING VERIFY, and it is the complement of B2 rather than a leg of it: B2 asks what happens
+# when a paper the phase consumes is MISSING, and this asks what happens at the one level where it was
+# never owed. Its own row and not an extra leg on B2, because B2 is a frozen contract row and this fact is
+# not one of the three it froze.
+#
+# The defect it was written against shipped in this task and the suite was green over it: the material
+# bullet exempted `plan` and `verify` by name and said nothing of `execute`, and the command's step 2 read
+# the level without acting on it while step 4 opened both papers unconditionally. So the first thing the
+# new command did to an Auto task was refuse it and name a file the Auto path is documented never to
+# write. Both halves are asserted, because either alone certifies half the fix: an exempting protocol the
+# command does not act on still refuses the task, and a command that acts on an exemption the protocol
+# does not grant is a command contradicting its own rulebook.
+MAT67="$(pcl67 'material leg')"
+b5_67=""
+[ -n "$MAT67" ] || b5_67=" [the material-leg bullet did not extract, so this row would report on nothing]"
+if [ -n "$MAT67" ]; then
+  printf '%s' "$MAT67" | grep -qiE '`execute`[^.]*Auto|Auto[^.]*`execute`' \
+    || b5_67="$b5_67 [the material bullet exempts other phases at Auto and not this one, so an Auto task is refused for papers Auto never produces]"
+fi
+if [ ! -f "$FE67" ]; then
+  b5_67="$b5_67 [the command does not exist]"
+else
+  printf '%s' "$(st67 "$FE67" 2)" | grep -qiE 'Auto[^.]*(requires nothing|requires neither|no plan artifact|was inline|is inline)' \
+    || b5_67="$b5_67 [the command reads the level and then tests the material leg as though every level produced papers]"
+fi
+[ -z "$b5_67" ] && ok "B5 an Auto task is not refused at Execute for papers Auto never produces" \
+                || bad "B5 an Auto task is not refused at Execute for papers Auto never produces ($b5_67)"
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

@@ -293,7 +293,12 @@ three come from the task's own sheet and its papers, never from what the session
   second phase while its own map promises that path runs — the level being read one bullet earlier is what
   makes this decidable at all. `execute` needs that same `plan.md` and its
   Criteria Coverage table, and the conformance baseline manifest as well — the frozen contract the work
-  is measured against, without which a step that quietly rewrote a stub has nothing to be caught by. The
+  is measured against, without which a step that quietly rewrote a stub has nothing to be caught by. At
+  **Auto** `execute` needs neither of them, on the same exemption and for the same reason as `plan` — the
+  plan was inline and no contract was frozen, so there is nothing for the leg to find. Said of this phase
+  by name rather than left to the principle above, because this is the phase the exemption is easiest to
+  forget in: it is the one that names two papers instead of one, and the first thing a run would
+  otherwise do to an Auto task is refuse it and name a file that was never owed. The
   manifest is not required where Conform was legitimately skipped, and which runs those are is the plan
   protocol's own list (`## Conformance Tests` > `### When to skip`) — cited, never summarised here, and
   never counted: a count of another document's cases is wrong the moment it gains one. What matters at
