@@ -41,6 +41,27 @@ def is_test(path: str) -> bool:
     return bool(TEST_RE.search(path))
 
 
+# Neither of these is code somebody wrote. A dependency bump is thousands of mechanical lines, and the
+# task's own papers are not production code at all — in the default adopting layout they are tracked, so
+# `understand.md` and `plan.md` counted toward a code ceiling during the phases that produce no code.
+# The lockfile names are universal filenames rather than one project's convention, which is why the
+# generic core can hold the list and stay generic.
+LOCKFILES = {
+    'package-lock.json', 'yarn.lock', 'pnpm-lock.yaml',
+    'Cargo.lock', 'poetry.lock', 'Gemfile.lock',
+}
+
+# Anchored at the repository root, the way an ignore rule anchors its own. git reports paths from the
+# root, so the prefix test is the anchor — and it has to be, because a shipped `template/.ai-flow/` IS
+# production code and must keep counting.
+LEDGER_PREFIX = '.ai-flow/'
+
+
+def excluded(path: str) -> bool:
+    """Not production diff: a test suite, the task's own papers, or a dependency lockfile."""
+    return is_test(path) or path.startswith(LEDGER_PREFIX) or os.path.basename(path) in LOCKFILES
+
+
 def is_binary(path: str) -> bool:
     try:
         with open(path, 'rb') as f:
@@ -97,7 +118,9 @@ def numstat_path(raw: str) -> str:
 
 
 def numstat_files(root: str, rev: str) -> dict:
-    """Per non-test, non-binary file: (added, deleted) between rev and the working tree."""
+    """Per counted, non-binary file: (added, deleted) between rev and the working tree. What counts is
+    `excluded` above, applied here and in `untracked_files` — the two producers every measure draws its
+    file set from, which is what makes one statement of the rule reach both ceilings and the note."""
     files = {}
     for line in git(root, 'diff', '--numstat', rev).splitlines():
         parts = line.split('\t')
@@ -106,7 +129,7 @@ def numstat_files(root: str, rev: str) -> dict:
         added, deleted, path = parts[0], parts[1], numstat_path(parts[2])
         if added == '-':  # binary
             continue
-        if is_test(path):
+        if excluded(path):
             continue
         files[path] = (int(added), int(deleted))
     return files
@@ -134,7 +157,7 @@ def untracked_files(root: str) -> dict:
     """New files are part of every measure: git diff sees none of them. Every line is an addition."""
     files = {}
     for path in git(root, 'ls-files', '--others', '--exclude-standard').splitlines():
-        if not path.strip() or is_test(path):
+        if not path.strip() or excluded(path):
             continue
         lines = count_lines(os.path.join(root, path))
         if lines is not None:
@@ -143,7 +166,12 @@ def untracked_files(root: str) -> dict:
 
 
 def total(files: dict) -> int:
-    return sum(a + d for a, d in files.values())
+    """Added lines only. Deletions are cheap to review and the direction to reward, and counting them as
+    growth had the brake pointing the wrong way: two of this engine's own commits removed 250 and 37 net
+    lines and were measured at 398 and 417. It is a fix of direction and not of volume — over 152 commits
+    deletions are 21% of what the old sum counted, and only a quarter of the commits that breach today
+    fall below the limit on this one."""
+    return sum(a for a, _ in files.values())
 
 
 def read_threshold(root: str) -> int:
