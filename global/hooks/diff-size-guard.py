@@ -88,6 +88,16 @@ def toplevel() -> str:
         return ''
 
 
+REMOTE_PREFIX = 'refs/remotes/'
+
+
+def short_ref(ref: str) -> str:
+    """`refs/remotes/origin/main` — which is what symbolic-ref answers with — read back as `origin/main`.
+    The single task-ceiling firing in 126 transcripts printed the full path at the operator, who has no
+    use for a ref namespace."""
+    return ref[len(REMOTE_PREFIX):] if ref.startswith(REMOTE_PREFIX) else ref
+
+
 def base_ref(root: str):
     """Where this branch started: the remote's default branch, else a local main/master.
     None means no base is knowable — the task ceiling then has nothing to measure against."""
@@ -402,7 +412,8 @@ def main():
     step_notice = step_total > STEP_THRESHOLD and outgrown(spoken.get(step_key), step_total)
     if step_notice:
         notices.append(
-            f"step ceiling exceeded — {step_total} uncommitted LOC (excl. tests, limit {STEP_THRESHOLD})"
+            f"step ceiling exceeded — {step_total} uncommitted added lines "
+            f"(excl. tests, the ledger and lockfiles, limit {STEP_THRESHOLD})"
         )
     task_notice = (
         task_total is not None
@@ -410,10 +421,26 @@ def main():
         and outgrown(spoken.get(task_key), task_total)
     )
     if task_notice:
+        shown = short_ref(base)
+        # Where the base is a remote-tracking ref the measure is the branch's distance from what the
+        # remote has, which is work not yet published — and that is one task grown large OR several
+        # already finished, with nothing here able to tell them apart. So it says what it measured and
+        # leaves the reading to the operator. It used to order a split, which is a verdict the measure
+        # does not support and often an instruction the operator cannot carry out.
+        if base.startswith(REMOTE_PREFIX):
+            tail = (
+                f"{shown} is a remote-tracking ref, so this is work not yet published: one task that is "
+                f"intentionally this big, or several that are already finished. Committing does not "
+                f"lower it"
+            )
+        else:
+            tail = (
+                "Committing does not lower this one: either the task is intentionally this big, or it "
+                "should be split into a follow-up task"
+            )
         notices.append(
-            f"task ceiling exceeded — {task_total} LOC on this branch since {base} "
-            f"(excl. tests, limit {TASK_THRESHOLD}). Committing does not lower this one: either the "
-            f"task is intentionally this big, or it should be split into a follow-up task"
+            f"task ceiling exceeded — {task_total} added lines on this branch since {shown} "
+            f"(excl. tests, the ledger and lockfiles, limit {TASK_THRESHOLD}). {tail}"
         )
 
     if notices:

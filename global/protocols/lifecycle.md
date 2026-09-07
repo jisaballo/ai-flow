@@ -116,7 +116,7 @@ This phase bridges planning and execution. The tests become the contract.
 **Guardrails**:
 - **Bounded Retry**: 3 failures on the same error → stop and escalate
 - **Replan Gate**: If an assumption breaks → stop and revise the plan
-- **Diff Size**: >150 LOC uncommitted in a single step, or >400 LOC on the branch since its base → pause and evaluate
+- **Diff Size**: >150 added lines uncommitted in a single step, or >400 on the branch since its base → pause and evaluate. Test suites, the repository's own `.ai-flow/` and dependency lockfiles (`package-lock.json` and its siblings) are not counted
 - **Action Boundaries**: Some changes always need user approval
 
 **Post-Execute**: Spec Sync reviews the diff against understand.md and documents any divergences.
@@ -238,7 +238,7 @@ The level is classified at activation; the user confirms or adjusts it.
 **Auto level constraints:**
 - Still runs conformance tests (if criteria exist) or existing tests
 - Still respects Bounded Retry (3 attempts max)
-- Still respects the diff guardrail (>150 LOC uncommitted in a step, or >400 LOC on the branch since its base → pause)
+- Still respects the diff guardrail (>150 added lines uncommitted in a step, or >400 on the branch since its base → pause; tests, `.ai-flow/` and lockfiles excluded)
 - Commit message includes an `[auto]` tag: `type(scope): [auto] description`
 - If anything unexpected happens (test failure after 3 retries, >3 files needed, a design decision required) → **escalate to Guided**
 

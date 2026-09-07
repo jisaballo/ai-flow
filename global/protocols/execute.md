@@ -104,11 +104,17 @@ This applies to factual/technical assumptions — not minor implementation detai
 
 ## Diff Size Guardrail
 
-Two ceilings and one note, all excluding test files:
+Two ceilings and one note. All three count **added lines** only — deletions are cheap to review and the
+direction to reward — and all three ignore test suites, everything under the repository's own
+`.ai-flow/`, and dependency lockfiles (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Cargo.lock`,
+`poetry.lock`, `Gemfile.lock`). None of the three is code somebody wrote.
 
-- **Step** — uncommitted work **>150 lines**. The step you are in has grown past one reviewable unit.
-- **Task** — **>400 lines** on this branch since its base (commits included). Committing does not lower
-  this one: it exists because free commits on a branch would otherwise let a task grow without a ceiling.
+- **Step** — uncommitted work **>150 added lines**. The step you are in has grown past one reviewable unit.
+- **Task** — **>400 added lines** on this branch since its base (commits included). Committing does not
+  lower this one: it exists because free commits on a branch would otherwise let a task grow without a
+  ceiling. Where that base is a remote-tracking ref the measure is the branch's distance from what the
+  remote has, so the report names it as work not yet published and leaves the reading to you: one task
+  grown large, or several already finished.
 - **File** — a touched file the change has **grown** past **1,000 lines** (`large_file_lines` in
   `project.yml` overrides it). This one is a note, not a ceiling: it reports and never pauses, because a
   legitimately large file must not be blocked by a heuristic — but ten small diffs build exactly this
