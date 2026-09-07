@@ -247,7 +247,11 @@ def task_scope(root: str) -> str:
         names = sorted(n for n in os.listdir(d) if os.path.isdir(os.path.join(d, n)))
     except Exception:
         names = []
-    return hashlib.sha1('\n'.join(names).encode('utf-8', 'replace')).hexdigest()[:12]
+    # sha256 rather than sha1: this digest is a change detector, not a security primitive, but a
+    # FIPS-enforcing build refuses the non-approved algorithm with a ValueError -- and this call sits
+    # outside every try in the file, so there the whole hook would traceback on every turn and both
+    # ceilings would stop guarding while printing a stack trace.
+    return hashlib.sha256('\n'.join(names).encode('utf-8', 'replace')).hexdigest()[:12]
 
 
 def ack_path(root: str):
@@ -279,8 +283,13 @@ def acknowledged(path) -> dict:
 
 
 def outgrown(reported, now: int) -> bool:
-    """The one rule both measures speak by: once, then again only after another step's worth."""
-    return reported is None or now > reported + STEP_THRESHOLD
+    """The one rule all three speakers speak by: once, then again only after another step's worth —
+    or as soon as the measure FALLS, which means the subject that was acknowledged is gone and what
+    sits there now is a different one. Only the step total can fall without the record expiring with
+    it: a commit is the reset the key already handles, but a stash, a revert or an abandoned edit
+    lowers it on the same commit, and without this clause a 400-line step acknowledged at 400 would
+    silence every later step under 550 with nothing left to re-arm it."""
+    return reported is None or now > reported + STEP_THRESHOLD or now < reported
 
 
 def file_note(large: list, threshold: int) -> str:
@@ -449,13 +458,17 @@ def main():
             marks[step_key] = step_total
         if task_notice:
             marks[task_key] = task_total
-        record(marks)
         print(
             "Diff guardrail: " + "; ".join(notices) + ". "
             "Per your rule, pause and evaluate: is this intentionally large, or should the step be "
             "split / committed?",
             file=sys.stderr,
         )
+        # Marked AFTER the refusal is out, never before -- the note half's own rule, and it is this
+        # change that makes it reach the ceilings: the step key joins this write, and a step key laid
+        # for a refusal that never left the process holds the step ceiling silent for the whole of
+        # that commit against a total nobody read.
+        record(marks)
         sys.exit(2)
     sys.exit(0)
 

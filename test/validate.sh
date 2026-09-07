@@ -15851,6 +15851,13 @@ if [ "$PY3" = 1 ]; then
   H2="$($GIT -C "$S2" rev-parse HEAD 2>/dev/null)"
   grep -q "step:$H2" "$ACK2" 2>/dev/null \
     || a2_69="$a2_69 [the step record is not scoped to the commit the checkout is on, so nothing makes it expire]"
+  # Scoping the key is half the fact; DROPPING the expired one is the other half, and understand.md's
+  # Edge Cases carry it as its own sentence ("the file is rewritten with current-scope entries only, or
+  # it grows one line per commit for the life of the checkout"). Asserted here rather than left to A8,
+  # which covers only the unscoped pre-change line: `in_scope` can be narrowed to a bare prefix test
+  # with every other row still green while the file grows without bound.
+  [ "$(grep -c '	step:' "$ACK2" 2>/dev/null)" = 1 ] \
+    || a2_69="$a2_69 [the step key from the previous commit survived the rewrite -- expired entries accumulate]"
   [ -z "$a2_69" ] && ok "A2 a commit re-arms the step ceiling whatever total it recorded" \
                   || bad "A2 a commit re-arms the step ceiling whatever total it recorded ($a2_69)"
 
@@ -16002,6 +16009,50 @@ if [ "$PY3" = 1 ]; then
   [ -z "$a9_69" ] && ok "A9 a checkout with no commit still refuses an oversized change" \
                   || bad "A9 a checkout with no commit still refuses an oversized change ($a9_69)"
 
+  # --- A10: the step ceiling re-arms when its measure FALLS, with no commit to do it ----------------
+  # The step total is the one measure of the three that is not monotonic, and `outgrown` is written for
+  # measures that only climb. A commit is the fall this task already handles, by keying the record on
+  # HEAD -- but a stash, a revert or an abandoned edit lowers it on the SAME commit, where the key does
+  # not move. Without the falling clause a 400-line step acknowledged at 400 silences every later step
+  # under 550 with nothing left to re-arm it, which is the silence the block header warns about,
+  # arriving by the one door the other rows do not cover.
+  S10="$T69/a10"; mkstep69 "$S10"
+  nlines 400 > "$S10/big.txt"
+  a10_69=""
+  o="$(brake "$S10")"; rc=$?
+  [ "$rc" = 2 ] || a10_69="$a10_69 [CONTROL: the 400-line step was not refused (exit $rc)]"
+  o="$(brake "$S10")"; rc=$?
+  [ "$rc" = 0 ] || a10_69="$a10_69 [CONTROL: the acknowledged 400-line step was refused a second time (exit $rc)]"
+  # Distinct content, for A4's reason: lines that repeat what the file held get matched against the
+  # deletion and the change measures smaller than the row means.
+  seq 1 200 | sed 's/^/fresh /' > "$S10/big.txt"
+  o="$(brake "$S10")"; rc=$?
+  { [ "$rc" = 2 ] && printf '%s' "$o" | grep -q 'step ceiling'; } \
+    || a10_69="$a10_69 [a 400-line step was abandoned and a new 200-line one written on the same commit, and the brake stayed silent (exit $rc)]"
+  [ -z "$a10_69" ] && ok "A10 a step total that falls re-arms the ceiling without waiting for a commit" \
+                   || bad "A10 a step total that falls re-arms the ceiling without waiting for a commit ($a10_69)"
+
+  # --- A11: the local-base tail keeps its own wording ------------------------------------------------
+  # A6 asserts the remote-tracking tail positively and asserts the local tail's literal ABSENT there.
+  # That is a positive leg for the new half and none for the retained one: the `else` arm -- what every
+  # checkout without a remote-tracking base still reads -- could be deleted or folded into the remote
+  # wording with the whole suite green. S11's base is a local `main`, which is the arm A6 cannot reach.
+  S11="$T69/a11"; mkproj "$S11" main
+  mkdir -p "$S11/.ai-flow"; printf 'Current phase: **EXECUTE**\n' > "$S11/.ai-flow/STATE.md"
+  $GIT -C "$S11" checkout -q -b feat
+  nlines 500 > "$S11/feature.txt"
+  $GIT -C "$S11" add -A >/dev/null 2>&1; $GIT -C "$S11" commit -q -m feature
+  o11="$(brake "$S11")"; rc=$?
+  a11_69=""
+  { [ "$rc" = 2 ] && printf '%s' "$o11" | grep -q 'task ceiling'; } \
+    || a11_69="$a11_69 [CONTROL: the task ceiling did not fire against a local base (exit $rc)]"
+  printf '%s' "$o11" | grep -q 'split into a follow-up task' \
+    || a11_69="$a11_69 [the local-base tail lost its own wording -- it is honest there, and nothing else asserts it]"
+  printf '%s' "$o11" | grep -q 'not yet published' \
+    && a11_69="$a11_69 [a local base claims work not yet published, which the measure does not support there]"
+  [ -z "$a11_69" ] && ok "A11 a local base keeps the wording that is honest there" \
+                   || bad "A11 a local base keeps the wording that is honest there ($a11_69)"
+
   # --- O1: the brake never answers WHICH task it is on ----------------------------------------------
   # Read as an inspection criterion in the plan, kept as a row because it is cheap. Green from the
   # start, on purpose: it pins behaviour this change must not CREATE. The task-resolution ladder has ONE
@@ -16026,19 +16077,35 @@ fi
 # guardrail section as repaired while it still said added-plus-deleted -- a green row over an untouched
 # claim, which is the one failure a home guard must not have.
 DG69="$(awk '/^## Diff Size Guardrail/{f=1;next} f && /^## /{exit} f' "$ROOT/global/protocols/execute.md" 2>/dev/null)"
-LC69="$(grep -iE 'diff size|diff guardrail|150 LOC' "$ROOT/global/protocols/lifecycle.md" 2>/dev/null)"
+# One variable per HOME, never one per file: `grep` over lifecycle.md concatenates its two guardrail
+# lines, and a loop reading the concatenation is green while either line alone reverts to the wording
+# this task replaced. Each is selected by its own subject, the way DG69 above is cut to its own section.
+LC69A="$(grep -F '**Diff Size**:' "$ROOT/global/protocols/lifecycle.md" 2>/dev/null)"
+LC69B="$(grep -F 'Still respects the diff guardrail' "$ROOT/global/protocols/lifecycle.md" 2>/dev/null)"
 RD69="$(grep -F 'diff-size-guard.py' "$ROOT/global/hooks/README.md" 2>/dev/null)"
 
 o2_69=""
 [ -n "$DG69" ] || o2_69="$o2_69 [execute.md's Diff Size Guardrail section did not extract -- heading renamed?]"
-[ -n "$LC69" ] || o2_69="$o2_69 [lifecycle.md states the guardrail nowhere -- routed away early?]"
+[ -n "$LC69A" ] || o2_69="$o2_69 [lifecycle.md's Diff Size guardrail bullet did not extract -- routed away early?]"
+[ -n "$LC69B" ] || o2_69="$o2_69 [lifecycle.md's Auto-level guardrail bullet did not extract -- routed away early?]"
 [ -n "$RD69" ] || o2_69="$o2_69 [the hooks README carries no row for the brake]"
-for pair69 in "execute.md:$DG69" "lifecycle.md:$LC69" "README.md:$RD69"; do
+for pair69 in "execute.md:$DG69" "lifecycle.md#7:$LC69A" "lifecycle.md#auto:$LC69B" "README.md:$RD69"; do
   n69="${pair69%%:*}"; t69="${pair69#*:}"
   [ -n "$t69" ] || continue
   printf '%s' "$t69" | grep -qiE 'added lines|lines added|added-only' || o2_69="$o2_69 $n69(added-only)"
   printf '%s' "$t69" | grep -qiE 'lock(file|-file)|package-lock'      || o2_69="$o2_69 $n69(lockfiles)"
   printf '%s' "$t69" | grep -qF '.ai-flow'                            || o2_69="$o2_69 $n69(ledger-exclusion)"
+done
+# The word `lockfile` is not the fact -- the six NAMES are, and they are the hook's to own. Derived from
+# `LOCKFILES` in the source, the way A7 above derives THRESHOLD_KEY and FILE_THRESHOLD: add `bun.lockb`
+# there and this names every prose home that lags, where a presence grep would stay green over two
+# enumerations gone wrong. lifecycle.md is excluded on purpose: it summarises ("and its siblings"), and
+# its copies are scheduled to be routed away to a citation entirely.
+LOCK69="$(sed -n '/^LOCKFILES = {/,/^}/p' "$HK/diff-size-guard.py" | grep -oE "'[^']+'" | tr -d "'")"
+[ -n "$LOCK69" ] || o2_69="$o2_69 [LOCKFILES did not extract from the hook -- the derived leg checked nothing]"
+for n69 in $LOCK69; do
+  printf '%s' "$DG69" | grep -qF "$n69" || o2_69="$o2_69 execute.md($n69)"
+  printf '%s' "$RD69" | grep -qF "$n69" || o2_69="$o2_69 README.md($n69)"
 done
 # The README row alone additionally states the scope each record is kept at -- the fact IB-013 was
 # retired for, and the one a reader cannot derive from the two limits.

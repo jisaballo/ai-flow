@@ -104,8 +104,10 @@ This applies to factual/technical assumptions — not minor implementation detai
 
 ## Diff Size Guardrail
 
-Two ceilings and one note. All three count **added lines** only — deletions are cheap to review and the
-direction to reward — and all three ignore test suites, everything under the repository's own
+Two ceilings and one note. The two **ceilings** count **added lines** only — deletions are cheap to
+review and the direction to reward. The **note** is the exception and keeps net growth: it asks whether
+the change *grew* the file, so one the change trims draws nothing, and the number it reports is the
+file's own line count rather than any diff total. All three ignore test suites, everything under the repository's own
 `.ai-flow/`, and dependency lockfiles (`package-lock.json`, `yarn.lock`, `pnpm-lock.yaml`, `Cargo.lock`,
 `poetry.lock`, `Gemfile.lock`). None of the three is code somebody wrote.
 
