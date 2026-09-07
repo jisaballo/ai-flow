@@ -10,6 +10,10 @@
 # The classification below is carried over unchanged in meaning from that guard. No rule about what
 # counts as a secret is invented here; only where the question is asked has moved.
 #
+# Two questions are asked of that index, not one. The first is the path — a name that has never been
+# anything but a secret. The second is the CONTENT the commit would add, because a key pasted into an
+# ordinary source file has an ordinary name and passes every test a name can make.
+#
 # Written in POSIX shell rather than in python3 deliberately. The guard this replaces stands aside when
 # python3 is missing, which is tolerable for something that only ever declines to judge — but a commit
 # hook that cannot start makes git refuse the commit, so an interpreter this file does not need would
@@ -38,6 +42,32 @@ is_secret() {  # $1 = a path as git records it -> 0 when it must not be committe
   return 1
 }
 
+# The second question. Fixed shapes only: a private-key header, and five provider prefixes whose
+# alphabet and length the issuer fixes. Not a measure of randomness — that raises false alarms on
+# fixtures and sample data, and a guard people learn to ignore protects nothing. Measured over this
+# repository's tracked files when these were chosen: zero matches.
+#
+# Each pattern is written so that the pattern's own text is not an instance of it: after `AKIA` the
+# pattern has `[`, which is not in the class that must follow, and the same holds for every other one.
+# That is what keeps this file — and the suite that drives it — committable with the guard active, and a
+# row that stages both is what proves it rather than this paragraph. The alternative, exempting this
+# file's own path, would create a file in which a real secret passed unseen.
+#
+# Two groups rather than one because the refusal names WHICH kind was found. It never prints the matched
+# text: a guard that echoes the secret it caught has copied it into the scrollback, the CI log and the
+# transcript, which is the outcome it exists to prevent.
+KEYSHAPE='-----BEGIN [A-Z ]*PRIVATE KEY-----'
+TOKENSHAPES='AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36}|xox[baprs]-[0-9A-Za-z-]{10,}|sk_live_[0-9A-Za-z]{16,}|AIza[0-9A-Za-z_-]{35}'
+
+adds() {  # $1 = a staged path, $2 = an ERE -> 0 when a line this commit ADDS to it matches
+  # The file header `+++ b/path` is dropped by its trailing space, which a content line cannot carry in
+  # that position: an added line reading `+++foo` arrives as `++++foo`. The one form this drops wrongly
+  # is a line whose own text begins `++ ` — it errs towards a miss, never towards a false refusal.
+  git -c core.quotePath=false diff --cached -U0 --diff-filter=ACMR -- "$1" 2>/dev/null \
+    | grep -v '^+++ ' \
+    | grep -Eq "^[+].*($2)"
+}
+
 # Only what the commit would add or change is read: a deletion records no content, so removing a secret
 # that was committed by mistake must stay possible — refusing that would trap the repository in the
 # state the guard exists to prevent.
@@ -53,7 +83,13 @@ OIFS="$IFS"; IFS='
 for path in $staged; do
   [ -n "$path" ] || continue
   if is_secret "$path"; then
-    danger="$danger  $path
+    danger="$danger  $path (the path is a secrets file)
+"
+  elif adds "$path" "$KEYSHAPE"; then
+    danger="$danger  $path (a line it adds carries a private-key header)
+"
+  elif adds "$path" "$TOKENSHAPES"; then
+    danger="$danger  $path (a line it adds carries a provider token)
 "
   fi
 done
@@ -61,9 +97,10 @@ IFS="$OIFS"
 
 if [ -n "$danger" ]; then
   {
-    echo "BLOCKED: this commit would record a secret or credential file:"
+    echo "BLOCKED: this commit would record a secret:"
     printf '%s' "$danger"
-    echo "  Unstage it and add it to .gitignore. If it truly belongs in the repository, add --no-verify."
+    echo "  Unstage the file, or take the line back out and stage it again. If it truly belongs in the"
+    echo "  repository, add --no-verify."
   } >&2
   exit 1
 fi
