@@ -13,7 +13,15 @@
 #
 # Three facts settle every case, each read rather than inferred:
 #
-#   * the destination is the trunk — the remote ref is exactly refs/heads/main or refs/heads/master.
+#   * the destination is the trunk — the remote ref is exactly the branch this remote DECLARES as its
+#     default. Asked of git rather than inferred from a name: a team whose default branch is called
+#     anything else was measured against a name it does not use, so the guard ran, found nothing to
+#     judge, and stayed quiet. Where nothing declares one — a repository wired up by hand rather than
+#     cloned, or a push addressed to a URL rather than to a remote's name — the fallback candidates
+#     stand in, which leaves such repositories exactly where they were. The cost of asking is stated
+#     rather than hidden: a repository whose declared trunk is something else and that still carries an
+#     old branch called main no longer defends that branch, and --no-verify is the escape either way.
+#
 #     Exact, not a substring and not a trailing segment: git accepts refs/heads/hotfix/main as an
 #     ordinary branch and reports it whole, and an update reaching only refs/remotes/origin/main never
 #     touches the remote's trunk. A widening operation does not hide behind either — when it genuinely
@@ -43,6 +51,45 @@ set -u
 # into an update. The test is therefore on the shape, not on a constant.
 is_absent() { case "${1:-x}" in *[!0]*|"") return 1 ;; *) return 0 ;; esac; }
 
+# The refs that count as this remote's trunk. $1 is the remote's NAME when the push named one and its
+# URL when it did not; nothing local answers for a URL, and that is the fallback path rather than an
+# error.
+#
+# The rule is the diff brake's — global/hooks/diff-size-guard.py, base_ref — and the candidate list
+# below is that function's own list. Restated here rather than shared because a shell hook cannot import
+# it, and held to the original by a harness row that extracts both lists and fails unless they are the
+# same list in the same order: a list restated beside its original drifts, a list a machine compares
+# cannot.
+#
+# It translates rather than copies, because the two answer in different namespaces. The brake answers in
+# refs/remotes/... since it needs a ref to diff against; what git reports here is the destination on the
+# remote, in refs/heads/... The verification is the brake's too, and it is not optional: symbolic-ref
+# answers even when the ref it points at is gone — a dangling origin/HEAD after a renamed default branch
+# — and accepting that unverified would resolve a trunk that does not exist and defend nothing, in
+# silence, which is the exact failure this guard was rewritten to remove.
+#
+# The candidates are NOT verified against the local repository the way the brake verifies its own. The
+# brake needs a ref that exists to measure from; this needs a name to compare against, and a checkout
+# that happens not to hold main locally would otherwise stop defending main on the remote.
+trunks() {
+  rp="refs/remotes/${1:-}/"
+  ref="$(git symbolic-ref "${rp}HEAD" 2>/dev/null)" || ref=""
+  if [ -n "$ref" ] && git rev-parse --verify --quiet "$ref" >/dev/null 2>&1; then
+    printf 'refs/heads/%s\n' "${ref#"$rp"}"
+    return 0
+  fi
+  for cand in main master; do
+    printf 'refs/heads/%s\n' "$cand"
+  done
+}
+
+is_trunk() {  # $1 = the ref git reports for the remote side -> 0 when it is this remote's trunk
+  for t in $TRUNKS; do
+    [ "${1:-}" = "$t" ] && return 0
+  done
+  return 1
+}
+
 # The input is read twice — once here and once by whatever hook this repository had before the engine's
 # arrived — so it is held rather than consumed. A stream cannot be rewound, and a chained hook handed an
 # empty stdin would allow everything while appearing to run.
@@ -52,13 +99,12 @@ is_absent() { case "${1:-x}" in *[!0]*|"") return 1 ;; *) return 0 ;; esac; }
 # the chained hook a truncated stream. There is nothing here to run out of: git sends one line per ref.
 BUF="$(cat)"
 
+TRUNKS="$(trunks "${1:-}")"
+
 verdict=""
 held=""
 while read -r lref lsha rref rsha; do
-  case "${rref:-}" in
-    refs/heads/main|refs/heads/master) ;;
-    *) continue ;;
-  esac
+  is_trunk "${rref:-}" || continue
   if is_absent "${lsha:-}"; then
     verdict="deleting $rref on the remote"
     break

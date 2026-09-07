@@ -6425,6 +6425,110 @@ OWN
   else
     bad "a repository's own hook is run once and its refusal stands (exit $rc, own hook ran ${runs:-0}x, heard=$heard, said: $out)"
   fi
+
+  # --- the trunk the remote DECLARES, not the trunk that is called main ----
+  # Every fixture above is built with `init` + `remote add`, which leaves refs/remotes/origin/HEAD
+  # absent — so all of them exercise the FALLBACK. This one asks the remote, as a clone would.
+  mkdecl33() {  # $1 = fixture name, $2 = the branch the remote declares -> remote.git + work
+    d33="$T33/$1"; rm -rf "$d33"; mkdir -p "$d33"
+    git init -q --bare "$d33/remote.git"
+    git init -q "$d33/work"
+    git -C "$d33/work" symbolic-ref HEAD refs/heads/main
+    git -C "$d33/work" config user.email t@t.t
+    git -C "$d33/work" config user.name t
+    git -C "$d33/work" config commit.gpgsign false
+    git -C "$d33/work" config push.default current
+    printf 'a\n' > "$d33/work/f.txt"
+    git -C "$d33/work" add -A >/dev/null 2>&1
+    git -C "$d33/work" commit -q -m one
+    git -C "$d33/work" remote add origin "$d33/remote.git"
+    git -C "$d33/work" branch -q "$2" main
+    git -C "$d33/work" -c core.hooksPath="$NOHOOK" push -q origin main "$2"
+    git -C "$d33/remote.git" symbolic-ref HEAD "refs/heads/$2"
+    git -C "$d33/work" -c core.hooksPath="$NOHOOK" remote set-head origin -a >/dev/null 2>&1
+    git -C "$d33/work" config core.hooksPath "$GHK"
+  }
+
+  mkdecl33 decl develop
+  git -C "$T33/decl/work" checkout -q develop
+  printf 'x\n' >> "$T33/decl/work/f.txt"
+  git -C "$T33/decl/work" commit -qam two
+  free33 decl push -q origin develop
+  git -C "$T33/decl/work" commit -q --amend -m two-rewritten
+  git -C "$T33/decl/work" checkout -q main
+  b33="$(ref33 decl develop)"
+  out="$(run33 decl push --force origin develop)"; rc=$?; a33="$(ref33 decl develop)"
+  case "$out" in *"rewriting refs/heads/develop"*) named=1 ;; *) named=0 ;; esac
+  case "$out" in *"--no-verify"*) esc=1 ;; *) esc=0 ;; esac
+  if [ "$rc" != 0 ] && [ "$b33" = "$a33" ] && [ "$named" = 1 ] && [ "$esc" = 1 ]; then
+    ok "a rewrite of the branch the remote declares as its trunk is refused, naming the escape"
+  else
+    bad "a rewrite of the branch the remote declares as its trunk is refused, naming the escape (exit $rc, remote $b33 -> $a33, named=$named escape=$esc, said: $out)"
+  fi
+
+  # Git protects the branch a remote's HEAD points at from deletion on its own, so the exit code alone
+  # would pass without this guard existing. The refusal's own wording is what makes this row ours.
+  out="$(run33 decl push origin --delete develop)"; rc=$?
+  case "$out" in *"deleting refs/heads/develop"*) named=1 ;; *) named=0 ;; esac
+  if [ "$rc" != 0 ] && [ "$named" = 1 ] && [ "$(ref33 decl develop)" != none ]; then
+    ok "a deletion of the branch the remote declares as its trunk is refused by this guard"
+  else
+    bad "a deletion of the branch the remote declares as its trunk is refused by this guard (exit $rc, named=$named, said: $out)"
+  fi
+
+  # The accepted loss, asserted from the permission side. Unasserted, a loss the operator chose becomes
+  # a protection nobody chose, and nothing would ever say so.
+  printf 'y\n' >> "$T33/decl/work/f.txt"
+  git -C "$T33/decl/work" commit -qam three
+  free33 decl push -q origin main
+  git -C "$T33/decl/work" commit -q --amend -m three-rewritten
+  b33="$(ref33 decl main)"
+  out="$(run33 decl push --force origin main)"; rc=$?; a33="$(ref33 decl main)"
+  if [ "$rc" = 0 ] && [ "$b33" != "$a33" ] && [ "$a33" != none ]; then
+    ok "an old main beside a declared develop trunk is rewritable, and the remote moves"
+  else
+    bad "an old main beside a declared develop trunk is rewritable, and the remote moves (exit $rc, remote $b33 -> $a33, said: $out)"
+  fi
+
+  # A DANGLING declaration — symbolic-ref answers for a branch that is gone. Accepting it unverified
+  # resolves a trunk that does not exist, and a guard defending nothing is silent about it.
+  mkdecl33 dangle develop
+  git -C "$T33/dangle/remote.git" symbolic-ref HEAD refs/heads/main
+  free33 dangle push -q origin :develop
+  git -C "$T33/dangle/work" update-ref -d refs/remotes/origin/develop 2>/dev/null
+  diverge33 dangle
+  b33="$(ref33 dangle main)"
+  out="$(run33 dangle push --force origin main)"; rc=$?; a33="$(ref33 dangle main)"
+  case "$out" in *"rewriting refs/heads/main"*) named=1 ;; *) named=0 ;; esac
+  if [ "$rc" != 0 ] && [ "$b33" = "$a33" ] && [ "$named" = 1 ]; then
+    ok "a dangling declaration falls back to the brake's candidates rather than defending nothing"
+  else
+    bad "a dangling declaration falls back to the brake's candidates rather than defending nothing (exit $rc, remote $b33 -> $a33, said: $out)"
+  fi
+
+  # Pushed by URL: what the hook receives is not a remote name and nothing local answers for it. The
+  # fallback path, not an error.
+  mkpair33 byurl main; diverge33 byurl
+  b33="$(ref33 byurl main)"
+  out="$(sh33 byurl "git push --force '$T33/byurl/remote.git' main")"; rc=$?; a33="$(ref33 byurl main)"
+  case "$out" in *"rewriting refs/heads/main"*) named=1 ;; *) named=0 ;; esac
+  if [ "$rc" != 0 ] && [ "$b33" = "$a33" ] && [ "$named" = 1 ]; then
+    ok "a push addressed by URL falls back rather than failing to resolve"
+  else
+    bad "a push addressed by URL falls back rather than failing to resolve (exit $rc, remote $b33 -> $a33, said: $out)"
+  fi
+
+  # Derived from BOTH sources, on the idiom at :1743. Change either list and this row fails; a list
+  # restated beside the original drifts, a list read out of it cannot.
+  BRAKE33="$ROOT/global/hooks/diff-size-guard.py"
+  bcand33="$(sed -n "s/.*for cand in (\(.*\)):.*/\1/p" "$BRAKE33" | tr -d "\"'" | tr -d ' ' | tr ',' ' ' | tr -s ' ')"
+  hcand33="$(sed -n "s/^[[:space:]]*for cand in \(.*\); do.*/\1/p" "$GHK/pre-push" | tr -s ' ')"
+  bcand33="${bcand33% }"; hcand33="${hcand33% }"
+  if [ -n "$bcand33" ] && [ "$bcand33" = "$hcand33" ]; then
+    ok "the push guard's fallback candidates are the brake's own, in the brake's order"
+  else
+    bad "the push guard's fallback candidates are the brake's own, in the brake's order (brake: [$bcand33], hook: [$hcand33])"
+  fi
 else
   echo "  [skip] trunk-defence checks (git unavailable)"
 fi
@@ -6631,6 +6735,87 @@ OWN34
     ok "a repository's own commit hook is run once and its refusal stands"
   else
     bad "a repository's own commit hook is run once and its refusal stands (exit $rc, ran ${runs34:-0}x, heard=$heard34, said: $out)"
+  fi
+
+  # --- the lines a commit would ADD ---------------------------------------
+  # Every literal below is built at a boundary the shapes cannot cross, so this file stays committable
+  # with the guard active — the precedent is at :4023,4052. The shapes are never echoed on failure
+  # either: a guard that prints the secret it caught has copied it into the scrollback.
+  PK34="$(printf -- '-----BEGIN RSA PRIVATE%s' ' KEY-----')"
+  AWS34="$(printf 'AKIA%s' 'ABCDEFGHIJKLMNOP')"
+  GH34="$(printf 'ghp%s' '_0123456789abcdef0123456789abcdef0123')"
+  SL34="$(printf 'xoxb%s' '-000000000000-000000000000-abcdefghijkl')"
+  ST34="$(printf 'sk_live%s' '_0123456789abcdef')"
+  GO34="$(printf 'AIza%s' '0123456789abcdefghij0123456789abcde')"
+
+  mkrepo34 content
+  why34=""; i34=0
+  mkdir -p "$T34/content/src"
+  for s34 in "$PK34" "$AWS34" "$GH34" "$SL34" "$ST34" "$GO34"; do
+    i34=$((i34+1))
+    printf 'const t = "%s";\n' "$s34" > "$T34/content/src/app.ts"
+    git -C "$T34/content" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+    b34="$(head34 content)"
+    out="$(sh34 content "git commit -m pasted")"; rc=$?
+    { [ "$rc" != 0 ] && [ "$b34" = "$(head34 content)" ]; } || why34="$why34 [shape $i34 -> exit $rc]"
+    # The refusal must be this guard's AND must name the file. Asserting the path alone is satisfied by
+    # git's own "create mode ... src/app.ts" on a commit that went through.
+    case "$out" in *"BLOCKED:"*) ;; *) why34="$why34 [shape $i34 -> guard did not speak]" ;; esac
+    case "$out" in *"BLOCKED:"*"src/app.ts"*) ;; *) why34="$why34 [shape $i34 -> file not named in the refusal]" ;; esac
+    case "$out" in *"--no-verify"*) ;; *) why34="$why34 [shape $i34 -> escape not named]" ;; esac
+    git -C "$T34/content" -c core.hooksPath="$NOHOOK34" rm -q -f --cached src/app.ts >/dev/null 2>&1
+    rm -f "$T34/content/src/app.ts"
+  done
+  [ -z "$why34" ] && ok "a commit that would add a private-key header or a provider token is refused, and names the file" \
+                  || bad "a commit that would add a private-key header or a provider token is refused, and names the file ($why34)"
+
+  # The negative direction. Without it the row above is satisfied by a guard that refuses everything,
+  # and a guard that refuses everything is one people learn to bypass.
+  mkrepo34 nearmiss
+  why34=""; i34=0
+  for s34 in "AKIA" "$(printf 'sk_live%s' '_short')" "a private key belongs in the keychain" \
+             "$(printf 'ghp%s' '_tooshort')" "AIza" "-----BEGIN CERTIFICATE-----"; do
+    i34=$((i34+1))
+    printf 'note: %s\n' "$s34" > "$T34/nearmiss/notes.md"
+    git -C "$T34/nearmiss" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+    b34="$(head34 nearmiss)"
+    out="$(sh34 nearmiss "git commit -m ordinary")"; rc=$?
+    { [ "$rc" = 0 ] && [ "$b34" != "$(head34 nearmiss)" ]; } || why34="$why34 [near miss $i34 -> exit $rc, said: $out]"
+  done
+  [ -z "$why34" ] && ok "content that merely reads like a secret is committed" \
+                  || bad "content that merely reads like a secret is committed ($why34)"
+
+  # Only added lines are read, for the same reason a deleted path is not judged: refusing the removal
+  # traps the repository in the state the guard exists to prevent.
+  mkrepo34 removal
+  mkdir -p "$T34/removal/src"
+  printf 'const t = "%s";\n' "$PK34" > "$T34/removal/src/app.ts"
+  git -C "$T34/removal" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+  git -C "$T34/removal" -c core.hooksPath="$NOHOOK34" commit -q -m mistake
+  printf 'const t = "";\n' > "$T34/removal/src/app.ts"
+  git -C "$T34/removal" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+  b34="$(head34 removal)"
+  out="$(sh34 removal "git commit -m 'remove the key'")"; rc=$?
+  if [ "$rc" = 0 ] && [ "$b34" != "$(head34 removal)" ]; then
+    ok "a staged change that only removes such content still commits"
+  else
+    bad "a staged change that only removes such content still commits (exit $rc, said: $out)"
+  fi
+
+  # The row that makes the guard usable in the repository that ships it: a by-content check whose own
+  # source or whose own fixtures it refuses is a machine that cannot commit its own repair.
+  mkrepo34 selfsrc
+  mkdir -p "$T34/selfsrc/hooks" "$T34/selfsrc/test"
+  cp "$GHK34/pre-commit" "$T34/selfsrc/hooks/pre-commit"
+  cp "$GHK34/pre-push" "$T34/selfsrc/hooks/pre-push"
+  cp "$ROOT/test/validate.sh" "$T34/selfsrc/test/validate.sh"
+  git -C "$T34/selfsrc" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+  b34="$(head34 selfsrc)"
+  out="$(sh34 selfsrc "git commit -m 'the guard and its suite'")"; rc=$?
+  if [ "$rc" = 0 ] && [ "$b34" != "$(head34 selfsrc)" ]; then
+    ok "the commit guard's own source and the suite that drives it commit with the guard active"
+  else
+    bad "the commit guard's own source and the suite that drives it commit with the guard active (exit $rc, said: $out)"
   fi
 else
   echo "  [skip] commit-recording checks (git unavailable)"
