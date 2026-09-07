@@ -3640,7 +3640,12 @@ printf '%s' "$EXE22" | grep -qiE 'convenience over this procedure|is a convenien
 # only in the commands, so a run that reaches the protocol because the command is not installed
 # performed no check at all, and verify.md's own report template demanded a fact its procedure could not
 # produce. Same discipline: cite, restate nothing.
-for pr in understand plan verify; do
+# `execute` joined this loop DURING VERIFY, once its protocol became a full member of the class: its head
+# now carries the siblings' identical sentence about the manual run and states outright that it names no
+# accepted position of its own. The list was not extended when that happened, so the negative half -- the
+# one that keeps the accepted set from growing a second home -- was asserted for three protocols of four,
+# and the fourth was the one this task had just rewritten.
+for pr in understand plan execute verify; do
   pf="global/protocols/$pr.md"
   if [ ! -f "$pf" ]; then
     bad "the $pr protocol cites the phase precondition (file missing)"
@@ -15258,6 +15263,45 @@ fi
 [ -z "$a1_67" ] && ok "A1 control: the engine ships exactly the phase-command set its installer delivers" \
                 || bad "A1 control: the engine ships exactly the phase-command set its installer delivers ($a1_67)"
 
+# A1b -- ADDED DURING VERIFY, and it is the other half of what A1 claimed. A1 asserts the set in both
+# directions between the installer's list, the shipped directory and the line the installer prints, and
+# its own comment justified that reach by stating the set was "consumed twice and asserted nowhere". The
+# set is consumed FIVE times: those two, plus the tree diagram of what lands in `~/.claude`, plus the
+# README's own table of the phase commands, plus the line getting-started tells a new adopter. All three
+# documents were exactly correct before this task and were falsified by it -- the front door named a
+# command set the installer no longer delivered, and A1 was green throughout, because A1 cannot see a
+# document.
+#
+# Its own row rather than three more legs on A1: A1's assert direction was frozen at Conform over the
+# installer and the directory, and a document is a new surface class rather than a sharper reading of
+# those two. Keyed on the PHASE commands (`C67_SKILLS`) and not on the installer's whole list, because the
+# README's table is a table of phases and `discover` is deliberately not in it -- a leg over `SKILLS`
+# would demand a row the table is right not to have.
+RDM67="$ROOT/README.md"
+GST67="$ROOT/docs/getting-started.md"
+a1b_67=""
+for f1b in "$RDM67" "$GST67"; do
+  [ -s "$f1b" ] || a1b_67="$a1b_67 [${f1b#$ROOT/} is missing or empty, so this row would report on nothing]"
+done
+if [ -s "$RDM67" ] && [ -s "$GST67" ]; then
+  # The tree diagram of the installed engine, and the adopter's first list of what the skills give them:
+  # both enumerate, so both go stale silently. Located by their own anchors rather than by line number.
+  TREE67="$(grep -E '^.{0,8}skills/ ' "$RDM67" | head -1)"
+  GSL67="$(grep -F 'The skills give you' "$GST67" | head -1)"
+  [ -n "$TREE67" ] || a1b_67="$a1b_67 [README's installed-engine tree no longer has a skills line to check]"
+  [ -n "$GSL67" ]  || a1b_67="$a1b_67 [getting-started no longer tells the adopter what the skills give them]"
+  for n1b in $C67_SKILLS; do
+    [ -z "$TREE67" ] || printf '%s' "$TREE67" | grep -q "/$n1b" \
+      || a1b_67="$a1b_67 [README's tree of the installed engine does not name /$n1b]"
+    [ -z "$GSL67" ] || printf '%s' "$GSL67" | grep -q "/$n1b" \
+      || a1b_67="$a1b_67 [getting-started does not tell the adopter about /$n1b]"
+    grep -qE "^\| *\`/$n1b\`" "$RDM67" \
+      || a1b_67="$a1b_67 [README's table of the phase commands has no row for /$n1b]"
+  done
+fi
+[ -z "$a1b_67" ] && ok "A1b every document that declares the command set names every phase command" \
+                 || bad "A1b every document that declares the command set names every phase command ($a1b_67)"
+
 # A2 -- per command, over the step that runs at its ENTRY. The route is a KEEP leg, green from the start:
 # all three siblings already cite the block. What is RED is the pair of negatives -- the shared
 # obligations still standing in each command, which after this task have exactly one home. Scoped to step
@@ -15285,12 +15329,21 @@ done
 # A3 -- the home, counted rather than merely found. The positive half is green today; what this row adds
 # is that the count of commands carrying the same obligation is ZERO. File-wide on purpose here, unlike
 # A2: "in no phase command" is a fact about the whole file, not about one step of it.
+# The count covers BOTH shared obligations, and the second one was added during Verify to match the
+# assert direction this row was frozen with -- "the count of commands carrying the same obligation must be
+# zero", of a bullet that obliges all three. As implemented it counted the SOURCE phrase only, while the
+# absent-level default was forbidden by A2 alone, which is scoped to step 2. So the sentence this task cut
+# from three commands could have been restored verbatim at step 3 of any of them with both rows green --
+# the second home regrowing one step below where anything was looking.
 n67=0; car67=""
 for s67 in $C67_SKILLS; do
   f67="$ROOT/global/skills/$s67/SKILL.md"
   [ -f "$f67" ] || continue
   if grep -qiE 'sheet it was read from|read from the sheet|the sheet it came from' "$f67"; then
-    n67=$((n67+1)); car67="$car67 global/skills/$s67/SKILL.md"
+    n67=$((n67+1)); car67="$car67 global/skills/$s67/SKILL.md(source)"
+  fi
+  if grep -qiE '(declares no|no level|no autonomy|absent)[^.]*Guided' "$f67"; then
+    n67=$((n67+1)); car67="$car67 global/skills/$s67/SKILL.md(default)"
   fi
 done
 a3_67=""
@@ -15300,7 +15353,7 @@ printf '%s' "$AUT67" | grep -qiE 'source it read|where it read|and the source' \
   || a3_67="$a3_67 [the protocol's bullet no longer obliges the command to name the source]"
 printf '%s' "$AUT67" | grep -qi 'default' \
   || a3_67="$a3_67 [the protocol's bullet no longer obliges the command to announce the default]"
-[ "$n67" -eq 0 ] || a3_67="$a3_67 [$n67 command(s) keep their own copy of the source obligation:$car67]"
+[ "$n67" -eq 0 ] || a3_67="$a3_67 [$n67 second home(s) of a shared obligation, which the cut left with exactly one each:$car67]"
 [ -z "$a3_67" ] && ok "A3 the shared obligations of the supervision read live in the protocol and in no command" \
                 || bad "A3 the shared obligations of the supervision read live in the protocol and in no command ($a3_67)"
 

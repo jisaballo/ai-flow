@@ -251,7 +251,7 @@ contradict it. Two or more sheets and this case falls straight to rung 3.
 
 The ladder above answers *which task*. This answers *whether this phase may run on it*, and it is
 stated here for the same reason the ladder is: four commands each holding their own copy of the
-accepted positions is three copies that drift, and a command that accepts what another refuses is
+accepted positions is four copies that drift, and a command that accepts what another refuses is
 worse than no check at all.
 
 A phase command reads three things — after it has resolved its task, and before it does any of the

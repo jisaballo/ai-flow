@@ -124,7 +124,7 @@ your-project/
 │   ├── protocols/               # Phase protocols (the framework core)
 │   ├── ralph/                   # AFK loop runner + prompts
 │   └── scripts/                 # ceremony mechanisms (front seeding)
-├── skills/                      # /understand, /plan, /verify, /discover
+├── skills/                      # /understand, /plan, /execute, /verify, /discover
 ├── workflows/verify-review.js   # 5-auditor verify workflow
 └── hooks/                       # Guardrails (incl. the engine drift-check)
 ```
@@ -187,6 +187,7 @@ The framework ships optional global tooling under `global/`, installed to `~/.cl
 |-------|------|
 | `/understand` | Understand phase — decompose, investigate, write `understand.md` with Verifiable Criteria |
 | `/plan` | Plan + Conform phase — max-3-step `plan.md`, then failing conformance test stubs |
+| `/execute` | Execute phase — work the approved plan step by step against the frozen contracts, then Spec Sync |
 | `/verify` | Verify phase — criterion audit, then the `verify-review` workflow |
 
 **verify-review workflow** (`global/workflows/verify-review.js` → `~/.claude/workflows/`) — a deterministic multi-agent review invoked by `/verify`: five auditors (business contract / coverage / security / architecture / simplicity & structure) in parallel over the task diff, then adversarial refutation of every HIGH finding — the level that blocks — so only genuine blockers survive; MEDIUM and LOW come back unadjudicated for the verify phase to triage. Each axis is judged against the engine's own stack-agnostic list plus whatever checklist the project declared on top of it. The auditors only read; one serialised prover applies the mutations they proposed, afterwards and alone — the rule it works under is [`global/protocols/verify.md`](global/protocols/verify.md), *Mutation and the Working Copy*.

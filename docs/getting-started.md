@@ -77,7 +77,7 @@ cp /tmp/ai-flow/global/hooks/git/pre-* ~/.claude/hooks/git/ && chmod +x ~/.claud
 git config --global core.hooksPath ~/.claude/hooks/git   # skip if you already set one
 ```
 
-The installer **registers the hooks for you** — it merges `global/hooks/settings.hooks.json` into the `hooks` key of `~/.claude/settings.json` idempotently (python3), preserving your other settings and your own hooks. The manual `cp` above is only needed if you skipped the tooling step or python3 is unavailable. See [`global/hooks/README.md`](../global/hooks/README.md). The skills give you `/understand`, `/plan`, `/verify`, and `/discover`.
+The installer **registers the hooks for you** — it merges `global/hooks/settings.hooks.json` into the `hooks` key of `~/.claude/settings.json` idempotently (python3), preserving your other settings and your own hooks. The manual `cp` above is only needed if you skipped the tooling step or python3 is unavailable. See [`global/hooks/README.md`](../global/hooks/README.md). The skills give you `/understand`, `/plan`, `/execute`, `/verify`, and `/discover`.
 
 ### 4. Customize for your project
 
