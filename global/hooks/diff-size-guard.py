@@ -12,7 +12,7 @@ the model is a measured fact this file does not own (see `global/hooks/README.md
 note carries both halves in one object, so neither audience loses anything.
 
 No-op outside ai-flow projects."""
-import sys, json, subprocess, re, os, stat
+import sys, json, subprocess, re, os, stat, hashlib
 
 EVENT = 'UserPromptSubmit'  # the note's event; the ceilings keep `Stop`, where a refusal is possible
 STOP_EVENT = 'Stop'         # named, because a refusal is issued only on a POSITIVE match against it
@@ -184,7 +184,32 @@ def large_grown_files(files: dict, root: str, threshold: int, sizes: dict) -> li
     return found
 
 
-TASK_KEY = ''  # the task ceiling's record is the line with no path — a key no file can claim
+def step_scope(root: str) -> str:
+    """What the step measure resets on: the commit the checkout is on.
+
+    `--verify --quiet`, never a bare `rev-parse HEAD`. In a repository with no commit the bare form exits
+    128 but PRINTS the literal string `HEAD` on stdout, and `git` above returns stdout while ignoring the
+    status — so the bare form hands back `HEAD` as a scope that looks usable and the fallback here is
+    never reached. Measured on an empty repository, not assumed."""
+    return git(root, 'rev-parse', '--verify', '--quiet', 'HEAD').strip() or 'no-head'
+
+
+def task_scope(root: str) -> str:
+    """What the two task-lived measures reset on: the checkout's set of open task folders.
+
+    A fingerprint of the DIRECTORY NAMES and never of their contents, which is the whole of the design:
+    it answers *did the task set change* without ever answering *which task is this*. Resolving the
+    latter is one document's rule with one implementation, and hooks share no module — so any other
+    route here would have been a second copy of it, drifting against the first with nothing to notice.
+
+    A folder opening or closing re-arms the measures whether or not the change was a close. That is the
+    direction that speaks, and speaking is the failure this record can afford."""
+    d = os.path.join(root, '.ai-flow', 'artifacts')
+    try:
+        names = sorted(n for n in os.listdir(d) if os.path.isdir(os.path.join(d, n)))
+    except Exception:
+        names = []
+    return hashlib.sha1('\n'.join(names).encode('utf-8', 'replace')).hexdigest()[:12]
 
 
 def ack_path(root: str):
@@ -195,10 +220,12 @@ def ack_path(root: str):
 
 
 def acknowledged(path) -> dict:
-    """{key: count last reported}, one `count<TAB>path` line each, the task ceiling under TASK_KEY. A
-    record written before files were recorded holds one bare integer, and that line partitions to the
-    same key — so it is read, not migrated. Unreadable or absent reads as nothing reported, the direction
-    that speaks; one bad line loses that line, never the lines after it."""
+    """{key: count last reported}, one `count<TAB>key` line each. Every key carries the scope its measure
+    resets on — `step:<commit>`, `task:<fingerprint>`, `file:<fingerprint>:<path>` — so an entry whose
+    scope has passed is read and matches nothing, and `record` drops it. A record written before scopes
+    existed partitions to a key no scope can produce and is inert by the same rule: ignored, never
+    migrated. Unreadable or absent reads as nothing reported, the direction that speaks; one bad line
+    loses that line, never the lines after it."""
     spoken = {}
     try:
         with open(path) as f:
@@ -281,14 +308,26 @@ def main():
     except Exception:
         sys.exit(0)
 
-    # The task total only ever grows — committing raises it and nothing lowers it — so without an
-    # acknowledgement the notice would block the end of every turn for the rest of the task. Firing
-    # records the total; it speaks again only once the branch has grown another step's worth past it.
-    # A large file stays in the diff for the rest of the task too, so the note keeps the same rule, in
-    # the same record. Its first speaking is unconditional — measured against zero it would demand a
-    # step's worth of growth as well, and a project with a low threshold would never hear it.
+    # All three speakers acknowledge, by one rule: once, then again only after another step's worth of
+    # growth. Each measure would otherwise block the end of every turn for as long as its subject sits
+    # there — the task total only ever grows, a large file stays in the diff for the rest of the task,
+    # and an uncommitted step stays uncommitted until it is committed, which is what produced 80 of the
+    # 81 firings measured across this engine's own transcripts. The note's first speaking is
+    # unconditional: measured against zero it would demand a step's worth of growth as well, and a
+    # project with a low threshold would never hear it.
+    #
+    # And every record is SCOPED to what its measure resets on, because "say it once" and "stop speaking"
+    # are the same mechanism read at two lifetimes. A step record kept past its commit disarms the step
+    # ceiling for good — the step total returns to 0 at every commit while `outgrown` assumes a measure
+    # that only climbs, so the next oversized step is compared against a total it can never beat.
     ack_file = ack_path(root)
     spoken = acknowledged(ack_file) if ack_file else {}
+    sscope, tscope = step_scope(root), task_scope(root)
+    step_key, task_key = f"step:{sscope}", f"task:{tscope}"
+    file_prefix = f"file:{tscope}:"
+
+    def in_scope(key: str) -> bool:
+        return key in (step_key, task_key) or key.startswith(file_prefix)
 
     def record(reported):
         """Mark ONLY what this run actually delivered.
@@ -301,6 +340,13 @@ def main():
         if not reported or not ack_file:
             return
         spoken.update(reported)
+        # Only current-scope entries survive the rewrite, which is what makes an expired record expire:
+        # a step entry from a previous commit, a task entry from a different set of open tasks, and any
+        # line written before scopes existed all fail this test and are gone. Dropping them is not
+        # housekeeping — without it the file grows one line per commit for the life of the checkout, and
+        # a pre-scope line goes on silencing whatever it silenced when it was written.
+        for dead in [k for k in spoken if not in_scope(k)]:
+            del spoken[dead]
         try:
             with open(ack_file, 'w') as f:
                 f.writelines(f"{n}\t{p}\n" for p, n in sorted(spoken.items()))
@@ -308,7 +354,7 @@ def main():
             pass
 
     if note_half:
-        to_note = [(p, n) for p, n in large if outgrown(spoken.get(p), n)]
+        to_note = [(p, n) for p, n in large if outgrown(spoken.get(file_prefix + p), n)]
         if to_note:
             # ONE object, two audiences: `systemMessage` for the person, who sees exactly what they saw
             # before, and `additionalContext` for the model, which is the actor the note asks to act.
@@ -321,18 +367,19 @@ def main():
             # message nobody received silences it for the rest of the session -- and writing the mark first
             # is that same failure with a shorter window: a closed pipe between the two lines leaves the
             # file recorded as spoken and the note never delivered.
-            record(dict(to_note))
+            record({file_prefix + p: n for p, n in to_note})
         sys.exit(0)
 
     notices = []
-    if step_total > STEP_THRESHOLD:
+    step_notice = step_total > STEP_THRESHOLD and outgrown(spoken.get(step_key), step_total)
+    if step_notice:
         notices.append(
             f"step ceiling exceeded — {step_total} uncommitted LOC (excl. tests, limit {STEP_THRESHOLD})"
         )
     task_notice = (
         task_total is not None
         and task_total > TASK_THRESHOLD
-        and outgrown(spoken.get(TASK_KEY), task_total)
+        and outgrown(spoken.get(task_key), task_total)
     )
     if task_notice:
         notices.append(
@@ -342,7 +389,12 @@ def main():
         )
 
     if notices:
-        record({TASK_KEY: task_total} if task_notice else {})
+        marks = {}
+        if step_notice:
+            marks[step_key] = step_total
+        if task_notice:
+            marks[task_key] = task_total
+        record(marks)
         print(
             "Diff guardrail: " + "; ".join(notices) + ". "
             "Per your rule, pause and evaluate: is this intentionally large, or should the step be "
