@@ -15614,11 +15614,12 @@ GC68="$ROOT/global/CLAUDE.md"
 # checks' headers and not this task's to make.
 SET68="$(ls "$ROOT"/global/protocols/*.md 2>/dev/null) $(ls "$ROOT"/global/skills/*/SKILL.md 2>/dev/null) $GC68 $ROOT/template/CLAUDE.md"
 
-# The section, kept as LINES with trailing blanks dropped -- A1 counts them, so this one region must not
-# be flattened the way every prose region in this file is.
+# The section, kept as LINES with trailing blanks dropped -- the form legs below read line SHAPE (a table
+# row, a bullet, a sub-heading), so this one region must not be flattened the way every prose region in
+# this file is. The SIZE leg counts words, not these lines: see A1.
 MD68="$(awk '/^## Model Delegation/{f=1} (f && /^## / && !/^## Model Delegation/){f=0} f' "$EX68" 2>/dev/null \
   | awk 'NF{n=NR} {l[NR]=$0} END{for(i=1;i<=n;i++) print l[i]}')"
-MDN68="$(printf '%s\n' "$MD68" | grep -c '' | tr -d ' ')"
+MDW68="$(printf '%s\n' "$MD68" | wc -w | tr -d ' ')"
 
 # A file STATES the polarity when one of its PARAGRAPHS pairs a delegation term, a preference term and
 # the unit being decided. A paragraph and not a line, because the statement spans a lead sentence and the
@@ -15652,19 +15653,37 @@ e0_68=""
 [ -f "$GC68" ] || e0_68="$e0_68 [the manual is not on disk]"
 [ -z "$e0_68" ] && ok "E0 every region C68 reads extracts" || bad "E0 every region C68 reads extracts ($e0_68)"
 
-# A1 -- the section is at most 18 lines and states the choice in exactly one form.
+# A1 -- the section is at most 210 words and states the choice in exactly one form.
+#
+# WORDS, not lines. A physical-line count over prose is typographic: this file says so itself where it
+# rejects the same metric elsewhere, and it is wrong in both directions -- re-wrapping these same words
+# reddens the row with the content unchanged, while the retired 37-line content restored as four
+# unwrapped lines passes it. The region's longest neighbouring line here is 681 characters, so the
+# unwrapped regrowth is this file's own other convention rather than a contrived case.
+#
+# The budget: the section was 266 words before this task and is 191 after. 210 leaves ~10% for a
+# legitimate clarification and catches the retired content coming back whole -- the factor table costs
+# 68 words (259), the two bullet lists 118 (309), both 186 (377).
+#
+# The two legs are independent and BOTH are needed; neither backstops the other. Measured: a TRIMMED
+# three-row table restored under the prose scores 208 words and passes this leg -- the form leg below is
+# what reddens it. And a pure reflow of the shipped section onto 7 long lines leaves the words at 191,
+# which is the wrap-invariance the line count did not have.
 a1_68=""
-[ "$MDN68" -le 18 ] || a1_68="$a1_68 [the section is $MDN68 lines, over the 18-line budget]"
-# An enumeration structure is a markdown table or a run of three or more consecutive top-level bullets.
-# TWO of them is the duplication this task exists to end -- today the same four factors are a pair of
-# bullet lists AND a four-row table -- and the count is deliberately blind to which form survives.
-enum68=0
-printf '%s\n' "$MD68" | grep -qE '^\|' && enum68=$((enum68+1))
-runs68="$(printf '%s\n' "$MD68" | awk '/^- /{r++; next} {if(r>=3) c++; r=0} END{if(r>=3) c++; print c+0}')"
-enum68=$((enum68 + runs68))
-[ "$enum68" -le 1 ] || a1_68="$a1_68 [the choice is enumerated $enum68 times, so it is still stated in more than one form]"
-[ -z "$a1_68" ] && ok "A1 the section is at most 18 lines and states the choice in one form" \
-                || bad "A1 the section is at most 18 lines and states the choice in one form ($a1_68)"
+[ "$MDW68" -le 210 ] || a1_68="$a1_68 [the section is $MDW68 words, over the 210-word budget]"
+# The form leg counts ENUMERATION STRUCTURES and requires ZERO. The shipped section is prose end to end,
+# and that is the "one form" -- so the honest count is not "at most one enumeration" but none at all.
+# Counting to a ceiling of one was the hole: prose stating the choice PLUS one restored table scores 1
+# and passes, which is exactly the duplication this task exists to end.
+#
+# The detector is wide on purpose, because the narrow one was blind to the cheapest ways back: a run of
+# TWO bullets, an indented bullet, a numbered list. A `###` sub-heading counts too -- the extraction
+# stops only at `## `, so a sub-heading is inside the region, and the three `### How It Works` facts were
+# folded into the prose by this task rather than kept as a fourth heading.
+enum68="$(printf '%s\n' "$MD68" | grep -cE '^\||^[[:space:]]*[-*][[:space:]]|^[[:space:]]*[0-9]+\.[[:space:]]|^###[[:space:]]' | tr -d ' ')"
+[ "$enum68" -eq 0 ] || a1_68="$a1_68 [$enum68 line(s) of the section are a table row, a bullet, a numbered item or a sub-heading, so the choice is stated in more than the one prose form]"
+[ -z "$a1_68" ] && ok "A1 the section is at most 210 words and states the choice in one form" \
+                || bad "A1 the section is at most 210 words and states the choice in one form ($a1_68)"
 
 # A2 -- the inline path may not rest on conversation. A line that NAMES conversation is not the defect:
 # the rewritten section must say out loud that prior conversation is NOT a criterion, and a bare grep
@@ -15692,8 +15711,33 @@ ls "$ROOT"/global/skills/*/SKILL.md >/dev/null 2>&1 \
 [ -z "$a3_68" ] && ok "A3 exactly one installed file states the default, and the sweep sees the phase skills" \
                 || bad "A3 exactly one installed file states the default, and the sweep sees the phase skills ($a3_68)"
 
-# A5 -- the section may not restate the Supervised step-boundary rule. T-098 gave that rule one home and
-# forbade any other surface from stating it, and this section gains a routing sentence in the same edit --
+# A4 -- the hand-off packet names the task's OWN sheet and never the shared roster.
+#
+# The pre-existing sweep over this file (the `execute-agent-input` leg, ~:1219) was the only coverage this
+# fact had, and it is pinned to the literal `CLAUDE.md, STATE.md, understand.md` -- a three-item phrase in
+# one comma order. That order was the old sentence's. The rewritten sentence puts `this protocol` in the
+# second slot, so the regression the leg exists to catch now reads `CLAUDE.md, this protocol, STATE.md,
+# understand.md` and the literal cannot match it: the guard survived the edit and stopped guarding. Proven
+# rather than argued -- swapping the sheet for the roster leaves the whole suite green.
+#
+# So this row keys on the CLAIM and judges both halves of it, over the section rather than the file: the
+# packet must name the task's own sheet, and must name no roster at all. A one-directional check would
+# pass a sentence that names both.
+PKT68="$(printf '%s\n' "$MD68" | grep -i 'delegated agent receives\|agent receives' || true)"
+a4_68=""
+if [ -z "$PKT68" ]; then
+  a4_68="$a4_68 [the section no longer says what a delegated agent receives, so nothing routes it anywhere]"
+else
+  printf '%s' "$PKT68" | grep -q 'artifacts/T-XXX/state.md' \
+    || a4_68="$a4_68 [the hand-off packet does not name the task's own sheet]"
+  printf '%s' "$PKT68" | grep -q 'STATE\.md' \
+    && a4_68="$a4_68 [the hand-off packet routes a delegated agent to the shared roster instead of the task's own sheet]"
+fi
+[ -z "$a4_68" ] && ok "A4 the hand-off packet names the task's own sheet and never the shared roster" \
+                || bad "A4 the hand-off packet names the task's own sheet and never the shared roster ($a4_68)"
+
+# A5 -- the section may not restate the Supervised step-boundary rule. That rule was given a single home
+# elsewhere and no other surface may state it, and this section gains a routing sentence in the same edit --
 # which is the moment a rule about stopping at step boundaries looks like it belongs here.
 a5_68=""
 printf '%s\n' "$MD68" | grep -qiE 'supervised|step[ -]boundary|approves? each step' \
@@ -15713,6 +15757,30 @@ grep -qiE '^[[:space:]]*-[[:space:]]*\*\*>[0-9]+ files' "$GC68" 2>/dev/null \
   && b1_68="$b1_68 [the manual still prefers agents on a file count, pointing the opposite way from the section]"
 [ -z "$b1_68" ] && ok "B1 the one statement of the choice is the Execute protocol's, and the two rivals route or are silent" \
                 || bad "B1 the one statement of the choice is the Execute protocol's, and the two rivals route or are silent ($b1_68)"
+
+# B2 -- and the copy that governs real sessions is judged too.
+#
+# B1 above counts SHIPPED files. The manual a session actually loads is `~/.claude/CLAUDE.md`, which no
+# tool repairs: the installer writes it only when absent and the drift guard excludes it as user-owned.
+# So "exactly one installed file states the default" can be green over the trunk while the file that
+# decides real behaviour states the opposite -- which is precisely what it did, and no row in this block
+# could say so. Four other checks in this file already carry a twin leg for exactly this reason; this is
+# the fifth, kept as its own row rather than folded into B1 so the shipped count and the un-distributed
+# copy keep distinct verdicts.
+#
+# Guarded on existence: a verdict about a manual the host does not own blames a reader for a file they
+# never had.
+TW68="$HOME/.claude/CLAUDE.md"
+if [ -r "$TW68" ]; then
+  b2_68=""
+  [ "$(pol68 "$TW68")" -eq 0 ] || b2_68="$b2_68 [the live manual states the inline-versus-delegate choice, so a real session meets two]"
+  grep -qiE '^[[:space:]]*-[[:space:]]*\*\*>[0-9]+ files' "$TW68" 2>/dev/null \
+    && b2_68="$b2_68 [the live manual still prefers agents on a file count -- port the edit by hand, nothing distributes ~/.claude/CLAUDE.md]"
+  [ -z "$b2_68" ] && ok "B2 the live manual states no rival default" \
+                  || bad "B2 the live manual states no rival default ($b2_68)"
+else
+  echo "  [skip] B2 the live manual states no rival default (no ~/.claude/CLAUDE.md on this host)"
+fi
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]
