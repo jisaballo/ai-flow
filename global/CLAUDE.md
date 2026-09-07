@@ -110,7 +110,6 @@ fact below therefore lives with the mechanism that performs it:
 
 - **On compaction during execution**: Re-read `artifacts/T-XXX/state.md` + `artifacts/T-XXX/plan.md` + the active phase protocol file before continuing
 - **Max 3 steps per plan** is also a context budget rule — plans with >3 steps signal the task should be split
-- **>5 files modified in a task**: Prefer executing steps via Task tool agents (fresh context) over inline execution
 - **STATE.md must stay lean**: the workstream roster and the Quick Tasks Completed table, and nothing else — per-task context lives in the task's own state sheet. Move completed task details to archive promptly
 
 ## Action Boundaries
