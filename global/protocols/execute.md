@@ -14,41 +14,21 @@ declares it and performed by nobody.
 
 ## Model Delegation
 
-The orchestrator (main model running the session) decides execution strategy per step. No rigid rules — holistic assessment.
+The orchestrator decides the strategy for each step, silently and without approval — the plan was
+already approved. When it delegates it says so, and if the agent fails it retakes the step inline
+without asking.
 
-### Inline Execution (orchestrator handles directly)
+**Inline is the default. Delegate a step only where it is fully self-contained and mechanical** — the
+change is specified in the plan with no ambiguity, it needs no design judgment, and nothing the
+orchestrator learned inside this phase's own sitting bears on it. That last clause is the inline
+criterion, and it is not "what the papers hold": a delegated agent receives them, so naming them
+discriminates nothing. It names what the papers do not carry and no session boundary destroys — a
+correction the operator gave during this phase, a diagnosis still open from an earlier step of it.
+Prior conversation is not a criterion: the chain cuts the session at Understand's close and at this
+phase's, so a rule resting on it decides by what has already been thrown away.
 
-Default for most work. Use when:
-- Step requires conversation context or recent decisions
-- Complex logic requiring strong reasoning
-- Orchestrator already has relevant files loaded
-- Debugging or unexpected issues arise
-
-### Agent Delegation (Task tool with a lighter model)
-
-Use when the step is **fully self-contained** and **mechanical**:
-- Rename/refactor across files (find X, replace with Y)
-- Add a field to a model and propagate to related files
-- Update imports, selectors, or constants
-- Changes fully specified in the plan with zero ambiguity
-
-The agent receives: CLAUDE.md, the task's state sheet (`artifacts/T-XXX/state.md`), understand.md, plan.md, execute.md (this protocol), and the specific step to execute.
-
-### How It Works
-
-- **No complexity analysis step** — the orchestrator decides silently per step
-- **No approval of model choice** — the plan was already approved
-- **Transparent in output** — when delegating, mention it: "Delegating step 1 to agent (mechanical change)"
-- **Automatic fallback** — if an agent fails, the orchestrator retakes inline without asking
-
-### What Determines the Choice
-
-| Factor | Inline | Delegate |
-|--------|--------|----------|
-| Reasoning required | Design decisions, new logic, debugging | None — purely mechanical |
-| Context dependency | Needs prior conversation context | Self-contained from plan alone |
-| Risk of misunderstanding | Any ambiguity in the step | Zero ambiguity, fully specified |
-| File familiarity | Orchestrator already read the files | Fresh read is fine |
+A delegated agent receives CLAUDE.md, this protocol, the task's own sheet (`artifacts/T-XXX/state.md`),
+understand.md, plan.md, and the step to execute.
 
 ## Skills per Step — Lazy Load
 
