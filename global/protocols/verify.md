@@ -144,7 +144,7 @@ which case it is. What is never acceptable is a count that leaves the reader una
 
 ## Skills Feedback
 
-As part of the audit, answer two questions: were the skills declared in plan.md actually consulted during Execute? Did any step need a skill that was NOT declared? Record misses under `## Gaps Found` in verify.md. Recurring misses for the same domain are the evidence that justifies a hard rule (a skill hard-wired in CLAUDE.md Action Boundaries) — do not add hard rules without this evidence.
+As part of the audit, answer two questions: were the skills declared in plan.md actually consulted during Execute? Did any step need a skill that was NOT declared? Record misses under `## Gaps Found` in verify.md. Recurring misses for the same domain are the evidence that justifies a hard rule (a skill hard-wired into the Always tier — Execute protocol > Deviation Rules During Execution) — do not add hard rules without this evidence.
 
 ## Auditing Behavioral Criteria (GIVEN/WHEN/THEN)
 

@@ -117,7 +117,7 @@ This phase bridges planning and execution. The tests become the contract.
 - **Bounded Retry**: 3 failures on the same error → stop and escalate
 - **Replan Gate**: If an assumption breaks → stop and revise the plan
 - **Diff Size**: >150 added lines uncommitted in a single step, or >400 on the branch since its base → pause and evaluate. Test suites, the repository's own `.ai-flow/` and dependency lockfiles (`package-lock.json` and its siblings) are not counted
-- **Action Boundaries**: Some changes always need user approval
+- **Action Boundaries**: the two execution-time tiers, stated in the Execute protocol > `## Deviation Rules During Execution`
 
 **Post-Execute**: Spec Sync reviews the diff against understand.md and documents any divergences.
 
