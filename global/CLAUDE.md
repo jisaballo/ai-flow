@@ -106,6 +106,16 @@ fact below therefore lives with the mechanism that performs it:
 3. **If artifact does NOT exist**: Proceed normally with the phase
 4. **NEVER blindly overwrite** an existing artifact — it may contain decisions from a previous session
 
+**This one is now a rail, not only a habit.** `~/.claude/hooks/artifact-write-guard.py` refuses a `Write`
+naming an existing `understand.md`, `plan.md`, `verify.md` or `discoveries.md` under `artifacts/`, and the
+refusal names the file and the remedy: read it, then amend it with `Edit`. There is no exemption to
+declare — a replan amends the plan artifact too. Two gaps are the habit's alone, and they are why the
+steps above stay: **`state.md` is outside the rail** (every phase writes it at every close, and a rail
+over the most-written file is the one that gets routed around), and the rail is **invisible to the
+shell** — a heredoc or `>` reaches all five files with no tool call for it to see. Note also that this
+manual reaches **new installs only**: it is installed when absent and never compared, so an existing
+adopter gains the rail and not this paragraph.
+
 ### Context Management
 
 - **On compaction during execution**: Re-read `artifacts/T-XXX/state.md` + `artifacts/T-XXX/plan.md` + the active phase protocol file before continuing
@@ -130,11 +140,11 @@ fact below therefore lives with the mechanism that performs it:
 
 ### Never (hard stops)
 - Publish without user validation — the approval is move 1 of the closing ceremony (backlog protocol), and it covers the task's work in either kind of checkout. Commits themselves are free per step
-- Skip or disable tests
+- Skip or disable tests — and the audit that closes a task greps the diff's added lines for it (Verify protocol > Skip-marker grep), in any file the diff brake counts as a test
 - Commit secrets, credentials, or .env files
 - Delete user data or drop tables/collections
 - Force push to main
-- Overwrite existing artifacts without checking
+- Overwrite existing artifacts without checking — refused outright by `artifact-write-guard.py` for the four that hold a previous session's decisions
 
 ## Working Rules
 
