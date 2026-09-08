@@ -16688,7 +16688,14 @@ else
   # `bxit(` as the literal and the positive leg would test a marker nobody wrote.
   LITS70="$(printf '%s' "$ALT70" | tr '|' '\n' | sed -E 's/\\b//g' | tr -d '\\' | sed -E 's/\[(.)\]/\1/g')"
   n70=0; for l70 in $LITS70; do n70=$((n70+1)); done
-  [ "$n70" -ge 10 ] || echo "  [note] C70 the declaration carries $n70 markers; understand.md names ten"
+  # A11 -- the set's CONTENTS, which every other rail-(b) row leaves unguarded: they all derive their
+  # fixture FROM the declaration, so a marker deleted there is simply never tested and the suite stays
+  # green. Measured: removing one left 979 passed, 0 failed. A note is not a row, and the whole weight of
+  # the leg rests on this set -- a floor rather than an equality, because the set growing is the one
+  # direction that needs no permission.
+  [ "$n70" -ge 10 ] \
+    && ok "A11 the declaration still carries the whole marker set" \
+    || bad "A11 the declaration still carries the whole marker set ($n70 markers; understand.md names ten)"
 
   # A7 -- a fixture whose test file adds every marker and whose production file adds one, so the row
   # proves the TEST_RE restriction as well as the detection. The command asserted is the protocol's own.
