@@ -49,8 +49,9 @@ Existing committed references stay untouched — a mass cleanup would rewrite th
 **CRITICAL: Execute phase MUST validate tests.**
 
 Where the task's level is **Auto**, a bug fix writes the reproducing test before the fix and that
-failure is the evidence — that level skips Conform, so nothing else in its chain produces a red step,
-and a mechanical refactor at the same level has nothing to reproduce
+failure is the evidence — the plan is inline at that level, so no criteria are minted and no stub is
+frozen, and nothing else in its chain produces a red step. A mechanical refactor at the same level has
+nothing to reproduce.
 
 ### Execute Step Protocol
 
@@ -60,8 +61,8 @@ For each step:
 3. **Run the Verify command from the plan step** — every plan step has a `Verify` field with a copy-pasteable test command
    - **No reassurance re-runs**: do not run a command again over code unchanged since that command
      last ran — a repeat that cannot change its own answer is a turn spent buying confidence — while the
-     audit's re-run of every step's Verify command (Verify protocol, step 7) is not this rule's subject,
-     since it re-asks a question a later step may have changed the answer to
+     audit's re-run of every step's Verify command (Verify protocol > Re-run all Verify commands) is not
+     this rule's subject, since it re-asks a question a later step may have changed the answer to.
    - If no Verify command in plan (shouldn't happen): run relevant test file
    - If test file missing -> Document in commit (create tests later)
    - If tests fail -> Intentional change? Fix test. Unexpected? Fix code. (Conformance specs are the exception — see below.)
