@@ -17020,6 +17020,176 @@ b7_71=""
 [ -z "$b7_71" ] && ok "B7 the execute command names the re-run rule among the rules it routes and restates none of it" \
                 || bad "B7 the execute command names the re-run rule among the rules it routes and restates none of it ($b7_71)"
 
+echo "== C72: the rulebook states its rules, and each hard stop names what stops you =="
+
+EX72="$ROOT/global/protocols/execute.md"
+MN72="$ROOT/global/CLAUDE.md"
+
+# The two tier rules' OWN CONTENT, never the tier names and never the heading parentheticals. Measured
+# against the pre-change manual before this list was frozen: each of the 15 hits the tiers block exactly
+# once and the rest of the manual zero times. `do without asking` and `need user approval` were candidates
+# and were DROPPED -- they are the two sub-heading parentheticals, which is to say they are the words a
+# correct route would reuse, and a leg that fails on a document doing the right thing is a leg that gets
+# deleted rather than obeyed.
+#
+# The residual is named because a marker cannot see a paraphrase: a tier rule reworded in fresh words
+# evades every phrase below. That is the known ceiling of home counting by marker, not a gap this block
+# can close, and it is why A4 asserts a POSITIVE home as well as the absence.
+TIER72='broken imports|null pointers|type mismatches|missing deps|build config|auto-fix test'
+TIER72="$TIER72"'|library additions|new services|schema changes|null checks|impossible scenarios'
+TIER72="$TIER72"'|state shape|new patterns|architectural decisions|files not in the plan'
+
+# Its own extractor, stopping only at the next SAME-LEVEL heading. `msect` exits on any `^#+ `, and the
+# two tiers arrive as `###` sub-headings of this section -- measured, on a copy carrying the finished text:
+# msect truncated the region to the section's intro line and this row went RED on a correct document.
+DEV72="$(awk '/^## Deviation Rules During Execution/{f=1;next} f&&/^## /{exit} f' "$EX72" | tr -s ' \n' '  ')"
+NVR72="$(msect "$MN72" '^### Never [(]hard stops[)]' | tr -s ' \n' '  ')"
+MANALL72="$(tr -s ' \n' '  ' < "$MN72")"
+W72="$(wc -w < "$EX72" | tr -d ' ')"
+
+# E0 -- every region this block reads extracts. A row that is green over an empty string is a row about
+# nothing, and all six criteria below read one of these three.
+e0_72=""
+[ -f "$EX72" ] || e0_72="$e0_72 [the execute protocol is not on disk]"
+[ -f "$MN72" ] || e0_72="$e0_72 [the manual is not on disk]"
+[ -n "$DEV72" ] || e0_72="$e0_72 [the rulebook's deviation section did not extract]"
+[ -n "$NVR72" ] || e0_72="$e0_72 [the manual's hard-stop list did not extract]"
+[ "${W72:-0}" -gt 0 ] || e0_72="$e0_72 [the execute protocol counted zero words]"
+[ -z "$e0_72" ] && ok "E0 every region C72 reads extracts" || bad "E0 every region C72 reads extracts ($e0_72)"
+
+# A1 -- the rulebook is within its frozen word budget.
+#
+# WORDS, not lines: re-wrapping the same words must not move the number, and the retired prose restored
+# as four unwrapped lines must not slip under it. Same metric and same reason as C68's own budget row.
+#
+# THE NUMBER, derived from the measured floor and not from a percentage. The regions this task removes
+# measure 66, 68, 70, 81, 85, 90, 91, 94, 103 and 126 words, and the rule is that the slack must sit BELOW
+# THE SMALLEST of them, so no single region can come back with this row green. Floor 2,003 + 57 = 2,060.
+# C68 set its own budget the same way -- 19 words of slack over an achieved 191, under a smallest
+# returnable unit of 68.
+#
+# It was first frozen at 1,818, against a projection built on an estimate of 759 cuttable words. The
+# measured figure is 514: prose counted as rationale turned out to be rules, routes and assertion inputs,
+# two of which were cut and restored (the audit exemption the re-run bullet must carry, and the publishing
+# condition that bounds the provenance grep's reach). The prune ALONE reaches 1,927 words, 78.9% of the
+# pre-task 2,441 -- inside the 80% the criterion originally named. What exceeds it is this task's other
+# half, which moves 96 words of tiers INTO the file this row measures, and the 188 words of Model
+# Delegation that another task owns. A percentage guessed before the measurement is not a bar the
+# measurement should be bent to fit, so the percentage went and the derivation above replaced it.
+a1_72=""
+[ "$W72" -le 2060 ] || a1_72="$a1_72 [the rulebook is $W72 words, over the 2060-word budget]"
+[ -z "$a1_72" ] && ok "A1 the Execute protocol is within its frozen word budget" \
+                || bad "A1 the Execute protocol is within its frozen word budget ($a1_72)"
+
+# A2 -- each hard stop that has a mechanism elsewhere names it IN ITS OWN BULLET. One variable per stop,
+# never one grep over the whole list: a single sweep is green while one bullet carries every name and the
+# other four carry none, which is the shape a routed list decays into first.
+a2_72=""
+b72_pub="$(mbul "$MN72" '^### Never [(]hard stops[)]' 'validation')"
+b72_tst="$(mbul "$MN72" '^### Never [(]hard stops[)]' 'tests')"
+b72_sec="$(mbul "$MN72" '^### Never [(]hard stops[)]' 'secrets')"
+# Two selectors are chosen to be INDEPENDENT OF WHAT THEY ASSERT, and the reason was measured. Selecting
+# the trunk stop on `push` read the very string the leg exists to find: the only `push` in a correct bullet
+# is inside `pre-push`, so a bullet that lost its mechanism stopped being selectable, `mbul` retargeted,
+# and A2 reported "names no mechanism" while A2b reported the bullet as absent -- one edit reddening two
+# rows for a reason neither stated. `rtifact` was the same shape against `artifact-write-guard`. Each now
+# selects on the stop's own SUBJECT, which no repair to the mechanism can move.
+b72_psh="$(mbul "$MN72" '^### Never [(]hard stops[)]' 'trunk')"
+b72_art="$(mbul "$MN72" '^### Never [(]hard stops[)]' 'Overwrite')"
+for pair72 in "pub:closing ceremony|move 1|backlog" "tst:verify|audit" "sec:pre-commit|commit guard" \
+              "psh:pre-push|push guard" "art:artifact-write-guard"; do
+  k72="${pair72%%:*}"; pat72="${pair72#*:}"
+  eval "v72=\$b72_$k72"
+  [ -n "$v72" ] || { a2_72="$a2_72 [the $k72 stop did not extract]"; continue; }
+  printf '%s' "$v72" | grep -qiE "$pat72" || a2_72="$a2_72 [the $k72 stop names no mechanism]"
+done
+[ -z "$a2_72" ] && ok "A2 each hard stop with an owner names the mechanism that performs it" \
+                || bad "A2 each hard stop with an owner names the mechanism that performs it ($a2_72)"
+
+# A2b (free) -- the force-push stop names NO BRANCH. Costs one line and closes T-100's requirement, which
+# A2 above cannot see: a bullet routing to the push guard while still saying `main` satisfies A2 and
+# states a trunk the guard now deliberately lets through in a `develop` repository.
+a2b_72=""
+[ -n "$b72_psh" ] || a2b_72=" [the push stop did not extract]"
+printf '%s' "$b72_psh" | grep -qiE '\bmain\b|\bmaster\b' && a2b_72="$a2b_72 [it still names a branch]"
+[ -z "$a2b_72" ] && ok "A2b the force-push stop names no branch" \
+                 || bad "A2b the force-push stop names no branch ($a2b_72)"
+
+# A3 -- the manual states no execution-time tier rule ANYWHERE. File-wide and not section-scoped: that
+# reach is IB-032's third remedy, and a section-scoped negative is green the day a tier rule reappears
+# four headings away, which is how two of the manual's commit facts came to sit outside the section that
+# claims to route them.
+a3_72=""
+printf '%s' "$MANALL72" | grep -qiE "$TIER72" \
+  && a3_72=" [the manual still states an execution-time tier rule: $(printf '%s' "$MANALL72" | grep -oiE "$TIER72" | sort -u | tr '\n' ' ')]"
+[ -z "$a3_72" ] && ok "A3 the manual states no Always- or Ask-First-tier rule anywhere in the file" \
+                || bad "A3 the manual states no Always- or Ask-First-tier rule anywhere in the file ($a3_72)"
+
+# A4 -- the rulebook's deviation section is the tiers' ONE home. A positive and a negative, and both are
+# needed: the negative alone is satisfied by a set in which nobody states the rules at all.
+#
+# The swept set names `global/skills/` BY NAME (IB-025), and it is walked with -print0 because a checkout
+# path containing a space otherwise splits every entry into fragments that all fail the -f guard, leaving
+# the sweep green having read nothing (T-109's second defect). `seen72` is what tells those two apart.
+a4_72=""
+# The positive COUNTS the tiers' own phrases and requires 13 of 15. A presence grep is not enough and
+# that was measured, not feared: the four-line summary this section is losing already carries
+# `type mismatches`, `new services` and `schema changes`, so two presence legs were GREEN on the
+# pre-change tree -- a row passing because the text was already there. The moved tiers carry all 15; the
+# summary carries 3. 13 sits in that gap with slack for a word changing in the move.
+n4_72="$(printf '%s' "$DEV72" | grep -oiE "$TIER72" | tr 'A-Z' 'a-z' | sort -u | wc -l | tr -d ' ')"
+[ "${n4_72:-0}" -ge 13 ] \
+  || a4_72="$a4_72 [the deviation section states only $n4_72 of the tiers' 15 rules, so it does not state them whole]"
+#
+# TWO REGIONS ARE EXEMPT BY NAME, and each is a document doing the right thing rather than a concession.
+# Measured on the pre-change tree, before this leg was frozen: the sweep reddened on
+# `lifecycle.md` > `## Autonomy Levels`, whose Supervised row states which tasks EARN that level -- the map
+# is the declared home of the levels and the row is not a tier rule -- and on the preamble of
+# `quick-path.md`, whose `No new services/components/modules` is a prohibition on quick tasks rather than
+# an Ask First rule. The marker cannot tell either apart from the thing it hunts, so the exemption is cut
+# to the REGION and never to the file: a real tier rule elsewhere in either document is still caught.
+strip72() {
+  case "$1" in
+    */protocols/lifecycle.md)
+      awk '/^## Autonomy Levels/{f=1} f&&/^## /&&!/^## Autonomy Levels/{f=0} !f' "$1" ;;
+    */protocols/quick-path.md)
+      awk '/^## /{f=1} f' "$1" ;;
+    *) cat "$1" ;;
+  esac
+}
+seen72=0; homes72=""
+while IFS= read -r -d '' f72; do
+  case "$f72" in *"/global/protocols/execute.md") continue ;; esac
+  seen72=$((seen72+1))
+  strip72 "$f72" | grep -qiE "$TIER72" && homes72="$homes72 ${f72#$ROOT/}"
+done < <(find "$ROOT/global" "$ROOT/template" "$ROOT/docs" -name '*.md' -print0 2>/dev/null)
+[ "$seen72" -ge 10 ] || a4_72="$a4_72 [the home sweep read only $seen72 documents, so its silence proves nothing]"
+[ -n "$homes72" ] && a4_72="$a4_72 [a second home states a tier rule:$homes72]"
+[ -z "$a4_72" ] && ok "A4 the deviation section states both tiers and is their only home" \
+                || bad "A4 the deviation section states both tiers and is their only home ($a4_72)"
+
+# A5 -- the atomic commit format appears nowhere in the manual. File-wide with NO section exception, which
+# is stronger than the criterion asked for and is what the measurement licensed: `type(scope)` occurs once
+# in the whole file, at the stray bullet this task deletes, and the Commit Protocol section states the
+# fact by ROUTE ("the atomic format ... protocols/execute.md") rather than by form. That is also why the
+# pattern is bound: a bare `atomic` reddens on the route the section legitimately carries.
+a5_72=""
+printf '%s' "$MANALL72" | grep -qiE 'type\(scope\)|atomic commit' \
+  && a5_72=" [the manual states the atomic commit format outside the section that routes it]"
+[ -z "$a5_72" ] && ok "A5 the manual states the atomic commit format nowhere" \
+                || bad "A5 the manual states the atomic commit format nowhere ($a5_72)"
+
+# A6 -- the one stop with no mechanism anywhere else is stated in the manual AND SAYS SO. The second half
+# is the whole point: a list that routes five stops and silently keeps the sixth is indistinguishable from
+# a list with a hole in it, and the reader has no way to learn which. Sentence-scoped, so the claim binds
+# to the stop rather than floating anywhere in the section, and with $S71 rather than a literal space --
+# insent flattens the newline to one space but the next line's indent survives it.
+a6_72=""
+[ "$(insent "$NVR72" 'user data|drop tables|drop collections' "no${S71}mechanism|nothing${S71}else|no${S71}other${S71}home|stated${S71}here")" = 1 ] \
+  || a6_72=" [the single-homed stop does not say that it is stated here for want of an owner]"
+[ -z "$a6_72" ] && ok "A6 the stop with no owner is stated in the manual and says why it is" \
+                || bad "A6 the stop with no owner is stated in the manual and says why it is ($a6_72)"
+
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
