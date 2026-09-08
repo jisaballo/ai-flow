@@ -140,7 +140,6 @@ rule to nowhere is worse than a rule with no second home to drift against.
 - Skip or disable tests — the audit that closes a task greps the diff's added lines for it (Verify
   protocol > Skip-marker grep), in any file the diff brake counts as a test
 - Commit secrets, credentials, or .env files — refused at the act by the `pre-commit` guard
-  (`hooks/README.md`)
 - Delete user data or drop tables/collections — **no mechanism anywhere else performs this one**, so the
   rule is stated here rather than routed, and this bullet says so.
 - Rewrite or delete a published trunk — refused at the act by the `pre-push` guard, which resolves the
@@ -148,7 +147,10 @@ rule to nowhere is worse than a rule with no second home to drift against.
 - Overwrite existing artifacts without checking — refused outright by `artifact-write-guard.py` for the
   four that hold a previous session's decisions
 
-Every route above reaches every install, because hooks and protocols are distributed. **This manual is
+The four protocol routes above reach every install, because protocols are distributed. **The two git
+guards reach it only where `core.hooksPath` points at the installed hooks** — the installer leaves an
+existing global hook path untouched, and a repository may acknowledge the gap — and where it does not,
+the bullet's rule stands on its own. **This manual is
 not** — it is written only when absent and excluded by the drift guard — so an adopter whose copy
 predates this routing keeps the old list until they merge it by hand.
 

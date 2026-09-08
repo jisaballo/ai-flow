@@ -55,7 +55,7 @@ nothing to reproduce.
 For each step:
 1. **Read** source files to change
 2. **Make** code changes
-3. **Run the Verify command from the plan step** — every plan step has a `Verify` field with a copy-pasteable test command
+3. **Run the Verify command from the plan step** — every step of a plan *artifact* carries one. Where the plan was inline and there is no artifact (**Auto**, the quick path), run the test file the change touches.
    - **No reassurance re-runs**: do not run a command again over code unchanged since that command
      last ran — a repeat that cannot change its own answer is a turn spent buying confidence — while the
      audit's re-run of every step's Verify command (Verify protocol > Re-run all Verify commands) is not
@@ -69,7 +69,8 @@ For each step:
    sets a gate between steps — **Supervised**, whose criteria stay in `protocols/lifecycle.md`'s autonomy
    table, which owns the levels — that gate is untouched by the commit: it governs whether the next step
    begins, never whether this one is committed, and what it obliges is item 5 below. Two rules ride on
-   this commit and are the loop's own, and a step with no test file to run documents that in its commit:
+   this commit and are the loop's own. A step with no test file documents that in its commit and the
+   missing test is written later:
    - **Atomic**: `type(scope): description`, with the `Co-Authored-By` line. One step, one commit.
    - **Green**: the commit must pass tests. Step 3 above is what proves it, and a step that cannot get
      there is escalated by its own Bounded Retry rather than committed red.
@@ -160,15 +161,15 @@ no divergences is to skip and say nothing (step 3 above).
 ## Deviation Rules During Execution
 
 The two tiers that govern doing the work are stated here, in the phase that does it. The **hard stops**
-are CLAUDE.md's, at `### Never (hard stops)`, where each one names the mechanism that performs it.
+are CLAUDE.md's, at `### Never (hard stops)`, where each is routed to the mechanism that performs it,
+or says that none exists.
 
 ### Always (do without asking)
 - Fix broken imports, null pointers, type mismatches
 - Add error handling, null checks, validation where the flow can reach the failure — not for impossible
   scenarios (CLAUDE.md > Core Principles, Simplicity First)
 - Fix missing deps, build config issues
-- Run tests after every code change
-- Auto-fix test if code change was intentional
+- The step's test discipline is the loop's own, at `### Execute Step Protocol` item 3
 
 ### Ask First (need user approval)
 - New services, components, or modules
