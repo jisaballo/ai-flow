@@ -4876,9 +4876,15 @@ printf '%s' "$(c25 "$n25")" | grep -qiE 'worktree list' \
 # --- the retired rationale, guarded as a class ---------------------------
 # Written against the text that will exist, not against the sentence being deleted: what must never
 # come back is the CLAIM that nesting misbinds the guards, in any wording. The engine's own guards
-# handle nesting on purpose, and one of them says so in its docstring.
+# handle nesting on purpose, and TWO of them now say so in their own `ledger_root` docstrings -- the
+# statement each excludes is the opposite claim, that the boundary is enforced deliberately. The
+# exclusion is a list of those guards rather than a shape, and the cost is stated rather than hidden:
+# a false claim written INSIDE either of those two files is invisible to this sweep. It was already so
+# for one; the second arrived with a hook that resolves the same ledger and cannot import the first,
+# every hook here being installed and run standalone.
 r25="$(grep -rniE 'nest(ed|ing)' global docs template 2>/dev/null \
-       | grep -iE 'guardrail|guard rail|bind' | grep -viE 'understand-write-guard\.py' | wc -l | tr -d ' ')"
+       | grep -iE 'guardrail|guard rail|bind' \
+       | grep -viE '(understand|artifact)-write-guard\.py' | wc -l | tr -d ' ')"
 [ "$r25" = "0" ] \
   && ok "no document claims a nested checkout misbinds the guardrail hooks" \
   || bad "no document claims a nested checkout misbinds the guardrail hooks ($r25 line(s))"
@@ -16645,23 +16651,26 @@ else
   # Which of the diff's files the leg is entitled to read, decided by the brake's own pattern rather
   # than by a second list here. Extracted from the hook the way LOCK69 extracts LOCKFILES: the module
   # calls main() unguarded and cannot be imported, so the declaration is lifted and exec'd alone.
-  tfiles70() {  # paths on stdin -> the ones the brake calls tests
-    python3 - "$HK/diff-size-guard.py" <<'PY70'
+  # Paths as ARGUMENTS, not on stdin: a heredoc feeding the program takes stdin with it, so the version
+  # that piped the file list in had python read the list as its own source and the filter selected
+  # nothing. It failed loudly only because the row carries a positive leg for the extraction itself.
+  tfiles70() {  # $@ = paths -> the ones the brake calls tests
+    python3 -c "
 import re, sys
-src = open(sys.argv[1], encoding='utf-8').read()
-block = re.search(r'^TEST_RE = re\.compile\(.*?^\)$', src, re.S | re.M)
+src = open(sys.argv[1], encoding=\"utf-8\").read()
+block = re.search(r\"^TEST_RE = re\\.compile\\(.*?^\\)\$\", src, re.S | re.M)
 if not block:
-    sys.exit('TEST_RE did not extract')
-ns = {'re': re}
+    sys.exit(\"TEST_RE did not extract\")
+ns = {\"re\": re}
 exec(block.group(0), ns)
-for line in sys.stdin.read().splitlines():
-    if line and ns['TEST_RE'].search(line):
-        print(line)
-PY70
+for path in sys.argv[2:]:
+    if path and ns[\"TEST_RE\"].search(path):
+        print(path)
+" "$HK/diff-size-guard.py" "$@"
   }
   a7_70=""
   ALLF70="$($GIT -C "$D70" diff --name-only HEAD~1 HEAD)"
-  TSTF70="$(printf '%s\n' "$ALLF70" | tfiles70)"
+  TSTF70="$(tfiles70 $ALLF70)"
   [ -n "$TSTF70" ] || a7_70="$a7_70 [the brake's TEST_RE did not extract, so the restriction checked nothing]"
   HITS70="$($GIT -C "$D70" diff --unified=0 HEAD~1 HEAD -- $TSTF70 \
             | grep -nE "^\+.*($ALT70)" 2>/dev/null)"
