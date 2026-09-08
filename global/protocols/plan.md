@@ -148,3 +148,4 @@ No task IDs in headers, test names, or comments — the criterion text is the se
 - **Max 3 steps per plan** — if more are needed, the task should be split into smaller tasks
 - Each step should be independently verifiable (tests pass after each step, not just at the end)
 - **Vertical slices over horizontal layers** — prefer steps that cut through all of the project's layers to deliver one observable behavior end-to-end, rather than steps that build a single layer in isolation. A wrong assumption surfaces at the first slice, not after the UI step. Only split by layer when a slice genuinely exceeds the diff guardrail.
+- **Risk-first ordering** — order the steps so the assumption most likely to break is tested first, subject to the dependencies between them, so the Replan Gate fires before the work is written rather than after. This orders the slices and does not displace the shape rule above it: a plan slices vertically, then orders by risk.
