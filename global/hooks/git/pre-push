@@ -18,9 +18,23 @@
 #     anything else was measured against a name it does not use, so the guard ran, found nothing to
 #     judge, and stayed quiet. Where nothing declares one — a repository wired up by hand rather than
 #     cloned, or a push addressed to a URL rather than to a remote's name — the fallback candidates
-#     stand in, which leaves such repositories exactly where they were. The cost of asking is stated
-#     rather than hidden: a repository whose declared trunk is something else and that still carries an
-#     old branch called main no longer defends that branch, and --no-verify is the escape either way.
+#     stand in, which leaves such repositories exactly where they were.
+#
+#     The cost of asking is stated in full rather than hidden, and it is wider than the case that
+#     motivated it. Where a declaration resolves, it REPLACES the candidates rather than joining them —
+#     one definition of the trunk was the point — so the trunk name the remote does NOT declare stops
+#     being defended, in every clone and not only in the exotic ones. A stale master left behind by a
+#     rename, beside a declared main, is force-pushable and deletable now where it was not before; the
+#     mirror holds for a master-default clone and its main.
+#
+#     And what is read is refs/remotes/<remote>/HEAD, which is what the remote declared AT CLONE TIME.
+#     Neither fetch, nor fetch --prune, nor pull ever updates it; only an explicit
+#     `git remote set-head <remote> -a` does. The verification above proves the target still exists, not
+#     that it is still the remote's default, so a repository cloned when the default was master and
+#     since renamed to main resolves master alone and accepts a force-push over main. That is the same
+#     narrowing as the paragraph above with the declaration simply out of date, and it is named here
+#     because a cost the operator can only discover by being bitten is not a cost that was stated.
+#     --no-verify is the escape in every one of these cases.
 #
 #     Exact, not a substring and not a trailing segment: git accepts refs/heads/hotfix/main as an
 #     ordinary branch and reports it whole, and an update reaching only refs/remotes/origin/main never
@@ -74,9 +88,21 @@ is_absent() { case "${1:-x}" in *[!0]*|"") return 1 ;; *) return 0 ;; esac; }
 trunks() {
   rp="refs/remotes/${1:-}/"
   ref="$(git symbolic-ref "${rp}HEAD" 2>/dev/null)" || ref=""
+  #
+  # Two gates, not one, and the second is the one that is easy to leave out. symbolic-ref accepts ANY
+  # well-formed refname as its target, so refs/remotes/<remote>/HEAD may legitimately be read back
+  # pointing outside its own namespace: `git symbolic-ref refs/remotes/origin/HEAD refs/heads/main` is
+  # the form people paste when repairing a missing origin/HEAD, and the correct form names
+  # refs/remotes/origin/main. Measured: it is accepted, rev-parse verifies it, the strip below is then a
+  # no-op, and the emitted candidate is refs/heads/refs/heads/main -- a name git will never report, so
+  # every ref falls through is_trunk and a force-push over the real trunk is allowed, silently. Checking
+  # that the answer EXISTS is not checking that it has the shape the strip assumes; the case arm makes a
+  # wrong shape fall through to the candidates like every other unresolvable answer, instead of past
+  # them.
   if [ -n "$ref" ] && git rev-parse --verify --quiet "$ref" >/dev/null 2>&1; then
-    printf 'refs/heads/%s\n' "${ref#"$rp"}"
-    return 0
+    case "$ref" in
+      "$rp"?*) printf 'refs/heads/%s\n' "${ref#"$rp"}"; return 0 ;;
+    esac
   fi
   for cand in main master; do
     printf 'refs/heads/%s\n' "$cand"

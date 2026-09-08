@@ -7,8 +7,10 @@
 # mentioning a secrets file and a search through the documentation for one were refused as stagings,
 # while the index itself was never consulted.
 #
-# The classification below is carried over unchanged in meaning from that guard. No rule about what
-# counts as a secret is invented here; only where the question is asked has moved.
+# The PATH classification below is carried over unchanged in meaning from that guard: no rule about what
+# counts as a secret BY NAME is invented here, only where the question is asked has moved. The content
+# classification is new in this file and nothing preceded it — the guard this replaces judged the
+# command's text and never the index's content — so the six shapes below were chosen and measured here.
 #
 # Two questions are asked of that index, not one. The first is the path — a name that has never been
 # anything but a secret. The second is the CONTENT the commit would add, because a key pasted into an
@@ -47,6 +49,15 @@ is_secret() {  # $1 = a path as git records it -> 0 when it must not be committe
 # fixtures and sample data, and a guard people learn to ignore protects nothing. Measured over this
 # repository's tracked files when these were chosen: zero matches.
 #
+# The Slack and Stripe shapes carry the issuer's whole form -- segment structure and all -- rather than
+# the prefix and a lower bound. An open-ended tail is not a fixed shape: written as the prefix plus
+# {10,} of the class, the Slack arm refuses the ordinary documentation placeholder, the one whose four
+# words after the dash are `your`, `token` and `here`. These guards run on the operator's every commit,
+# so a sample config or a README then costs them a --no-verify -- precisely the
+# guard-people-learn-to-ignore this design refused entropy scanning to avoid, reached from the other
+# side. The placeholder is spelled in pieces here for the same reason every shape is: this file must
+# stay committable under its own rules, and under the looser ones it replaces.
+#
 # Each pattern is written so that the pattern's own text is not an instance of it: after `AKIA` the
 # pattern has `[`, which is not in the class that must follow, and the same holds for every other one.
 # That is what keeps this file — and the suite that drives it — committable with the guard active, and a
@@ -57,13 +68,37 @@ is_secret() {  # $1 = a path as git records it -> 0 when it must not be committe
 # text: a guard that echoes the secret it caught has copied it into the scrollback, the CI log and the
 # transcript, which is the outcome it exists to prevent.
 KEYSHAPE='-----BEGIN [A-Z ]*PRIVATE KEY-----'
-TOKENSHAPES='AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36}|xox[baprs]-[0-9A-Za-z-]{10,}|sk_live_[0-9A-Za-z]{16,}|AIza[0-9A-Za-z_-]{35}'
+TOKENSHAPES='AKIA[0-9A-Z]{16}|gh[pousr]_[A-Za-z0-9]{36}|xox[baprs]-[0-9]{10,}-[0-9]{10,}-[0-9A-Za-z]{20,}|sk_live_[0-9A-Za-z]{24,}|AIza[0-9A-Za-z_-]{35}'
 
 adds() {  # $1 = a staged path, $2 = an ERE -> 0 when a line this commit ADDS to it matches
+  # This pipeline's only output is grep's exit status, so it has no way to say "I could not look": every
+  # way the diff can come back without + lines is indistinguishable from "this file adds no secret", and
+  # every one of them lets the commit through in silence. Four flags close the four ways that happened,
+  # each of them measured rather than imagined:
+  #
+  #   --text                a path marked -diff or binary in .gitattributes, and any file carrying a NUL
+  #                         byte, answer `Binary files ... differ` and no + lines at all. Forcing the
+  #                         textual read costs nothing on a real binary — none of the fixed shapes can
+  #                         occur in one — and it is what stops a key pasted into a file the repository
+  #                         happens to decline to diff from being exempt for good.
+  #   --no-ext-diff         a diff.external / GIT_EXTERNAL_DIFF driver replaces the unified diff
+  #                         entirely. That is configured globally, in the operator's own ~/.gitconfig
+  #                         and outside any repository this guard defends, so without this flag the
+  #                         content half is inert for every file in every repository they own.
+  #   --no-textconv         a textconv attribute compares the converted text rather than the staged
+  #                         bytes, so the bytes actually being recorded are never read.
+  #   --literal-pathspecs   a staged path beginning with `:` is parsed as pathspec magic, matches
+  #                         nothing, and exits 0 with no error and no output. Measured: the file is
+  #                         exempt and nothing says so.
+  #
+  # The diff is piped and never captured into a variable: --text can put a real binary's bytes on
+  # stdout, and those belong in grep.
+  #
   # The file header `+++ b/path` is dropped by its trailing space, which a content line cannot carry in
   # that position: an added line reading `+++foo` arrives as `++++foo`. The one form this drops wrongly
   # is a line whose own text begins `++ ` — it errs towards a miss, never towards a false refusal.
-  git -c core.quotePath=false diff --cached -U0 --diff-filter=ACMR -- "$1" 2>/dev/null \
+  git -c core.quotePath=false --literal-pathspecs \
+      diff --cached -U0 --text --no-ext-diff --no-textconv --diff-filter=ACMR -- "$1" 2>/dev/null \
     | grep -v '^+++ ' \
     | grep -Eq "^[+].*($2)"
 }
@@ -73,9 +108,12 @@ adds() {  # $1 = a staged path, $2 = an ERE -> 0 when a line this commit ADDS to
 # state the guard exists to prevent.
 #
 # The listing is asked for without quoting and then split on newlines. A path containing a newline —
-# pathological, and no earlier version of this guard handled one either — splits into two candidates and
-# is classified twice, so the error falls on the side of a refusal with a stated escape rather than a
-# miss.
+# pathological, and no earlier version of this guard handled one either — splits into two candidates,
+# and the two questions below then fail in OPPOSITE directions on it. The path question classifies both
+# fragments, so it errs towards a refusal with a stated escape. The content question hands each fragment
+# to git as a pathspec, neither is a real path, both diffs come back empty, and the file is missed. The
+# safer half is not claimed for both: a sentence that reads as one guarantee over two behaviours is the
+# kind that survives exactly until someone relies on it.
 danger=""
 staged="$(git -c core.quotePath=false diff --cached --name-only --diff-filter=ACMR -z 2>/dev/null | tr '\0' '\n')"
 OIFS="$IFS"; IFS='

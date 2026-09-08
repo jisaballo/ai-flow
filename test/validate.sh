@@ -6429,27 +6429,29 @@ OWN
   # --- the trunk the remote DECLARES, not the trunk that is called main ----
   # Every fixture above is built with `init` + `remote add`, which leaves refs/remotes/origin/HEAD
   # absent — so all of them exercise the FALLBACK. This one asks the remote, as a clone would.
-  mkdecl33() {  # $1 = fixture name, $2 = the branch the remote declares -> remote.git + work
-    d33="$T33/$1"; rm -rf "$d33"; mkdir -p "$d33"
-    git init -q --bare "$d33/remote.git"
-    git init -q "$d33/work"
-    git -C "$d33/work" symbolic-ref HEAD refs/heads/main
-    git -C "$d33/work" config user.email t@t.t
-    git -C "$d33/work" config user.name t
-    git -C "$d33/work" config commit.gpgsign false
-    git -C "$d33/work" config push.default current
-    printf 'a\n' > "$d33/work/f.txt"
-    git -C "$d33/work" add -A >/dev/null 2>&1
-    git -C "$d33/work" commit -q -m one
-    git -C "$d33/work" remote add origin "$d33/remote.git"
-    git -C "$d33/work" branch -q "$2" main
-    git -C "$d33/work" -c core.hooksPath="$NOHOOK" push -q origin main "$2"
-    git -C "$d33/remote.git" symbolic-ref HEAD "refs/heads/$2"
-    git -C "$d33/work" -c core.hooksPath="$NOHOOK" remote set-head origin -a >/dev/null 2>&1
-    git -C "$d33/work" config core.hooksPath "$GHK"
+  # mkpair33 already builds the pair and points the bare remote's HEAD at $2; what a DECLARED trunk adds
+  # is the branch itself and the local refs/remotes/origin/HEAD that this hook reads. Four lines on top
+  # of the canonical builder rather than a third copy of it.
+  mkdecl33() {  # $1 = fixture name, $2 = the branch the remote declares -> mkpair33 + a local declaration
+    mkpair33 "$1" "$2"
+    git -C "$T33/$1/work" branch -q "$2" main
+    free33 "$1" push -q origin "$2"
+    free33 "$1" remote set-head origin -a >/dev/null 2>&1
+  }
+  # `remote set-head -a` is the only thing in this suite that writes refs/remotes/origin/HEAD, and it is
+  # run with its output discarded. Every row below that means to exercise the DECLARED path needs it to
+  # have worked, and the dangling row needs it to have worked and then gone stale — a row whose setup
+  # silently no-ops falls back, defends main, and goes green having tested nothing it names.
+  decl33() {  # $1 = fixture -> the ref refs/remotes/origin/HEAD names, or the empty string
+    git -C "$T33/$1/work" symbolic-ref refs/remotes/origin/HEAD 2>/dev/null
   }
 
   mkdecl33 decl develop
+  if [ "$(decl33 decl)" = refs/remotes/origin/develop ]; then
+    ok "the declared-trunk fixture really does declare one, so the rows resting on it are not vacuous"
+  else
+    bad "the declared-trunk fixture really does declare one, so the rows resting on it are not vacuous (origin/HEAD names [$(decl33 decl)])"
+  fi
   git -C "$T33/decl/work" checkout -q develop
   printf 'x\n' >> "$T33/decl/work/f.txt"
   git -C "$T33/decl/work" commit -qam two
@@ -6497,6 +6499,12 @@ OWN
   free33 dangle push -q origin :develop
   git -C "$T33/dangle/work" update-ref -d refs/remotes/origin/develop 2>/dev/null
   diverge33 dangle
+  if [ "$(decl33 dangle)" = refs/remotes/origin/develop ] \
+     && ! git -C "$T33/dangle/work" rev-parse --verify --quiet refs/remotes/origin/develop >/dev/null 2>&1; then
+    ok "the dangling fixture is dangling: origin/HEAD still names a ref that is gone"
+  else
+    bad "the dangling fixture is dangling: origin/HEAD still names a ref that is gone (names [$(decl33 dangle)])"
+  fi
   b33="$(ref33 dangle main)"
   out="$(run33 dangle push --force origin main)"; rc=$?; a33="$(ref33 dangle main)"
   case "$out" in *"rewriting refs/heads/main"*) named=1 ;; *) named=0 ;; esac
@@ -6508,7 +6516,13 @@ OWN
 
   # Pushed by URL: what the hook receives is not a remote name and nothing local answers for it. The
   # fallback path, not an error.
-  mkpair33 byurl main; diverge33 byurl
+  #
+  # Built on a DECLARING origin on purpose. On a fixture whose origin declares nothing, this row passes
+  # whether or not the hook ever looks at what it was handed — both the URL and `origin` resolve to the
+  # candidates, so refusing `main` proves nothing about the argument. With origin declaring develop, a
+  # hook that ignored its argument and asked origin would resolve develop, and the force-push over main
+  # would be ALLOWED. Measured: with `rp` hardcoded to origin this row is the one that reddens.
+  mkdecl33 byurl develop; diverge33 byurl
   b33="$(ref33 byurl main)"
   out="$(sh33 byurl "git push --force '$T33/byurl/remote.git' main")"; rc=$?; a33="$(ref33 byurl main)"
   case "$out" in *"rewriting refs/heads/main"*) named=1 ;; *) named=0 ;; esac
@@ -6516,6 +6530,46 @@ OWN
     ok "a push addressed by URL falls back rather than failing to resolve"
   else
     bad "a push addressed by URL falls back rather than failing to resolve (exit $rc, remote $b33 -> $a33, said: $out)"
+  fi
+
+  # The remote the push is ADDRESSED to, against the remote that carries a declaration. Every other row
+  # in this section uses one remote called origin, so none of them can tell a hook that resolves the
+  # trunk from its argument apart from one that resolves it from the name `origin`. This is the fork
+  # shape: origin is the fork and declares develop; upstream is the canonical repository and declares
+  # nothing, so its trunk is main and must still be defended.
+  mkdecl33 twohost develop
+  git init -q --bare "$T33/twohost/upstream.git"
+  git -C "$T33/twohost/work" remote add upstream "$T33/twohost/upstream.git"
+  free33 twohost push -q upstream main
+  printf 'z\n' >> "$T33/twohost/work/f.txt"
+  git -C "$T33/twohost/work" commit -qam four
+  free33 twohost push -q upstream main
+  git -C "$T33/twohost/work" commit -q --amend -m four-rewritten
+  b33="$(git -C "$T33/twohost/upstream.git" rev-parse -q --verify refs/heads/main 2>/dev/null || echo none)"
+  out="$(run33 twohost push --force upstream main)"; rc=$?
+  a33="$(git -C "$T33/twohost/upstream.git" rev-parse -q --verify refs/heads/main 2>/dev/null || echo none)"
+  case "$out" in *"rewriting refs/heads/main"*) named=1 ;; *) named=0 ;; esac
+  if [ "$rc" != 0 ] && [ "$b33" = "$a33" ] && [ "$named" = 1 ]; then
+    ok "the trunk is resolved from the remote the push names, not from a remote called origin"
+  else
+    bad "the trunk is resolved from the remote the push names, not from a remote called origin (exit $rc, upstream $b33 -> $a33, named=$named, said: $out)"
+  fi
+
+  # A declaration of the WRONG SHAPE. symbolic-ref takes any well-formed refname, so origin/HEAD can be
+  # made to name a ref outside its own namespace — the form people paste when repairing a missing
+  # origin/HEAD. rev-parse verifies it, the namespace strip then no-ops, and an unguarded hook emits
+  # refs/heads/refs/heads/main: a name git never reports, so every ref falls through and the real trunk
+  # is undefended in silence. Existence and shape are two checks, and only one of them was there.
+  mkpair33 badshape main
+  git -C "$T33/badshape/work" symbolic-ref refs/remotes/origin/HEAD refs/heads/main
+  diverge33 badshape
+  b33="$(ref33 badshape main)"
+  out="$(run33 badshape push --force origin main)"; rc=$?; a33="$(ref33 badshape main)"
+  case "$out" in *"rewriting refs/heads/main"*) named=1 ;; *) named=0 ;; esac
+  if [ "$rc" != 0 ] && [ "$b33" = "$a33" ] && [ "$named" = 1 ]; then
+    ok "a declaration pointing outside the remote's own namespace falls back rather than defending nothing"
+  else
+    bad "a declaration pointing outside the remote's own namespace falls back rather than defending nothing (exit $rc, remote $b33 -> $a33, named=$named, said: $out)"
   fi
 
   # Derived from BOTH sources, on the idiom at :1743. Change either list and this row fails; a list
@@ -6744,14 +6798,20 @@ OWN34
   PK34="$(printf -- '-----BEGIN RSA PRIVATE%s' ' KEY-----')"
   AWS34="$(printf 'AKIA%s' 'ABCDEFGHIJKLMNOP')"
   GH34="$(printf 'ghp%s' '_0123456789abcdef0123456789abcdef0123')"
-  SL34="$(printf 'xoxb%s' '-000000000000-000000000000-abcdefghijkl')"
-  ST34="$(printf 'sk_live%s' '_0123456789abcdef')"
+  SL34="$(printf 'xoxb%s' '-000000000000-000000000000-abcdefghijklmnopqrstuvwx')"
+  ST34="$(printf 'sk_live%s' '_0123456789abcdef01234567')"
   GO34="$(printf 'AIza%s' '0123456789abcdefghij0123456789abcde')"
 
   mkrepo34 content
   why34=""; i34=0
   mkdir -p "$T34/content/src"
-  for s34 in "$PK34" "$AWS34" "$GH34" "$SL34" "$ST34" "$GO34"; do
+  # Each shape carries the phrase its refusal must name. The two-pattern split and the second `adds`
+  # call exist for exactly one reason — the refusal says WHICH kind was found — and a row that reads
+  # only `BLOCKED:` is satisfied by one pattern and one message, so the whole structure could be folded
+  # away with the suite green.
+  for pair34 in "$PK34|a private-key header" "$AWS34|a provider token" "$GH34|a provider token" \
+                "$SL34|a provider token" "$ST34|a provider token" "$GO34|a provider token"; do
+    s34="${pair34%%|*}"; kind34="${pair34#*|}"
     i34=$((i34+1))
     printf 'const t = "%s";\n' "$s34" > "$T34/content/src/app.ts"
     git -C "$T34/content" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
@@ -6763,6 +6823,11 @@ OWN34
     case "$out" in *"BLOCKED:"*) ;; *) why34="$why34 [shape $i34 -> guard did not speak]" ;; esac
     case "$out" in *"BLOCKED:"*"src/app.ts"*) ;; *) why34="$why34 [shape $i34 -> file not named in the refusal]" ;; esac
     case "$out" in *"--no-verify"*) ;; *) why34="$why34 [shape $i34 -> escape not named]" ;; esac
+    case "$out" in *"$kind34"*) ;; *) why34="$why34 [shape $i34 -> kind not named]" ;; esac
+    # The one thing the refusal must NOT carry. Stated in the hook, in the README and in the task's
+    # decisions, and asserted nowhere until here: a guard that echoes the secret it caught has copied it
+    # into the scrollback, the CI log and the transcript. The index is reported, never the shape.
+    case "$out" in *"$s34"*) why34="$why34 [shape $i34 -> the refusal echoed what it caught]" ;; esac
     git -C "$T34/content" -c core.hooksPath="$NOHOOK34" rm -q -f --cached src/app.ts >/dev/null 2>&1
     rm -f "$T34/content/src/app.ts"
   done
@@ -6773,8 +6838,13 @@ OWN34
   # and a guard that refuses everything is one people learn to bypass.
   mkrepo34 nearmiss
   why34=""; i34=0
+  # The last two are the placeholders an open-ended tail refuses: `xox[baprs]-[0-9A-Za-z-]{10,}` matched
+  # the first and `sk_live_[0-9A-Za-z]{16,}` the second. These guards run on the operator's every
+  # commit, so a sample token in a README cost them a --no-verify — the guard-people-learn-to-ignore
+  # this design refused entropy scanning to avoid, reached from the other side.
   for s34 in "AKIA" "$(printf 'sk_live%s' '_short')" "a private key belongs in the keychain" \
-             "$(printf 'ghp%s' '_tooshort')" "AIza" "-----BEGIN CERTIFICATE-----"; do
+             "$(printf 'ghp%s' '_tooshort')" "AIza" "-----BEGIN CERTIFICATE-----" \
+             "$(printf 'xoxb%s' '-your-token-here')" "$(printf 'sk_live%s' '_xxxxxxxxxxxxxxxx')"; do
     i34=$((i34+1))
     printf 'note: %s\n' "$s34" > "$T34/nearmiss/notes.md"
     git -C "$T34/nearmiss" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
@@ -6800,6 +6870,63 @@ OWN34
     ok "a staged change that only removes such content still commits"
   else
     bad "a staged change that only removes such content still commits (exit $rc, said: $out)"
+  fi
+
+  # --- the ways the read used to come back empty and be read as CLEAN -----
+  # A pipeline whose only answer is grep's exit status has no way to say "I could not look", so each of
+  # these was a silent exemption: the commit went through, the guard printed nothing, and the suite was
+  # green. Each row stages the same private-key literal and differs only in how the diff is disabled.
+  #
+  # Worth naming: the suite sandboxes global git config for the whole run, so the driver case below is
+  # set per-repository here. In the wild it lives in the operator's own ~/.gitconfig, outside every
+  # repository this guard defends, which is what made it total rather than occasional.
+  why34=""
+  undiffable34() {  # $1 = fixture, $2 = a shell line run in it before staging
+    mkrepo34 "$1"
+    mkdir -p "$T34/$1/src"
+    ( cd "$T34/$1" && eval "$2" ) >/dev/null 2>&1
+    printf 'const t = "%s";\n' "$PK34" > "$T34/$1/src/app.ts"
+    git -C "$T34/$1" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+    b34="$(head34 "$1")"
+    out="$(sh34 "$1" "git commit -m pasted")"; rc=$?
+    { [ "$rc" != 0 ] && [ "$b34" = "$(head34 "$1")" ]; } || why34="$why34 [$1 -> exit $rc, said: $out]"
+  }
+  undiffable34 attrs   "printf '*.ts -diff\n' > .gitattributes"
+  undiffable34 binattr "printf '*.ts binary\n' > .gitattributes"
+  undiffable34 extdiff "git config diff.external /usr/bin/true"
+  undiffable34 textcv  "printf '*.ts diff=none\n' > .gitattributes; git config diff.none.textconv /usr/bin/true"
+  [ -z "$why34" ] && ok "a secret is still found where the repository or the operator has disabled the diff" \
+                  || bad "a secret is still found where the repository or the operator has disabled the diff ($why34)"
+
+  # A staged path beginning with `:` is parsed as pathspec magic, matches nothing, and exits 0 with no
+  # error at all — so the file was exempt and nothing said so. Note the sibling that is NOT broken and
+  # therefore is not asserted as one: git matches a pathspec like src/cfg[1].js literally, so glob
+  # metacharacters in a name were never the defect.
+  mkrepo34 magic
+  printf 'const t = "%s";\n' "$PK34" > "$T34/magic/:pasted.txt"
+  git -C "$T34/magic" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+  b34="$(head34 magic)"
+  out="$(sh34 magic "git commit -m pasted")"; rc=$?
+  if [ "$rc" != 0 ] && [ "$b34" = "$(head34 magic)" ]; then
+    ok "a staged path that git would read as pathspec magic is judged, not skipped"
+  else
+    bad "a staged path that git would read as pathspec magic is judged, not skipped (exit $rc, said: $out)"
+  fi
+
+  # The `+++ b/path` filter's own row. Without it the file header is read as an added line, so a path
+  # that merely CARRIES a shape is refused for content it does not have — a false refusal, which is the
+  # one direction this guard is built never to fail in. Nothing else in the block stages such a path, so
+  # the filter could be deleted outright and the suite would stay green.
+  mkrepo34 pathshape
+  mkdir -p "$T34/pathshape/docs"
+  printf 'nothing here\n' > "$T34/pathshape/docs/$AWS34.md"
+  git -C "$T34/pathshape" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
+  b34="$(head34 pathshape)"
+  out="$(sh34 pathshape "git commit -m ordinary")"; rc=$?
+  if [ "$rc" = 0 ] && [ "$b34" != "$(head34 pathshape)" ]; then
+    ok "a harmless file whose own path carries a token shape is committed"
+  else
+    bad "a harmless file whose own path carries a token shape is committed (exit $rc, said: $out)"
   fi
 
   # The row that makes the guard usable in the repository that ships it: a by-content check whose own
