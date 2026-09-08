@@ -54,6 +54,10 @@ For each step:
 1. **Read** source files to change
 2. **Make** code changes
 3. **Run the Verify command from the plan step** — every plan step has a `Verify` field with a copy-pasteable test command
+   - **No reassurance re-runs**: do not run a command again over code unchanged since that command
+     last ran — a repeat that cannot change its own answer is a turn spent buying confidence — while the
+     audit's re-run of every step's Verify command (Verify protocol, step 7) is not this rule's subject,
+     since it re-asks a question a later step may have changed the answer to
    - If no Verify command in plan (shouldn't happen): run relevant test file
    - If test file missing -> Document in commit (create tests later)
    - If tests fail -> Intentional change? Fix test. Unexpected? Fix code. (Conformance specs are the exception — see below.)
