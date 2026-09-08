@@ -72,3 +72,4 @@ degradation is "stops" is a hard requirement; the others are why the map draws a
 | The diff itself | execute | Stops. There is nothing to judge. |
 | The base resolution for the task diff | guardrail hooks (the diff brake) | Degrades. The skill's prose copy becomes the only authority, and the two can drift apart unnoticed. |
 | The project's test command | harness | Degrades. The prover reports a proposal unproven rather than guessing. |
+| The test-file pattern `TEST_RE` for the skip-marker leg | guardrail hooks (the diff brake) | Degrades. The leg loses its pathspec and reads every file in the diff, which turns a blocking gate into a false one. |
