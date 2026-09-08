@@ -16573,6 +16573,51 @@ else
   printf '%s' "$out70" | grep -qF "$SECRET70" \
     && bad "O2 the artifact guard's refusal names the file and never its contents (it echoed the body)" \
     || ok "O2 the artifact guard's refusal names the file and never its contents"
+
+  # --- a payload whose fields are not the shape the guard expects ----------
+  # Six branches of this guard read a field and could have assumed its type. The sibling rail paid for
+  # every one of them: an uncaught raise leaves a PreToolUse hook on exit 1, which does NOT block, so the
+  # write went through with a stack trace printed over it. Deleting any of the six left the suite green
+  # here, because every fixture above sends a well-formed object. Silence is asserted, not merely the
+  # absence of a crash -- a guard that stands aside with a diagnostic is chatter on every Write.
+  araw() {  # $1 = raw payload -> prints output, returns the hook's exit code
+    printf '%s' "$1" | python3 "$GUARD70" 2>&1
+  }
+  amalformed() {  # $1 = label, $2 = raw payload -> asserts the pair: waved through, and nothing said
+    out70="$(araw "$2")"; rc70=$?
+    if [ "$rc70" = 0 ] && [ -z "$out70" ]; then
+      ok "$1"
+    else
+      case "$out70" in
+        *Traceback*) bad "$1 (exit $rc70, traceback)" ;;
+        *)           bad "$1 (exit $rc70, said: $out70)" ;;
+      esac
+    fi
+  }
+  AG70="$P70/.ai-flow/artifacts/T-XXX/plan.md"   # exists, so only the malformation can be what spares it
+  amalformed "P1 a top-level payload that is not an object is waved through without a traceback" \
+    '["x"]'
+  amalformed "P2 a payload that is not JSON at all is waved through without a traceback" \
+    'not json'
+  amalformed "P3 a tool_input that is not an object is waved through without a traceback" \
+    "{\"cwd\":\"$P70\",\"tool_name\":\"Write\",\"tool_input\":\"oops\"}"
+  amalformed "P4 a cwd that is not a string is waved through without a traceback" \
+    "{\"cwd\":123,\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$AG70\"}}"
+  amalformed "P5 a file_path that is not a string is waved through without a traceback" \
+    "{\"cwd\":\"$P70\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":7}}"
+  amalformed "P6 an empty file_path is waved through and blocks nothing" \
+    "{\"cwd\":\"$P70\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"\"}}"
+  # The control, and the six above are worth nothing without it: a guard that exited 0 on every input
+  # would satisfy all six. The same fixture, well-formed, must still refuse.
+  out70="$(araw "{\"cwd\":\"$P70\",\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\"$AG70\"}}")"; rc70=$?
+  [ "$rc70" = 2 ] && ok "P7 the malformed-payload fixture still refuses a well-formed Write over an existing artifact" \
+                  || bad "P7 the malformed-payload fixture still refuses a well-formed Write over an existing artifact (exit $rc70)"
+  # The other arm of the directory read: a payload declaring NO cwd falls back to the process's own,
+  # which is the session's on every real invocation. Nothing pinned it -- every other fixture declares
+  # one -- so the fallback could be widened into a stand-aside and the rail would go silent, suite green.
+  out70="$( cd "$P70" && araw "{\"tool_name\":\"Write\",\"tool_input\":{\"file_path\":\".ai-flow/artifacts/T-XXX/plan.md\"}}" )"; rc70=$?
+  [ "$rc70" = 2 ] && ok "P8 a payload declaring no directory is judged against the one the hook runs in" \
+                  || bad "P8 a payload declaring no directory is judged against the one the hook runs in (exit $rc70)"
 fi
 
 # A6 -- registration and installation. The matcher is asserted as a GROUP of its own naming Write and
@@ -16626,7 +16671,11 @@ fi
 # returns, so a marker added there arrives in the fixture, in the self-instance row and in the skill row
 # at once -- and a leg that never lands leaves ALT70 empty, which is a failure and not a green run over
 # nothing.
-ALT70="$(grep -oE "\^\\\\\+\.\*\(([^)]*)\)" "$VFY70" 2>/dev/null | head -1 | sed -E 's/^\^\\\+\.\*\(//; s/\)$//')"
+ALT70="$(grep -oE "grep -E '\([^)]*\)'" "$VFY70" 2>/dev/null | head -1 | sed -e 's/^grep -E .(//' -e 's/).$//')"
+# The line-numbering stage of the same command, lifted the same way and RUN rather than read. The
+# criterion asks the audit to print `file:line`; the only way to know the DOCUMENTED command can is to
+# execute the documented command -- a row that rebuilds the pipeline locally proves its reconstruction.
+AWK70="$(grep -oE "awk '[^']*'" "$VFY70" 2>/dev/null | head -1 | sed -e 's/^awk .//' -e 's/.$//')"
 if [ -z "$ALT70" ]; then
   bad "A7 the skip-marker leg reports a disabled test with its file and line (no marker declaration in verify.md)"
   bad "A10 the marker set has exactly one declaration and the skill routes to it (nothing declared)"
@@ -16635,7 +16684,9 @@ if [ -z "$ALT70" ]; then
 else
   # The literal each pattern is meant to catch, recovered from the pattern: drop the escapes and open the
   # single-character classes the self-instance property is written with. No marker text is spelled here.
-  LITS70="$(printf '%s' "$ALT70" | tr '|' '\n' | tr -d '\\' | sed -E 's/\[(.)\]/\1/g')"
+  # `\b` is a zero-width assertion, so it is dropped before the escapes are: leaving it in would derive
+  # `bxit(` as the literal and the positive leg would test a marker nobody wrote.
+  LITS70="$(printf '%s' "$ALT70" | tr '|' '\n' | sed -E 's/\\b//g' | tr -d '\\' | sed -E 's/\[(.)\]/\1/g')"
   n70=0; for l70 in $LITS70; do n70=$((n70+1)); done
   [ "$n70" -ge 10 ] || echo "  [note] C70 the declaration carries $n70 markers; understand.md names ten"
 
@@ -16644,8 +16695,17 @@ else
   D70="$T70/diffbox"; mkproj "$D70" main
   mkdir -p "$D70/test"
   : > "$D70/test/thing.spec.ts"
-  for l70 in $LITS70; do printf 'it%s\n' "$l70" >> "$D70/test/thing.spec.ts"; done
-  for l70 in $LITS70; do printf 'it%s\n' "$l70" >> "$D70/app.ts"; break; done
+  # Each marker on its own, indented: four of the ten now take a word boundary, so a literal glued to a
+  # preceding word would no longer sit at a boundary, and the positive leg would test nothing. Written
+  # without naming the marker: this file IS a test file to the brake, so prose about the set is read by
+  # the set. The answer is to reword, never to exempt the path -- an exempt path is a file in which a
+  # real violation passes unseen, which is the lesson git/pre-commit already paid for.
+  for l70 in $LITS70; do printf '  %s\n' "$l70" >> "$D70/test/thing.spec.ts"; done
+  # Two ORDINARY lines, in the same test file. These are the whole reason the boundaries are there, and
+  # they are written literally because under the declared set they are NOT markers -- which is exactly
+  # what makes them load-bearing: drop the boundaries and this row reddens instead of the next verify.
+  printf '  sys.exit(0)\n  const y = benefit(x)\n' >> "$D70/test/thing.spec.ts"
+  for l70 in $LITS70; do printf '  %s\n' "$l70" >> "$D70/app.ts"; break; done
   $GIT -C "$D70" add -A >/dev/null 2>&1
   $GIT -C "$D70" commit -q -m work
   # Which of the diff's files the leg is entitled to read, decided by the brake's own pattern rather
@@ -16669,25 +16729,57 @@ for path in sys.argv[2:]:
 " "$HK/diff-size-guard.py" "$@"
   }
   a7_70=""
+  [ -n "$AWK70" ] || a7_70="$a7_70 [the documented command carries no line-numbering stage, so it cannot report file:line]"
   ALLF70="$($GIT -C "$D70" diff --name-only HEAD~1 HEAD)"
   TSTF70="$(tfiles70 $ALLF70)"
   [ -n "$TSTF70" ] || a7_70="$a7_70 [the brake's TEST_RE did not extract, so the restriction checked nothing]"
-  HITS70="$($GIT -C "$D70" diff --unified=0 HEAD~1 HEAD -- $TSTF70 \
-            | grep -nE "^\+.*($ALT70)" 2>/dev/null)"
+  # The DOCUMENTED command, executed: the brake's file set as the pathspec, the protocol's own awk stage,
+  # the protocol's own marker set. Nothing here is rebuilt -- a row that reconstructs the pipeline proves
+  # its reconstruction, which is how a leg whose published form had no pathspec at all stayed green.
+  HITS70="$($GIT -C "$D70" diff -U0 HEAD~1 HEAD -- $TSTF70 \
+            | awk "$AWK70" | grep -E "$ALT70" 2>/dev/null)"
+  # The same command with the pathspec REMOVED. It is the control for the restriction: without it the
+  # negative half below cannot tell a working pathspec from a fixture that never had a hit to suppress.
+  WIDE70="$($GIT -C "$D70" diff -U0 HEAD~1 HEAD \
+            | awk "$AWK70" | grep -E "$ALT70" 2>/dev/null)"
   for l70 in $LITS70; do
     printf '%s' "$HITS70" | grep -qF "$l70" || a7_70="$a7_70 [$l70 not caught]"
   done
-  # The negative half, and the only one the fixture's production file exists for: the same marker in a
-  # file the brake does not call a test must not be reported. Without this the leg could be a bare grep
-  # over the whole diff and every positive row above would still be green.
+  # file AND line, from the command itself -- not a count, and not a diff offset dressed up as a line.
+  printf '%s' "$HITS70" | grep -qE '^test/thing\.spec\.ts:[0-9][0-9]*:' \
+    || a7_70="$a7_70 [the hits carry no file:line]"
+  # The negative half the fixture's production file exists for, now attributed BY NAME rather than by a
+  # count: the same marker in a file the brake does not call a test is reported without the pathspec and
+  # must not be reported with it.
   printf '%s' "$ALLF70" | grep -qF 'app.ts' \
     || a7_70="$a7_70 [the fixture lost its non-test file, so the restriction was never put to the test]"
   printf '%s' "$TSTF70" | grep -qF 'app.ts' \
     && a7_70="$a7_70 [the brake counts app.ts as a test file -- the fixture's negative half proves nothing]"
-  # The leg must be able to name the file and the line -- a bare match count cannot be reported as
-  # `file:line`, which is what the criterion asks the audit to print.
-  grep -qE 'grep -[a-zA-Z]*n[a-zA-Z]* ' "$VFY70" || a7_70="$a7_70 [the documented command cannot report a line number]"
-  grep -qF 'TEST_RE' "$VFY70" || a7_70="$a7_70 [the leg does not key on the brake's own test-file pattern, so what counts as a test is stated twice]"
+  printf '%s' "$WIDE70" | grep -qF 'app.ts' \
+    || a7_70="$a7_70 [the unrestricted form reports no non-test file either, so this fixture cannot show a pathspec working]"
+  printf '%s' "$HITS70" | grep -qF 'app.ts' \
+    && a7_70="$a7_70 [the documented command reports a non-test file: the restriction is not in it]"
+  # Precision, and the reason four patterns take a word boundary. An ordinary exit() and an ordinary call
+  # whose tail happens to spell a focus marker are not disabled tests, and a blocking gate that says
+  # they are is a gate that gets routed around -- this engine's own suite offered ten such lines and
+  # not one true positive.
+  printf '%s' "$HITS70" | grep -qF 'sys.exit(' \
+    && a7_70="$a7_70 [an ordinary exit() in a test file is reported as a disabled test]"
+  printf '%s' "$HITS70" | grep -qF 'benefit(' \
+    && a7_70="$a7_70 [an ordinary call whose tail spells a focus marker is reported as a disabled test]"
+  # And the restriction must be IN the published command, not merely beside it in prose. A pathspec the
+  # document only describes is an adjective; this is the leg that would have caught that. Both legs are
+  # bound to the LINE that makes the claim -- the diff invocation, and the assignment that fills its
+  # pathspec -- never to the word appearing somewhere in the file: a leg keyed on a word is satisfied by
+  # any prose that happens to use it, which is the shape this protocol says to distrust first.
+  DIFFL70="$(grep -F 'git diff <merge-base> -U0' "$VFY70" | head -1)"
+  TSETL70="$(grep -F 'TESTS="$(' "$VFY70" | head -1)"
+  [ -n "$DIFFL70" ] || a7_70="$a7_70 [the published command has no -U0 diff stage, so it cannot carry hunk headers]"
+  printf '%s' "$DIFFL70" | grep -qF -- '-- $TESTS' \
+    || a7_70="$a7_70 [the published diff stage carries no pathspec, so it reads files the leg is not entitled to]"
+  [ -n "$TSETL70" ] || a7_70="$a7_70 [the published command never builds the file set its pathspec names]"
+  printf '%s' "$TSETL70" | grep -qF 'TEST_RE' \
+    || a7_70="$a7_70 [the pathspec is not derived from the brake's TEST_RE, so what counts as a test is stated twice]"
   [ -z "$a7_70" ] && ok "A7 the skip-marker leg reports a disabled test with its file and line" \
                   || bad "A7 the skip-marker leg reports a disabled test with its file and line ($a7_70)"
 
@@ -16712,13 +16804,25 @@ for path in sys.argv[2:]:
   # A8 -- the leg is stated in the protocol AND performed by the command. This is the discovery this task
   # was handed: the skill does not carry the provenance grep beside which the leg sits, so a leg stated
   # only in the protocol is a leg that runs on the fallback path alone.
+  # EVERY leg below is bound to the BULLET's own text, never to the step that contains it. Asserted over
+  # the step, all three passed on the pre-change file: awk ranges include their terminator, so step 5's
+  # "Skip it for" supplied `skip`; step 4 already said "checks from the protocol"; and its own opening
+  # sentence already carried the tick. The row was green with the bullet deleted -- a conformance row
+  # answered entirely by text that was already there is the defect this task exists to make visible.
   STEP70="$(awk '/^4\. \*\*Criterion audit/,/^5\. /' "$SKL70")"
+  BUL70="$(printf '%s\n' "$STEP70" | grep -F 'Skip-marker grep')"
   a8_70=""
-  printf '%s' "$STEP70" | grep -qiE 'skip|disabl' || a8_70="$a8_70 [the criterion audit step does not name the leg]"
-  printf '%s' "$STEP70" | grep -qF 'verify.md' \
-    || printf '%s' "$STEP70" | grep -qiE 'protocol' \
-    || a8_70="$a8_70 [it names no route to the declaration]"
-  printf '%s' "$STEP70" | grep -qF '❌' || a8_70="$a8_70 [it does not say a hit holds the gate]"
+  if [ -z "$BUL70" ]; then
+    a8_70="$a8_70 [the criterion audit step carries no skip-marker bullet]"
+  else
+    printf '%s' "$BUL70" | grep -qiE 'switches a test off|disabl' \
+      || a8_70="$a8_70 [the bullet does not say what the leg looks for]"
+    printf '%s' "$BUL70" | grep -qiE 'test file|counts as a test' \
+      || a8_70="$a8_70 [the bullet does not carry the test-file restriction]"
+    printf '%s' "$BUL70" | grep -qF '~/.claude/ai-flow/protocols/verify.md' \
+      || a8_70="$a8_70 [it routes to no INSTALLED path, so an adopter following it reaches nothing]"
+    printf '%s' "$BUL70" | grep -qF '❌' || a8_70="$a8_70 [it does not say a hit holds the gate]"
+  fi
   [ -z "$a8_70" ] && ok "A8 the verify command performs the skip-marker leg the protocol declares" \
                   || bad "A8 the verify command performs the skip-marker leg the protocol declares ($a8_70)"
 fi
