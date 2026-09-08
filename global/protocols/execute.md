@@ -97,7 +97,12 @@ A stub that is **objectively wrong** (bad assumption, impossible setup, criterio
 Steps:
 1. STOP current step execution
 2. Report to user: what assumption broke, what was discovered
-3. Update `artifacts/T-XXX/plan.md` with corrected approach (this is an authorized overwrite — Artifact Check does not apply to replans)
+3. **Amend** `artifacts/T-XXX/plan.md` with the corrected approach — amend it, never replace it. A
+   replan is the one place this engine used to sanction a wholesale rewrite, and it never needed one:
+   what a replan changes is a step and the assumption under it, which is an edit. `Artifact Check Before
+   Create` therefore has no exemption to make here, and `artifact-write-guard.py` carries none — a rail
+   the model can open by declaring the exception protects nothing. Update `understand.md` and the
+   conformance manifest the same way
 4. Resume execution from the affected step
 
 This applies to factual/technical assumptions — not minor implementation details that can be adjusted inline.

@@ -17,6 +17,15 @@
           "command": "python3 $HOME/.claude/hooks/understand-write-guard.py"
         }
       ]
+    },
+    {
+      "matcher": "Write",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "python3 $HOME/.claude/hooks/artifact-write-guard.py"
+        }
+      ]
     }
   ],
   "UserPromptSubmit": [
