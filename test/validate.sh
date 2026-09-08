@@ -2371,7 +2371,14 @@ mf_commit_gate() {
   printf '%s' "$s" | grep -qi 'quick-path.md' || return 1
   # The section's own former sentences. A manual that grows one of them back has two homes again, and the
   # drift is silent by construction: nothing distributes this file, so the two copies never meet.
-  printf '%s' "$s" | grep -qiE 'do not commit until|only commit when|stays uncommitted|still ask first' \
+  #
+  # FILE-WIDE, not section-scoped, and that reach is the point (IB-032): a negative bounded to the section
+  # is green the day one of these sentences reappears four headings away, which is exactly how this manual
+  # came to state two of its six commit facts outside the section that claims to route them. Measured
+  # before widening -- zero hits in the shipped copy and zero in the live twin -- because `manfact` judges
+  # both, so a phrase that clears on ordinary English would redden a user's own manual with no remedy.
+  printf '%s' "$(tr -s ' \n' '  ' < "$1")" \
+    | grep -qiE 'do not commit until|only commit when|stays uncommitted|still ask first' \
     && return 1
   # WHY the rule cannot live here, kept with the route. Without it the section reads as a plain index and
   # the next editor puts a rule back for convenience, which is how it got here the first time.

@@ -124,27 +124,33 @@ adopter gains the rail and not this paragraph.
 
 ## Action Boundaries
 
-### Always (do without asking)
-- Fix broken imports, null pointers, type mismatches
-- Add error handling, null checks, validation where the flow can reach the failure (not for impossible scenarios — see Simplicity First)
-- Fix missing deps, build config issues
-- Run tests after every code change
-- Auto-fix test if code change was intentional
-
-### Ask First (need user approval)
-- New services, components, or modules
-- Schema changes (models, database, APIs)
-- Library additions or swaps
-- Changes to >3 files not in the plan
-- Architectural decisions (new patterns, state shape)
+**The two tiers that govern doing the work are stated by the phase that does it** —
+`protocols/execute.md` > `## Deviation Rules During Execution`, their one home: what may be changed
+without asking, and what needs approval first. Nothing distributes this file, so a copy kept here would
+drift against the one the phases actually read.
 
 ### Never (hard stops)
-- Publish without user validation — the approval is move 1 of the closing ceremony (backlog protocol), and it covers the task's work in either kind of checkout. Commits themselves are free per step
-- Skip or disable tests — and the audit that closes a task greps the diff's added lines for it (Verify protocol > Skip-marker grep), in any file the diff brake counts as a test
-- Commit secrets, credentials, or .env files
-- Delete user data or drop tables/collections
-- Force push to main
-- Overwrite existing artifacts without checking — refused outright by `artifact-write-guard.py` for the four that hold a previous session's decisions
+
+**A routed list.** Five of the six are performed by something, and each names it. The sixth has no
+mechanism anywhere else in the engine, so it is stated here in full and this list says so — routing a
+rule to nowhere is worse than a rule with no second home to drift against.
+
+- Publish without user validation — the approval is move 1 of the closing ceremony
+  (`protocols/backlog.md`), which owns the gate in either kind of checkout
+- Skip or disable tests — the audit that closes a task greps the diff's added lines for it (Verify
+  protocol > Skip-marker grep), in any file the diff brake counts as a test
+- Commit secrets, credentials, or .env files — refused at the act by the `pre-commit` guard
+  (`hooks/README.md`)
+- Delete user data or drop tables/collections — **no mechanism anywhere else performs this one**, so the
+  rule is stated here rather than routed, and this bullet says so.
+- Rewrite or delete a published trunk — refused at the act by the `pre-push` guard, which resolves the
+  trunk from what the remote declares rather than from any branch name
+- Overwrite existing artifacts without checking — refused outright by `artifact-write-guard.py` for the
+  four that hold a previous session's decisions
+
+Every route above reaches every install, because hooks and protocols are distributed. **This manual is
+not** — it is written only when absent and excluded by the drift guard — so an adopter whose copy
+predates this routing keeps the old list until they merge it by hand.
 
 ## Working Rules
 
@@ -155,7 +161,6 @@ adopter gains the rail and not this paragraph.
 - **Detect composite tasks** — propose splitting tasks that mix multiple concerns into independent backlog tasks (not subtasks) before planning
 - **Ask contextual questions** — gather all necessary context to produce polished code
 - **Update the task's state sheet** (`artifacts/T-XXX/state.md`) with step progress during execution
-- **Atomic commits**: `type(scope): description`
 - **Max 3 steps per plan** — split larger work into sub-plans
 - **Test validation REQUIRED** in Execute phase (TDD compliance)
 

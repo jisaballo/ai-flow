@@ -159,9 +159,22 @@ no divergences is to skip and say nothing (step 3 above).
 
 ## Deviation Rules During Execution
 
-Follow **Action Boundaries** from CLAUDE.md (Always / Ask First / Never). In summary:
-- Auto-fix bugs, imports, deps, type mismatches -> **Always**
-- New services, schema changes, lib swaps, >3 unplanned files -> **Ask First**
-- Skip tests, commit secrets, force push -> **Never**
+The two tiers that govern doing the work are stated here, in the phase that does it. The **hard stops**
+are CLAUDE.md's, at `### Never (hard stops)`, where each one names the mechanism that performs it.
+
+### Always (do without asking)
+- Fix broken imports, null pointers, type mismatches
+- Add error handling, null checks, validation where the flow can reach the failure — not for impossible
+  scenarios (CLAUDE.md > Core Principles, Simplicity First)
+- Fix missing deps, build config issues
+- Run tests after every code change
+- Auto-fix test if code change was intentional
+
+### Ask First (need user approval)
+- New services, components, or modules
+- Schema changes (models, database, APIs)
+- Library additions or swaps
+- Changes to >3 files not in the plan
+- Architectural decisions (new patterns, state shape)
 
 **New work discovered along the way** (not in the task or plan) -> **Discovery Triage** (see Understanding protocol): blocks this task -> Replan Gate; contradicts the epic's Goal/Non-Goals -> escalate to user; everything else -> the routing test, ownership asked first — a finding in a file already inside this task's diff is the task's to fix now, a finding whose failure cannot occur is discarded with the reason written under `## Discarded` in `artifacts/T-XXX/discoveries.md`, and whatever survives is staged in that same file with its ground stamp — then continue the plan. Never create new T-XXX tasks mid-epic, and nothing reaches BACKLOG.md while the task is in flight.
