@@ -48,6 +48,10 @@ Existing committed references stay untouched — a mass cleanup would rewrite th
 
 **CRITICAL: Execute phase MUST validate tests.**
 
+Where the task's level is **Auto**, a bug fix writes the reproducing test before the fix and that
+failure is the evidence — that level skips Conform, so nothing else in its chain produces a red step,
+and a mechanical refactor at the same level has nothing to reproduce
+
 ### Execute Step Protocol
 
 For each step:
