@@ -86,7 +86,13 @@ Stubs recorded in `artifacts/T-XXX/conformance-baseline/manifest.md` are **froze
 
 - delete or rename a contract stub,
 - invert or weaken its assertion,
-- adjust its expected value to match the observed one.
+- adjust its expected value to match the observed one,
+- **switch it off** — skipped, disabled, ignored, or left unreached because a sibling was focused. The
+  three above all change what a stub asserts; this one changes nothing about it and simply stops it
+  running, which is why the list did not name it and why it is the shape that survives a reading of the
+  other three. It is also the one the audit at the end of the phase now greps the task diff for
+  (Verify protocol > Skip-marker grep), so a stub switched off here is reported there — the rule and the
+  mechanism, rather than the rule alone.
 
 A stub that is **objectively wrong** (bad assumption, impossible setup, criterion itself invalidated) = **Replan Gate**, not a test fix — stop, report, update plan + understand.md, and the manifest with it. In **Auto** level, needing to touch any contract escalates the task to Guided. Non-conformance specs keep the normal fix-test rule.
 
