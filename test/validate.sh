@@ -16408,17 +16408,15 @@ fi
 DG69="$(awk '/^## Diff Size Guardrail/{f=1;next} f && /^## /{exit} f' "$ROOT/global/protocols/execute.md" 2>/dev/null)"
 # One variable per HOME, never one per file: while lifecycle.md carried two guardrail lines, a `grep`
 # over the file concatenated them and a loop reading the concatenation was green while either line alone
-# reverted to the wording this task replaced. Its §7 copy is now a citation, so one home is left there
-# and the principle is what remains. Each is selected by its own subject, the way DG69 above is cut to
-# its own section.
-LC69B="$(grep -F 'Still respects the diff guardrail' "$ROOT/global/protocols/lifecycle.md" 2>/dev/null)"
+# reverted to the wording this task replaced. Both of those copies are citations now and the map is no
+# longer a home, so the principle is what remains: each home is selected by its own subject, the way DG69
+# above is cut to its own section.
 RD69="$(grep -F 'diff-size-guard.py' "$ROOT/global/hooks/README.md" 2>/dev/null)"
 
 o2_69=""
 [ -n "$DG69" ] || o2_69="$o2_69 [execute.md's Diff Size Guardrail section did not extract -- heading renamed?]"
-[ -n "$LC69B" ] || o2_69="$o2_69 [lifecycle.md's Auto-level guardrail bullet did not extract -- routed away early?]"
 [ -n "$RD69" ] || o2_69="$o2_69 [the hooks README carries no row for the brake]"
-for pair69 in "execute.md:$DG69" "lifecycle.md#auto:$LC69B" "README.md:$RD69"; do
+for pair69 in "execute.md:$DG69" "README.md:$RD69"; do
   n69="${pair69%%:*}"; t69="${pair69#*:}"
   [ -n "$t69" ] || continue
   printf '%s' "$t69" | grep -qiE 'added lines|lines added|added-only' || o2_69="$o2_69 $n69(added-only)"
@@ -16428,8 +16426,8 @@ done
 # The word `lockfile` is not the fact -- the six NAMES are, and they are the hook's to own. Derived from
 # `LOCKFILES` in the source, the way A7 above derives THRESHOLD_KEY and FILE_THRESHOLD: add `bun.lockb`
 # there and this names every prose home that lags, where a presence grep would stay green over two
-# enumerations gone wrong. lifecycle.md is excluded on purpose: it summarises ("and its siblings"), and
-# its copies are scheduled to be routed away to a citation entirely.
+# enumerations gone wrong. lifecycle.md is not read here at all any more: both of its copies were routed
+# away to a citation, and C73 A1 is what now keeps the two ceilings out of the map.
 LOCK69="$(sed -n '/^LOCKFILES = {/,/^}/p' "$HK/diff-size-guard.py" | grep -oE "'[^']+'" | tr -d "'")"
 [ -n "$LOCK69" ] || o2_69="$o2_69 [LOCKFILES did not extract from the hook -- the derived leg checked nothing]"
 for n69 in $LOCK69; do
@@ -16439,8 +16437,8 @@ done
 # The README row alone additionally states the scope each record is kept at -- the fact IB-013 was
 # retired for, and the one a reader cannot derive from the two limits.
 printf '%s' "$RD69" | grep -qiE 'task set|open task' || o2_69="$o2_69 README(record-scope)"
-[ -z "$o2_69" ] && ok "O2 the three prose homes state added-lines-only and both new exclusions" \
-                || bad "O2 the three prose homes state added-lines-only and both new exclusions (missing:$o2_69)"
+[ -z "$o2_69" ] && ok "O2 the two prose homes state added-lines-only and both new exclusions" \
+                || bad "O2 the two prose homes state added-lines-only and both new exclusions (missing:$o2_69)"
 
 # O3 is a NEGATIVE home check, and it is the one row that guards the DECISION rather than the code: the
 # lockfile list is fixed in the hook precisely so the project layer's two documentation homes stay out of

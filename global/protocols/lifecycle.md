@@ -230,10 +230,10 @@ The level is classified at activation; the user confirms or adjusts it.
 
 **Auto level constraints:**
 - Still runs conformance tests (if criteria exist) or existing tests
-- Still respects Bounded Retry (3 attempts max)
-- Still respects the diff guardrail (>150 added lines uncommitted in a step, or >400 on the branch since its base → pause; tests, `.ai-flow/` and lockfiles excluded)
+- Still respects the bounded retry — `protocols/execute.md` states the bound
+- Still respects the diff guardrail — `protocols/execute.md` > `## Diff Size Guardrail` states both ceilings and the exclusions
 - Commit message includes an `[auto]` tag: `type(scope): [auto] description`
-- If anything unexpected happens (test failure after 3 retries, >3 files needed, a design decision required) → **escalate to Guided**
+- If anything unexpected happens (a test still failing when the bounded retry is exhausted, >3 files needed, a design decision required) → **escalate to Guided**
 
 ## Why This Structure Works
 
