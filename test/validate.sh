@@ -13551,17 +13551,28 @@ for f88 in "$CARDDIR88"/*.md; do
   printf '%s\n' "$CARDS88" | grep -qxF "$f88" \
     || a12_88="$a12_88 [a card file the map does not register: $f88]"
 done
-# Two claims of the same shape, so each is bound to the SENTENCE that owns it and not to the region: the
-# words of both fit in one sentence, and prose with the two exchanged — "this table is not a card, a card
-# not listed here is the register" — carries every word while stating the opposite. Cutting to the clause
-# is the remedy rather than widening either pattern, and the sentence is the clause the helper already
-# splits on. Predicates alone do not do it: subject-free, each one is satisfied riding on the other
-# claim's subject, which is how the exchange first passed both legs.
+# A row whose Card cell is NOT A LINK yields no card, so it reaches neither direction above: the map
+# registers it and the guard never measures it — the first half of the rule this row asserts, defeated
+# without a file being missing or an entry being absent. The two counts are of the same kind, so the leg
+# is an equality and the diagnostic carries both numbers; a verdict saying only "a row registered nothing"
+# would not say how many of either. The extraction is `sort -u`, so two rows naming one file collapse and
+# are named here too, which is the same defect wearing the other sign.
+ROWN88="$(printf '%s\n' "$CARDSEC88" | grep '^| ' | grep -vcE '^\| Capability \|' | tr -d ' ')"
+CARDN88="$(printf '%s\n' "$CARDS88" | grep -c . | tr -d ' ')"
+[ "$ROWN88" = "$CARDN88" ] \
+  || a12_88="$a12_88 [the cards table carries $ROWN88 rows but $CARDN88 of them registered a card]"
+# Two claims of the same shape, so each is bound to its own SUBJECT AND PREDICATE, adjacent, in a single
+# pattern. Two loose words in one sentence is not enough and the failure is not hypothetical: it accepts
+# either claim NEGATED ("this table is not the register"), and it accepts the exchange this comment used to
+# quote as the thing it defended against — "this table is not a card, a card not listed here is the
+# register" — because the helper splits a region on the period alone, so a comma-joined exchange is ONE
+# chunk carrying every pattern of both legs. Cutting to the sentence is therefore no remedy at all where
+# the writer uses a comma; binding the predicate to its subject is, and it holds whatever the punctuation.
 # Words are separated by a whitespace CLASS rather than by literal spaces, and the helper flattens the
-# region's own line breaks, so neither leg can redden because unchanged words were re-wrapped.
-[ "$(insent "$CARDSEC88" 'this[[:space:]]+table' 'register')" = 1 ] \
+# region's own line breaks, so neither leg can redden because unchanged words were re-wrapped mid-claim.
+[ "$(insent "$CARDSEC88" 'this[[:space:]]+table[[:space:]]+is[[:space:]]+the[[:space:]]+register')" = 1 ] \
   || a12_88="$a12_88 [the map never says its cards table is the register]"
-[ "$(insent "$CARDSEC88" 'not[[:space:]]+listed|unlisted' 'not[[:space:]]+a[[:space:]]+card')" = 1 ] \
+[ "$(insent "$CARDSEC88" 'not[[:space:]]+listed[[:space:]]+here[[:space:]]+is[[:space:]]+not[[:space:]]+a[[:space:]]+card')" = 1 ] \
   || a12_88="$a12_88 [the map never says a card it does not list is not a card]"
 [ -z "$a12_88" ] && ok "A12 the map's cards table is the register, and it is complete in both directions" \
                  || bad "A12 the map's cards table is the register, and it is complete in both directions:$a12_88"
@@ -13780,14 +13791,33 @@ else
   # filtered on the extension and never on a slash, because README.md sits at the repository root and a
   # slash-keyed filter would drop it from the card's side while the marker still found it, which is a
   # guard blaming the document for its own reader.
+  # The readability of each card is TESTED here rather than discarded: `2>/dev/null` over the extractor
+  # turned an unreadable registered card into zero rows, which the collective floor below then read as
+  # nothing at all to say about it.
   PAIRS89="$(printf '%s\n' "$CARDS88" | while IFS= read -r c89; do
       [ -n "$c89" ] || continue
-      awk '/^## The homes table$/{f=1;next} /^## /{f=0} f && /^\| /' "$c89" 2>/dev/null \
+      { [ -r "$c89" ] && [ -s "$c89" ]; } || continue
+      awk '/^## The homes table$/{f=1;next} /^## /{f=0} f && /^\| /' "$c89" \
         | grep -vE '^\| Concept \||^\|[-| ]*$' \
         | awk -v c="$c89" '{print c "\t" $0}'
     done)"
   LABELS89="$(printf '%s\n' "$PAIRS89" | cut -f2- \
               | sed -E 's/^\|[[:space:]]*([^|]*[^|[:space:]])[[:space:]]*\|.*/\1/' | sort -u)"
+  # THE FLOOR IS PER CARD, not over the union. A floor over every card's rows at once is satisfied by ANY
+  # card's rows, so at a register of two a card contributing nothing is read by neither row below while
+  # both report on "every registered card" — the exact shape both rows were widened to remove, one level
+  # up. A header and a separator with no data rows is how that state arrives without the card looking
+  # broken anywhere else: A1 sees the section, and A3's identity leg is satisfied by the header's own words.
+  # Unreadable is kept distinct from empty, because they are different things to go and fix.
+  NOROWS89=""
+  while IFS= read -r c89; do
+    [ -n "$c89" ] || continue
+    if ! { [ -r "$c89" ] && [ -s "$c89" ]; }; then
+      NOROWS89="$NOROWS89 [$c89 is unreadable or empty, so its rows were never compared]"
+    elif ! printf '%s\n' "$PAIRS89" | cut -f1 | grep -qxF "$c89"; then
+      NOROWS89="$NOROWS89 [$c89 yielded no homes row at all]"
+    fi
+  done <<< "$CARDS88"
   # The keys the marker table actually knows, read out of the case statement itself. A second list here
   # would go green while the table it claims to describe had lost a branch, which is the whole defect.
   KEYS89="$(awk '/^  marker89\(\) \{$/{f=1;next} f&&/^    esac$/{exit} f' test/validate.sh \
@@ -13797,7 +13827,10 @@ else
   # Set equality, not containment, and the second direction is not decoration: a marker left behind for a
   # concept every card has dropped is a rule nothing governs, and it reads as coverage.
   a8_89=""
+  # The register-level floor stays BESIDE the per-card one and is not replaced by it: it is the only leg
+  # that speaks when the register itself is empty, where there is no card for the per-card floor to walk.
   [ -n "$PAIRS89" ]  || a8_89="$a8_89 [no registered card yielded a homes row]"
+  a8_89="$a8_89$NOROWS89"
   [ -n "$LABELS89" ] || a8_89="$a8_89 [no row label could be extracted]"
   [ -n "$KEYS89" ]   || a8_89="$a8_89 [the marker table's keys could not be extracted]"
   if [ -n "$KEYS89" ]; then
@@ -13831,6 +13864,9 @@ else
   # The floor A8 already applies, applied here too: this row's loop body never runs on an empty register,
   # so without it the row implementing "cited exactly" reports green over a card it never read.
   [ -n "$PAIRS89" ] || a9_89="$a9_89 [no registered card yielded a homes row to compare]"
+  # The same per-card floor A8 applies, applied here for the same reason: this row's loop walks pairs, so a
+  # card that produced none is a card it reports on without having read.
+  a9_89="$a9_89$NOROWS89"
   while IFS= read -r pair89; do
     [ -n "$pair89" ] || continue
     c89="$(printf '%s\n' "$pair89" | cut -f1)"

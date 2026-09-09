@@ -84,5 +84,4 @@ this directory, and a rule about a document type they will never write is weight
 |---|---|
 | verify | [verify.md](verify.md) |
 
-**This table is the register**. A card that is not listed here is not a card. The conformance suite reads
-it rather than a list of its own.
+**This table is the register**. A card that is not listed here is not a card.
