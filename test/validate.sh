@@ -13509,80 +13509,144 @@ echo "== C60: a capability has one written shape, and the session that touches i
 # and A5 reads it for the diagram, and two spellings of one path are two things to keep in step.
 MAP88="docs/architecture/README.md"
 CARD88="docs/architecture/verify.md"
+CARDDIR88="$(dirname "$MAP88")"
 BLOCKS88="What it is|The artifacts|The homes table|External dependencies"
 
-if ! { [ -r "$CARD88" ] && [ -s "$CARD88" ]; }; then
-  for r88 in \
-    "A1 the verify card exists and carries its summary and its four blocks" \
-    "A2 the card's summary is derived from its body, in both directions" \
-    "A3 the card is inside the budget a card is given" \
-    "A4 the card is inside the guard that keeps every home naming the current count"; do
-    bad "$r88 ($CARD88 is unreadable or empty)"
-  done
+# THE REGISTER, derived from the map's own cards table, once, and named. Never a second literal and never
+# a list written beside it: the map is the document that governs the card type, so a guard keeping its own
+# list would enforce the rule on whatever it remembered instead of on what is registered — which is how
+# this block came to measure one card while the rule it applied was written for any.
+# Rows are taken on `^| `, which the separator's `|---|` cannot match; the header is dropped on its own
+# subject rather than on position; the link target is the row's only `](…)` span, resolved against the
+# map's own directory because a card is registered as a sibling filename.
+CARDSEC88="$(awk '/^## The cards$/{f=1;next} /^## /{f=0} f' "$MAP88" 2>/dev/null)"
+CARDS88="$(printf '%s\n' "$CARDSEC88" | grep '^| ' | grep -vE '^\| Capability \|' \
+           | grep -oE '\]\([^)]+\)' | sed -E 's/^\]\((.*)\)$/\1/' \
+           | awk -v d="$CARDDIR88" 'NF{print d "/" $0}' | sort -u)"
+
+# --- A12: the map's cards table IS the register, and the register is complete both ways -------------
+# Five legs. FLOORED, because a register that extracts to nothing turns every loop below into a green row
+# over no card at all — the failure A9 already guards against beside A8. ANCHORED, because a floor is
+# satisfied by one wrong card. BOTH DIRECTIONS, and each cut to the clause that owns it rather than
+# folded into one pattern over the pair: a card registered with no file, and a card file nobody
+# registered, are opposite defects, and exchanging the two verdicts has to leave the row red.
+# The map's prose is the fifth, in two legs because it makes two claims and prose carrying either one
+# alone would satisfy a single pattern: the table is the register, and a card it does not list is not a
+# card. A rule enforced here with no home in the document that governs the card type is the drift the
+# whole single-home discipline exists to remove.
+a12_88=""
+[ -n "$CARDS88" ] || a12_88="$a12_88 [the map's cards table yielded no card at all]"
+printf '%s\n' "$CARDS88" | grep -qxF "$CARD88" \
+  || a12_88="$a12_88 [the register does not name $CARD88]"
+while IFS= read -r c88; do
+  [ -n "$c88" ] || continue
+  { [ -r "$c88" ] && [ -s "$c88" ]; } \
+    || a12_88="$a12_88 [registered and not a readable file: $c88]"
+done <<< "$CARDS88"
+for f88 in "$CARDDIR88"/*.md; do
+  [ -e "$f88" ] || continue
+  # The map is the register and not a card, so it is excepted BY NAME: a rule that excepted "the file the
+  # guard happens to read" would except whatever the guard was pointed at next.
+  [ "$f88" = "$MAP88" ] && continue
+  printf '%s\n' "$CARDS88" | grep -qxF "$f88" \
+    || a12_88="$a12_88 [a card file the map does not register: $f88]"
+done
+# Two claims of the same shape, so each is bound to the SENTENCE that owns it and not to the region: the
+# words of both fit in one sentence, and prose with the two exchanged — "this table is not a card, a card
+# not listed here is the register" — carries every word while stating the opposite. Cutting to the clause
+# is the remedy rather than widening either pattern, and the sentence is the clause the helper already
+# splits on. Predicates alone do not do it: subject-free, each one is satisfied riding on the other
+# claim's subject, which is how the exchange first passed both legs.
+# Words are separated by a whitespace CLASS rather than by literal spaces, and the helper flattens the
+# region's own line breaks, so neither leg can redden because unchanged words were re-wrapped.
+[ "$(insent "$CARDSEC88" 'this[[:space:]]+table' 'register')" = 1 ] \
+  || a12_88="$a12_88 [the map never says its cards table is the register]"
+[ "$(insent "$CARDSEC88" 'not[[:space:]]+listed|unlisted' 'not[[:space:]]+a[[:space:]]+card')" = 1 ] \
+  || a12_88="$a12_88 [the map never says a card it does not list is not a card]"
+[ -z "$a12_88" ] && ok "A12 the map's cards table is the register, and it is complete in both directions" \
+                 || bad "A12 the map's cards table is the register, and it is complete in both directions:$a12_88"
+
+# A1, A2 and A3 accumulate ACROSS THE REGISTER: one ok/bad row each whatever the register's size, so the
+# suite's row count does not grow with the number of cards, and every diagnostic names the card it came
+# from — a verdict reading "a card is over the budget" would send its reader back to measure every
+# registered file by hand. Each row carries the register's floor, because a loop over an empty set
+# satisfies every assertion written inside it.
+a1_88=""; a2_88=""; a3_88=""
+if [ -z "$CARDS88" ]; then
+  a1_88="$a1_88 [the register yielded no card to measure]"
+  a2_88="$a2_88 [the register yielded no card to measure]"
+  a3_88="$a3_88 [the register yielded no card to measure]"
+fi
+
+# The two ceilings are read from the map ONCE, before the loop: they are the budget of a card as such and
+# not of one card, so re-reading them per card would extract the same number N times. The NUMBERS are
+# extracted, not pinned: the comparisons below use what the map declares, so raising a ceiling there
+# raises it here, which is what "the map is the home" has to mean if it is to mean anything.
+if ! { [ -r "$MAP88" ] && [ -s "$MAP88" ]; }; then
+  a3_88="$a3_88 [the map that declares the budget is unreadable or empty: $MAP88]"
+  NLIM88=""; WLIM88=""
 else
+  NLIM88="$(grep -oE '\*\*[0-9]+ lines\*\*' "$MAP88" | head -1 | grep -oE '[0-9]+')"
+  WLIM88="$(grep -oE '\*\*[0-9]+ words\*\*' "$MAP88" | head -1 | grep -oE '[0-9]+')"
+fi
+[ -n "$NLIM88" ] || a3_88="$a3_88 [the map declares no Nano ceiling]"
+[ -n "$WLIM88" ] || a3_88="$a3_88 [the map declares no body ceiling]"
+
+while IFS= read -r c88; do
+  [ -n "$c88" ] || continue
+  if ! { [ -r "$c88" ] && [ -s "$c88" ]; }; then
+    # A per-card diagnostic INSIDE the loop, not a branch around the three rows: with a register holding
+    # more than one card, gating the rows on readability would silence three verdicts about every other
+    # card because one was unreadable.
+    a1_88="$a1_88 [$c88 is unreadable or empty]"
+    a2_88="$a2_88 [$c88 is unreadable or empty]"
+    a3_88="$a3_88 [$c88 is unreadable or empty]"
+    continue
+  fi
   # Sections and Nano lines are read from EXTRACTED regions, never from a file-wide grep: the card's prose
   # names its own block titles, and a bare grep would accept a card whose headings say one thing and whose
   # summary says another — which is the exact drift the derived-summary rule exists to prevent.
-  SECS88="$(grep '^## ' "$CARD88" | grep -v '^## Nano$' | sed 's/^## //' | sort)"
-  NANO88="$(awk '/^## Nano$/{f=1;next} /^## /{f=0} f' "$CARD88")"
+  SECS88="$(grep '^## ' "$c88" | grep -v '^## Nano$' | sed 's/^## //' | sort)"
+  NANO88="$(awk '/^## Nano$/{f=1;next} /^## /{f=0} f' "$c88")"
   NTITLES88="$(printf '%s\n' "$NANO88" | grep '^- \*\*' | sed -E 's/^- \*\*(.*)\*\* —.*/\1/' | sort)"
 
   # --- A1: the card exists and carries the four blocks -----------------------
-  a1_88=""
-  printf '%s\n' "$NANO88" | grep -q '^- ' || a1_88="$a1_88 [the Nano block carries no lines]"
+  printf '%s\n' "$NANO88" | grep -q '^- ' || a1_88="$a1_88 [$c88: the Nano block carries no lines]"
   n1_88=0
   IFS='|'; for b88 in $BLOCKS88; do
-    printf '%s\n' "$SECS88" | grep -qxF "$b88" || a1_88="$a1_88 [$b88 is not a section]"
+    printf '%s\n' "$SECS88" | grep -qxF "$b88" || a1_88="$a1_88 [$c88: $b88 is not a section]"
     n1_88=$((n1_88+1))
   done; unset IFS
   # A count, so a card that grows a sixth block is caught rather than passing on containment alone.
   [ "$(printf '%s\n' "$SECS88" | grep -c .)" = "$n1_88" ] \
-    || a1_88="$a1_88 [the card carries $(printf '%s\n' "$SECS88" | grep -c .) sections, not $n1_88]"
-  [ -z "$a1_88" ] && ok "A1 the verify card exists and carries its summary and its four blocks" \
-                  || bad "A1 the verify card exists and carries its summary and its four blocks:$a1_88"
+    || a1_88="$a1_88 [$c88: the card carries $(printf '%s\n' "$SECS88" | grep -c .) sections, not $n1_88]"
 
   # --- A2: the summary is derived from the body, in BOTH directions ----------
   # Set equality, not containment. A section with no Nano line is an undescribed block; a Nano line naming
   # no section is a summary of something that is not there. Only both legs catch both.
-  a2_88=""
-  [ -n "$NTITLES88" ] || a2_88="$a2_88 [no Nano line declares a section title]"
+  [ -n "$NTITLES88" ] || a2_88="$a2_88 [$c88: no Nano line declares a section title]"
   MISS88="$(comm -23 <(printf '%s\n' "$SECS88") <(printf '%s\n' "$NTITLES88") | tr '\n' ' ')"
   EXTRA88="$(comm -13 <(printf '%s\n' "$SECS88") <(printf '%s\n' "$NTITLES88") | tr '\n' ' ')"
-  [ -z "$(printf '%s' "$MISS88" | tr -d ' ')" ]  || a2_88="$a2_88 [sections with no Nano line: $MISS88]"
-  [ -z "$(printf '%s' "$EXTRA88" | tr -d ' ')" ] || a2_88="$a2_88 [Nano lines naming no section: $EXTRA88]"
-  [ -z "$a2_88" ] && ok "A2 the card's summary is derived from its body, in both directions" \
-                  || bad "A2 the card's summary is derived from its body, in both directions:$a2_88"
+  [ -z "$(printf '%s' "$MISS88" | tr -d ' ')" ] \
+    || a2_88="$a2_88 [$c88: sections with no Nano line: $MISS88]"
+  [ -z "$(printf '%s' "$EXTRA88" | tr -d ' ')" ] \
+    || a2_88="$a2_88 [$c88: Nano lines naming no section: $EXTRA88]"
 
-  # --- A3: the budget the map declares, measured on the card -----------------
-  # The two ceilings are READ from docs/architecture/README.md rather than repeated here: a budget written
-  # in the guard and again in the document it governs is two numbers that drift, and the map is the home.
-  a3_88=""
-  # $MAP88 is the same path A5 guards, declared once above. The NUMBERS are extracted, not pinned:
-  # the comparisons below use what the map declares, so raising a ceiling there raises it here, which is
-  # what "the map is the home" has to mean if it is to mean anything.
-  if ! { [ -r "$MAP88" ] && [ -s "$MAP88" ]; }; then
-    a3_88="$a3_88 [the map that declares the budget is unreadable or empty: $MAP88]"
-    NLIM88=""; WLIM88=""
-  else
-    NLIM88="$(grep -oE '\*\*[0-9]+ lines\*\*' "$MAP88" | head -1 | grep -oE '[0-9]+')"
-    WLIM88="$(grep -oE '\*\*[0-9]+ words\*\*' "$MAP88" | head -1 | grep -oE '[0-9]+')"
-  fi
-  [ -n "$NLIM88" ] || a3_88="$a3_88 [the map declares no Nano ceiling]"
-  [ -n "$WLIM88" ] || a3_88="$a3_88 [the map declares no body ceiling]"
-  NLINES88="$(printf '%s\n' "$NANO88" | grep -c '^- ' | tr -d ' ')"
+  # --- A3: the budget the map declares, measured on this card ----------------
   # The exemption the map grants is the HOMES TABLE's rows and no other table's. Stripping every `^|` line
-  # forgave the artifacts and external-dependencies tables too — 275 of the card's own words at the time
-  # this was found — and left two of the four bounded blocks unbounded for good, over a map that names the
-  # homes table as the only one licensed to grow.
-  BODY88="$(awk '/^## Nano$/{f=1;next} /^## /{f=0} !f' "$CARD88")"
+  # forgave the artifacts and external-dependencies tables too — 275 of the verify card's own words at the
+  # time this was found — and left two of the four bounded blocks unbounded for good, over a map that
+  # names the homes table as the only one licensed to grow.
+  BODY88="$(awk '/^## Nano$/{f=1;next} /^## /{f=0} !f' "$c88")"
+  NLINES88="$(printf '%s\n' "$NANO88" | grep -c '^- ' | tr -d ' ')"
   # The section heading is KEPT here and skipped in the homes count below, so the two partition the body
   # exactly — which is what lets the identity leg further down be an equality rather than an inequality
   # that would pass over any exemption at all.
   BWORDS88="$(printf '%s\n' "$BODY88" | awk '/^## The homes table$/{h=1} /^## /{if(!/^## The homes table$/)h=0} !(h && /^\|/)' | wc -w | tr -d ' ')"
   [ -z "$NLIM88" ] || [ "$NLINES88" -le "$NLIM88" ] 2>/dev/null \
-    || a3_88="$a3_88 [the Nano is $NLINES88 lines, over the map's $NLIM88]"
+    || a3_88="$a3_88 [$c88: the Nano is $NLINES88 lines, over the map's $NLIM88]"
   [ -z "$WLIM88" ] || [ "$BWORDS88" -le "$WLIM88" ] 2>/dev/null \
-    || a3_88="$a3_88 [the body is $BWORDS88 words, over the map's $WLIM88]"
+    || a3_88="$a3_88 [$c88: the body is $BWORDS88 words, over the map's $WLIM88]"
   # The table is the block licensed to grow, so the count must actually exclude it: a measurement that
   # counted table rows would make the exemption a sentence nothing honours.
   # Anti-hollowness, and it names WHICH table: that some pipe-prefixed line was dropped proves nothing, and
@@ -13592,30 +13656,41 @@ else
   HOMEW88="$(printf '%s\n' "$BODY88" | awk '/^## The homes table$/{h=1;next} /^## /{h=0} h && /^\|/' | wc -w | tr -d ' ')"
   OTHERW88="$(printf '%s\n' "$BODY88" | awk '/^## The homes table$/{h=1;next} /^## /{h=0} !h && /^\|/' | wc -w | tr -d ' ')"
   [ "$HOMEW88" -gt 0 ] 2>/dev/null && [ "$ALL88" = "$((BWORDS88 + HOMEW88))" ] 2>/dev/null \
-    || a3_88="$a3_88 [the count does not exclude exactly the homes table's rows: body $ALL88, counted $BWORDS88, homes $HOMEW88]"
+    || a3_88="$a3_88 [$c88: the count does not exclude exactly the homes table's rows: body $ALL88, counted $BWORDS88, homes $HOMEW88]"
   [ "$OTHERW88" = "0" ] 2>/dev/null || [ "$BWORDS88" -gt "$OTHERW88" ] 2>/dev/null \
-    || a3_88="$a3_88 [the other tables' rows ($OTHERW88 words) are not inside the count]"
-  [ -z "$a3_88" ] && ok "A3 the card is inside the budget a card is given" \
-                  || bad "A3 the card is inside the budget a card is given:$a3_88"
+    || a3_88="$a3_88 [$c88: the other tables' rows ($OTHERW88 words) are not inside the count]"
+done <<< "$CARDS88"
 
-  # --- A4: the card is inside the guard that keeps the count current ---------
-  # Read from the SET the guard actually consumes, never from a second list: a copy here would go green
-  # while the guard itself had dropped the card, which is the only failure this row exists to see.
-  a4_88=""
-  if ! command -v marker89 >/dev/null 2>&1; then
-    a4_88="$a4_88 [the marker table was never defined — the auditor-count check did not run]"
-  else
-    DOCS88="$(marker89 "Auditor list")"
-    [ -n "$DOCS88" ] || a4_88="$a4_88 [the auditor-document sweep selected nothing]"
-    printf '%s\n' "$DOCS88" | grep -qxF "$CARD88" \
-      || a4_88="$a4_88 [the card is not among the documents the auditor-count guard reads]"
-  fi
-  [ -z "$a4_88" ] && ok "A4 the card is inside the guard that keeps every home naming the current count" \
-                  || bad "A4 the card is inside the guard that keeps every home naming the current count:$a4_88"
+[ -z "$a1_88" ] && ok "A1 every registered card exists and carries its summary and its four blocks" \
+                || bad "A1 every registered card exists and carries its summary and its four blocks:$a1_88"
+[ -z "$a2_88" ] && ok "A2 every registered card's summary is derived from its body, in both directions" \
+                || bad "A2 every registered card's summary is derived from its body, in both directions:$a2_88"
+[ -z "$a3_88" ] && ok "A3 every registered card is inside the budget a card is given" \
+                || bad "A3 every registered card is inside the budget a card is given:$a3_88"
 
+# --- A4: THE VERIFY CARD is inside the guard that keeps the count current ---------------------------
+# This row is pinned to ONE card on purpose, and the next reader should not generalise it by symmetry.
+# Its claim is that the document carrying the auditor count is swept by the guard that keeps that count
+# current — a fact about the verify capability, not about cards as a type: another card has no auditor
+# count to keep current, and asserting this of the register would be red on a correct second card.
+# It reads the SET the guard consumes and never opens the card, so it needs no readability branch and
+# stands outside the register loop above. Read from that set and never from a second list: a copy here
+# would go green while the guard itself had dropped the card, which is the only failure this row exists
+# to see.
+a4_88=""
+if ! command -v marker89 >/dev/null 2>&1; then
+  a4_88="$a4_88 [the marker table was never defined — the auditor-count check did not run]"
+else
+  DOCS88="$(marker89 "Auditor list")"
+  [ -n "$DOCS88" ] || a4_88="$a4_88 [the auditor-document sweep selected nothing]"
+  printf '%s\n' "$DOCS88" | grep -qxF "$CARD88" \
+    || a4_88="$a4_88 [the card is not among the documents the auditor-count guard reads]"
 fi
-# A7 sits OUTSIDE the card-readable branch, because it reads only the suite: gated on the card it
-# would go silent on an unreadable card while asserting nothing about one.
+[ -z "$a4_88" ] && ok "A4 the card is inside the guard that keeps every home naming the current count" \
+                || bad "A4 the card is inside the guard that keeps every home naming the current count:$a4_88"
+
+# A7 is gated on nothing the register owns, because it reads only the suite: gated on a card it would
+# go silent on an unreadable card while asserting nothing about one.
 # --- A7: the hand-written document list has not been reverted -------------
 # What the computed set replaced was a literal list of eight, and the value of replacing it is lost the
 # moment one is written back beside it: a dead list reads to the next reader as the authority. So this
@@ -13692,19 +13767,27 @@ done
 # auditor-count check above, because the auditor marker IS the count shapes derived there.
 if ! command -v marker89 >/dev/null 2>&1; then
   for r89 in \
-    "A8 every homes row has a marker and every marker a row" \
-    "A9 every row's cited files are exactly what its marker selects" \
+    "A8 every homes row of every registered card has a marker, and every marker a row" \
+    "A9 every row's cited files are exactly what its marker selects, for every registered card" \
     "A11 the sweep's corpus excludes the suite, and the guard says so"; do
     bad "$r89 (the marker table was never defined — the auditor-count check did not run)"
   done
 else
-  # The card's rows, header and separator dropped. A row's LABEL is its first cell; its CITED PATHS are its
-  # backticked spans carrying a file extension — filtered on the extension and never on a slash, because
-  # README.md sits at the repository root and a slash-keyed filter would drop it from the card's side while
-  # the marker still found it, which is a guard blaming the document for its own reader.
-  ROWS89="$(awk '/^## The homes table$/{f=1;next} /^## /{f=0} f && /^\| /' "$CARD88" \
-            | grep -vE '^\| Concept \||^\|[-| ]*$')"
-  LABELS89="$(printf '%s\n' "$ROWS89" | sed -E 's/^\|[[:space:]]*([^|]*[^|[:space:]])[[:space:]]*\|.*/\1/' | sort -u)"
+  # Every registered card's rows, header and separator dropped, each row carried WITH the card it came
+  # from: a verdict naming a row without its card is unreadable the moment the register holds more than
+  # one. The pair is card TAB row, so the row's own pipes can never be read as the separator.
+  # A row's LABEL is its first cell; its CITED PATHS are its backticked spans carrying a file extension —
+  # filtered on the extension and never on a slash, because README.md sits at the repository root and a
+  # slash-keyed filter would drop it from the card's side while the marker still found it, which is a
+  # guard blaming the document for its own reader.
+  PAIRS89="$(printf '%s\n' "$CARDS88" | while IFS= read -r c89; do
+      [ -n "$c89" ] || continue
+      awk '/^## The homes table$/{f=1;next} /^## /{f=0} f && /^\| /' "$c89" 2>/dev/null \
+        | grep -vE '^\| Concept \||^\|[-| ]*$' \
+        | awk -v c="$c89" '{print c "\t" $0}'
+    done)"
+  LABELS89="$(printf '%s\n' "$PAIRS89" | cut -f2- \
+              | sed -E 's/^\|[[:space:]]*([^|]*[^|[:space:]])[[:space:]]*\|.*/\1/' | sort -u)"
   # The keys the marker table actually knows, read out of the case statement itself. A second list here
   # would go green while the table it claims to describe had lost a branch, which is the whole defect.
   KEYS89="$(awk '/^  marker89\(\) \{$/{f=1;next} f&&/^    esac$/{exit} f' test/validate.sh \
@@ -13712,31 +13795,46 @@ else
 
   # --- A8: every row has a marker, and every marker a row --------------------
   # Set equality, not containment, and the second direction is not decoration: a marker left behind for a
-  # concept the card has dropped is a rule nothing governs, and it reads as coverage.
+  # concept every card has dropped is a rule nothing governs, and it reads as coverage.
   a8_89=""
-  [ -n "$ROWS89" ]   || a8_89="$a8_89 [the card's homes table yielded no rows]"
+  [ -n "$PAIRS89" ]  || a8_89="$a8_89 [no registered card yielded a homes row]"
   [ -n "$LABELS89" ] || a8_89="$a8_89 [no row label could be extracted]"
   [ -n "$KEYS89" ]   || a8_89="$a8_89 [the marker table's keys could not be extracted]"
-  if [ -n "$LABELS89" ] && [ -n "$KEYS89" ]; then
-    NOMARK89="$(comm -23 <(printf '%s\n' "$LABELS89") <(printf '%s\n' "$KEYS89") | tr '\n' ';')"
-    NOROW89="$(comm -13 <(printf '%s\n' "$LABELS89") <(printf '%s\n' "$KEYS89") | tr '\n' ';')"
-    [ -z "$(printf '%s' "$NOMARK89" | tr -d ';')" ] \
-      || a8_89="$a8_89 [rows nothing computes: $NOMARK89]"
-    [ -z "$(printf '%s' "$NOROW89" | tr -d ';')" ] \
-      || a8_89="$a8_89 [markers naming no row: $NOROW89]"
+  if [ -n "$KEYS89" ]; then
+    # The first direction is walked PER PAIR rather than over the union of labels, because this is the
+    # direction whose verdict has to name the CARD as well as the row: a label absent from the keys tells
+    # its reader nothing about which registered card carries it.
+    while IFS= read -r pair89; do
+      [ -n "$pair89" ] || continue
+      c89="$(printf '%s\n' "$pair89" | cut -f1)"
+      lab89="$(printf '%s\n' "$pair89" | cut -f2- \
+               | sed -E 's/^\|[[:space:]]*([^|]*[^|[:space:]])[[:space:]]*\|.*/\1/')"
+      printf '%s\n' "$KEYS89" | grep -qxF "$lab89" \
+        || a8_89="$a8_89 [$c89: a row nothing computes: $lab89]"
+    done <<< "$PAIRS89"
+    # The second direction is the marker table's own and has no card to name — it is a key no registered
+    # card claims, whichever card that key was written for.
+    if [ -n "$LABELS89" ]; then
+      NOROW89="$(comm -13 <(printf '%s\n' "$LABELS89") <(printf '%s\n' "$KEYS89") | tr '\n' ';')"
+      [ -z "$(printf '%s' "$NOROW89" | tr -d ';')" ] \
+        || a8_89="$a8_89 [markers naming no row: $NOROW89]"
+    fi
   fi
-  [ -z "$a8_89" ] && ok "A8 every homes row has a marker and every marker a row" \
-                  || bad "A8 every homes row has a marker and every marker a row:$a8_89"
+  [ -z "$a8_89" ] && ok "A8 every homes row of every registered card has a marker, and every marker a row" \
+                  || bad "A8 every homes row of every registered card has a marker, and every marker a row:$a8_89"
 
   # --- A9: each row's cited files are exactly what its marker selects --------
-  # Per row, both directions, and the file is NAMED on either side — a verdict that said only "row 6 is
-  # wrong" would send its reader back to do the sweep by hand, which is the work this row exists to spend.
+  # Per row, both directions, and the card and the file are NAMED on either side — a verdict that said
+  # only "row 6 is wrong" would send its reader back to do the sweep by hand, which is the work this row
+  # exists to spend.
   a9_89=""
-  # The floor A8 already applies, applied here too: this row's loop body never runs on an empty table, so
-  # without it the row implementing "cited exactly" reports green over a card it never read.
-  [ -n "$ROWS89" ] || a9_89="$a9_89 [the card's homes table yielded no rows to compare]"
-  while IFS= read -r row89; do
-    [ -n "$row89" ] || continue
+  # The floor A8 already applies, applied here too: this row's loop body never runs on an empty register,
+  # so without it the row implementing "cited exactly" reports green over a card it never read.
+  [ -n "$PAIRS89" ] || a9_89="$a9_89 [no registered card yielded a homes row to compare]"
+  while IFS= read -r pair89; do
+    [ -n "$pair89" ] || continue
+    c89="$(printf '%s\n' "$pair89" | cut -f1)"
+    row89="$(printf '%s\n' "$pair89" | cut -f2-)"
     lab89="$(printf '%s\n' "$row89" | sed -E 's/^\|[[:space:]]*([^|]*[^|[:space:]])[[:space:]]*\|.*/\1/')"
     span89="$(printf '%s\n' "$row89" | grep -oE '`[^`]+`' | tr -d '`' | sort -u)"
     # Two ways to be a citation, unioned: an extension the engine writes in, OR an exact tracked path.
@@ -13745,22 +13843,22 @@ else
     cite89="$( { printf '%s\n' "$span89" | grep -E '\.(md|js|yml|sh|py)$'
                  printf '%s\n' "$span89" | grep -xF -f <(printf '%s\n' "$CORPUS89") ; } 2>/dev/null | sort -u)"
     if ! swp89="$(marker89 "$lab89")"; then
-      a9_89="$a9_89 [$lab89: no marker, so nothing was compared]"; continue
+      a9_89="$a9_89 [$c89 $lab89: no marker, so nothing was compared]"; continue
     fi
     # A floor before the equality. An extractor that returns nothing satisfies every containment test ever
     # written over it, and reads in a report exactly like a row that passed.
-    [ -n "$swp89" ]   || a9_89="$a9_89 [$lab89: the marker selected no file at all]"
-    [ -n "$cite89" ]  || a9_89="$a9_89 [$lab89: the row cites no file at all]"
+    [ -n "$swp89" ]   || a9_89="$a9_89 [$c89 $lab89: the marker selected no file at all]"
+    [ -n "$cite89" ]  || a9_89="$a9_89 [$c89 $lab89: the row cites no file at all]"
     [ -n "$swp89" ] && [ -n "$cite89" ] || continue
     MISS89="$(comm -13 <(printf '%s\n' "$cite89") <(printf '%s\n' "$swp89") | tr '\n' ' ')"
     EXTRA89="$(comm -23 <(printf '%s\n' "$cite89") <(printf '%s\n' "$swp89") | tr '\n' ' ')"
     [ -z "$(printf '%s' "$MISS89" | tr -d ' ')" ] \
-      || a9_89="$a9_89 [$lab89 omits: $MISS89]"
+      || a9_89="$a9_89 [$c89 $lab89 omits: $MISS89]"
     [ -z "$(printf '%s' "$EXTRA89" | tr -d ' ')" ] \
-      || a9_89="$a9_89 [$lab89 cites what its marker does not select: $EXTRA89]"
-  done <<< "$ROWS89"
-  [ -z "$a9_89" ] && ok "A9 every row's cited files are exactly what its marker selects" \
-                  || bad "A9 every row's cited files are exactly what its marker selects:$a9_89"
+      || a9_89="$a9_89 [$c89 $lab89 cites what its marker does not select: $EXTRA89]"
+  done <<< "$PAIRS89"
+  [ -z "$a9_89" ] && ok "A9 every row's cited files are exactly what its marker selects, for every registered card" \
+                  || bad "A9 every row's cited files are exactly what its marker selects, for every registered card:$a9_89"
 
   # --- A11: the corpus excludes the suite, and the exclusion is visible ------
   # Three legs, because two of them alone prove the wrong thing. That the suite is absent from the sweeps
@@ -13844,7 +13942,7 @@ n61() { printf '%s\n' "$2" | grep -ciE "$1" | tr -d ' '; }
 # Only the README gates this section. Every leg below reads that file and nothing else: the card's path
 # appears here as a literal string to search FOR, never as a file to open, so gating on it would silence
 # five verdicts about a document that is perfectly readable. That is the anti-pattern this suite names at
-# `A7 sits OUTSIDE the card-readable branch` — the card's own existence is A4's leg instead, where the
+# `A7 is gated on nothing the register owns` — the card's own existence is A4's leg instead, where the
 # diagnosis says the door links a card that is not there.
 if [ ! -r "$RD61" ]; then
   for r61 in \
