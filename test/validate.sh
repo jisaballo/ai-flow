@@ -17292,10 +17292,15 @@ echo "== C73: the lifecycle map routes its execution rules and states neither ce
 # aggregate report and not the thing that keeps the others honest.
 #
 # S73 is this block's own. C71 assigns S71 inside its own block, and a block that borrowed it would break
-# the day an edit above moved either one -- the staleness trap T-102's close closed.
+# the day an edit above moved either one -- a staleness trap this suite has already paid for once.
 S73='[[:space:]]+'
 LCM73="$ROOT/global/protocols/lifecycle.md"
-RETRY73="[0-9]+${S73}?(attempts?|failures?|retries|tries)"
+# `[[:space:]]*` and never `${S73}?`: a `?` applied to a `+` is two duplication symbols in a row,
+# which POSIX leaves undefined -- one grep reads it as `*`, another as `+`, a third may refuse the
+# pattern outright, and a refused pattern exits 2, which a bare `&&` reads as "no match" (IB-023).
+# `*` is what the leg means and is defined everywhere. Measured under the grep this suite resolves
+# to: `${S73}?` required the space and let `3attempts` through.
+RETRY73="[0-9]+[[:space:]]*(attempts?|failures?|retries|tries)"
 
 # --- the regions, each cut to its own subject before it is read --------------------------------------
 SECT73="$(msect "$LCM73" '^### 7[.] EXECUTE')"
@@ -17313,7 +17318,11 @@ P73="$(printf '%s\n' "$SECT73" | awk '
 # leg asserting the fact could never fire: the run reports "did not extract" for a bullet that is sitting
 # right there, and the assertion that would have named the real defect is dead code. Measured against a
 # copy, both ways round.
-AUTO73="$(msect "$LCM73" '^\*\*Auto level constraints:\*\*')"
+# The anchor carries NO backslash escape: `msect` hands it to `awk -v`, which strips a single
+# backslash before the regex is compiled, so `^\*\*Auto` compiles as `^**Auto` -- a duplication
+# symbol with no operand, undefined in POSIX and refused by some awks. Two dots need no escaping and
+# key on the same words, so renaming the heading still reddens E0, A5 and A6.
+AUTO73="$(msect "$LCM73" '^..Auto level constraints:')"
 AS73="$(printf '%s\n' "$AUTO73" | grep -iE "^-${S73}Still${S73}respects")"
 # The two surviving prose homes, and the mechanism they must agree with.
 DG73="$(awk '/^## Diff Size Guardrail/{f=1;next} f && /^## /{exit} f' "$ROOT/global/protocols/execute.md" 2>/dev/null)"
@@ -17327,6 +17336,12 @@ TT73="$(grep -E '^TASK_THRESHOLD[[:space:]]*=' "$HK/diff-size-guard.py" 2>/dev/n
 e0_73=""
 [ -n "$SECT73" ] || e0_73="$e0_73 [the map's EXECUTE section did not extract -- heading renamed?]"
 [ -n "$P73" ]    || e0_73="$e0_73 [the map's route paragraph did not extract -- still a list, or it names no rulebook]"
+# ONE home, counted. The extractor prints every qualifying block, and A3's facts are then read over the
+# concatenation -- five facts satisfiable across two paragraphs while no single one routes. That is the
+# defect C69's comment two blocks up was written for, and it arrives with the next edit to the section,
+# not today: `**Input**`/`**Output**` names understand.md and is one word from qualifying.
+[ -z "$P73" ] || [ "$(printf '%s\n' "$P73" | grep -c .)" = 1 ] \
+                 || e0_73="$e0_73 [the section holds more than one route paragraph -- A3 would read their concatenation]"
 [ -n "$AUTO73" ] || e0_73="$e0_73 [the Auto level's constraint block did not extract]"
 [ -n "$AS73" ]   || e0_73="$e0_73 [the Auto block states no constraint at all]"
 [ -n "$DG73" ]   || e0_73="$e0_73 [execute.md's Diff Size Guardrail section did not extract]"
@@ -17340,9 +17355,21 @@ e0_73=""
 # restate `>150 added lines` without writing 150. That narrows IB-028 in this one instance and remedies
 # nothing about the class. SCOPED TO THE MAP: the same leg written over the engine reddens
 # `context-cost-note.py`, whose 150 is turns and is right.
-a1_73="$(grep -cE '(^|[^0-9])(150|400)([^0-9]|$)' "$LCM73" 2>/dev/null)"
-[ "${a1_73:-0}" = 0 ] && ok "A1 the map states neither ceiling" \
-                      || bad "A1 the map states neither ceiling ($a1_73 line(s) still carry 150 or 400)"
+# DERIVED and then unioned with the two literals, because the label claims a property and the pattern
+# must implement it: derived, so raising the hook's ceiling keeps the map guarded against the number the
+# brake now uses -- a hand-copied `150` here would leave the map free to state `>200 added lines` with
+# this leg reporting "neither ceiling"; unioned, so a revert to the wording this task deleted is still
+# caught after the hook has moved. A threshold that failed to extract falls back to its literal rather
+# than emptying the alternation, which would match every line for a reason A1 is not about; E0 is the
+# row that reports the failed extraction. An unreadable map is REPORTED and never counted as zero.
+NUM73="${ST73:-150}|${TT73:-400}|150|400"
+if [ ! -r "$LCM73" ]; then
+  bad "A1 the map states neither ceiling (the map could not be read -- no verdict drawn from no bytes)"
+else
+  a1_73="$(grep -cE "(^|[^0-9])($NUM73)([^0-9]|$)" "$LCM73" 2>/dev/null)"
+  [ "${a1_73:-0}" = 0 ] && ok "A1 the map states neither ceiling" \
+                        || bad "A1 the map states neither ceiling ($a1_73 line(s) still carry a ceiling)"
+fi
 
 # A2 -- the section teaches no step and no count. Both halves: a section that kept the list passes a
 # retry-only leg, and one that moved `max 3 attempts` into prose passes a list-only leg.
@@ -17351,20 +17378,33 @@ if [ -z "$SECT73" ]; then a2_73=" [the section did not extract -- no verdict dra
 else
   printf '%s\n' "$SECT73" | grep -qE '^[[:space:]]*[0-9]+[.)]' \
     && a2_73="$a2_73 [the section still walks the loop as a numbered list]"
+  # The bullet form of the same content, which the numbered leg alone lets back in: a `- **Replan Gate**:
+  # if an assumption breaks, revise the plan.` carries no digit and no `1.` and is the second home this
+  # section exists not to be. The marker class takes `-`, `+` and a `*` followed by SPACE, never a bare
+  # `*`: `**Purpose**` and `**Input**` open with one and are the delivered shape, not a list.
+  printf '%s\n' "$SECT73" | grep -qE '^[[:space:]]*([-+]|\*[[:space:]])' \
+    && a2_73="$a2_73 [the section teaches its rules as a bullet list again]"
   printf '%s\n' "$SECT73" | grep -qiE "$RETRY73" \
     && a2_73="$a2_73 [the section still states a retry count]"
 fi
 [ -z "$a2_73" ] && ok "A2 the EXECUTE section states no loop step and no retry count" \
                 || bad "A2 the EXECUTE section states no loop step and no retry count ($a2_73)"
 
-# A3 -- ORDERED CO-OCCURRENCE, one variable per fact over the route paragraph: the route names the file
-# AND each rule it hands over (IB-035). A bare `grep -qi 'execute.md'` is the shape that entry was opened
-# for -- green over a paragraph that names the file and hands over nothing.
+# A3 -- CO-OCCURRENCE, one variable per fact over the route paragraph: the route names the file AND each
+# rule it hands over (IB-035). A bare `grep -qi 'execute.md'` is the shape that entry was opened for --
+# green over a paragraph that names the file and hands over nothing.
+#
+# THE LIST IS EVERY RULE THE PARAGRAPH HANDS OVER, and the count is the fact rather than a detail: written
+# with five it omitted the bounded retry and the Replan Gate, and deleting `the bounded retry, the Replan
+# Gate,` from the route left all 1012 rows green -- measured, not suspected. Those two are the rules whose
+# ONLY trace in the map is this paragraph, so the omission was the one that cost most. The facts are order
+# INDEPENDENT: each is its own grep, and nothing here asserts the sequence they appear in.
 a3_73=""
 if [ -z "$P73" ]; then a3_73=" [the route paragraph did not extract -- no verdict drawn from an empty region]"
 else
   printf '%s' "$P73" | grep -qi 'execute\.md' || a3_73="$a3_73 [the route names no file]"
-  for f73 in "loop:step${S73}loop" "guardrail:guardrail" "tiers:Action${S73}Boundaries" \
+  for f73 in "loop:step${S73}loop" "commit:commit" "retry:bounded${S73}retry" \
+             "replan:Replan${S73}Gate" "guardrail:guardrail" "tiers:Action${S73}Boundaries" \
              "tiers-home:Deviation${S73}Rules" "spec-sync:Spec${S73}Sync"; do
     n73="${f73%%:*}"; g73="${f73#*:}"
     printf '%s' "$P73" | grep -qiE "$g73" || a3_73="$a3_73 (the route hands over no $n73)"
@@ -17378,13 +17418,31 @@ fi
 # home that lags, where a literal 150 written here would be a fifth hand-copy guarding the other four. A
 # home that fails to extract is REPORTED and never skipped: `continue` would have made this green for
 # reading nothing, which is the one failure a derived leg must not have.
+#
+# EACH CEILING IS BOUND TO ITS OWN CLAUSE, never to the region: both regions state both numbers, so a
+# region-wide grep is green after a TRANSPOSITION -- Step >400 and Task >150 -- which is prose
+# contradicting the very brake it is bound to, and the Contract's promise is two answers that AGREE with
+# the brake, not two numbers that are present. `insent` cannot do this on the README: both ceilings sit
+# inside one sentence of that row, so a sentence-scoped pair cannot tell them apart. The label is the
+# scope instead -- the rulebook's two bullets and the README's two parentheticals -- with `[^0-9]*`
+# between label and value, so the number matched is the first one that clause states and never its
+# neighbour's. And a threshold that did not extract binds NOTHING: reported here rather than left to E0,
+# because an empty `$ST73` turns every one of these greps green for reading nothing.
 a4_73=""
-for pair73 in "execute.md:$DG73" "README.md:$RD73"; do
-  n73="${pair73%%:*}"; t73="${pair73#*:}"
-  if [ -z "$t73" ]; then a4_73="$a4_73 $n73(did-not-extract)"; continue; fi
-  printf '%s' "$t73" | grep -qE "(^|[^0-9])$ST73([^0-9]|$)" || a4_73="$a4_73 $n73(step=$ST73)"
-  printf '%s' "$t73" | grep -qE "(^|[^0-9])$TT73([^0-9]|$)" || a4_73="$a4_73 $n73(task=$TT73)"
-done
+if [ -z "$ST73" ] || [ -z "$TT73" ]; then
+  a4_73=" [a threshold did not extract from the hook -- no home was bound and no verdict is drawn]"
+else
+  if [ -z "$DG73" ]; then a4_73="$a4_73 execute.md(did-not-extract)"
+  else
+    printf '%s\n' "$DG73" | grep -qE "\*\*Step\*\*[^0-9]*$ST73" || a4_73="$a4_73 execute.md(step=$ST73)"
+    printf '%s\n' "$DG73" | grep -qE "\*\*Task\*\*[^0-9]*$TT73" || a4_73="$a4_73 execute.md(task=$TT73)"
+  fi
+  if [ -z "$RD73" ]; then a4_73="$a4_73 README.md(did-not-extract)"
+  else
+    printf '%s' "$RD73" | grep -qE "\*\*step\*\*[^0-9]*$ST73" || a4_73="$a4_73 README.md(step=$ST73)"
+    printf '%s' "$RD73" | grep -qE "\*\*task\*\*[^0-9]*$TT73" || a4_73="$a4_73 README.md(task=$TT73)"
+  fi
+fi
 [ -z "$a4_73" ] && ok "A4 both surviving homes state the hook's own two thresholds" \
                 || bad "A4 both surviving homes state the hook's own two thresholds (missing:$a4_73)"
 
