@@ -106,20 +106,13 @@ This phase bridges planning and execution. The tests become the contract.
 
 **Purpose**: Make the code changes that satisfy the plan.
 
-**For each step**:
-1. Read source files
-2. Make changes
-3. Run the step's Verify command
-4. Handle failures (bounded retry: max 3 attempts per error)
-5. Commit the step — `protocols/execute.md` owns the commit, its format and its green precondition
+**Input**: An approved plan and its frozen conformance contracts
+**Output**: One commit per step, and a Spec Sync record of any divergence from understand.md
 
-**Guardrails**:
-- **Bounded Retry**: 3 failures on the same error → stop and escalate
-- **Replan Gate**: If an assumption breaks → stop and revise the plan
-- **Diff Size**: >150 added lines uncommitted in a single step, or >400 on the branch since its base → pause and evaluate. Test suites, the repository's own `.ai-flow/` and dependency lockfiles (`package-lock.json` and its siblings) are not counted
-- **Action Boundaries**: the two execution-time tiers, stated in the Execute protocol > `## Deviation Rules During Execution`
-
-**Post-Execute**: Spec Sync reviews the diff against understand.md and documents any divergences.
+`protocols/execute.md` owns how a step is worked and is the single home of every rule this phase runs on:
+the step loop and the commit that closes each step, the bounded retry, the Replan Gate, the diff size
+guardrail, the two Action Boundaries tiers (`## Deviation Rules During Execution`), and Spec Sync at the
+close.
 
 ### 8. VERIFY
 
