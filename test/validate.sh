@@ -18276,6 +18276,18 @@ A topic of its own.
       || a1_91="$a1_91 [the failing verdict for ${r91} does not name the rule]"
     a1_91="$a1_91$(only91 "$r91")"
   done
+  # `nano-order` has two failure branches and the loop above reaches only one of them. The positional
+  # branch (two titles swapped) is the fixture; the COUNT branch -- a section added and its index line
+  # forgotten -- is the commonest real drift and had no fixture at all, which a mutation at the Verify
+  # gate proved by dropping the branch and watching the suite stay green.
+  A1N91="$BOX91/a1-nano-count"; mk91 "$A1N91"; F1N91="$A1N91/.ai-flow/steering/payments.md"
+  good91 "$F1N91"
+  grep -v '^- \*\*Refund flow\*\*' "$F1N91" > "$F1N91.t" && mv "$F1N91.t" "$F1N91"
+  rc91="$(run91 "$A1N91" .ai-flow/steering/payments.md)"
+  [ "$rc91" != 0 ] || a1_91="$a1_91 [an index missing a line for a section it indexes exits 0]"
+  grep -F "$FAILMK91" "$OUT91" | grep -q -- 'nano-order' \
+    || a1_91="$a1_91 [the count mismatch does not fail nano-order]"
+  a1_91="$a1_91$(only91 nano-order)"
 fi
 [ -z "$a1_91" ] && ok "A1 the check answers each of the seven rules in both directions" \
                 || bad "A1 the check answers each of the seven rules in both directions:$a1_91"
@@ -18343,11 +18355,21 @@ fi
 [ -z "$a3_91" ] && ok "A3 a failure exits non-zero and names the file and the rule" \
                 || bad "A3 a failure exits non-zero and names the file and the rule:$a3_91"
 
-# --- A4: the decision log is measured on six rules and not seven ----------------------------------
-# The exemption is the section-length rule ALONE, and it needs three legs. The log with an oversized
-# section is clean; a steering file carrying the SAME body is not -- without which the leg is satisfied by
-# a check that exempts everything; and the log still answers the nano line length -- without which it is
+# --- A4: the decision log is measured on five rules and not seven ---------------------------------
+# REVERSED AT THE VERIFY GATE (D11, recorded in understand.md > Implementation Decisions). This row was
+# frozen asserting the log IS measured on `section-count`; that rule was found unmeetable by construction
+# for this class -- every `##` here is one decision, the class has no retirement route, so the ceiling can
+# only ever be crossed -- and the count now bounds TOPIC sections only. The log is therefore exempt from
+# two rules, and both exemptions are the same shape: SILENCE, not a passing verdict, because a verdict of
+# `ok` would claim a rule was applied and held when it was never asked.
+#
+# The exemptions need their opposing legs or they exempt everything: a steering file carrying the SAME
+# oversized body must still fail `section-length`, a file of the same section count must still fail
+# `section-count`, and the log must still answer the nano line length -- without that last one the row is
 # satisfied by a check that exempts the log from all seven.
+#
+# The rule list below is the five that remain, `app-key` included. It was four when this row asserted six,
+# which is the shape the coverage axis flagged: a leg whose own title counts higher than its assertions.
 a4_91=""
 if [ ! -r "$CHK91" ]; then
   a4_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
@@ -18359,9 +18381,32 @@ else
   [ "$rc91" = 0 ] || a4_91="$a4_91 [the decision log is held to the section length (exit ${rc91})]"
   grep -q -- 'section-length' "$OUT91" \
     && a4_91="$a4_91 [the decision log is given a section-length verdict it is exempt from]"
-  for r91 in nano-present nano-order nano-line-length section-count marker; do
+  grep -q -- 'section-count' "$OUT91" \
+    && a4_91="$a4_91 [the decision log is given a section-count verdict it is exempt from]"
+  for r91 in nano-present nano-order nano-line-length app-key marker; do
     grep -q -- "$r91" "$OUT91" || a4_91="$a4_91 [the decision log is not measured on ${r91}]"
   done
+  # The count exemption's opposing leg: a log carrying MORE sections than the ceiling is still clean,
+  # while a steering file of the same shape is not. Without the second half the exemption is a check that
+  # counts nothing anywhere.
+  A4C91="$BOX91/a4-count"; mk91 "$A4C91"
+  printf '# Global Decisions\n\n## Nano\n\n' > "$A4C91/.ai-flow/decisions-global.md"
+  i91=1
+  while [ "$i91" -le $((SECCNT91 + 1)) ]; do
+    printf -- '- **2026-01-%02d - Decision %d** — decided.\n' "$i91" "$i91" >> "$A4C91/.ai-flow/decisions-global.md"
+    i91=$((i91 + 1))
+  done
+  i91=1
+  while [ "$i91" -le $((SECCNT91 + 1)) ]; do
+    printf '\n## 2026-01-%02d - Decision %d\n\nContext: none. Decision: this. Alternatives: the other, rejected.\n' \
+      "$i91" "$i91" >> "$A4C91/.ai-flow/decisions-global.md"
+    i91=$((i91 + 1))
+  done
+  rc91="$(run91 "$A4C91" .ai-flow/decisions-global.md)"
+  [ "$rc91" = 0 ] \
+    || a4_91="$a4_91 [a decision log of $((SECCNT91 + 1)) decisions is out of shape (exit ${rc91}): $(grep -F "$FAILMK91" "$OUT91" | head -2 | tr '\n' ' ')]"
+  grep -q -- 'section-count' "$OUT91" \
+    && a4_91="$a4_91 [the growing decision log is given a section-count verdict]"
   good91 "$A4BOX91/.ai-flow/steering/payments.md"
   printf '%s\n' "$long91" >> "$A4BOX91/.ai-flow/steering/payments.md"
   rc91="$(run91 "$A4BOX91" .ai-flow/steering/payments.md)"
@@ -18375,8 +18420,86 @@ else
   rc91="$(run91 "$A4BOX91" .ai-flow/decisions-global.md)"
   [ "$rc91" != 0 ] || a4_91="$a4_91 [the decision log is exempt from the nano line length too]"
 fi
-[ -z "$a4_91" ] && ok "A4 the decision log is measured on six rules and not seven" \
-                || bad "A4 the decision log is measured on six rules and not seven:$a4_91"
+[ -z "$a4_91" ] && ok "A4 the decision log is measured on five rules and not seven" \
+                || bad "A4 the decision log is measured on five rules and not seven:$a4_91"
+
+# --- A12: the count bounds topics, and a record section is not a topic ----------------------------
+# D11. `section-count` exists to catch a file that has become a drawer -- too many TOPICS. A class whose
+# sections are RECORDS of a growing enumeration cannot be judged that way: the count only ever rises, and
+# no repair the mechanism offers can lower it. So a `Rules: <key> — <topic>` section, which is where
+# `product.md` grows by design (docs/context/product.md > Two parts), does not count toward the ceiling.
+#
+# Both directions, and the second is what keeps this from exempting everything: the same file with its
+# record sections retitled as topics must fail. Keyed on SECCNT91, never on a spelled number.
+a12_91=""
+if [ ! -r "$CHK91" ]; then
+  a12_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
+else
+  # A product file over the ceiling in total sections, where all but five are records.
+  mkprod91() {  # $1 = file; $2 = the title prefix for the growing part
+    local n91=$((SECCNT91 + 1)) i91=6
+    printf '# Product Context\n\n## Nano\n\n' > "$1"
+    printf -- '- **Product** — one gateway.\n- **Users & Roles** — one role.\n' >> "$1"
+    printf -- '- **Applications** — one app.\n- **Core Business Flows** — one flow.\n' >> "$1"
+    printf -- '- **Key Domain Terms** — one term.\n' >> "$1"
+    while [ "$i91" -le "$n91" ]; do printf -- '- **%s %d** — a rule.\n' "$2" "$i91" >> "$1"; i91=$((i91 + 1)); done
+    printf '\n## Product\n\nOne gateway.\n\n## Users & Roles\n\nOne role.\n' >> "$1"
+    printf '\n## Applications\n\nOne app.\n\n## Core Business Flows\n\nOne flow.\n' >> "$1"
+    printf '\n## Key Domain Terms\n\nOne term.\n' >> "$1"
+    i91=6
+    while [ "$i91" -le "$n91" ]; do printf '\n## %s %d\n\nA rule. (T-000)\n' "$2" "$i91" >> "$1"; i91=$((i91 + 1)); done
+  }
+  A12BOX91="$BOX91/a12"; mk91 "$A12BOX91"
+  mkprod91 "$A12BOX91/.ai-flow/product.md" 'Rules: checkout —'
+  rc91="$(run91 "$A12BOX91" .ai-flow/product.md)"
+  [ "$rc91" = 0 ] \
+    || a12_91="$a12_91 [a product file of $((SECCNT91 + 1)) sections whose growing part is records is out of shape (exit ${rc91}): $(grep -F "$FAILMK91" "$OUT91" | head -2 | tr '\n' ' ')]"
+  grep -F "$FAILMK91" "$OUT91" | grep -q -- 'section-count' \
+    && a12_91="$a12_91 [record sections are counted toward the ceiling]"
+  # The opposing direction: the same shape with the records retitled as topics must fail, or the rule
+  # above is a check that counts nothing.
+  A12T91="$BOX91/a12-topics"; mk91 "$A12T91"
+  mkprod91 "$A12T91/.ai-flow/product.md" 'Topic'
+  rc91="$(run91 "$A12T91" .ai-flow/product.md)"
+  [ "$rc91" != 0 ] || a12_91="$a12_91 [$((SECCNT91 + 1)) topic sections are within the ceiling -- the count is inert]"
+  grep -F "$FAILMK91" "$OUT91" | grep -q -- 'section-count' \
+    || a12_91="$a12_91 [the failure over topic sections does not name section-count]"
+fi
+[ -z "$a12_91" ] && ok "A12 the count bounds topics, and a record section is not a topic" \
+                 || bad "A12 the count bounds topics, and a record section is not a topic:$a12_91"
+
+# --- A13: the check refuses where there is nothing of this project's context to measure -----------
+# Both of the script's hard refusals, neither of which any leg reached: every fixture in this card builds
+# `.ai-flow/` before invoking the check, so deleting either `die` left the suite at its full green. Proved
+# at the Verify gate by deleting the guard and watching the count not move -- a hollow guard, not a
+# suspected one. The wrong cwd is the ordinary operator mistake here, because the script takes `ROOT=$PWD`.
+a13_91=""
+if [ ! -r "$CHK91" ]; then
+  a13_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
+else
+  A13BOX91="$BOX91/a13"; mkdir -p "$A13BOX91"
+  rc91="$(run91 "$A13BOX91")"
+  [ "$rc91" != 0 ] || a13_91="$a13_91 [a run with no .ai-flow/ present exits 0 having measured nothing]"
+  grep -q -F "$A13BOX91" "$OUT91" || a13_91="$a13_91 [the refusal does not name the directory it was run in]"
+  for r91 in $RULES91; do
+    grep -q -- "$r91" "$OUT91" && a13_91="$a13_91 [a run with no .ai-flow/ measured ${r91} anyway]"
+  done
+  # A mistyped flag is refused AS AN OPTION, not swallowed as a file. The discrimination is the whole
+  # leg: a first draft asserted only a non-zero exit and the flag's name, and it stayed green when the
+  # option refusal was deleted -- because `--reports` then falls through to the argument form, normalises
+  # to a path outside `.ai-flow/`, and is refused there with the same status and the same name in the
+  # output. So the leg also asserts what the refusal must NOT be. Keyed on the message rather than on the
+  # status, because both refusals exit 2 and nothing else separates them.
+  A13O91="$BOX91/a13-opt"; mk91 "$A13O91"
+  rc91="$(run91 "$A13O91" --reports)"
+  [ "$rc91" != 0 ] || a13_91="$a13_91 [an unknown option is accepted]"
+  grep -q -F -- '--reports' "$OUT91" || a13_91="$a13_91 [the unknown option is not named]"
+  grep -q -F -- 'option' "$OUT91" || a13_91="$a13_91 [the refusal does not say the argument was an option]"
+  grep -q -F -- 'outside this checkout' "$OUT91" \
+    && a13_91="$a13_91 [an unknown option is refused as a path rather than as an option]"
+fi
+[ -z "$a13_91" ] && ok "A13 the check refuses where there is nothing of this project's context to measure" \
+                 || bad "A13 the check refuses where there is nothing of this project's context to measure:$a13_91"
 
 # --- A5: --report prints every verdict with its threshold -----------------------------------------
 # Each threshold beside the rule it bounds, not merely somewhere in the output -- a banner listing three

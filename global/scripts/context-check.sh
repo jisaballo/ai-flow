@@ -302,11 +302,25 @@ measure() {
     verdict "$rel" section-length "$cause" "limit $SECTION_WORD_MAX words"
   fi
 
-  # The nano is not counted among the things it indexes.
-  n="${#sec_title[@]}"
-  cause=""
-  [ "$n" -gt "$SECTION_MAX" ] && cause="the file holds $n sections"
-  verdict "$rel" section-count "$cause" "limit $SECTION_MAX sections"
+  # The count bounds TOPIC sections, and the nano is not counted among the things it indexes. A section
+  # that is a RECORD of a growing enumeration is not a topic: its number only ever rises, and no repair
+  # this mechanism offers can lower it, so a ceiling over records is a ceiling nothing can ever meet.
+  # `Rules: <key> — <topic>` is where `product.md` grows by design, so those sections do not count while
+  # its fixed part does. The decision log is records end to end — one `##` per decision, with no retirement
+  # route anywhere in the mechanism — so the rule does not apply to it at all, and the exemption is
+  # SILENCE rather than a passing verdict, on the same terms as the section length above: an `ok` would
+  # claim a rule was applied and held when it was never asked.
+  if [ "$base" != "decisions-global.md" ]; then
+    n=0
+    i=0
+    while [ "$i" -lt "${#sec_title[@]}" ]; do
+      case "${sec_title[$i]}" in Rules:*) ;; *) n=$((n + 1)) ;; esac
+      i=$((i + 1))
+    done
+    cause=""
+    [ "$n" -gt "$SECTION_MAX" ] && cause="the file holds $n topic sections"
+    verdict "$rel" section-count "$cause" "limit $SECTION_MAX sections"
+  fi
 
   # A title that needs an application's name belongs in that application's file. The rule is the domain
   # layer's: an application's own file may name itself, and neither fixed file is a domain file — for
