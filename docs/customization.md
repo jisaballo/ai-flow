@@ -138,7 +138,7 @@ Steering files in `.ai-flow/steering/` contain domain-specific knowledge that pr
 
 ## Nano
 
-- **[Topic]** — one line per section, in body order, opening with the section's exact title.
+- **[Topic]** — [the one thing every task that opens this file needs about this topic].
 
 ## [Topic]
 

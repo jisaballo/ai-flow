@@ -45,7 +45,7 @@ Write `.ai-flow/project.yml` using the T-001 v1 schema. It must be valid YAML wi
 
 ## 5. Suggest steering and review profiles — do not generate either
 
-List the candidate areas you detected (apps / domains / packages) and suggest creating `steering/<area>.md` for the high-value ones (domains with non-obvious rules, security/compliance, established patterns). **Do not generate steering skeletons** — empty files are noise. Point the user at *when to create one* in `~/.claude/ai-flow/docs/customization.md`, which the engine installs beside these protocols — a reference that names no path sends the reader looking for a file they cannot find — and at `protocols/context.md` for the shape such a file takes and how a context file is cut, read and kept.
+List the candidate areas you detected (apps / domains / packages) and suggest creating `steering/<area>.md` for the high-value ones (domains with non-obvious rules, security/compliance, established patterns). **Do not generate steering skeletons** — empty files are noise. Point the user at *when to create one* in `~/.claude/ai-flow/docs/customization.md`, which the engine installs beside these protocols — a reference that names no path sends the reader looking for a file they cannot find — and at `~/.claude/ai-flow/protocols/context.md` for the shape such a file takes and how a context file is cut, read and kept.
 
 **Propose review profiles from that same detection, on the same terms.** The stack is already known by this point, so name the checklist sets worth having and the axes they would cover, and point at the same guide for the rules. **Do not generate checklist files either**, for the reason above.
 

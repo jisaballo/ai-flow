@@ -4747,7 +4747,9 @@ printf '%s' "$ARC24" | grep -qiE 'moves? [0-9], |moves? [0-9] and'   && a14="$a1
 # guard the next person deletes.
 PUR24='\bisn\b|residents|gate-manager|zoomin|esp32|firestore|ionic|angular|haiku|/architect|/ngrx|/data-access|/frontend-design'
 p1=""
-for f in backlog execute lifecycle plan quick-path understand verify; do
+# `context` added when that protocol was born. `discover` was already outside this hand list before
+# that, and is left alone: pre-existing ground, mentioned in the task's papers and not fixed here.
+for f in backlog context execute lifecycle plan quick-path understand verify; do
   grep -qiE "$PUR24" "global/protocols/$f.md"                     && p1="$p1 $f:identifier"
   grep -qiE 'E-099|T-7[0-9][0-9]|T-9[0-9][0-9]' "global/protocols/$f.md" && p1="$p1 $f:foreign-task-id"
 done
@@ -13776,9 +13778,17 @@ fi
 # home this row now claims cannot exist, and nothing else would count it. It is left out of the route
 # legs because the route it carries is already asserted per-fact elsewhere, and because it names no
 # conventional directory: a leg demanding one of a command file would fail for saying nothing wrong.
+# The TEMPLATE is in the count and not in the route legs, on the execute skill's terms plus one of its
+# own: it declares the map rather than resolving it, and it is the file every adopter edits, so a copy of
+# the rule there ships to every project. It is also the shape this count CANNOT see -- the copy it once
+# carried sat in the same clause as its route, which the per-clause discount above forgives. So the count
+# here is the criterion's own words made checkable, and `C90 A2`'s negative over this file is the leg that
+# actually catches it. Both are kept, and which one is load-bearing is stated rather than left to a reader
+# to work out from two greens.
 ESKH88="global/skills/execute/SKILL.md"
+TYMH88="template/.ai-flow/project.yml"
 n6_88=0
-for d88 in "$CTXH88" "$UP88" "$USK88" "$EXP88" "$ESKH88"; do
+for d88 in "$CTXH88" "$UP88" "$USK88" "$EXP88" "$ESKH88" "$TYMH88"; do
   if ! b88="$(tr '\n' ' ' < "$d88" 2>/dev/null)"; then
     a6_88="$a6_88 [unreadable: $d88]"; continue
   fi
@@ -17702,9 +17712,21 @@ fen90() { sec90 "$1" "$2" | awk '/^```/{c=1-c; next} c'; }
 # and a FILENAME. Every clause this block reads is prose about files -- `product.md`, `.ai-flow`,
 # `context.md` -- so a window that stops at any period stops in the middle of the subject it is binding,
 # and the leg then reddens a document that says exactly the right thing.
+#
+# A REFUSED pattern is not an absence. `grep -ci` exits 1 for no match and >1 when the engine rejects the
+# expression, and a bare count pipeline throws that away -- so a leg keyed on a malformed pattern reads
+# "clean" and passes forever. This helper answers `E` for that case, the way the suite's own `insent()`
+# does, and its seven callers go through the two wrappers below so a refusal fails CLOSED at the leg that
+# suffered it. An accumulator was written first and could never fire: every call sits inside `$( )`, so
+# anything the helper assigns dies with the subshell.
 near90() { [ -n "$1" ] || { printf '0'; return; }
-           printf '%s' "$1" | tr '\n' ' ' | tr -s ' ' \
-             | grep -ciE "($2)([^.]|\.[a-zA-Z]){0,$4}($3)|($3)([^.]|\.[a-zA-Z]){0,$4}($2)" | tr -d ' '; }
+           n90="$(printf '%s' "$1" | tr '\n' ' ' | tr -s ' ' \
+             | grep -ciE "($2)([^.]|\.[a-zA-Z]){0,$4}($3)|($3)([^.]|\.[a-zA-Z]){0,$4}($2)")"
+           case "$?" in 0|1) printf '%s' "$n90" | tr -d ' ';; *) printf 'E';; esac; }
+# True when near90 found at least one adjacency; false for zero AND for `E`, which is neither present nor
+# absent. Same for the zero form, which asks that something be ABSENT: a refusal must not satisfy it.
+nearok90()   { case "${1:-}" in ''|*[!0-9]*) return 1;; esac; [ "$1" -ge 1 ]; }
+nearzero90() { case "${1:-}" in ''|*[!0-9]*) return 1;; esac; [ "$1" = 0 ]; }
 # One clause per line, split on the sentence end and never inside a filename -- `. ` ends a sentence,
 # `.md` does not. A3 reads clauses rather than files for a reason its own comment states.
 clauses90() { printf '%s' "$1" | tr '\n' ' ' | tr -s ' ' | sed 's/\. /.\n/g'; }
@@ -17724,6 +17746,11 @@ CHK90="$(sec90 "$BLG90" '^### After ARCHIVE')"
 NANOSEC90="$(sec90 "$BLG90" '^### Steering Nano Blocks')"
 DSC5_90="$(sec90 "$DSC90" '^## 5\. Suggest steering')"
 USL90="$(grep -m1 -i 'steering:. map' "$USK90" 2>/dev/null)"
+USK4_90="$(grep -m1 -F 'product.md` — ALWAYS' "$USK90" 2>/dev/null)"
+# The template's steering comment, from its lead line to the key it documents. A former home that is
+# not markdown: the corpus A3 computes is `-name '*.md'`, so no derived leg reaches a `.yml` and this
+# region is the only thing that does.
+TYMS90="$([ -r "$TYM90" ] && awk '/^# Map an area to its steering file/{f=1} f{print} /^steering:/{if(f)exit}' "$TYM90" | tr '\n' ' ' | tr -s ' ')"
 ESL90="$(grep -m1 -i 'steering:. map' "$ESK90" 2>/dev/null)"
 CUSP90="$(sec90 "$CUS90" '^### Product Context')"
 CUSS90="$(sec90 "$CUS90" '^### Steering Files')"
@@ -17740,9 +17767,37 @@ if [ -n "$CHK90" ]; then
   [ -n "$n2_90" ] && S2_90="$(itm90 "$n2_90" "$CHK90")"
 fi
 
+# --- the route table, defined once and read twice ------------------------------------------------
+# ONE list for the route and its destination. A2 reads every field to prove each former home routes;
+# A1 reads the FACT field to prove the home states what those routes hand over. Written as two lists
+# they drift in the direction that leaves nine routes pointing at a document nothing reads -- which is
+# the state this block shipped in, and the state a mutation proved by deleting 60 lines of the home
+# with every leg green.
+#
+# Fields, `~`-separated because every pattern field carries EREs of its own:
+#   label ~ region variable ~ the fact the route hands over ~ the sentence it replaces (`-` for none)
+# bash 3.2 cannot parse an apostrophe inside a quoted heredoc nested in a command substitution,
+# and every label below carries one -- so the table is a double-quoted multi-line string. No row
+# may contain a double quote, `$` or a backtick; the assertion below counts the rows read, which is
+# what catches a row that a quoting mistake silently swallowed.
+ROUTES90=13
+ROUTETBL90="understand's product-context section~UPC90~identity|what it is|class~living domain model
+understand's steering section~USF90~nano|cuts~one line per rule
+understand's steering section, its second fact~USF90~map's value~conventional place and not the only one
+execute's steering section~ESF90~re-read|cuts|sections~Understand protocol
+the checklist's steering move~S1_90~where a lesson goes|places it|topic~touches only one of the two
+the checklist's product write-back~S2_90~business rule|its key|topic~re-asked or re-assumed
+discover's steering step~DSC5_90~shape|mechanism|how a context file~-
+the understand skill's steering line~USL90~nano|cuts~Nano block first
+the execute skill's steering line~ESL90~re-read|cuts|sections~-
+customization's product section~CUSP90~governs|shaped|read|written|kept~provides business context
+customization's steering section~CUSS90~cut|read|written|kept~-
+the understand skill's product line~USK4_90~class|what the file is~living domain model
+the template's steering comment~TYMS90~value means|shaped|read|written|kept~the map's value|whatever path it names"
+
 # --- E0: every region this block reads extracts ---------------------------------------------------
 # A leg over an empty region draws no verdict, so the emptiness is reported HERE, once, with the region
-# named. Sixteen regions across three steps: at the freeze all but a few are absent by construction.
+# named. Eighteen regions across three steps: at the freeze all but a few are absent by construction.
 e0_90=""
 for pair90 in \
   "the mechanism's home:$CTXB90" \
@@ -17756,11 +17811,13 @@ for pair90 in \
   "the plan register's marker region:$PREG90" \
   "discover's steering step:$DSC5_90" \
   "the understand skill's steering line:$USL90" \
+  "the understand skill's product line:$USK4_90" \
   "the execute skill's steering line:$ESL90" \
   "customization's product section:$CUSP90" \
   "customization's steering section:$CUSS90" \
   "the README's steering section:$RDMS90" \
   "the README's documentation list:$RDMD90" \
+  "the template's steering comment:$TYMS90" \
 ; do
   [ -n "${pair90#*:}" ] || e0_90="$e0_90 [${pair90%%:*} did not extract]"
 done
@@ -17797,30 +17854,79 @@ else
   # The visibility rule as ONE adjacency binding its predicate to its subject. Two loose words in the
   # region accept the claim negated, and accept an exchange that quotes the wrong reading beside the
   # right one.
-  [ "$(near90 "$CTXB90" 'CLAUDE\.md' 'nothing (of this mechanism|of the mechanism)' 200)" -ge 1 ] \
+  nearok90 "$(near90 "$CTXB90" 'CLAUDE\.md' 'nothing (of this mechanism|of the mechanism)' 200)" \
     || a1_90="$a1_90 [the visibility rule never binds CLAUDE.md to what must not be written there]"
   # The three measures are NAMED and carry no value: the numbers live in the check script alone, and a
   # document that breaks its own one-number-one-home rule in its first commit is the one nobody keeps.
   for m90 in 'nano line length' 'section length' 'sections per file'; do
     [ "$(printf '%s' "$CTXB90" | grep -ciE "$m90" | tr -d ' ')" -ge 1 ] \
       || a1_90="$a1_90 [the measure '$m90' is not named]"
-    [ "$(near90 "$CTXB90" "$m90" '[0-9]' 60)" = 0 ] \
+    nearzero90 "$(near90 "$CTXB90" "$m90" '[0-9]' 60)" \
       || a1_90="$a1_90 [the measure '$m90' carries a value]"
   done
+  # DERIVED from the route table A2 also reads: the home states every fact its routes hand over. One
+  # list for the route and its destination, so a row added there immediately demands its fact of the
+  # home and a route can never point at a section nobody wrote.
+  nf1_90=0
+  while IFS='~' read -r l1_90 r1_90 f1_90 d1_90; do
+    [ -n "$f1_90" ] || continue
+    nf1_90=$((nf1_90 + 1))
+    [ "$(printf '%s' "$CTXB90" | grep -ciE "$f1_90" | tr -d ' ')" -ge 1 ] \
+      || a1_90="$a1_90 [the home states nothing of '$f1_90', which $l1_90 hands over]"
+  done <<< "$ROUTETBL90"
+  [ "$nf1_90" = "$ROUTES90" ] \
+    || a1_90="$a1_90 [$nf1_90 of $ROUTES90 route facts were read from the table]"
+  # And each fact bound to its OWN CLAIM rather than to a word the document uses elsewhere. The derived
+  # leg above couples the two lists; this is what makes the coupling load-bearing, because a fact field
+  # is an alternation written for the ROUTE's wording -- `topic` alone occurs in `## Three cuts`, so the
+  # alternation survives the deletion of the section that actually states the rule. That is not a
+  # hypothesis: a mutation deleted `## Writing` and `## Keeping`, 60 of the home's 165 lines, and every
+  # leg of this block stayed green. Each pair below was measured to hold before it was written, and each
+  # lives in exactly one section, so deleting a section reddens the claims that section owns.
+  for claim90 in \
+    'affected~reserved .?workspace' \
+    'aggregate line~completion criterion' \
+    'task in flight~writes no context file' \
+    'Does every task in the repository need it~workspace file' \
+    'Does every consumer of the domain need it~domain file' \
+    'nano line of the edited section~rewritten from that section' \
+    'context-check~reads only' \
+    'guard opens on two keys~sanctioned moment' \
+    'rule is this paragraph~adapter is its rail' \
+    'A file that fails the check is repaired~first task' \
+    'monorepo is the general case~degenerate' \
+    'Everything known about one topic~one heading' \
+    'nano~index of pointers' \
+  ; do
+    nearok90 "$(near90 "$CTXB90" "${claim90%%~*}" "${claim90#*~}" 200)" \
+      || a1_90="$a1_90 [the home does not bind '${claim90%%~*}' to '${claim90#*~}']"
+  done
 fi
-[ -z "$a1_90" ] && ok "A1 the mechanism's home carries the classes table and the visibility rule" \
-                || bad "A1 the mechanism's home carries the classes table and the visibility rule:$a1_90"
+[ -z "$a1_90" ] && ok "A1 the mechanism's home carries the classes table, the visibility rule, and every fact its routes hand over" \
+                || bad "A1 the mechanism's home carries the classes table, the visibility rule, and every fact its routes hand over:$a1_90"
 
 # --- A2: every former home routes, naming the home AND the fact, and the replaced sentence is gone --
 # The list is HAND-KEPT, for the reason the task's papers record: the set of relocated facts is prose with
 # no machine-readable enumeration to derive a negative from. What makes a hand list safe is A3 below,
-# which is computed over the engine's own files and names a former home this list forgot. Two rows hand
+# which is computed over the engine's own files and names a former home this list forgot. Three rows hand
 # over a fact without losing a sentence -- they gained a pointer where there was none -- and their dead
 # field is `-` rather than a pattern nobody wrote.
 #
+# THE COUNT WAS TAKEN FROM THE PLAN AND THE PLAN WAS WRONG. The papers said ten former homes and this
+# list said nine; the tree holds twelve. Four rows were added after the audit found the gap -- and two of
+# the four had their regions extracted and floor-checked here while no leg read them, which is the
+# fingerprint of legs intended and dropped. A hand list is only as complete as the count that built it,
+# so the count is now stated as a number this leg asserts (ROUTES90) against rows nobody can drop
+# silently, and A1 below demands of the home every fact THIS list hands over -- one source for the route
+# and its destination, so a row added here cannot leave the home unasserted.
+#
+# One row is not a resolver and is not markdown: the template's steering comment. A3's corpus is
+# `-name '*.md'`, so no derived leg reaches a `.yml` at all, and its negative here is the ONLY thing that
+# catches a copy of the map's-value rule in that file. C88 A6 counts it too, and cannot see that shape:
+# the copy sat in the same clause as the route, and that row discounts a clause naming the home.
+#
 # Fields, `~`-separated because every pattern field carries EREs of its own:
 #   label ~ region variable ~ the fact the route hands over ~ the sentence it replaces (`-` for none)
-ROUTES90=9
 n2_90=0
 a2_90=""
 while IFS='~' read -r l2_90 r2_90 f2_90 d2_90; do
@@ -17832,22 +17938,12 @@ while IFS='~' read -r l2_90 r2_90 f2_90 d2_90; do
   fi
   [ "$(printf '%s' "$reg2_90" | tr '\n' ' ' | grep -ciE 'context\.md' | tr -d ' ')" -ge 1 ] \
     || { a2_90="$a2_90 [$l2_90 names no home]"; continue; }
-  [ "$(near90 "$reg2_90" 'context\.md' "$f2_90" 200)" -ge 1 ] \
+  nearok90 "$(near90 "$reg2_90" 'context\.md' "$f2_90" 200)" \
     || a2_90="$a2_90 [$l2_90 names its home and not the fact it hands over]"
   [ "$d2_90" = '-' ] && continue
   [ "$(printf '%s' "$reg2_90" | tr '\n' ' ' | grep -ciE "$d2_90" | tr -d ' ')" = 0 ] \
     || a2_90="$a2_90 [$l2_90 kept the sentence its route replaced]"
-done <<ROUTES_90
-understand's product-context section~UPC90~identity|what it is|class~living domain model
-understand's steering section~USF90~nano|cuts~one line per rule
-understand's steering section, its second fact~USF90~map's value~conventional place and not the only one
-execute's steering section~ESF90~re-read|cuts|sections~Understand protocol
-the checklist's steering move~S1_90~where a lesson goes|places it|topic~touches only one of the two
-the checklist's product write-back~S2_90~business rule|its key|topic~re-asked or re-assumed
-discover's steering step~DSC5_90~shape|mechanism|how a context file~-
-the understand skill's steering line~USL90~nano|cuts~Nano block first
-the execute skill's steering line~ESL90~re-read|cuts|sections~-
-ROUTES_90
+done <<< "$ROUTETBL90"
 [ "$n2_90" = "$ROUTES90" ] \
   || a2_90="$a2_90 [$n2_90 of $ROUTES90 route rows were read -- a row was dropped from the list]"
 # The retired section is an ABSENCE and has no route of its own: a heading kept beside the new home is a
@@ -17880,6 +17976,9 @@ if [ -n "$a3_90" ]; then :; else
   while IFS='~' read -r cn90 ce90 na90 nb90; do
     [ -n "$cn90" ] || continue
     for f3_90 in $SET90; do
+      # An unread file is empty, an empty file matches nothing, and nothing is green -- in the leg that
+      # exists to be A2's safety net. Reported, never inferred.
+      [ -r "$f3_90" ] && [ -s "$f3_90" ] || { a3_90="$a3_90 [$f3_90 is in the corpus and could not be read]"; continue; }
       b3_90="$(tr '\n' ' ' < "$f3_90" | tr -s ' ')"
       # Counted per CLAUSE, and a clause that names the mechanism's home is a ROUTE rather than a home:
       # every route this task writes names the fact it hands over, so a file-wide marker count reports
@@ -17949,10 +18048,10 @@ else
   if [ -z "$g5_90" ]; then
     a5_90="$a5_90 [no checklist move writes the global decision]"
   else
-    [ "$(near90 "$g5_90" 'decisions-global\.md' '\(global\)|marked global' 200)" -ge 1 ] \
+    nearok90 "$(near90 "$g5_90" 'decisions-global\.md' '\(global\)|marked global' 200)" \
       || a5_90="$a5_90 [the global-decision move names its destination and not the marker that selects it]"
   fi
-  [ "$(near90 "$PREG90" '\(global\)|marked global' 'decisions-global' 200)" -ge 1 ] \
+  nearok90 "$(near90 "$PREG90" '\(global\)|marked global' 'decisions-global' 200)" \
     || a5_90="$a5_90 [the plan register documents no global marker with its destination]"
 fi
 [ -z "$a5_90" ] && ok "A5 the write moment names its marker and its destination" \
@@ -17960,16 +18059,20 @@ fi
 
 # --- A6: the adopter surface routes, and the template declares its reserved key -------------------
 a6_90=""
-if [ ! -r "$TPR90" ]; then
-  a6_90="$a6_90 [the template's product file is unreadable]"
+if [ ! -r "$TPR90" ] || [ ! -s "$TPR90" ]; then
+  a6_90="$a6_90 [the template's product file is unreadable or empty]"
 else
-  [ "$(grep -ciE 'Read this file at the start of' "$TPR90" | tr -d ' ')" = 0 ] \
-    || a6_90="$a6_90 [the template's product file still describes itself]"
+  # Keyed on the SHAPE rather than on the sentence the old header happened to use: any rewording passed a
+  # single retired literal. What every self-describing header has in common is its position -- prose
+  # between the title and the first section, where the file talks about itself instead of holding data.
+  hdr90="$(awk 'NR>1 && /^## /{exit} NR>1{print}' "$TPR90")"
+  [ "$(printf '%s\n' "$hdr90" | grep -cE '^[>*_]|^[A-Za-z]' | tr -d ' ')" = 0 ] \
+    || a6_90="$a6_90 [the template's product file describes itself between its title and its first section]"
 fi
 if [ ! -r "$TYM90" ]; then
   a6_90="$a6_90 [the template's project.yml is unreadable]"
 else
-  [ "$(near90 "$(tr '\n' ' ' < "$TYM90")" 'workspace' 'reserved' 200)" -ge 1 ] \
+  nearok90 "$(near90 "$(tr '\n' ' ' < "$TYM90")" 'workspace' 'reserved' 200)" \
     || a6_90="$a6_90 [the template never declares workspace a reserved key]"
 fi
 # The definition's second surface is the README's DOCUMENTATION list, beside the architecture card it

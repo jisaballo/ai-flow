@@ -41,9 +41,9 @@ commands:
 # your convention differs, as a bare integer at the top level — any other form is read as absent.
 # large_file_lines: 1000
 
-# Map an area to its steering file. What is loaded is the map's value, whatever
-# path it names; how such a file is shaped, read, written and kept is stated in
-# protocols/context.md and nowhere else.
+# Map an area to its steering file. What an entry's value means, and how such a
+# file is shaped, read, written and kept, is stated in protocols/context.md and
+# nowhere else — this comment routes there and restates none of it.
 #
 # `workspace` is a RESERVED key here — never an area — on the same terms as
 # `default:` inside review_profile: below. It names the file every task loads.
