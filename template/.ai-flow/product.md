@@ -1,5 +1,13 @@
 # Product Context
 
+## Nano
+
+- **Product** — [what the product is, in one sentence].
+- **Users & Roles** — [who uses the product, and what each role does with it].
+- **Applications** — [which applications exist, and who each one serves].
+- **Core Business Flows** — [the flows the product exists to run].
+- **Key Domain Terms** — [the words this product uses in its own way].
+
 ## Product
 
 - **Name**: [Your product name]
