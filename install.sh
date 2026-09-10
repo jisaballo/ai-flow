@@ -90,7 +90,7 @@ fetch_file() {
   mv "$tmp" "$dest"
 }
 
-PROTOCOLS="understand plan execute verify quick-path backlog discover lifecycle"
+PROTOCOLS="understand plan execute verify quick-path backlog discover lifecycle context"
 SKILLS="understand plan execute verify discover"
 HOOKS="check-state-size.sh diff-size-guard.py git-safety.py understand-write-guard.py artifact-write-guard.py drift-check.sh context-cost-note.py"
 # Git's own hooks, which carry the two Never rules. They live under a subdirectory because that is
