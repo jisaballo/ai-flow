@@ -35,3 +35,10 @@ A decision is an essay by nature: the alternatives and their reasons are the con
 being re-argued, and a decision that omits them is the one that gets reopened. The section length the check
 applies to every other class does not apply to a decision's body. The nano line's length applies in full,
 since the line is what every task reads.
+
+**The section count does not apply either, and for a different reason.** Every `##` here is one decision,
+so this file's section count *is* its decision count — it rises with every close that mints one, and
+nothing in the mechanism retires a decision. A ceiling over it could only ever be crossed, which is why
+the count bounds topics and not records ([the mechanism](context.md) states the rule). Both exemptions are
+expressed the same way: the check draws **no verdict at all** for them, rather than a passing one. A file
+of many decisions is not out of shape; it is a file that has been used.

@@ -18,6 +18,13 @@ which, what a term means. It is small by nature and bounded by the section lengt
 resolved part is where the file grows — one rule per task that confirmed one — and it grows under the same
 key vocabulary steering uses, so a task that touches one app or domain loads that key's rules and no other.
 
+**Only the fixed part counts toward the section count.** A `Rules:` section is a record of the growing
+part, so it rises with use and by nothing the writer did wrong; counting it would put a ceiling on how many
+groups of business rules a product may have, which is a ceiling on the business rather than on the file's
+shape. The count bounds topics and not records — [the mechanism](context.md) states the rule and this is
+`product.md`'s instance of it. Every other rule still answers for a `Rules:` section, its length included:
+a group that has outgrown one section is two topics, and splitting it is the repair.
+
 The keys are the `steering:` map's keys, `workspace` included: a rule every task must know is
 `Rules: workspace — <topic>`. One vocabulary names an area across every class, which is what lets the
 mechanism resolve `product.md` and steering with one test. A rule whose key has no steering file yet names

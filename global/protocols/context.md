@@ -125,6 +125,18 @@ A decision is the one class written as an essay: its alternatives and their reas
 being reopened, so the section length does not apply to a decision's body. The nano line's length applies
 in full, since that line is what every task reads.
 
+**The section count bounds topics, and a record is not a topic.** The count is what catches a file that
+has become a drawer, and it can only ask that of sections a writer chooses to open. A section that is a
+**record** of an enumeration the mechanism itself grows — one per decision, one per group of business
+rules — rises with use and by nothing the writer did wrong, and no repair stated here can lower it: a
+ceiling over records is a ceiling nothing can meet, and a check nobody can satisfy is the alarm that
+teaches everyone to route around it. So the count skips the record sections and bounds the rest. Two
+classes have them: `product.md`, whose `Rules:` sections are its growing part while its fixed part is
+counted, and `decisions-global.md`, which is records end to end and to which the rule therefore does not
+apply at all. That exemption is expressed as **silence** and not as a passing verdict, on the same terms
+as the section length above — a verdict of `ok` would claim a rule was applied and held when it was never
+asked.
+
 ## Keeping
 
 **The check.** `scripts/context-check.sh [file …]` reads only `.ai-flow/`; with no argument it takes the

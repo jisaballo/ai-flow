@@ -125,6 +125,15 @@ that holds the occasion — never in the title, which is the topic's address. Th
 section is rewritten from the section in the same edit: one diff is the whole defence against an index
 drifting from what it indexes. A rule that retires an older one takes it out in the same edit.
 
+**The section count bounds topics, and a record is not a topic.** The count catches a file that has become
+a drawer, and it can only ask that of sections a writer chooses to open. A section that is a **record** of
+an enumeration the mechanism itself grows — one per decision, one per group of business rules — rises with
+use and by nothing the writer did wrong, and no repair stated here can lower it: a ceiling over records is
+a ceiling nothing can meet. So the count skips the record sections and bounds the rest. `product.md`'s
+`Rules:` sections are its growing part and are skipped while its fixed part is counted;
+`decisions-global.md` is records end to end, so the rule does not apply to it at all — expressed as
+silence, not as a passing verdict, on the same terms as the section length.
+
 ## Keeping
 
 **The check.** `scripts/context-check.sh [file …]` reads only `.ai-flow/`; with no argument it takes the
