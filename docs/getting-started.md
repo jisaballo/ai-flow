@@ -111,15 +111,15 @@ If your project has distinct domains with specific rules, create steering files:
 cat > .ai-flow/steering/auth.md << 'EOF'
 # Domain: Authentication
 
-## Rules
+## Nano
+
+- **Tokens** — httpOnly cookies only, refreshed under a single leader.
+
+## Tokens
 - Always use AuthService, never access auth provider directly
 - Tokens must be stored in httpOnly cookies
-
-## Patterns
 - Login: Component → Service → Provider → Redirect
-
-## Pitfalls
-- Token refresh race condition during concurrent requests
+- Refresh races across concurrent requests: take a lock
 EOF
 ```
 

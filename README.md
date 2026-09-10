@@ -140,18 +140,18 @@ Create domain-specific guidance in `.ai-flow/steering/`. These are loaded automa
 ```markdown
 # Domain: Authentication
 
-## Rules
+## Nano
+
+- **Session tokens** — httpOnly cookies only, and the facade is the only door.
+
+## Session tokens
+
 - Always use the AuthService facade, never access Firebase Auth directly
 - Session tokens must be httpOnly cookies, never localStorage
-
-## Patterns
-- Login flow: Component → Facade → Effect → Firebase Auth → Redirect
-
-## Pitfalls
 - Firebase Auth state listener fires on every tab focus — debounce it
 ```
 
-See `examples/` for more steering file examples.
+See `examples/` for more steering file examples, and [the context mechanism](docs/context/context.md) for the shape every one of them shares.
 
 ### Review Profiles
 
@@ -201,6 +201,7 @@ The framework ships optional global tooling under `global/`, installed to `~/.cl
 - [Getting Started](docs/getting-started.md) — Step-by-step setup guide
 - [Lifecycle Protocol](global/protocols/lifecycle.md) — Every phase, the execution paths and the autonomy levels
 - [Customization Guide](docs/customization.md) — Adapting ai-flow to your workflow
+- [Context files](docs/context/context.md) — The mechanism every context file shares: its classes, cuts, read, write and keeping
 - [Verify architecture card](docs/architecture/verify.md) — How the review is built: its three pieces, and every file that carries each of its concepts
 
 ## Related

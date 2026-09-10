@@ -1,7 +1,5 @@
 # Product Context
 
-> Read this file at the start of new epics to understand the product domain.
-
 ## Product
 
 - **Name**: [Your product name]

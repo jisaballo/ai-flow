@@ -41,8 +41,12 @@ commands:
 # your convention differs, as a bare integer at the top level — any other form is read as absent.
 # large_file_lines: 1000
 
-# Map an area to its steering file. The verify phase loads the matching steering
-# file (.ai-flow/steering/<area>.md) for the area a task touches.
+# Map an area to its steering file. What is loaded is the map's value, whatever
+# path it names; how such a file is shaped, read, written and kept is stated in
+# protocols/context.md and nowhere else.
+#
+# `workspace` is a RESERVED key here — never an area — on the same terms as
+# `default:` inside review_profile: below. It names the file every task loads.
 # Leave empty if you have no steering files yet.
 steering: {}
   # example:

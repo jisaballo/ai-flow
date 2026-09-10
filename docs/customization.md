@@ -123,27 +123,26 @@ findings, and the mutation prover. Those are the engine's, and they stay there.
 
 ### Product Context (recommended)
 
-`.ai-flow/product.md` provides business context that helps Claude make better decisions. Especially important for:
+`.ai-flow/product.md` is one of the context files `protocols/context.md` governs — that protocol states what it is, how it is shaped, read, written and kept, and none of it is repeated here. Create one especially for:
 - New epics (groups of related tasks)
 - Tasks that involve business logic
 - UI/UX decisions
 
 ### Steering Files (optional, high-value)
 
-Steering files in `.ai-flow/steering/` contain domain-specific knowledge that prevents recurring mistakes.
+Steering files in `.ai-flow/steering/` contain domain-specific knowledge that prevents recurring mistakes. How one is cut, read, written and kept is `protocols/context.md`'s; what is left to you is whether to create one at all.
 
 **Structure:**
 ```markdown
 # Domain: [Name]
 
-## Rules
-- [Hard rules that must always be followed]
+## Nano
 
-## Patterns
-- [Established patterns in this domain]
+- **[Topic]** — one line per section, in body order, opening with the section's exact title.
 
-## Pitfalls
-- [Common mistakes and how to avoid them]
+## [Topic]
+
+- [The rules, patterns and pitfalls of this topic, together]
 ```
 
 **When to create one:**
