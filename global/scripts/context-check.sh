@@ -113,12 +113,18 @@ in_list() {
 
 # A title names an application when the key stands as a word in it. Padded and bounded on both sides,
 # so `checkout` is not found inside `checkouts` and a key at either end is still found.
+#
+# The key is the operator's own text and reaches this matcher verbatim, so it must never become a
+# PATTERN. Built into an ERE it could be refused rather than unmatched -- `c++` is not a valid one -- and
+# a matcher that returns non-zero for both leaves the caller unable to tell "the title does not name it"
+# from "the question was never asked", which is a rule printed as `ok` having never run. `case` matches a
+# QUOTED variable literally, so there is nothing to escape, no second process, and no status to misread.
 title_names_app() {
   local t k
   t="$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]')"
   k="$(printf '%s' "$2" | tr '[:upper:]' '[:lower:]')"
-  k="${k//./\\.}"
-  printf '%s' " $t " | grep -qE "[^a-z0-9]${k}[^a-z0-9]"
+  case " $t " in *[!a-z0-9]"$k"[!a-z0-9]*) return 0 ;; esac
+  return 1
 }
 
 # --- the file set ---------------------------------------------------------------------------------
@@ -306,7 +312,10 @@ measure() {
   # that is a RECORD of a growing enumeration is not a topic: its number only ever rises, and no repair
   # this mechanism offers can lower it, so a ceiling over records is a ceiling nothing can ever meet.
   # `Rules: <key> — <topic>` is where `product.md` grows by design, so those sections do not count while
-  # its fixed part does. The decision log is records end to end — one `##` per decision, with no retirement
+  # its fixed part does. The exemption is keyed on the CLASS and not on the title prefix: the marker rule
+  # offers that title form to any class needing groups, so keyed on the title alone a steering file of
+  # twenty `Rules:` sections would be uncountable -- a drawer, invisible to the one rule whose job is
+  # catching a file that has become one. The decision log is records end to end — one `##` per decision, with no retirement
   # route anywhere in the mechanism — so the rule does not apply to it at all, and the exemption is
   # SILENCE rather than a passing verdict, on the same terms as the section length above: an `ok` would
   # claim a rule was applied and held when it was never asked.
@@ -314,7 +323,7 @@ measure() {
     n=0
     i=0
     while [ "$i" -lt "${#sec_title[@]}" ]; do
-      case "${sec_title[$i]}" in Rules:*) ;; *) n=$((n + 1)) ;; esac
+      case "$base:${sec_title[$i]}" in product.md:Rules:*) ;; *) n=$((n + 1)) ;; esac
       i=$((i + 1))
     done
     cause=""

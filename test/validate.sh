@@ -18288,6 +18288,42 @@ A topic of its own.
   grep -F "$FAILMK91" "$OUT91" | grep -q -- 'nano-order' \
     || a1_91="$a1_91 [the count mismatch does not fail nano-order]"
   a1_91="$a1_91$(only91 nano-order)"
+  # `nano-line-length` is defined over a LOGICAL bullet -- the check joins an indented continuation onto
+  # the bullet above it, so the ceiling does not become a function of the file's wrap width. Every other
+  # nano this card writes is a single physical line, so the join was asserted by nothing: deleting it at
+  # the Verify gate left the whole suite green. Under the ~100-column discipline these files are written
+  # to, a bullet past the ceiling is ALWAYS two or three physical lines, so this is the only shape the
+  # rule ever really meets.
+  half91="$(awk -v n=$((NANOMAX91 / 2)) 'BEGIN{while(++i<=n)printf "x"}')"
+  A1W91="$BOX91/a1-nano-wrap"; mk91 "$A1W91"; F1W91="$A1W91/.ai-flow/steering/payments.md"
+  good91 "$F1W91"
+  awk -v h="$half91" '/^- \*\*Idempotency\*\*/{print "- **Idempotency** — " h; print "  " h; next} {print}' \
+    "$F1W91" > "$F1W91.t" && mv "$F1W91.t" "$F1W91"
+  # The fixture is only a measurement of the join if every PHYSICAL line stays inside the ceiling: one
+  # long line would be caught by a check that never joined anything, and the leg would prove nothing.
+  wide91="$(awk -v m="$NANOMAX91" '/^## /{n=0} /^## Nano$/{n=1;next} n && length($0) >= m {print "x"}' "$F1W91")"
+  [ -z "$wide91" ] \
+    || a1_91="$a1_91 [the wrapped fixture has a physical nano line at or past the ceiling -- it does not measure the join]"
+  rc91="$(run91 "$A1W91" .ai-flow/steering/payments.md)"
+  [ "$rc91" != 0 ] || a1_91="$a1_91 [a nano bullet wrapped past the ceiling exits 0 -- the ceiling follows the wrap width]"
+  grep -F "$FAILMK91" "$OUT91" | grep -q -- 'nano-line-length' \
+    || a1_91="$a1_91 [the wrapped bullet does not fail nano-line-length]"
+  a1_91="$a1_91$(only91 nano-line-length)"
+  # A map key is the operator's text and reaches the matcher verbatim. Built into an ERE it could be
+  # REFUSED rather than unmatched, and a refusal read as an absence prints `ok` for a rule that never
+  # ran -- the one shape this card exists to keep out of a verdict. `c++` is the cheapest key that says so.
+  A1K91="$BOX91/a1-app-meta"; mk91 "$A1K91"; F1K91="$A1K91/.ai-flow/steering/payments.md"
+  good91 "$F1K91"
+  mkdir -p "$A1K91/apps/c++"
+  printf 'steering:\n  payments: steering/payments.md\n  c++: steering/cpp.md\n' > "$A1K91/.ai-flow/project.yml"
+  sed -e 's/^- \*\*Refund flow\*\*/- **Refund flow in c++**/' \
+      -e 's/^## Refund flow$/## Refund flow in c++/' "$F1K91" > "$F1K91.t" && mv "$F1K91.t" "$F1K91"
+  rc91="$(run91 "$A1K91" .ai-flow/steering/payments.md)"
+  [ "$rc91" != 0 ] \
+    || a1_91="$a1_91 [a key holding a regex metacharacter is not matched -- the rule is skipped or its refusal is read as an absence]"
+  grep -F "$FAILMK91" "$OUT91" | grep -q -- 'app-key' \
+    || a1_91="$a1_91 [the title naming the application 'c++' does not fail app-key]"
+  a1_91="$a1_91$(only91 app-key)"
 fi
 [ -z "$a1_91" ] && ok "A1 the check answers each of the seven rules in both directions" \
                 || bad "A1 the check answers each of the seven rules in both directions:$a1_91"
@@ -18464,6 +18500,29 @@ else
   [ "$rc91" != 0 ] || a12_91="$a12_91 [$((SECCNT91 + 1)) topic sections are within the ceiling -- the count is inert]"
   grep -F "$FAILMK91" "$OUT91" | grep -q -- 'section-count' \
     || a12_91="$a12_91 [the failure over topic sections does not name section-count]"
+  # The exemption belongs to the CLASS that grows by records, not to the title prefix. `## The marker`
+  # offers `Rules: <key> — <topic>` as the general way any class expresses groups, so keyed on the title
+  # alone a steering file of twenty `Rules:` sections is uncountable -- a drawer, invisible to the one
+  # rule whose stated job is catching a file that has become a drawer.
+  A12S91="$BOX91/a12-steering-records"; mk91 "$A12S91"
+  F12S91="$A12S91/.ai-flow/steering/payments.md"
+  i91=1; nano91=""; body91=""
+  while [ "$i91" -le $((SECCNT91 + 1)) ]; do
+    nano91="$nano91- **Rules: payments — group $i91** — a group of its own.
+"
+    body91="$body91
+## Rules: payments — group $i91
+
+A group of its own.
+"
+    i91=$((i91 + 1))
+  done
+  printf '# Payments\n\n## Nano\n\n%s%s' "$nano91" "$body91" > "$F12S91"
+  rc91="$(run91 "$A12S91" .ai-flow/steering/payments.md)"
+  [ "$rc91" != 0 ] \
+    || a12_91="$a12_91 [a steering file of $((SECCNT91 + 1)) sections titled 'Rules:' is within the ceiling -- the exemption is keyed on the title, not on the class]"
+  grep -F "$FAILMK91" "$OUT91" | grep -q -- 'section-count' \
+    || a12_91="$a12_91 [the steering drawer does not fail section-count]"
 fi
 [ -z "$a12_91" ] && ok "A12 the count bounds topics, and a record section is not a topic" \
                  || bad "A12 the count bounds topics, and a record section is not a topic:$a12_91"
