@@ -115,7 +115,7 @@ RALPH="ralph.sh ralph-prompt.md review-prompt.md"
 # a browser can reach it. Same rule that placed the lifecycle map: what is operated is distributed, what
 # is evaluated may live on the website.
 DOCS="customization.md"
-SCRIPTS="seed-front.sh"
+SCRIPTS="seed-front.sh context-check.sh"
 
 # The engine withdraws as well as it publishes. Before this, `update` fetched what the lists above name
 # and deleted nothing, so a file the engine retired survived on every machine that had ever installed it
