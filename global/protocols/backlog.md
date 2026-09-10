@@ -59,7 +59,7 @@ touch.
 **two** sites — the count is the fact, for the reason **Checkout** above gives about its own four. The
 closing ceremony's **dismantling** move: the ownership condition says the checkout is removed by whatever
 created it, and this column is the only thing that says what that was. And the archive checklist's
-**step 7**, whose label rewrite has first to ask whether that tool offers a mutable label at all; it runs
+**step 8**, whose label rewrite has first to ask whether that tool offers a mutable label at all; it runs
 in the coordinator, which has nothing else to learn the front's tool from. The coordinator's own row has
 nothing to name — nothing created it.
 
@@ -490,7 +490,7 @@ its own:
 ```
 
 The line is **regenerated from the body**, never written beside it — `.ai-flow/icebox/IB-XXX.md` holds the
-essay, moved there verbatim by the write-back that admitted it (`### After ARCHIVE (single task)`, step 3),
+essay, moved there verbatim by the write-back that admitted it (`### After ARCHIVE (single task)`, step 4),
 and the line is derived from that essay in the same edit. Retired entries live at
 `.ai-flow/archive/icebox/`, keeping the reason they died; a number is never reused, so the highest ever
 issued is the highest across those two directories.
@@ -724,7 +724,7 @@ what activation has always been, plus the declaration in step 2.
    made at every opening yields inconsistent names, and inconsistency reads worse at a glance than a
    boring uniform scheme. The **current task** goes on whatever **mutable label** the tool offers, and is
    rewritten there by the act that already advances the roster's task field (`### After ARCHIVE (single
-   task)`, step 7) rather than by an act of its own. Where the tool **offers no** such label, nothing is
+   task)`, step 8) rather than by an act of its own. Where the tool **offers no** such label, nothing is
    added and the **roster is the glance** — said out loud, because a silence here reads as a step somebody
    forgot rather than as the floor it is. And a creation-time name that seeds several fields at once names
    the **path**, **never the branch**: a front's branch is **task-scoped** for the reason `## State Files`
@@ -927,9 +927,10 @@ the ledger has one writer, and every step below is that writer at work. Nothing 
 another checkout — the one act that did is now move 7 of the ceremony, where it sits alongside the
 other moves of the close that reach outside the coordinator.
 
-1. **Steering update**: did the task teach or modify a domain rule? -> edit the rule in the steering file's **body** AND regenerate its `## Nano` line **in the same edit** — an edit that touches only one of the two is incomplete. No new rule learned -> skip.
-2. **product.md write-back**: copy every rule from understand.md's `New business rules minted` into product.md's Business Rules (with T-XXX provenance); update the Glossary if the task sharpened a term. A business rule that stays only in the archived artifact will be re-asked or re-assumed. None minted -> skip.
-3. **Icebox write-back**: publish what this task found and did not own, and amend what it touched.
+1. **Steering update**: did the task teach or modify a domain rule? -> place it and land it as `protocols/context.md` states, which owns where a lesson goes and what one edit must carry. `scripts/context-check.sh` on the file is this move's `Verify`. No new rule learned -> skip.
+2. **product.md write-back**: copy every rule from understand.md's `New business rules minted` into product.md, under the key each belongs to, with provenance — and sharpen a term where the task sharpened one. Which key a business rule belongs to, and the shape of its line, are `protocols/context.md`'s. None minted -> skip.
+3. **Global decision write-back**: every Decision Register entry the plan marked `(global)` becomes a section of `decisions-global.md` in that file's format — context, decision, alternatives with the reason each was rejected. A decision that reaches no further than this task is not copied here. None marked -> skip.
+4. **Icebox write-back**: publish what this task found and did not own, and amend what it touched.
    Two halves, and **both are shown to the operator — nothing is written until they approve**. That is
    the whole repair: the shared list grew unowned because entries reached it while nobody was reading.
    **Additions** are the findings staged under their own `##` headings in
@@ -973,8 +974,8 @@ other moves of the close that reach outside the coordinator.
    deletes them: this checklist runs inside move 4, so the papers are still there to read from, and no
    step below it may be allowed to outlive them. That is also why the position is not a preference — any
    position that satisfies it renumbers the steps beneath, and the citations move with them.
-4. Generate `archive/T-XXX/summary.md` (see Archive Summary template)
-5. **Remove task from BACKLOG.md** (move from Done to nowhere — it's in the archive now). **The same act
+5. Generate `archive/T-XXX/summary.md` (see Archive Summary template)
+6. **Remove task from BACKLOG.md** (move from Done to nowhere — it's in the archive now). **The same act
    strikes the task's line in its epic's Execution Order block**, and moves the epic's status from
    `backlog` to `active` where it still reads the former — one edit, three levels, the idiom this checklist already uses for a
    steering rule and its nano and for an Icebox entry and its index line. The row leaving the pending
@@ -986,8 +987,8 @@ other moves of the close that reach outside the coordinator.
    An epic whose block carries **no numbered order list** — the Scope Contract requires Goal, Planned
    Tasks and Non-Goals, never an order — has nothing to strike, and the step **says so** rather than
    reading as an edit somebody forgot.
-6. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
-7. Leave the workstream row to move 9 of `## Closing a Workstream`, its sole owner: the row is removed
+7. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
+8. Leave the workstream row to move 9 of `## Closing a Workstream`, its sole owner: the row is removed
    only when the front has no next task, and a front continuing its chain keeps its row with the task
    field advanced (coordinator only — other open fronts keep theirs). **The same act rewrites the front's
    mutable label** where its tool offers one, to the task the row now names — this is the only statement
@@ -1001,10 +1002,6 @@ other moves of the close that reach outside the coordinator.
 ### Business-Miss Rule
 
 When a shipped task turns out to violate business intent (the code was right; the business was assumed or wrong), treat it as feedback, not just a bug: alongside the fix task, write the missing rule to product.md — or the miss *category* to the relevant protocol. A business miss that only produces a bugfix will repeat.
-
-### Steering Nano Blocks
-
-Every code-domain steering file opens with a `## Nano` block: one line per rule/section, always **derived from the body** (two levels, one file — same-diff is the main defense against drift). `pencil-design.md` (design sessions) is exempt. Readers hit the nano first and read the full body only when the task touches that domain (see Understanding protocol > Steering Files). The nano is regenerated whenever the body changes — step 1 of the archive checklist enforces it.
 
 ### After Epic completion
 

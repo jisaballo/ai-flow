@@ -1523,7 +1523,7 @@ if [ -n "$CER" ]; then
   # The forward citation, by NUMBER. The suite already treats an unpinned numeric cross-reference as a
   # defect one section down — a half-renumber leaves a citation pointing at the wrong move while the
   # section title still matches — and this rule mints two such citations, one in each direction.
-  pair 5 'step 7' 'After ARCHIVE' "the label rewrite cites the step that performs it"
+  pair 5 'step 8' 'After ARCHIVE' "the label rewrite cites the step that performs it"
 else
   bad "the protocol defines the ceremony that opens a workstream"
   bad "a single open front has nothing to weigh and nothing to create (no section)"
@@ -11434,7 +11434,7 @@ else
   # from its step's own act, so a renumber moves them together; what a derived count would give up is the
   # one reading nothing else notices — a step appearing or vanishing, which is precisely the event that
   # renumbers the rest. Deriving both would leave the pair agreeing with each other about anything.
-  [ "$steps72" -eq 7 ] || c10_72="$c10_72 [the checklist has $steps72 numbered steps, not the seven its citations are written against]"
+  [ "$steps72" -eq 8 ] || c10_72="$c10_72 [the checklist has $steps72 numbered steps, not the eight its citations are written against]"
   # The acts, and the numbers they currently occupy. A literal here is the failure IB-001 records: after a
   # renumber the leg lands on a different step and passes for the wrong reason, with its own name still
   # claiming the step it no longer reads.
@@ -13744,34 +13744,74 @@ else
   [ -z "$a5_88" ] && ok "A5 the root map draws the engine's capabilities and both arrow kinds" \
                   || bad "A5 the root map draws the engine's capabilities and both arrow kinds:$a5_88"
 fi
-# Three documents, not two: the loosening reaches every phase that RESOLVES a steering entry. The pair the
-# criterion first named was a list built by hand, and execute.md — the phase that writes the code — was the
-# one it missed, so a card resolved by Understand was dropped by the phase that needed it most.
+# ONE home and three routes, where this row once demanded the rule in three documents. What it protected
+# is unchanged — a phase that resolves the entry to the DIRECTORY silently drops every entry naming
+# something else — and the protection is now stronger by shape: three copies of a rule can drift apart
+# with every row green, while one home plus a route per resolver cannot. The three documents that
+# resolve an entry are still all read, because the loosening reaches every phase that resolves one and a
+# list of two missed the phase that writes the code.
+CTXH88="global/protocols/context.md"
 UP88="global/protocols/understand.md"
 USK88="global/skills/understand/SKILL.md"
 EXP88="global/protocols/execute.md"
 a6_88=""
-for d88 in "$UP88" "$USK88" "$EXP88"; do
+RULE88="the map's value|whatever path it names"
+if ! h88="$(tr '\n' ' ' < "$CTXH88" 2>/dev/null)"; then
+  a6_88="$a6_88 [unreadable: $CTXH88]"
+else
+  # The home states it. Asserted before the count below, so "no document states it" and "several do"
+  # can never read alike: a deleted rule would otherwise satisfy an exactly-one count at zero.
+  [ "$(printf '%s' "$h88" | grep -ciE "$RULE88" | tr -d ' ')" -ge 1 ] \
+    || a6_88="$a6_88 [$CTXH88 does not state the rule it is the home of]"
+fi
+# And EXACTLY ONE document states it, counted over the resolvers plus the home rather than asserted of
+# each: a second copy anywhere in this set is the drift this row exists to prevent.
+#
+# Counted PER CLAUSE, and a clause that names the home is a ROUTE rather than a copy — because a route
+# has to name the fact it hands over or it asserts nothing, so a document-wide count of the rule's own
+# words reports every correct route as the second home. Split on the sentence and never inside a
+# filename: `. ` ends a sentence, `.md` does not.
+# The execute SKILL is in the count and not in the route legs below, and the asymmetry is deliberate. It
+# is a resolver — it re-reads the affected entries per step — so a copy of the rule there is the second
+# home this row now claims cannot exist, and nothing else would count it. It is left out of the route
+# legs because the route it carries is already asserted per-fact elsewhere, and because it names no
+# conventional directory: a leg demanding one of a command file would fail for saying nothing wrong.
+ESKH88="global/skills/execute/SKILL.md"
+n6_88=0
+for d88 in "$CTXH88" "$UP88" "$USK88" "$EXP88" "$ESKH88"; do
   if ! b88="$(tr '\n' ' ' < "$d88" 2>/dev/null)"; then
     a6_88="$a6_88 [unreadable: $d88]"; continue
   fi
-  # Positive: the document says what is loaded is the MAP'S VALUE. Counted over the whole document because
-  # both carry the rule in one place; the negative leg below is what stops a file-wide count from passing
-  # on prose that says the right thing beside prose that still says the old one.
-  [ "$(printf '%s' "$b88" | grep -ciE "the map's value|whatever path it names" | tr -d ' ')" -ge 1 ] \
-    || a6_88="$a6_88 [$d88 never says the value is whatever the map names]"
-  # Negative: nothing still resolves the entry TO THE DIRECTORY. Both halves are asserted because the
-  # positive alone is satisfied by a document that gained the new sentence and kept the old one — which is
-  # exactly the shape a loosening takes when it is written as an addition instead of a replacement.
+  c6_88="$(printf '%s' "$b88" | sed 's/\. /.\
+/g' | grep -iE "$RULE88" | grep -civE 'context\.md' | tr -d ' ')"
+  [ "$c6_88" = 0 ] || n6_88=$((n6_88 + 1))
+done
+[ "$n6_88" = 1 ] || a6_88="$a6_88 [$n6_88 documents state the map's-value rule, not one]"
+for d88 in "$UP88" "$USK88" "$EXP88"; do
+  if ! b88="$(tr '\n' ' ' < "$d88" 2>/dev/null)"; then continue; fi
+  # Each resolver carries a ROUTE naming both the home and the fact it hands over — never a bare
+  # filename, which asserts nothing about what was handed over, and bound in one clause so the two
+  # cannot be satisfied by unrelated sentences at opposite ends of a manual.
+  #
+  # SINGLE-quoted, and that is not a style choice. A literal `{0,N}` interval inside a DOUBLE-quoted
+  # pattern in an inline `[ "$(…)" ]` test is brace-expanded into two words, and the test dies with
+  # `too many arguments` — so the leg reports its `||` branch and never examines a document at all.
+  # Written that way first, this row failed on all three resolvers while the identical grep returned a
+  # match by hand. The 28 other interval patterns in this file are single-quoted, which is why they work.
+  [ "$(printf '%s' "$b88" | grep -ciE 'context\.md([^.]|\.[a-zA-Z]){0,200}(loaded|read|cuts|owns)|(loaded|read|cuts|owns)([^.]|\.[a-zA-Z]){0,200}context\.md' | tr -d ' ')" -ge 1 ] \
+    || a6_88="$a6_88 [$d88 carries no route naming the home and what it hands over]"
+  # Negative: nothing still resolves the entry TO THE DIRECTORY. The positive alone is satisfied by a
+  # document that gained the route and kept the old sentence, which is the shape a relocation takes when
+  # it is written as an addition instead of a replacement.
   [ "$(printf '%s' "$b88" | grep -ciE "steering files from .\.ai-flow/steering|steering file\(s\) for the affected domain\(s\) from|read the corresponding steering files|Load steering files for the affected domains|are the values of the .steering:. map in .\.ai-flow/project\.yml. \(files under" | tr -d ' ')" = "0" ] \
     || a6_88="$a6_88 [$d88 still resolves the entry to the steering directory]"
-  # And the directory survives as the CONVENTION rather than being deleted: a loosening that erased it
+  # And the directory survives as the CONVENTION rather than being deleted: a relocation that erased it
   # would leave every project that follows the convention with no statement of where its files go.
   [ "$(printf '%s' "$b88" | grep -ciE "\.ai-flow/steering" | tr -d ' ')" -ge 1 ] \
     || a6_88="$a6_88 [$d88 no longer names the conventional place at all]"
 done
-[ -z "$a6_88" ] && ok "A6 the steering value is whatever the map names, said in both directions" \
-                || bad "A6 the steering value is whatever the map names, said in both directions:$a6_88"
+[ -z "$a6_88" ] && ok "A6 the map's-value rule has one home, and every resolver routes to it" \
+                || bad "A6 the map's-value rule has one home, and every resolver routes to it:$a6_88"
 
 # Every concept the card's homes table names is held to a set COMPUTED from the repository, so no row can
 # be wrong in silence and no row can exist that nothing computes. The markers themselves live with the
@@ -17780,7 +17820,7 @@ fi
 #
 # Fields, `~`-separated because every pattern field carries EREs of its own:
 #   label ~ region variable ~ the fact the route hands over ~ the sentence it replaces (`-` for none)
-ROUTES90=8
+ROUTES90=9
 n2_90=0
 a2_90=""
 while IFS='~' read -r l2_90 r2_90 f2_90 d2_90; do
@@ -17799,7 +17839,8 @@ while IFS='~' read -r l2_90 r2_90 f2_90 d2_90; do
     || a2_90="$a2_90 [$l2_90 kept the sentence its route replaced]"
 done <<ROUTES_90
 understand's product-context section~UPC90~identity|what it is|class~living domain model
-understand's steering section~USF90~nano|cuts|shape~one line per rule
+understand's steering section~USF90~nano|cuts~one line per rule
+understand's steering section, its second fact~USF90~map's value~conventional place and not the only one
 execute's steering section~ESF90~re-read|cuts|sections~Understand protocol
 the checklist's steering move~S1_90~where a lesson goes|places it|topic~touches only one of the two
 the checklist's product write-back~S2_90~business rule|its key|topic~re-asked or re-assumed

@@ -39,9 +39,12 @@ Write `artifacts/T-XXX/plan.md` with:
 
 ## Decision Register
 <!-- Layer 2 — one line per decision: what + business consequence + recommendation.
-     Status: (confirmed) = user settled it in Understand; (proposed) = needs their eyes at this gate. -->
+     Status: (confirmed) = user settled it in Understand; (proposed) = needs their eyes at this gate.
+     (global) marks a decision that reaches beyond this task, so the close writes it as a section of
+     decisions-global.md — the archive checklist's global-decision move reads this marker and nothing else. -->
 - **D1** (proposed): [decision] — consequence: [what it means for the product]. Recommended: [option].
 - **D2** (confirmed in Understand): [decision] — consequence: [...].
+- **D3** (confirmed in Understand) **(global)**: [decision reaching beyond this task] — consequence: [...].
 
 ## Mechanics
 

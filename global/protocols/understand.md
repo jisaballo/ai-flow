@@ -12,7 +12,7 @@ run performs the check; the command is a convenience over this procedure, never 
 
 ## Product Context
 
-Read `.ai-flow/product.md` at the start of EVERY Understanding phase — not just for new epics. It is the living domain model (app map, glossary, business rules): the oracle the Business Frame below is drafted against and checked for contradictions.
+Read `.ai-flow/product.md` at the start of EVERY Understanding phase — not just for new epics: its fixed part, and the rules of the keys this task affects. **What that file is — its identity as a class, and what it answers — belongs to `protocols/context.md`**, which owns the whole mechanism governing it. What is Understand's own is this: the file is the oracle the Business Frame below is drafted against and checked for contradictions.
 
 ## Business Frame (before any investigation or question)
 
@@ -154,7 +154,7 @@ Then exactly one of two outcomes:
   same reason discards are not: that consumer would republish a sighting as a finding this task never
   made.
 
-**Where a staged finding goes next is the write-back at this task's close** — `Icebox write-back`, step 3
+**Where a staged finding goes next is the write-back at this task's close** — `Icebox write-back`, step 4
 of the single-task archive checklist (see Backlog protocol). It publishes what the task found and did not
 own: the operator sees both halves, and what they admit becomes one index line plus its own body file, the
 essay moved there verbatim from this staging file. Until that close the finding lives here and nowhere
@@ -170,9 +170,9 @@ above is. Nothing new reaches that section while a task is in flight. See Backlo
 
 **After task split analysis**, identify which domains the task affects and read what the `steering:` map in `.ai-flow/project.yml` names for each. These contain domain-specific rules, patterns, and pitfalls that inform better questions and plans.
 
-**What is loaded is the map's value, whatever path it names.** `.ai-flow/steering/<domain>.md` is the conventional place and not the only one: a project may point an entry at any file it keeps — a checklist, an architecture card, a document it already maintains elsewhere. Resolving to the directory instead of to the value would silently drop every entry that names something else, and drop it with no diagnostic, since a path never looked up cannot be reported missing.
+**`protocols/context.md` owns two rules this phase runs on, and states them once each**: that what is loaded is the map's value and never the `.ai-flow/steering` directory it conventionally names, and the nano and the cuts a context file is read by. Neither is restated here — a copy would be the second home that protocol exists to remove, and the phase that resolves an entry to the directory silently drops every entry naming something else.
 
-If the map names nothing for the affected domain, proceed without one. Each file it does name opens with a `## Nano` block (one line per rule or section) — read the nano first; read the full body when the task actually touches that domain.
+What is Understand's own is the ground it resolves against: the **candidate areas of the scoping pass** are what make an entry affected, and if the map names nothing for them, proceed without one.
 
 ## Investigation
 

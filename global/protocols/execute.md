@@ -33,7 +33,7 @@ Before executing a step, invoke each skill declared in its plan `Skills:` line, 
 
 ## Steering Files
 
-Before executing, re-read what the `steering:` map names for the affected domain(s) — **the map's value, whatever path it names**, on the terms the Understand protocol's `## Steering Files` owns and states; `.ai-flow/steering/{domain}.md` is the convention, not the only place an entry may point.
+Before executing, re-read the sections the `steering:` map's affected entries name — **by the cuts `protocols/context.md` defines**, which owns what is loaded and how; `.ai-flow/steering/{domain}.md` is the convention, not the only place an entry may point. The step's `Files` are what make an entry affected.
 
 ## Code Comments & Provenance
 
