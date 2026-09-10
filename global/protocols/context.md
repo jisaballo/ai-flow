@@ -127,9 +127,11 @@ in full, since that line is what every task reads.
 
 ## Keeping
 
-**The check.** `scripts/context-check.sh [file …]` reads only `.ai-flow/`; with no argument it takes every
-value of the `steering:` map plus `product.md` and `decisions-global.md`, once each. It returns a verdict
-per file and per rule — nano titles equal to body headings and in the same order, a nano present, each
+**The check.** `scripts/context-check.sh [file …]` reads only `.ai-flow/`; with no argument it takes the
+steering directory's own files plus `product.md` and `decisions-global.md`, once each — where the files
+live, never what a delivery map points at, so a document borrowed from outside is never measured with
+ceilings its own home refuses and a steering file nobody declared is measured all the same. It returns a
+verdict per file and per rule — nano titles equal to body headings and in the same order, a nano present, each
 nano line and each section within its length, the file within its section count, no app key in a domain
 file's titles, the `##` marker only — and `--report` prints every verdict with the thresholds applied. It
 runs by hand, from CI, from a harness hook, and as the `Verify` of the archive moves that write a context

@@ -928,8 +928,8 @@ another checkout — the one act that did is now move 7 of the ceremony, where i
 other moves of the close that reach outside the coordinator.
 
 1. **Steering update**: did the task teach or modify a domain rule? -> place it and land it as `protocols/context.md` states, which owns where a lesson goes and what one edit must carry. `scripts/context-check.sh` on the file is this move's `Verify`. No new rule learned -> skip.
-2. **product.md write-back**: copy every rule from understand.md's `New business rules minted` into product.md, under the key each belongs to, with provenance — and sharpen a term where the task sharpened one. Which key a business rule belongs to, and the shape of its line, are `protocols/context.md`'s. None minted -> skip.
-3. **Global decision write-back**: every Decision Register entry the plan marked `(global)` becomes a section of `decisions-global.md` in that file's format — context, decision, alternatives with the reason each was rejected. A decision that reaches no further than this task is not copied here. None marked -> skip.
+2. **product.md write-back**: copy every rule from understand.md's `New business rules minted` into product.md, under the key each belongs to, with provenance — and sharpen a term where the task sharpened one. Which key a business rule belongs to, and the shape of its line, are `protocols/context.md`'s. `scripts/context-check.sh` on the file is this move's `Verify`. None minted -> skip.
+3. **Global decision write-back**: every Decision Register entry the plan marked `(global)` becomes a section of `decisions-global.md` in that file's format — context, decision, alternatives with the reason each was rejected. A decision that reaches no further than this task is not copied here. `scripts/context-check.sh` on the file is this move's `Verify`. None marked -> skip.
 4. **Icebox write-back**: publish what this task found and did not own, and amend what it touched.
    Two halves, and **both are shown to the operator — nothing is written until they approve**. That is
    the whole repair: the shared list grew unowned because entries reached it while nobody was reading.

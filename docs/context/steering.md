@@ -37,6 +37,10 @@ needs is derived from the keys it touches, not kept as a list by hand — a hand
 domain into every task of an app whatever the task touched, and go stale each time the app adopted a
 library.
 
+A steering file the map **does not name** is checked all the same. The map answers which file a task
+receives; shape belongs to where the file lives. An undeclared file is delivered to nobody and still holds
+rules somebody wrote, and a file nothing measures is the drawer everything ends up in.
+
 `pencil-design.md` is reached by the design-session rule and is outside the map; nothing in the mechanism
 applies to it and the check does not read it.
 
