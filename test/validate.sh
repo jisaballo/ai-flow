@@ -19058,8 +19058,16 @@ else
   [ "$H92" = 0 ] || o2_92="$o2_92 [$H92 hand-rolled payload(s), which is how a leg comes to pass against a fixture trimmed to whatever the guard happens to read]"
   # And the helper it now depends on must still carry the field this row exists for: a shared helper that
   # stopped emitting `tool_name` would leave every leg in this block feeding a shape production never sends.
-  grep -q '"tool_name":"%s"' "$ROOT/test/validate.sh" \
-    || o2_92="$o2_92 [the shared helper no longer emits tool_name]"
+  # Asked BEHAVIOURALLY, by pointing the helper at a probe that prints back what it was handed. The
+  # previous form greped this suite file for the field name, and that grep's own source line contained the
+  # field name -- so the leg was green whatever the helper emitted, which two mutations demonstrated:
+  # renaming and then deleting the field each turned eleven other rows red while this one stayed green.
+  # A leg that cannot fail is the defect this whole block exists to catch, one level up.
+  PROBE92="$T92/echo-payload.py"
+  printf 'import sys\nsys.stdout.write(sys.stdin.read())\n' > "$PROBE92"
+  SEEN92="$(hookcall "$PROBE92" "$P92" "$DG92" Edit ",$STRUCT92")"
+  printf '%s' "$SEEN92" | grep -q '"tool_name":"Edit"' \
+    || o2_92="$o2_92 [the shared helper does not emit tool_name -- it built: $SEEN92]"
 
   # ---- R2-R6: what Verify proved the block was not measuring -----------------------------------
   # Three of these are keyed to a mutation the Verify prover RAN and the suite survived. Each therefore
@@ -19168,6 +19176,54 @@ else
   r6case92 "an absent new_string"     '"old_string":"something decided here"'        Edit
   [ -z "$r6_92" ] && ok "R6 every payload field the verdict needs has its unusable form" \
                   || bad "R6 every payload field the verdict needs has its unusable form ($r6_92)"
+
+  # S2 -- every branch the verdict depends on has a fixture. Four branches were carrying no input at all,
+  # and each was proven unguarded by a mutation the suite survived: the rung-3 stop, the fence skip, the
+  # HTML-comment strip, and the `replace_all` splice. A branch asserted by nothing can be deleted, and
+  # three of these four were asserted only by a grep of the source that calls them.
+  s2_92=""
+
+  # (a) The rung-3 stop. This rail resolves rungs 1 and 2 ONLY: a checkout whose branch no per-task sheet
+  # claims gets silence, because STATE.md is a roster and carries neither key. The fixture is a project
+  # with a roster naming a task and NO sheet for it -- today silence; with the stop removed the ladder
+  # reaches the roster, resolves a task, and refuses over a sheet it cannot read.
+  R3P92="$T92/rung3"; mkproj "$R3P92" main
+  mkdir -p "$R3P92/.ai-flow/artifacts"
+  printf '# Session State\n\n| Workstream | Checkout | Task |\n|---|---|---|\n| coordinator | . | T-ZZZ |\n' \
+    > "$R3P92/.ai-flow/STATE.md"
+  setdg92_at "$R3P92/.ai-flow/decisions-global.md"
+  out92="$(hookcall "$GUARD92" "$R3P92" "$R3P92/.ai-flow/decisions-global.md" Edit ",$STRUCT92")"; rc92=$?
+  [ "$rc92" = 0 ] || s2_92="$s2_92 [a roster with no per-task sheet exits $rc92, so the rail did not stop at rung 2]"
+  [ -z "$out92" ] || s2_92="$s2_92 [the rail spoke where it must be silent: $out92]"
+
+  # (b) and (c) -- the two stripping paths. The guard reads a context file the way the measure reads it:
+  # a `## ` line inside a fenced block is not a section, and neither is one inside an HTML comment. Each
+  # fixture edits ONLY the disguised heading, so the signature is unchanged and the write must pass. Drop
+  # either stripping path and that same edit becomes a title change, which is the falsification.
+  FEN92="$P92/.ai-flow/steering/fenced.md"
+  printf '# F\n\n## Nano\n\n- **A** - one\n\n## Real\n\n```\n## Inside\n```\n' > "$FEN92"
+  out92="$(hookcall "$GUARD92" "$P92" "$FEN92" Edit ',"old_string":"## Inside","new_string":"## Elsewhere"')"; rc92=$?
+  [ "$rc92" = 0 ] || s2_92="$s2_92 [a heading inside a fenced block is counted as a section (exit $rc92)]"
+  CMT92="$P92/.ai-flow/steering/commented.md"
+  printf '# C\n\n## Nano\n\n- **A** - one\n\n## Real\n\n<!--\n## Hidden\n-->\n' > "$CMT92"
+  out92="$(hookcall "$GUARD92" "$P92" "$CMT92" Edit ',"old_string":"## Hidden","new_string":"## Shown"')"; rc92=$?
+  [ "$rc92" = 0 ] || s2_92="$s2_92 [a heading inside an HTML comment is counted as a section (exit $rc92)]"
+
+  # (d) The `replace_all` splice. The fixture is built so the two answers DIFFER: the first occurrence is
+  # body text and the second is a heading, so honouring the flag changes a title and ignoring it does not.
+  # A guard that splices one occurrence regardless exits 0 here, which is the falsification -- and the
+  # existing rows could not catch it, since they test the unusable TYPE of the field and never its value.
+  RPL92="$P92/.ai-flow/steering/repeated.md"
+  printf '# R\n\n## Nano\n\n- **A** - one\n\n## Alpha\n\nMARK here\n\n## MARK\n\ntail\n' > "$RPL92"
+  out92="$(hookcall "$GUARD92" "$P92" "$RPL92" Edit ',"old_string":"MARK","new_string":"Zed","replace_all":true')"; rc92=$?
+  [ "$rc92" = 2 ] || s2_92="$s2_92 [replace_all:true exits $rc92 -- the second occurrence, which is a heading, was not spliced]"
+  # Its pair: the same two occurrences with the flag absent. The tool refuses a multi-hit edit itself, so
+  # the guard has no write to judge and must stand aside -- the direction the spec states and nothing held.
+  out92="$(hookcall "$GUARD92" "$P92" "$RPL92" Edit ',"old_string":"MARK","new_string":"Zed"')"; rc92=$?
+  [ "$rc92" = 0 ] || s2_92="$s2_92 [a multi-hit edit with no replace_all exits $rc92 instead of standing aside]"
+
+  [ -z "$s2_92" ] && ok "S2 every branch the guard's verdict depends on has a fixture" \
+                  || bad "S2 every branch the guard's verdict depends on has a fixture ($s2_92)"
   [ -z "$o2_92" ] && ok "O2 every leg feeds the payload shape production sends" \
                   || bad "O2 every leg feeds the payload shape production sends ($o2_92)"
 fi
@@ -19271,10 +19327,30 @@ ASK92="$(sed -n '/^### Ask First/,/^## /p' "$EXE92")"
 # text: the canonical helper is used, and the bridge idiom the suite is trying to retire is absent here.
 SELF92="$(sed -n '/^# C92 -- changing the mechanism/,$p' "$ROOT/test/validate.sh")"
 o3_92=""
-printf '%s' "$SELF92" | grep -qF 'insent "$' || o3_92="$o3_92 [the canonical predicate is not used]"
+# A COUNT, not a presence. The slice this leg reads contains the leg, so its own line contributes exactly
+# one occurrence and a presence test is green over a block that uses the predicate nowhere else -- the
+# same shape as the `tool_name` leg above, and found the same way. Above one is what proves a real use.
+U92="$(printf '%s\n' "$SELF92" | grep -cF 'insent "$')"
+[ "${U92:-0}" -gt 1 ] || o3_92="$o3_92 [the canonical predicate is used $U92 time(s), which is this leg's own line and nothing else]"
 printf '%s' "$SELF92" | grep -qE '\[\^\.\]\{0,[0-9]+\}' && o3_92="$o3_92 [a fourth spelling of the predicate was added]"
 [ -z "$o3_92" ] && ok "O3 the new legs use the suite's canonical adjacency predicate" \
                 || bad "O3 the new legs use the suite's canonical adjacency predicate ($o3_92)"
+
+# S1 -- no leg of this block is satisfied by its own source text. The block's two self-judging rows read
+# a slice of this file, and a leg that greps the WHOLE file for a string its own line contains is green
+# whatever the code does. That is not a hypothetical: it is how the `tool_name` leg passed while two
+# separate mutations showed the helper emitting nothing of the kind. The direction is a COUNT of the one
+# shape that produces it -- a grep whose subject is this suite file entire. Zero, and the self-slices
+# reach the file through `sed` with an explicit range instead.
+s1_92=""
+W92="$(printf '%s\n' "$SELF92" | grep -cE 'grep [^|]*"\$ROOT/test/validate\.sh"')"
+[ "${W92:-0}" = 0 ] || s1_92="$s1_92 [$W92 leg(s) grep this suite file entire, which is how a leg comes to be satisfied by its own line]"
+# And the two slices must still be slices: a self-judging row that read the whole file would have the
+# same defect wearing the other tool's name.
+printf '%s' "$SELF92" | grep -q "sed -n '/\^# C92 -- changing the mechanism/,\$p'" \
+  || s1_92="$s1_92 [the self-slice no longer starts at this block's own header, so what it judges is unknown]"
+[ -z "$s1_92" ] && ok "S1 no leg of this block is satisfied by its own source text" \
+               || bad "S1 no leg of this block is satisfied by its own source text ($s1_92)"
 
 # R8 -- the engine states the hole the rail ACTUALLY keeps. The papers promised one hole, "no task open
 # at all"; the rail stops at rung 2, so the delivered hole is "no per-task sheet claims this checkout's
