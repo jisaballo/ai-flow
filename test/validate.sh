@@ -18961,29 +18961,33 @@ else
   setsheet92 ARCHIVE
   out92="$(hookcall "$GUARD92" "$P92" "$NEW92" Write ',"content":"# New\n\n## Nano\n\n- **A** - x\n\n## A\n\nrule\n"')"; rc92=$?
   [ "$rc92" = 0 ] || a6_92="$a6_92 [creating inside the checklist's own window exits $rc92]"
-  # The leg above used to pass at a KEY SHORT-CIRCUIT that sat before existence was ever tested, so it
-  # said nothing about the creation branch: a keyed run left by the same exit whether or not it reached
-  # it, and no exit code could tell the two apart. The key is now spent at the verdict instead, which
-  # makes the branch observable through the one case where reaching it changes the answer -- a key
-  # present and the judged file unreadable. Under the short-circuit this exited 0.
+  [ -z "$a6_92" ] && ok "A6 creating a context file is the strongest structural act" \
+                  || bad "A6 creating a context file is the strongest structural act:$a6_92"
+
+  # S5 -- a key opens a VERDICT, never the absence of one. The leg above used to pass at a key
+  # short-circuit sitting before existence was ever tested, so it said nothing about the creation branch:
+  # a keyed run left by the same exit whether or not it reached it, and no exit code could tell the two
+  # apart. That is why the criterion as minted was undeliverable and this row replaces it. The key is now
+  # spent at the verdict, which makes the branch observable through the one case where reaching it
+  # changes the answer -- a key present and the judged file unreadable, which exited 0 before. PAIRED
+  # with the same fixture readable, or the row is satisfied by a guard that refuses everything.
+  s5_92=""
   printf '# New\n\n## Nano\n\n- **A** - x\n\n## A\n\nrule\n' > "$NEW92"
   chmod 000 "$NEW92" 2>/dev/null
   if [ -r "$NEW92" ]; then
-    echo "  [skip] A6 a key over an unreadable file (this user reads a 000 file)"
+    echo "  [skip] S5 a key over an unreadable file (this user reads a 000 file)"
   else
     out92="$(hookcall "$GUARD92" "$P92" "$NEW92" Write ',"content":"# New\n"')"; rc92=$?
-    [ "$rc92" = 2 ] || a6_92="$a6_92 [a key waves through a file the guard cannot read: exit $rc92]"
-    printf '%s' "$out92" | grep -qF 'newdomain.md' || a6_92="$a6_92 [the unreadable file is not named]"
+    [ "$rc92" = 2 ] || s5_92="$s5_92 [a key waves through a file the guard cannot read: exit $rc92]"
+    printf '%s' "$out92" | grep -qF 'newdomain.md' || s5_92="$s5_92 [the unreadable file is not named]"
   fi
   chmod u+rw "$NEW92" 2>/dev/null
-  # And the branch with the file there and readable: an existing context file under a key, structurally
-  # different, passes at the verdict a key is allowed to open.
   out92="$(hookcall "$GUARD92" "$P92" "$NEW92" Write ',"content":"# New\n\n## Nano\n\n- **B** - y\n\n## B\n\nrule\n"')"; rc92=$?
-  [ "$rc92" = 0 ] || a6_92="$a6_92 [a structural Write under key 1 exits $rc92, so the window does not reach an existing file]"
+  [ "$rc92" = 0 ] || s5_92="$s5_92 [the same fixture readable exits $rc92, so the row above is a guard that refuses everything]"
   rm -f "$NEW92"
   setsheet92 EXECUTE
-  [ -z "$a6_92" ] && ok "A6 creating a context file is the strongest structural act" \
-                  || bad "A6 creating a context file is the strongest structural act:$a6_92"
+  [ -z "$s5_92" ] && ok "S5 a key opens a verdict, never the absence of one" \
+                  || bad "S5 a key opens a verdict, never the absence of one ($s5_92)"
 
   # A7 -- the deliberate hole, measured on a fixture that OTHERWISE REFUSES. Without that pairing the row
   # cannot tell silence-by-design from a guard that is simply broken.
@@ -19343,8 +19347,8 @@ PY
     [ "$M3" = "$(printf 'Alpha\nBeta')" ] \
       || s3_92="$s3_92 [the measure reads '$(printf '%s' "$M3" | tr '\n' '/')' on a fixture whose only real sections are Alpha and Beta]"
   fi
-  [ -z "$s3_92" ] && ok "S3 the guard's reader and the measure's agree on one fixture" \
-                  || bad "S3 the guard's reader and the measure's agree on one fixture ($s3_92)"
+  [ -z "$s3_92" ] && ok "S3 the guard's reader and the measure's reader agree" \
+                  || bad "S3 the guard's reader and the measure's reader agree ($s3_92)"
 fi
 # A10 -- registration, catalogue and delivery. The matcher is asserted as the EXISTING Edit|Write group:
 # a hook given a group of its own would satisfy a presence grep while running on a jurisdiction nobody
@@ -19485,8 +19489,8 @@ B92="$(printf '%s\n' "$ABOVE92" | grep -cE 'printf .*"tool_input":\{"file_path"'
 # will be read as agreeing when it is not.
 [ "$(insent "$ABOVE92" 'payload' 'ONE place')" = 1 ] \
   || s4_92="$s4_92 [the preamble no longer claims one place, so the count above measures nothing stated]"
-[ -z "$s4_92" ] && ok "S4 the suite builds a hook payload in one place" \
-               || bad "S4 the suite builds a hook payload in one place ($s4_92)"
+[ -z "$s4_92" ] && ok "S4 the suite has one payload-helper pair" \
+               || bad "S4 the suite has one payload-helper pair ($s4_92)"
 
 # R8 -- the engine states the hole the rail ACTUALLY keeps. The papers promised one hole, "no task open
 # at all"; the rail stops at rung 2, so the delivered hole is "no per-task sheet claims this checkout's
