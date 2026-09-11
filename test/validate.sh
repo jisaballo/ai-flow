@@ -17284,8 +17284,17 @@ e0_72=""
 # So the floor is measured, not projected, and the slack is 11 -- below the true smallest removed region
 # of 12. The file is deliberately close to pinned: this rulebook is finished, and a task that needs to add
 # prose to it re-derives this number in the open rather than spending slack nobody sized.
+#
+# RE-DERIVED ONCE, and this is that re-derivation in the open. The rulebook's approval tier gained the
+# structural-context change, which is prose it did not have and which the slack could not cover: the
+# bullet is 38 words against 10 left. The floor is re-measured on the delivered file at 2,085 and the
+# slack stays 11, so the budget is 2,096. The invariant the number exists for is unchanged and still
+# holds: the smallest region the freezing task removed is 12 words, and 2,085 + 12 exceeds 2,096, so no
+# single removed region can return with this row green. What moved is the floor, never the rule -- and
+# the bullet was cut to its minimum BEFORE the number was touched, which is the order that keeps a budget
+# from becoming a formality.
 a1_72=""
-[ "${W72:-0}" -le 2057 ] || a1_72="$a1_72 [the rulebook is $W72 words, over the 2057-word budget]"
+[ "${W72:-0}" -le 2096 ] || a1_72="$a1_72 [the rulebook is $W72 words, over the 2096-word budget]"
 [ -z "$a1_72" ] && ok "A1 the Execute protocol is within its frozen word budget" \
                 || bad "A1 the Execute protocol is within its frozen word budget ($a1_72)"
 

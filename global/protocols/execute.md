@@ -177,5 +177,8 @@ or says that none exists.
 - Library additions or swaps
 - Changes to >3 files not in the plan
 - Architectural decisions (new patterns, state shape)
+- A structural change to a context file or to the mechanism (rule: `protocols/context.md`). At **Auto**
+  there is no Decision Register to carry the marker, so the operator's go-ahead is what writes
+  `structure: context` to the task's sheet.
 
 **New work discovered along the way** (not in the task or plan) -> **Discovery Triage** (see Understanding protocol): blocks this task -> Replan Gate; contradicts the epic's Goal/Non-Goals -> escalate to user; everything else -> the routing test, ownership asked first — a finding in a file already inside this task's diff is the task's to fix now, a finding whose failure cannot occur is discarded with the reason written under `## Discarded` in `artifacts/T-XXX/discoveries.md`, and whatever survives is staged in that same file with its ground stamp — then continue the plan. Never create new T-XXX tasks mid-epic, and nothing reaches BACKLOG.md while the task is in flight.

@@ -927,9 +927,18 @@ the ledger has one writer, and every step below is that writer at work. Nothing 
 another checkout — the one act that did is now move 7 of the ceremony, where it sits alongside the
 other moves of the close that reach outside the coordinator.
 
-1. **Steering update**: did the task teach or modify a domain rule? -> place it and land it as `protocols/context.md` states, which owns where a lesson goes and what one edit must carry. `scripts/context-check.sh` on the file is this move's `Verify`. No new rule learned -> skip.
-2. **product.md write-back**: copy every rule from understand.md's `New business rules minted` into product.md, under the key each belongs to, with provenance — and sharpen a term where the task sharpened one. Which key a business rule belongs to, and the shape of its line, are `protocols/context.md`'s. `scripts/context-check.sh` on the file is this move's `Verify`. None minted -> skip.
-3. **Global decision write-back**: every Decision Register entry the plan marked `(global)` becomes a section of `decisions-global.md` in that file's format — context, decision, alternatives with the reason each was rejected. A decision that reaches no further than this task is not copied here. `scripts/context-check.sh` on the file is this move's `Verify`. None marked -> skip.
+**Before step 1 the coordinator writes the archiving position `phase: **ARCHIVE**` to the task's sheet.**
+Three of the four moves below write a context file and step 3 writes a whole new section of the decision
+log, which is a structural act — and a structural act is refused unless the task has declared it. That
+position is the declaration — the one window in which the engine itself writes these files, whose rule
+`protocols/context.md` owns — and it is exactly this checklist's because the sheet dies a few moves later. Without
+this write the rail refuses the engine's own close on every task carrying a global decision. An
+interrupted close leaves the position to be corrected by hand, which is the accepted cost of keying the
+window on a position rather than on a second field nothing else reads.
+
+1. **Steering update**: did the task teach or modify a domain rule? -> place it and land it as `protocols/context.md` states, which owns where a lesson goes and what one edit must carry. `~/.claude/ai-flow/scripts/context-check.sh` on the file is this move's `Verify`. No new rule learned -> skip.
+2. **product.md write-back**: copy every rule from understand.md's `New business rules minted` into product.md, under the key each belongs to, with provenance — and sharpen a term where the task sharpened one. Which key a business rule belongs to, and the shape of its line, are `protocols/context.md`'s. `~/.claude/ai-flow/scripts/context-check.sh` on the file is this move's `Verify`. None minted -> skip.
+3. **Global decision write-back**: every Decision Register entry the plan marked `(global)` becomes a section of `decisions-global.md` in that file's format — context, decision, alternatives with the reason each was rejected. A decision that reaches no further than this task is not copied here. `~/.claude/ai-flow/scripts/context-check.sh` on the file is this move's `Verify`. None marked -> skip.
 4. **Icebox write-back**: publish what this task found and did not own, and amend what it touched.
    Two halves, and **both are shown to the operator — nothing is written until they approve**. That is
    the whole repair: the shared list grew unowned because entries reached it while nobody was reading.
