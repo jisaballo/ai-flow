@@ -18866,6 +18866,14 @@ INST92='~/.claude/ai-flow/scripts/context-check.sh'   # the path the measure ins
 # beside `mkproj` and `insent`, and C92 was the third near-copy of that pair. O2 below asserts this block
 # reaches the hook through them and never by hand.
 
+# This block's own text, read ONCE. It was read twice -- `SELFB92` for O2 inside the fence, `SELF92` for
+# O3/S1/S4 after it -- from the identical `sed` range, and the duplicate was not a tidiness question: both
+# definition lines sit INSIDE the region the slice holds, so S1's "the slices must still be slices" leg had
+# two matches and needed one. Either could be broken and the sibling kept the row green, in the row whose
+# whole name is that no leg is satisfied by its own source text. Hoisted above the fence because O2 needs
+# it inside and the others need it after.
+SELF92="$(sed -n '/^# C92 -- changing the mechanism/,$p' "$ROOT/test/validate.sh")"
+
 if [ "$PY3" = 0 ]; then
   echo "  [skip] C92 rail checks (python3 unavailable)"
 elif [ ! -f "$GUARD92" ]; then
@@ -19101,13 +19109,12 @@ else
   # preamble now, so the count that used to say "exactly two sites" says "no site of its own" instead.
   # Both halves are asserted, because either alone is satisfied by the defect: a block that reaches the
   # hook directly, and a block that builds its own payload object and hands it to the shared helper.
-  SELFB92="$(sed -n '/^# C92 -- changing the mechanism/,$p' "$ROOT/test/validate.sh")"
   o2_92=""
-  N92="$(printf '%s\n' "$SELFB92" | grep -c 'python3 "\$GUARD92"')"
+  N92="$(printf '%s\n' "$SELF92" | grep -c 'python3 "\$GUARD92"')"
   [ "$N92" = 0 ] || o2_92="$o2_92 [$N92 site(s) reach the hook directly instead of through the shared helper]"
   # The character class is load-bearing and not decoration: written bare, this pattern's own text is an
   # instance of it and the leg fails over itself. Same rule the block header states for the skip markers.
-  H92="$(printf '%s\n' "$SELFB92" | grep -c "printf '[{]")"
+  H92="$(printf '%s\n' "$SELF92" | grep -c "printf '[{]")"
   [ "$H92" = 0 ] || o2_92="$o2_92 [$H92 hand-rolled payload(s), which is how a leg comes to pass against a fixture trimmed to whatever the guard happens to read]"
   # And the helper it now depends on must still carry the field this row exists for: a shared helper that
   # stopped emitting `tool_name` would leave every leg in this block feeding a shape production never sends.
@@ -19121,6 +19128,12 @@ else
   SEEN92="$(hookcall "$PROBE92" "$P92" "$DG92" Edit ",$STRUCT92")"
   printf '%s' "$SEEN92" | grep -q '"tool_name":"Edit"' \
     || o2_92="$o2_92 [the shared helper does not emit tool_name -- it built: $SEEN92]"
+  # And the evidence above must STAY behavioural. `S1` asserts that from the outside, over this block's
+  # text; this leg asserts it from the inside, over the value: what was just matched has to be a payload
+  # the helper actually built, which is a thing no source slice can be. A slice is a copy of this file
+  # and therefore always contains the field name; a payload is empty unless `hookcall` ran.
+  [ -n "$SEEN92" ] && [ "$SEEN92" != "$SELF92" ] \
+    || o2_92="$o2_92 [the tool_name evidence is not a captured payload, so the leg reads its own source]"
 
   # ---- R2-R6: what Verify proved the block was not measuring -----------------------------------
   # Three of these are keyed to a mutation the Verify prover RAN and the suite survived. Each therefore
@@ -19308,6 +19321,12 @@ body text
 
 body <!-- ## Inline Decoy --> text
 
+##   Gamma
+
+the trimmed title. Both readers trim -- the guard with `.strip()`, the measure with two `sub()` calls --
+and until this section existed every title in this fixture was already tight, so the trimming half of the
+parity was assumed rather than compared and dropping either side left the row green.
+
 ## Nano
 
 - **Alpha** - what alpha says
@@ -19344,8 +19363,8 @@ PY
       || s3_92="$s3_92 [they disagree on the nano block: the guard counts ${GN3:-none} lines and the measure counts $MN3]"
     # A positive control, or the two legs above are satisfied by a fixture that exercises nothing: the
     # decoys must actually have been skipped rather than never looked at.
-    [ "$M3" = "$(printf 'Alpha\nBeta')" ] \
-      || s3_92="$s3_92 [the measure reads '$(printf '%s' "$M3" | tr '\n' '/')' on a fixture whose only real sections are Alpha and Beta]"
+    [ "$M3" = "$(printf 'Alpha\nBeta\nGamma')" ] \
+      || s3_92="$s3_92 [the measure reads '$(printf '%s' "$M3" | tr '\n' '/')' on a fixture whose only real sections are Alpha, Beta and Gamma]"
   fi
   [ -z "$s3_92" ] && ok "S3 the guard's reader and the measure's reader agree" \
                   || bad "S3 the guard's reader and the measure's reader agree ($s3_92)"
@@ -19448,7 +19467,7 @@ ASK92="$(sed -n '/^### Ask First/,/^## /p' "$EXE92")"
 
 # O3 -- the block adds no fourth spelling of the adjacency predicate. Asserted over this block's own
 # text: the canonical helper is used, and the bridge idiom the suite is trying to retire is absent here.
-SELF92="$(sed -n '/^# C92 -- changing the mechanism/,$p' "$ROOT/test/validate.sh")"
+# `SELF92` is the one read, taken above the fence.
 o3_92=""
 # A COUNT, not a presence. The slice this leg reads contains the leg, so its own line contributes exactly
 # one occurrence and a presence test is green over a block that uses the predicate nowhere else -- the
@@ -19466,12 +19485,29 @@ printf '%s' "$SELF92" | grep -qE '\[\^\.\]\{0,[0-9]+\}' && o3_92="$o3_92 [a four
 # shape that produces it -- a grep whose subject is this suite file entire. Zero, and the self-slices
 # reach the file through `sed` with an explicit range instead.
 s1_92=""
-W92="$(printf '%s\n' "$SELF92" | grep -cE 'grep [^|]*"\$ROOT/test/validate\.sh"')"
-[ "${W92:-0}" = 0 ] || s1_92="$s1_92 [$W92 leg(s) grep this suite file entire, which is how a leg comes to be satisfied by its own line]"
-# And the two slices must still be slices: a self-judging row that read the whole file would have the
-# same defect wearing the other tool's name.
-printf '%s' "$SELF92" | grep -q "sed -n '/\^# C92 -- changing the mechanism/,\$p'" \
-  || s1_92="$s1_92 [the self-slice no longer starts at this block's own header, so what it judges is unknown]"
+# Leg one, WIDENED from the one spelling the previous commit happened to use. The defect is not
+# `grep … "$ROOT/test/validate.sh"`; it is ANY leg whose subject is text containing that leg, and a count
+# keyed on the file path missed the form that produced the original defect -- a grep over the slice
+# VARIABLE. Both subjects are swept: the file by path, and `$SELF92`/`$SELFB92` by name. The three legs
+# that legitimately read the slice are the self-judging ones below and O3's count, and they are excluded
+# by region rather than by spelling, which is what the frozen direction asks for.
+S1REG92="$(printf '%s\n' "$SELF92" | sed '/^# O3 -- the block adds no fourth spelling/,/^# S4 -- the suite builds/d')"
+W92="$(printf '%s\n' "$S1REG92" | grep -cE 'grep [^|]*("\$ROOT/test/validate\.sh"|\$SELFB?92)')"
+[ "${W92:-0}" = 0 ] || s1_92="$s1_92 [$W92 leg(s) outside the self-judging rows take this file's own text as their subject, which is how a leg comes to be satisfied by its own line]"
+# Leg two, the frozen sub-assertion the delivered row replaced with a presence grep: O2's `tool_name`
+# evidence must come from a payload READ BACK through the helper, not from any slice. A grep for the probe
+# would be a presence test over text this slice contains; what cannot be faked by a copy of this file is
+# that the leg's subject is the captured value, so that is what is asserted -- the probe must be invoked,
+# and the matched subject must be `$SEEN92`.
+printf '%s' "$SELF92" | grep -q 'SEEN92="$(hookcall "$PROBE92"' \
+  || s1_92="$s1_92 [O2's tool_name evidence is no longer read back through the helper]"
+printf '%s' "$SELF92" | grep -q "printf '%s' \"\$SEEN92\" | grep -q '\"tool_name\"" \
+  || s1_92="$s1_92 [O2's tool_name leg no longer reads the captured payload, so its subject may be a source slice]"
+# And the slice must still be the slice. A grep for the `sed` range is a presence test over text that
+# CONTAINS it -- the defect wearing the other tool's name, and the reason the range was readable while
+# being wrong. What a copy of this file cannot satisfy is an equality on what the slice evaluated to.
+[ "$(printf '%s\n' "$SELF92" | head -1)" = "# C92 -- changing the mechanism or a context file's structure is a declared act, and a hook rails it." ] \
+  || s1_92="$s1_92 [the self-slice does not start at this block's own header, so what every self-judging leg judges is unknown]"
 [ -z "$s1_92" ] && ok "S1 no leg of this block is satisfied by its own source text" \
                || bad "S1 no leg of this block is satisfied by its own source text ($s1_92)"
 
