@@ -19514,12 +19514,15 @@ ASK92="$(sed -n '/^### Ask First/,/^## /p' "$EXE92")"
 # text: the canonical helper is used, and the bridge idiom the suite is trying to retire is absent here.
 # `SELF92` is the one read, taken above the fence.
 o3_92=""
-# A COUNT, not a presence. The slice this leg reads contains the leg, so its own line contributes exactly
-# one occurrence and a presence test is green over a block that uses the predicate nowhere else -- the
-# same shape as the `tool_name` leg above, and found the same way. Above one is what proves a real use.
-U92="$(printf '%s\n' "$SELF92" | grep -cF 'insent "$')"
-[ "${U92:-0}" -gt 1 ] || o3_92="$o3_92 [the canonical predicate is used $U92 time(s), which is this leg's own line and nothing else]"
-printf '%s' "$SELF92" | grep -qE '\[\^\.\]\{0,[0-9]+\}' && o3_92="$o3_92 [a fourth spelling of the predicate was added]"
+# The slice with THIS ROW'S OWN REGION CUT OUT, which is what the frozen direction asks for: "O3's
+# presence leg reads a slice that does not contain it". The count-above-one that stood here instead was a
+# mitigation, not the direction -- it survives a block using the predicate once somewhere else, and it
+# left the leg reading text that contains the leg. Excised, the question becomes a plain presence one
+# again and the answer means what it says.
+O3SLICE92="$(printf '%s\n' "$SELF92" | sed '/^# O3 -- the block adds no fourth spelling/,/^# S1 -- no leg of this block/d')"
+printf '%s\n' "$O3SLICE92" | grep -qF 'insent "$' \
+  || o3_92="$o3_92 [the canonical predicate is used nowhere in this block outside the legs that judge it]"
+printf '%s' "$O3SLICE92" | grep -qE '\[\^\.\]\{0,[0-9]+\}' && o3_92="$o3_92 [a fourth spelling of the predicate was added]"
 [ -z "$o3_92" ] && ok "O3 the new legs use the suite's canonical adjacency predicate" \
                 || bad "O3 the new legs use the suite's canonical adjacency predicate ($o3_92)"
 
@@ -19530,15 +19533,20 @@ printf '%s' "$SELF92" | grep -qE '\[\^\.\]\{0,[0-9]+\}' && o3_92="$o3_92 [a four
 # shape that produces it -- a grep whose subject is this suite file entire. Zero, and the self-slices
 # reach the file through `sed` with an explicit range instead.
 s1_92=""
-# Leg one, WIDENED from the one spelling the previous commit happened to use. The defect is not
-# `grep … "$ROOT/test/validate.sh"`; it is ANY leg whose subject is text containing that leg, and a count
-# keyed on the file path missed the form that produced the original defect -- a grep over the slice
-# VARIABLE. Both subjects are swept: the file by path, and `$SELF92`/`$SELFB92` by name. The three legs
-# that legitimately read the slice are the self-judging ones below and O3's count, and they are excluded
-# by region rather than by spelling, which is what the frozen direction asks for.
-S1REG92="$(printf '%s\n' "$SELF92" | sed '/^# O3 -- the block adds no fourth spelling/,/^# S4 -- the suite builds/d')"
-W92="$(printf '%s\n' "$S1REG92" | grep -cE 'grep [^|]*("\$ROOT/test/validate\.sh"|\$SELFB?92)')"
-[ "${W92:-0}" = 0 ] || s1_92="$s1_92 [$W92 leg(s) outside the self-judging rows take this file's own text as their subject, which is how a leg comes to be satisfied by its own line]"
+# Leg one, WIDENED to BOTH shapes. The defect is not `grep … "$ROOT/test/validate.sh"`; it is any leg
+# whose subject is text containing that leg, and the form that actually produced it fed the slice in
+# through a PIPE -- `printf '%s\n' "$SELFB92" | grep -q '"tool_name"'` -- where the file-path count never
+# looked. A count reaching one of two shapes, under a comment claiming both, is this task's own defect
+# class inside the fix for it; caught by testing the pattern against the original defect's own text
+# rather than by reading it. Now: the file by path, AND the slice piped into a grep.
+# Three regions read the slice for a living and are excluded BY REGION, which is what the direction asks:
+# O2's two counts above, and O3 and S1 themselves. What the sweep protects is every OTHER leg, present or
+# added later, and a new self-reading leg outside those three is what it exists to catch.
+S1REG92="$(printf '%s\n' "$SELF92" \
+  | sed '/^  # O2 -- every leg feeds the shape production sends/,/^  # And the helper it now depends on/d' \
+  | sed '/^# O3 -- the block adds no fourth spelling/,/^# S4 -- the suite builds/d')"
+W92="$(printf '%s\n' "$S1REG92" | grep -cE 'grep [^|]*"\$ROOT/test/validate\.sh"|\$SELFB?92" *\| *grep')"
+[ "${W92:-0}" = 0 ] || s1_92="$s1_92 [$W92 leg(s) outside the three rows that judge this block take its own text as their subject, which is how a leg comes to be satisfied by its own line]"
 # Leg two, the frozen sub-assertion the delivered row replaced with a presence grep: O2's `tool_name`
 # evidence must come from a payload READ BACK through the helper, not from any slice. A grep for the probe
 # would be a presence test over text this slice contains; what cannot be faked by a copy of this file is
