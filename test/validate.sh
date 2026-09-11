@@ -4889,15 +4889,16 @@ printf '%s' "$(c25 "$n25")" | grep -qiE 'worktree list' \
 # --- the retired rationale, guarded as a class ---------------------------
 # Written against the text that will exist, not against the sentence being deleted: what must never
 # come back is the CLAIM that nesting misbinds the guards, in any wording. The engine's own guards
-# handle nesting on purpose, and TWO of them now say so in their own `ledger_root` docstrings -- the
+# handle nesting on purpose, and THREE of them now say so in their own `ledger_root` docstrings -- the
 # statement each excludes is the opposite claim, that the boundary is enforced deliberately. The
 # exclusion is a list of those guards rather than a shape, and the cost is stated rather than hidden:
-# a false claim written INSIDE either of those two files is invisible to this sweep. It was already so
-# for one; the second arrived with a hook that resolves the same ledger and cannot import the first,
-# every hook here being installed and run standalone.
+# a false claim written INSIDE any of those files is invisible to this sweep. It was already so for one;
+# the second and third each arrived with a hook that resolves the same ledger and cannot import the
+# first, every hook here being installed and run standalone. The list is expected to grow with them,
+# which is why it is a list: a shape wide enough to cover them all would cover the claim as well.
 r25="$(grep -rniE 'nest(ed|ing)' global docs template 2>/dev/null \
        | grep -iE 'guardrail|guard rail|bind' \
-       | grep -viE '(understand|artifact)-write-guard\.py' | wc -l | tr -d ' ')"
+       | grep -viE '(understand|artifact)-write-guard\.py|context-structure-guard\.py' | wc -l | tr -d ' ')"
 [ "$r25" = "0" ] \
   && ok "no document claims a nested checkout misbinds the guardrail hooks" \
   || bad "no document claims a nested checkout misbinds the guardrail hooks ($r25 line(s))"
@@ -18794,6 +18795,316 @@ fi
                  || bad "A11 a fresh install passes the check on its own skeletons:$a11_91"
 
 rm -rf "$BOX91"
+
+# ---------------------------------------------------------------------------------------------------
+# C92 -- changing the mechanism or a context file's structure is a declared act, and a hook rails it.
+#
+# Generated in the Conform phase from understand.md's Verifiable Criteria; every row is RED until the
+# rail and the two keys' writers exist. Three properties shape the block. First, the failure this rail
+# can introduce is SILENCE -- a guard that stood aside and a guard that judged and passed look identical
+# from outside -- so every OPENING row is paired with a refusing control that no absent mechanism can
+# satisfy. Second, the payload rows feed the shape production actually sends: `tool_input` carrying the
+# tool's own fields, siblings included, never a fixture trimmed to whatever the guard happens to read.
+# Third, the prose rows use the suite's canonical adjacency predicate `insent()` and add no fourth
+# spelling of it -- except where the claim is a path, whose dots split a sentence and which is therefore
+# matched with a literal grep.
+echo ""
+echo "== C92: changing the mechanism or a context file's structure is a declared act =="
+
+T92="$(mkbox)" || fatal 'C92 fixtures'
+trap 'chmod -R u+rwX "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55" "$T69" "$T70" "$T92" 2>/dev/null; rm -rf "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55" "$T69" "$T70" "$T92"' EXIT   # extended, never replaced
+
+GUARD92="$HK/context-structure-guard.py"
+REG92="$HK/settings.hooks.json"
+RDM92="$HK/README.md"
+BLG92="$ROOT/global/protocols/backlog.md"
+PLN92="$ROOT/global/protocols/plan.md"
+EXE92="$ROOT/global/protocols/execute.md"
+INST92='~/.claude/ai-flow/scripts/context-check.sh'   # the path the measure installs to, the one form that runs
+
+# The payload shape the guard is registered for. `tool_name` rides every row because the guard's
+# jurisdiction is its own and not the matcher's alone; the fourth argument carries the tool's REMAINING
+# fields verbatim, which is what keeps the Edit rows honest about what production sends.
+cguard() {  # $1 = cwd, $2 = file_path, $3 = tool_name, $4 = extra tool_input fields (JSON, leading comma)
+  printf '{"cwd":"%s","tool_name":"%s","tool_input":{"file_path":"%s"%s}}' "$1" "$3" "$2" "${4:-}" \
+    | python3 "$GUARD92" 2>&1
+}
+
+# The malformed-payload arm needs the guard reached with a payload `cguard` would never build, so it is
+# the ONE other site that pipes into the hook. O2 below asserts there are exactly two.
+craw() {  # $1 = a whole payload -> output, returns the exit code
+  printf '%s' "$1" | python3 "$GUARD92" 2>&1
+}
+
+if [ "$PY3" = 0 ]; then
+  echo "  [skip] C92 rail checks (python3 unavailable)"
+elif [ ! -f "$GUARD92" ]; then
+  bad "A1 the guard lets content through (no $GUARD92)"
+  bad "A2 a structural write with no key is refused, and the refusal names both keys (no hook)"
+  bad "A3 the sanctioned moment opens the rail (no hook)"
+  bad "A4 the declared decision opens the rail (no hook)"
+  bad "A5 the mechanism's own two files have no content half (no hook)"
+  bad "A6 creating a context file is the strongest structural act (no hook)"
+  bad "A7 no task resolved means no rail (no hook)"
+  bad "A8 unreadable input is a refusal that names the file (no hook)"
+  bad "O1 the refusal text is REACHED, and it names both keys (no hook)"
+  bad "O2 every leg feeds the payload shape production sends (no hook)"
+  bad "P1-P8 a malformed payload never tracebacks, and the control still refuses (no hook)"
+else
+  # The fixture: a project whose own .ai-flow/ holds a member of the measure's default set, and one task
+  # sheet claiming the branch the repo is on.
+  P92="$T92/proj"; mkproj "$P92" main
+  mkdir -p "$P92/.ai-flow/artifacts/T-XXX" "$P92/.ai-flow/steering" "$P92/global/protocols" "$P92/scripts"
+  SHEET92="$P92/.ai-flow/artifacts/T-XXX/state.md"
+  DG92="$P92/.ai-flow/decisions-global.md"
+  setsheet92() { printf 'phase: **%s**\nbranch: main\n%s' "$1" "${2:-}" > "$SHEET92"; }
+  setdg92() {
+    printf '# Global Decisions\n\n## Nano\n\n- **Alpha** - one decision\n\n## Alpha\n\nsomething decided here\n' > "$DG92"
+  }
+  setsheet92 EXECUTE; setdg92
+
+  # The two writes every opening row is measured against. CONTENT rewords a rule inside a section;
+  # STRUCTURAL adds a heading. They differ in nothing else, which is what makes the pair a measurement
+  # rather than two unrelated fixtures.
+  CONTENT92='"old_string":"something decided here","new_string":"something else decided here"'
+  STRUCT92='"old_string":"## Alpha","new_string":"## Beta\n\nplaceholder\n\n## Alpha"'
+
+  # A1 -- content passes, and it passes with NEITHER key on the sheet. A row that only passed while a key
+  # was present would be testing the key, not the content/structure boundary this rail is built on.
+  out92="$(cguard "$P92" "$DG92" Edit ",$CONTENT92")"; rc92=$?
+  a1_92=""
+  [ "$rc92" = 0 ] || a1_92="$a1_92 (exit $rc92)"
+  [ -z "$out92" ] || a1_92="$a1_92 (it said: $(printf '%s' "$out92" | head -1))"
+  [ -z "$a1_92" ] && ok "A1 the guard lets content through" \
+                  || bad "A1 the guard lets content through:$a1_92"
+
+  # A2 -- the same file, the same tool, one heading added: refused, and the refusal carries all three
+  # things a reader needs. Each asserted separately; a refusal naming one key sends the reader to a door
+  # that may be shut.
+  out92="$(cguard "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+  a2_92=""
+  [ "$rc92" = 2 ] || a2_92="$a2_92 (exit $rc92)"
+  printf '%s' "$out92" | grep -qF 'decisions-global.md' || a2_92="$a2_92 (the file is not named)"
+  printf '%s' "$out92" | grep -qF 'Beta'                || a2_92="$a2_92 (what changed is not named)"
+  printf '%s' "$out92" | grep -qF 'ARCHIVE'             || a2_92="$a2_92 (key 1 is not named)"
+  printf '%s' "$out92" | grep -qF 'structure: context'  || a2_92="$a2_92 (key 2 is not named)"
+  [ -z "$a2_92" ] && ok "A2 a structural write with no key is refused, and the refusal names both keys" \
+                  || bad "A2 a structural write with no key is refused, and the refusal names both keys:$a2_92"
+  REFUSAL92="$out92"   # O1's evidence: a text that was REACHED, not one grepped out of the source
+
+  # A3 / A4 -- each key opens the rail over the write A2 just refused, changing the SHEET and nothing
+  # else. Paired with A2 by construction: an opening row on its own is satisfied by a guard that never
+  # refuses anything.
+  setsheet92 ARCHIVE
+  out92="$(cguard "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+  [ "$rc92" = 0 ] && ok "A3 the sanctioned moment opens the rail" \
+                  || bad "A3 the sanctioned moment opens the rail (exit $rc92: $(printf '%s' "$out92" | head -1))"
+
+  setsheet92 EXECUTE 'structure: context
+'
+  out92="$(cguard "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+  [ "$rc92" = 0 ] && ok "A4 the declared decision opens the rail" \
+                  || bad "A4 the declared decision opens the rail (exit $rc92: $(printf '%s' "$out92" | head -1))"
+  setsheet92 EXECUTE
+
+  # A5 -- the mechanism's own two files have no content half, so the write that changes NOTHING
+  # structural is still refused. Both asserted; one row covering "either" lets one of them fall out.
+  a5_92=""
+  printf 'x\n' > "$P92/global/protocols/context.md"
+  printf 'x\n' > "$P92/scripts/context-check.sh"
+  for f92 in "$P92/global/protocols/context.md" "$P92/scripts/context-check.sh"; do
+    out92="$(cguard "$P92" "$f92" Write ',"content":"x\n"')"; rc92=$?
+    [ "$rc92" = 2 ] || a5_92="$a5_92 [${f92##*/} exit $rc92]"
+    printf '%s' "$out92" | grep -qF 'structure: context' || a5_92="$a5_92 [${f92##*/} names no key]"
+  done
+  [ -z "$a5_92" ] && ok "A5 the mechanism's own two files have no content half" \
+                  || bad "A5 the mechanism's own two files have no content half:$a5_92"
+
+  # A6 -- creation, and its other half: the moment the engine itself creates a steering file is the
+  # archive checklist's first step, so key 1 must open it or the rail refuses the close it was built to
+  # serve.
+  NEW92="$P92/.ai-flow/steering/newdomain.md"
+  a6_92=""
+  out92="$(cguard "$P92" "$NEW92" Write ',"content":"# New\n\n## Nano\n\n- **A** - x\n\n## A\n\nrule\n"')"; rc92=$?
+  [ "$rc92" = 2 ] || a6_92="$a6_92 [creating with no key exits $rc92]"
+  setsheet92 ARCHIVE
+  out92="$(cguard "$P92" "$NEW92" Write ',"content":"# New\n\n## Nano\n\n- **A** - x\n\n## A\n\nrule\n"')"; rc92=$?
+  [ "$rc92" = 0 ] || a6_92="$a6_92 [creating inside the checklist's own window exits $rc92]"
+  setsheet92 EXECUTE
+  [ -z "$a6_92" ] && ok "A6 creating a context file is the strongest structural act" \
+                  || bad "A6 creating a context file is the strongest structural act:$a6_92"
+
+  # A7 -- the deliberate hole, measured on a fixture that OTHERWISE REFUSES. Without that pairing the row
+  # cannot tell silence-by-design from a guard that is simply broken.
+  mv "$SHEET92" "$SHEET92.parked"
+  out92="$(cguard "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+  [ "$rc92" = 0 ] && ok "A7 no task resolved means no rail" \
+                  || bad "A7 no task resolved means no rail (exit $rc92)"
+  mv "$SHEET92.parked" "$SHEET92"
+
+  # A8 -- three unreadable inputs, each a refusal that NAMES what could not be read. Never exit 0: an
+  # input nobody could read has not been found clean, and the two must not leave by the same exit.
+  a8_92=""
+  chmod 000 "$SHEET92" 2>/dev/null
+  if [ -r "$SHEET92" ]; then
+    echo "  [skip] A8 unreadable sheet (this user reads a 000 file)"
+  else
+    out92="$(cguard "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+    [ "$rc92" = 2 ] || a8_92="$a8_92 [an unreadable sheet exits $rc92]"
+    printf '%s' "$out92" | grep -qF 'state.md' || a8_92="$a8_92 [the unreadable sheet is not named]"
+  fi
+  chmod u+rw "$SHEET92" 2>/dev/null
+  chmod 000 "$DG92" 2>/dev/null
+  if [ -r "$DG92" ]; then
+    echo "  [skip] A8 unreadable target (this user reads a 000 file)"
+  else
+    out92="$(cguard "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+    [ "$rc92" = 2 ] || a8_92="$a8_92 [an unreadable target exits $rc92]"
+    printf '%s' "$out92" | grep -qF 'decisions-global.md' || a8_92="$a8_92 [the unreadable target is not named]"
+  fi
+  chmod u+rw "$DG92" 2>/dev/null
+  # The mirror of the sibling rail's bug: a path that cannot be resolved but LEXICALLY sits in the judged
+  # set. Where that rail judges what is outside a directory this one judges what is inside, so the same
+  # code that correctly passes there is a silent hole here.
+  ln -s loop-b.md "$P92/.ai-flow/steering/loop-a.md" 2>/dev/null
+  ln -s loop-a.md "$P92/.ai-flow/steering/loop-b.md" 2>/dev/null
+  out92="$(cguard "$P92" "$P92/.ai-flow/steering/loop-a.md" Edit ",$STRUCT92")"; rc92=$?
+  [ "$rc92" = 2 ] || a8_92="$a8_92 [an unresolvable path inside the judged set exits $rc92, where it must refuse]"
+  rm -f "$P92/.ai-flow/steering/loop-a.md" "$P92/.ai-flow/steering/loop-b.md"
+  [ -z "$a8_92" ] && ok "A8 unreadable input is a refusal that names the file" \
+                  || bad "A8 unreadable input is a refusal that names the file:$a8_92"
+
+  # O1 -- the refusal text was REACHED. A grep of the hook's source would pass over a branch no input can
+  # arrive at, which is the whole failure this row is written against; REFUSAL92 is A2's own output.
+  o1_92=""
+  [ -n "$REFUSAL92" ] || o1_92="$o1_92 [no refusal was produced]"
+  printf '%s' "$REFUSAL92" | grep -qF 'ARCHIVE'            || o1_92="$o1_92 [key 1 absent from the reached text]"
+  printf '%s' "$REFUSAL92" | grep -qF 'structure: context' || o1_92="$o1_92 [key 2 absent from the reached text]"
+  printf '%s' "$REFUSAL92" | grep -qF "$SHEET92"           && o1_92="$o1_92 [the sheet is named by absolute path, which is not what the operator reads]"
+  [ -z "$o1_92" ] && ok "O1 the refusal text is REACHED, and it names both keys" \
+                  || bad "O1 the refusal text is REACHED, and it names both keys:$o1_92"
+
+  # P1-P8 -- a malformed payload never tracebacks. Exit 1 is the uncaught raise, which PreToolUse treats
+  # as a NON-BLOCKING error: the write goes through with a stack trace printed over it, which is the one
+  # outcome that is worse than either verdict.
+  p_92=""
+  pmal92() {  # $1 = what the shape is, $2 = the payload
+    craw "$2" >/dev/null 2>&1; local rc=$?
+    case "$rc" in 0|2) ;; *) p_92="$p_92 [$1 exits $rc]" ;; esac
+  }
+  pmal92 "not JSON at all"          'not json'
+  pmal92 "a non-object payload"     '[1,2,3]'
+  pmal92 "no tool_input"            "{\"cwd\":\"$P92\",\"tool_name\":\"Edit\"}"
+  pmal92 "tool_input of a bad type" "{\"cwd\":\"$P92\",\"tool_name\":\"Edit\",\"tool_input\":7}"
+  pmal92 "file_path of a bad type"  "{\"cwd\":\"$P92\",\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":7}}"
+  pmal92 "cwd of a bad type"        "{\"cwd\":9,\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$DG92\"}}"
+  # An Edit whose old_string is empty: a usable TYPE carrying an unusable value. There is no occurrence
+  # to splice, so no "after" exists, and answering anything about it answers about a write nobody made.
+  out92="$(cguard "$P92" "$DG92" Edit ',"old_string":"","new_string":"x"')"; rc92=$?
+  [ "$rc92" = 2 ] || p_92="$p_92 [an empty old_string exits $rc92, where the verdict has no input]"
+  # The control, and the seven above are worth nothing without it: a guard that exited 0 on every input
+  # would satisfy all of them. The same fixture, well-formed, must still refuse.
+  out92="$(cguard "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+  [ "$rc92" = 2 ] || p_92="$p_92 [the well-formed control exits $rc92, so the seven rows above prove nothing]"
+  [ -z "$p_92" ] && ok "P1-P8 a malformed payload never tracebacks, and the control still refuses" \
+                 || bad "P1-P8 a malformed payload never tracebacks, and the control still refuses:$p_92"
+
+  # O2 -- every leg feeds the shape production sends. Asserted as a COUNT over this block's own text:
+  # exactly two sites reach the hook, `cguard` (which always emits tool_name and the tool's remaining
+  # fields) and `craw` (whose whole subject is a payload production would not send). A third site is a
+  # hand-rolled payload, and a hand-rolled payload is how a leg comes to pass against a fixture trimmed
+  # to whatever the guard happens to read.
+  SELFB92="$(sed -n '/^# C92 -- changing the mechanism/,$p' "$ROOT/test/validate.sh")"
+  N92="$(printf '%s\n' "$SELFB92" | grep -c 'python3 "\$GUARD92"')"
+  [ "$N92" = 2 ] && ok "O2 every leg feeds the payload shape production sends" \
+                 || bad "O2 every leg feeds the payload shape production sends ($N92 sites reach the hook, not 2)"
+fi
+# A10 -- registration, catalogue and delivery. The matcher is asserted as the EXISTING Edit|Write group:
+# a hook given a group of its own would satisfy a presence grep while running on a jurisdiction nobody
+# declared. The catalogue row's EVENT is asserted as a CELL and not as a substring of the whole row --
+# a row whose prose merely says "PreToolUse" somewhere passes a row-wide grep while its event column
+# says something else entirely.
+a10_92=""
+grep -qE '^HOOKS=.*context-structure-guard\.py' "$ROOT/install.sh" \
+  || a10_92="$a10_92 [install.sh HOOKS= does not name it, so a fresh install ships without the rail]"
+if [ "$PY3" = 1 ]; then
+  M92="$(python3 - "$REG92" <<'PY' 2>/dev/null
+import json, sys
+try:
+    groups = json.load(open(sys.argv[1]))['PreToolUse']
+except Exception:
+    sys.exit(0)
+for g in groups:
+    cmds = ' '.join(h.get('command', '') for h in g.get('hooks', []) if isinstance(h, dict))
+    if 'context-structure-guard.py' in cmds:
+        print(g.get('matcher', ''))
+PY
+)"
+  [ -n "$M92" ] || a10_92="$a10_92 [no PreToolUse group registers the guard]"
+  [ -z "$M92" ] || [ "$M92" = "Edit|Write" ] || a10_92="$a10_92 [its matcher is '$M92', not Edit|Write]"
+else
+  echo "  [skip] A10 matcher shape (python3 unavailable)"
+fi
+ROW92="$(grep -m1 '^| .context-structure-guard.py.' "$RDM92")"
+if [ -z "$ROW92" ]; then
+  a10_92="$a10_92 [no catalogue row]"
+else
+  EVT92="$(printf '%s' "$ROW92" | awk -F'|' '{print $3}' | tr -d '*`' | tr -s ' ')"
+  printf '%s' "$EVT92" | grep -qF 'PreToolUse' \
+    || a10_92="$a10_92 [the row's event cell is '$EVT92', which does not name PreToolUse]"
+fi
+[ -z "$a10_92" ] && ok "A10 the guard is registered on Edit|Write, catalogued with its event, and installed" \
+                 || bad "A10 the guard is registered on Edit|Write, catalogued with its event, and installed ($a10_92)"
+
+# The archive checklist, read as a region: its preamble is what the two prose rows below judge, and its
+# numbered moves are what the path row judges.
+CHK92="$(sed -n '/^### After ARCHIVE (single task)/,/^## /p' "$BLG92")"
+PRE92="$(printf '%s\n' "$CHK92" | sed -n '/^### After ARCHIVE/,/^1\. /p')"
+
+# A9 -- key 1 has a writer. Without this the rail refuses the engine's own close on every task carrying a
+# global decision, which is the defect the Understand phase measured rather than assumed.
+[ "$(insent "$PRE92" 'sheet' 'archiv' 'before')" = 1 ] \
+  && ok "A9 the close writes key 1 before the first move that needs it" \
+  || bad "A9 the close writes key 1 before the first move that needs it (the preamble states no such write)"
+
+# A11 / O4 -- the three writing moves cite a measure that can actually be run. The bare relative form
+# resolves nowhere from a project root, and it is given as the `Verify` of three moves; the file's own
+# precedent for a delivered ceremony script is the installed absolute path.
+a11_92=""
+for n92 in 1 2 3; do
+  ITM92="$(printf '%s\n' "$CHK92" | sed -n "/^${n92}\. /,/^[0-9]\{1,\}\. /p")"
+  printf '%s' "$ITM92" | grep -qF "$INST92" \
+    || a11_92="$a11_92 [move $n92 does not cite the installed path]"
+  printf '%s' "$ITM92" | grep -qE '`scripts/context-check\.sh`' \
+    && a11_92="$a11_92 [move $n92 still carries the bare relative form, which resolves nowhere]"
+done
+[ -z "$a11_92" ] && ok "A11 the three writing moves cite a measure that can actually be run" \
+                 || bad "A11 the three writing moves cite a measure that can actually be run ($a11_92)"
+
+# A12 -- key 2 has a writer at every autonomy level. The reader is asserted by A4 above; without these two
+# the key is a state the rail opens on and nothing in the engine ever writes, which is exactly the defect
+# key 1 arrived with.
+a12_92=""
+DREG92="$(sed -n '/^## Decision Register/,/^## Mechanics/p' "$PLN92")"
+[ "$(insent "$DREG92" 'structure: context' 'sheet')" = 1 ] \
+  || a12_92="$a12_92 [the plan protocol's Decision Register states no marker that writes the sheet line]"
+ASK92="$(sed -n '/^### Ask First/,/^## /p' "$EXE92")"
+[ "$(insent "$ASK92" 'structure: context' 'Auto')" = 1 ] \
+  || a12_92="$a12_92 [the execute protocol's approval tier states no go-ahead for the Auto path]"
+[ -z "$a12_92" ] && ok "A12 key 2 has a writer at every autonomy level" \
+                 || bad "A12 key 2 has a writer at every autonomy level ($a12_92)"
+
+# O3 -- the block adds no fourth spelling of the adjacency predicate. Asserted over this block's own
+# text: the canonical helper is used, and the bridge idiom the suite is trying to retire is absent here.
+SELF92="$(sed -n '/^# C92 -- changing the mechanism/,$p' "$ROOT/test/validate.sh")"
+o3_92=""
+printf '%s' "$SELF92" | grep -qF 'insent "$' || o3_92="$o3_92 [the canonical predicate is not used]"
+printf '%s' "$SELF92" | grep -qE '\[\^\.\]\{0,[0-9]+\}' && o3_92="$o3_92 [a fourth spelling of the predicate was added]"
+[ -z "$o3_92" ] && ok "O3 the new legs use the suite's canonical adjacency predicate" \
+                || bad "O3 the new legs use the suite's canonical adjacency predicate ($o3_92)"
+
+rm -rf "$T92"
+
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

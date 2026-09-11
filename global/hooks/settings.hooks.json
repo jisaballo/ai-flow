@@ -15,6 +15,10 @@
         {
           "type": "command",
           "command": "python3 $HOME/.claude/hooks/understand-write-guard.py"
+        },
+        {
+          "type": "command",
+          "command": "python3 $HOME/.claude/hooks/context-structure-guard.py"
         }
       ]
     },
