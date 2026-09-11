@@ -162,8 +162,11 @@ it whether or not the rail asks again. The guard opens on
 two keys, both read from the task's sheet — the **sanctioned moment**, the task inside its archive
 checklist, or the **declared decision**, the line `structure: context`, written when the plan's Decision
 Register entry is approved or after the operator's go-ahead at Auto. A harness adapter denies a structural
-write holding neither key and names both. The sanctioned moment ends when the sheet is deleted; a close
-interrupted before that leaves the position standing, which fails **open** and is corrected by hand.
+write holding neither key and names both. The sanctioned moment is **narrowed to the move that needs it**: the
+position is written immediately before each of the close's three context writes and cleared immediately
+after. A close halted anywhere else therefore strands nothing, and one halted inside a move strands that
+move's position alone — the direction is **closed**, and a key held across the whole ceremony is what
+that narrowing buys off.
 **The rule is this paragraph; the adapter is its rail** — and the rail sees only a checkout whose branch
 a per-task sheet claims, so where none does the rule stands alone with nothing performing it.
 

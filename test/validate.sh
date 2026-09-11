@@ -19396,11 +19396,28 @@ grep -qF "$INST92" "$CTX92" \
   || r10_92="$r10_92 [the rulebook does not cite the measure by the path it installs to]"
 grep -qE '`scripts/context-check\.sh' "$CTX92" \
   && r10_92="$r10_92 [the rulebook still carries the bare relative form, which resolves nowhere from a project root]"
-# The fail-open direction, stated in both homes rather than left to be discovered by an interrupted close.
-[ "$(insent "$PRE92" 'interrupted|halted' 'open')" = 1 ] \
-  || r10_92="$r10_92 [the checklist does not say which direction an interrupted close fails in]"
-[ "$(insent "$(cat "$CTX92")" 'interrupted|halted' 'open')" = 1 ] \
-  || r10_92="$r10_92 [the rulebook does not say which direction an interrupted close fails in]"
+# The window and the direction it fails in, stated in both homes rather than left to be discovered by an
+# interrupted close. Three legs per home, because the two that came before asserted the state as
+# delivered -- that the papers say the close fails OPEN -- and so went green BECAUSE the defect was
+# written down, which is the test fix this suite's own manifest forbids. The direction is spelled out
+# here instead: the position is narrowed to the move that needs it, so a close stopped anywhere else
+# strands nothing.
+#   1. the narrowing itself, and it must be per-move -- 'cleared at move 7' carries both 'cleared' and
+#      'move', so 'each' is what separates a window from a whole ceremony;
+#   2. the direction WITH its consequence, never the bare word: "fails **open** rather than closed"
+#      satisfies a leg that asks only for 'closed', which is how a leg comes to pass over its opposite;
+#   3. the old claim gone, the second direction A11's citation legs already carry -- a paper stating the
+#      narrowing while leaving the fail-open sentence standing is the case a presence-only leg waves
+#      through, and that sentence is the one a reader would act on.
+for h92 in "checklist:$PRE92" "rulebook:$(cat "$CTX92")"; do
+  HN92="${h92%%:*}"; HB92="${h92#*:}"
+  [ "$(insent "$HB92" 'cleared|narrowed' 'each' 'move')" = 1 ] \
+    || r10_92="$r10_92 [the $HN92 does not state the position is cleared or narrowed to each move that needs it]"
+  [ "$(insent "$HB92" 'interrupted|halted|stopped' 'closed' 'strands nothing|at most')" = 1 ] \
+    || r10_92="$r10_92 [the $HN92 does not say an interrupted close fails closed and strands nothing]"
+  [ "$(insent "$HB92" 'interrupted|halted|stopped' 'fails? +\**open')" = 0 ] \
+    || r10_92="$r10_92 [the $HN92 still says an interrupted close fails open]"
+done
 [ -z "$r10_92" ] && ok "R10 the rulebook cites a runnable measure, and key 1 does not outlive the close" \
                 || bad "R10 the rulebook cites a runnable measure, and key 1 does not outlive the close ($r10_92)"
 
@@ -19412,9 +19429,12 @@ grep -qE '`scripts/context-check\.sh' "$CTX92" \
 # A row whose subject can be deleted with it green is not a guard, so the deletion is what this row runs.
 r7_92=""
 M7="$T92/falsify"; mkdir -p "$M7"
-# (a) the phase literal removed from the preamble -- a write the guard's PHASE_RE could not read
-sed 's|the archiving position `phase: \*\*ARCHIVE\*\*` to the task.s sheet|the archiving note to the sheet|' \
-  "$BLG92" > "$M7/no-phase.md"
+# (a) the phase literal removed from the preamble -- a write the guard's PHASE_RE could not read.
+# The substitution targets the LITERAL, not the sentence carrying it: a mutation keyed on the prose is
+# one the next rewording turns into a silent no-op, and a no-op mutation leaves this row asserting that
+# an unchanged file still carries what it always carried. That is not hypothetical -- narrowing the
+# window reworded this preamble and the old pattern stopped matching.
+sed 's|`phase: \*\*ARCHIVE\*\*`|the archiving note|g' "$BLG92" > "$M7/no-phase.md"
 PRE7="$(sed -n '/^### After ARCHIVE (single task)/,/^## /p' "$M7/no-phase.md" | sed -n '/^### After ARCHIVE/,/^1\. /p')"
 if [ -z "$PRE7" ]; then
   r7_92="$r7_92 [the A9 falsification could not be built]"

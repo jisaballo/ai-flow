@@ -168,7 +168,8 @@ def refuse_unread(shown, what: str) -> None:
 KEYS_TEXT = (
     "Two keys open this rail, both read from the task's sheet '{sheet}':\n"
     "  (1) the sanctioned moment -- the task is inside its archive checklist, which the close marks by "
-    "writing `phase: **ARCHIVE**` to that sheet before the checklist's first step;\n"
+    "writing `phase: **ARCHIVE**` to that sheet immediately before each of the checklist's three "
+    "context writes and clearing it immediately after;\n"
     "  (2) the declared decision -- the line `structure: context` on that sheet, written when the plan's "
     "Decision Register entry is approved, or after the operator's go-ahead at Auto.\n"
     "Adding or correcting a rule INSIDE an existing section needs neither key. If this change is wanted, "

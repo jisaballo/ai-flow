@@ -942,11 +942,12 @@ the ledger has one writer, and every step below is that writer at work. Nothing 
 another checkout — the one act that did is now move 7 of the ceremony, where it sits alongside the
 other moves of the close that reach outside the coordinator.
 
-**Before step 1 the coordinator writes the archiving position `phase: **ARCHIVE**` to the task's sheet.**
-Three of the four moves below write a context file and step 3 writes a whole new section of the decision
-log, which is a structural act — and a structural act is refused unless the task has declared it. That
-position is the declaration — the one window in which the engine itself writes these files, whose rule
-`protocols/context.md` owns — and it is exactly this checklist's because the sheet dies a few moves later.
+**Moves 1, 2 and 3 each write a context file, and the coordinator wraps each one in the archiving
+position**: it writes `phase: **ARCHIVE**` to the task's sheet immediately before that move and clears
+it immediately after, so the key is held across the move that needs it and across nothing else. Those
+three writes are structural acts — step 3 writes a whole new section of the decision log — and a
+structural act is refused unless the task has declared it. That position is the declaration, whose rule
+`protocols/context.md` owns, and it is exactly this checklist's because the sheet dies a few moves later.
 
 **Where the rail can see this checkout at all, that write is what keeps the close from being refused**
 on a task carrying a global decision. The qualifier is load-bearing and it is the delivered hole, not a
@@ -954,14 +955,16 @@ caveat: the rail resolves the task by rungs 1 and 2 only, so it is silent wherev
 claims the branch this checkout is on** — a project that has not migrated its ledger, and a coordinator
 running worktree fronts, whose own branch each front's sheet declines to claim. That second case is this
 very checklist, which runs in the coordinator, so in a worktree topology the close is never refused and
-never asks for a key. The write is made regardless: it costs one line, and it is what makes the ceremony
-correct in the topology where the rail *is* watching rather than correct by luck.
+never asks for a key. The writes are made regardless: they cost a line each, and they are what makes the
+ceremony correct in the topology where the rail *is* watching rather than correct by luck.
 
-**The position is cleared at move 7, where the sheet is deleted.** A close interrupted before that move
-fails **open** rather than closed, and that is the direction to know: the position must then be corrected
-by hand, because a sheet stranded at `ARCHIVE` is a standing key and the rail stands aside for every
-context write on that branch until someone notices. That is the accepted cost of keying the window on a position rather
-than on a second field nothing else reads, and it is stated rather than left to be discovered.
+**The position is cleared as each of those three moves finishes** — the write and the clear are one
+move's bookends, not the whole checklist's. A close halted between moves therefore strands nothing, and
+one halted inside a move strands that move's position alone: the direction is **closed**, and what is
+left to correct by hand is at most a single line. That is what the narrowing buys, and the wider window
+is what it buys off — a key held for the length of the ceremony is a standing key for as long as the
+ceremony is stopped, and the rail would stand aside for every context write on that branch until
+someone noticed.
 
 1. **Steering update**: did the task teach or modify a domain rule? -> place it and land it as `protocols/context.md` states, which owns where a lesson goes and what one edit must carry. `~/.claude/ai-flow/scripts/context-check.sh` on the file is this move's `Verify`. No new rule learned -> skip.
 2. **product.md write-back**: copy every rule from understand.md's `New business rules minted` into product.md, under the key each belongs to, with provenance — and sharpen a term where the task sharpened one. Which key a business rule belongs to, and the shape of its line, are `protocols/context.md`'s. `~/.claude/ai-flow/scripts/context-check.sh` on the file is this move's `Verify`. None minted -> skip.
