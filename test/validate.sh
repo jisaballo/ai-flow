@@ -2192,9 +2192,18 @@ else
 fi
 
 # D5: the pointer runs both ways, so editing the code half leads back to where the rule is written.
-grep -q 'Resolving the task' "$RAIL" \
+# The ladder has one implementation and it is `_aiflow_state.py`, so that file is the one that must point
+# back at the protocol -- and each rail must point at it, or the chain from a rail to the rule has a
+# missing link. Three legs where there was one: the hop the extraction created is now guarded too.
+LADDER="global/hooks/_aiflow_state.py"
+p5=""
+grep -q 'Resolving the task' "$LADDER" || p5="$p5 [the ladder's implementation does not name the block that owns it]"
+for r5 in understand-write-guard context-structure-guard; do
+  grep -q '_aiflow_state' "global/hooks/$r5.py" || p5="$p5 [$r5 does not point at the ladder's implementation]"
+done
+[ -z "$p5" ] \
   && ok "the rail points back at the block that owns the ladder" \
-  || bad "the rail points back at the block that owns the ladder"
+  || bad "the rail points back at the block that owns the ladder ($p5)"
 
 for s in $PHASE_SKILLS; do
   f="global/skills/$s/SKILL.md"
@@ -4122,7 +4131,7 @@ fi
 
 # The guard's own comment enumerates why a sheet declares no branch, and a released claim is the second
 # reason. The README row already carries it; the comment gave one reason where there are two.
-CMT24="$(awk 'BEGIN{RS=""} /claiming no branch/{print; exit}' "$RAIL24" | tr -s ' \n' '  ')"
+CMT24="$(awk 'BEGIN{RS=""} /claiming no branch/{print; exit}' global/hooks/_aiflow_state.py | tr -s ' \n' '  ')"
 if [ -n "$CMT24" ] \
    && printf '%s' "$CMT24" | grep -qiE 'before the field|predates the field' \
    && printf '%s' "$CMT24" | grep -qiE 'released|took on another'; then
@@ -4889,16 +4898,17 @@ printf '%s' "$(c25 "$n25")" | grep -qiE 'worktree list' \
 # --- the retired rationale, guarded as a class ---------------------------
 # Written against the text that will exist, not against the sentence being deleted: what must never
 # come back is the CLAIM that nesting misbinds the guards, in any wording. The engine's own guards
-# handle nesting on purpose, and THREE of them now say so in their own `ledger_root` docstrings -- the
+# handle nesting on purpose, and their one shared `ledger_root` now says so in a single docstring -- the
 # statement each excludes is the opposite claim, that the boundary is enforced deliberately. The
 # exclusion is a list of those guards rather than a shape, and the cost is stated rather than hidden:
-# a false claim written INSIDE any of those files is invisible to this sweep. It was already so for one;
-# the second and third each arrived with a hook that resolves the same ledger and cannot import the
-# first, every hook here being installed and run standalone. The list is expected to grow with them,
-# which is why it is a list: a shape wide enough to cover them all would cover the claim as well.
+# a false claim written INSIDE any of those files is invisible to this sweep. The list stopped growing
+# when the three copies became one: the boundary rule now has a single home, `_aiflow_state.py`, so the
+# blind spot is one file rather than one per hook that resolves a ledger. The earlier note here predicted
+# the list would keep growing and reasoned from hooks that "cannot import the first" -- both were wrong,
+# and the list is shorter for it.
 r25="$(grep -rniE 'nest(ed|ing)' global docs template 2>/dev/null \
        | grep -iE 'guardrail|guard rail|bind' \
-       | grep -viE '(understand|artifact)-write-guard\.py|context-structure-guard\.py' | wc -l | tr -d ' ')"
+       | grep -viE '_aiflow_state\.py' | wc -l | tr -d ' ')"
 [ "$r25" = "0" ] \
   && ok "no document claims a nested checkout misbinds the guardrail hooks" \
   || bad "no document claims a nested checkout misbinds the guardrail hooks ($r25 line(s))"
@@ -8287,7 +8297,7 @@ M6CUT42="${M6_42%%A data directory neither*}"
 # is that they not drift, and the copy was reachable by nothing but a negative sweep.
 DOCD42="$(awk '/^2\. \*\*Data\*\*/{f=1;next} /^3\. /{f=0} f' "$DOC42" | tr '\n' ' ' | tr -s ' ')"
 # The rail's own account, in the file the protocol declares authoritative on disagreement.
-RAILD42="$(awk '/def phase_source/{f=1} f&&/per_task = /{exit} f' "$RAIL42" | tr '\n' ' ' | tr -s ' ')"
+RAILD42="$(awk '/def resolve_task_sheet/{f=1} f&&/per_task = /{exit} f' global/hooks/_aiflow_state.py | tr '\n' ' ' | tr -s ' ')"
 
 if [ "$DUP42" = 0 ] && [ -n "$RAW42" ]; then
   ok "the paragraph extractor reads each line once"
@@ -19111,6 +19121,32 @@ printf '%s' "$SELF92" | grep -qF 'insent "$' || o3_92="$o3_92 [the canonical pre
 printf '%s' "$SELF92" | grep -qE '\[\^\.\]\{0,[0-9]+\}' && o3_92="$o3_92 [a fourth spelling of the predicate was added]"
 [ -z "$o3_92" ] && ok "O3 the new legs use the suite's canonical adjacency predicate" \
                 || bad "O3 the new legs use the suite's canonical adjacency predicate ($o3_92)"
+
+# R1 -- the ladder has ONE implementation. A COUNT, never a presence: a presence grep is green with
+# three copies of `ledger_root`, which is the state this row exists to end. The shared module is the
+# authority in code, as the backlog protocol's State Files is the authority in prose, and the sibling
+# rail's docstring claim to be that authority is true again only while this row is green.
+r1_92=""
+for fn92 in ledger_root current_branch sheet_branch; do
+  n="$(grep -lE "^def ${fn92}\\(" "$ROOT"/global/hooks/*.py 2>/dev/null | wc -l | tr -d ' ')"
+  [ "$n" = 1 ] || r1_92="$r1_92 [${fn92}() is defined in $n hook files, not 1]"
+done
+# Both rails must reach it through the shared module rather than carrying their own.
+for h92 in understand-write-guard context-structure-guard; do
+  grep -q '^from _aiflow_state import' "$ROOT/global/hooks/$h92.py" \
+    || r1_92="$r1_92 [$h92 does not import the shared ladder]"
+done
+# The one real difference between the two callers is an ARGUMENT, and each rail passes the one its own
+# jurisdiction requires -- the phase rail takes the roster, the structure rail cannot.
+grep -q 'fall_to_ledger=True' "$ROOT/global/hooks/understand-write-guard.py" \
+  || r1_92="$r1_92 [the phase rail no longer takes rung 3, which is the only state an unmigrated project has]"
+grep -q 'fall_to_ledger=False' "$ROOT/global/hooks/context-structure-guard.py" \
+  || r1_92="$r1_92 [the structure rail no longer stops at rung 2, so it would refuse over a roster carrying neither key]"
+# It ships, or the installed rails import a module that is not there and every write tracebacks.
+grep -qE '^HOOKS=.*_aiflow_state\.py' "$ROOT/install.sh" \
+  || r1_92="$r1_92 [install.sh does not deliver the shared module, so a fresh install breaks both rails]"
+[ -z "$r1_92" ] && ok "R1 the ladder has one implementation" \
+               || bad "R1 the ladder has one implementation ($r1_92)"
 
 rm -rf "$T92"
 

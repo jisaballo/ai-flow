@@ -11,11 +11,21 @@ moment (the task inside its archive checklist, which the close marks by writing 
 the declared decision (the line `structure: context`). The refusal names both.
 
 Reads the hook JSON on stdin; exit 2 blocks the tool call and feeds the message back to Claude."""
-import sys, json, os, re, subprocess
+import sys, json, os, re
 from pathlib import Path
 
-PHASE_RE = re.compile(r'(?i)^\s*(?:fase actual|current phase|phase)\s*:\s*\*{0,2}\s*([A-Za-z]+)')
-BRANCH_RE = re.compile(r'(?i)^\s*branch\s*:\s*(\S+)\s*$')
+# The ladder this rail follows has ONE implementation, and it is not this file: `_aiflow_state` is its
+# home in code, as the backlog protocol's State Files is its home in prose. This rail stops at rung 2 --
+# STATE.md is a roster and carries neither key, so a checkout falling to it has no declaration to read,
+# and refusing there would refuse over a file that could never have opened it.
+# No bytecode: a hook is a one-shot process that gains nothing from a cache, and the cache is a
+# directory of .pyc files carrying the absolute path they were compiled from -- inside the user's
+# ~/.claude/hooks/, and inside anything that packs this repository. Set before the import, which is
+# the only import that would write one.
+sys.dont_write_bytecode = True
+
+from _aiflow_state import PHASE_RE, ledger_root, resolve_task_sheet
+
 STRUCTURE_RE = re.compile(r'(?i)^\s*structure\s*:\s*context\s*$')
 
 # The measure's own default set, and for the measure's own reason: WHERE THE FILES LIVE. A delivery map
@@ -25,97 +35,14 @@ DATA_FILES = ('product.md', 'decisions-global.md')
 STEERING_EXCLUDED = ('pencil-design.md',)
 
 
-def git(cwd: Path, *args) -> str:
-    try:
-        return subprocess.run(
-            ['git', '-C', str(cwd), *args], capture_output=True, text=True, timeout=3
-        ).stdout.strip()
-    except Exception:
-        return ''
-
-
-def ledger_root(cwd: Path):
-    """The checkout the session runs in owns the answer. Climbs from the cwd -- so a subproject ledger
-    inside a monorepo is found -- but stops at the checkout root: past it lies another working copy, and
-    a worktree nested inside its own primary would otherwise bind to the primary's ledger. Only a
-    non-git tree, which has no boundary to respect, is searched all the way up."""
-    top = git(cwd, 'rev-parse', '--show-toplevel')
-    boundary = Path(top).resolve() if top else None
-    for parent in [cwd, *cwd.parents]:
-        if (parent / '.ai-flow').is_dir():
-            return parent
-        if boundary is not None and parent.resolve() == boundary:
-            return None
-    return None
-
-
-def current_branch(cwd: Path) -> str:
-    """The checked-out branch, or '' when there is none to speak of -- a detached HEAD answers with the
-    literal 'HEAD', which names no branch and must never match a state sheet."""
-    name = git(cwd, 'rev-parse', '--abbrev-ref', 'HEAD')
-    return '' if name in ('', 'HEAD') else name
-
-
-def sheet_branch(sheet: Path):
-    """The branch a sheet declares, '' when it declares none, None when it cannot be read at all. A
-    sheet without the line is nobody's: absence is never a match for every branch. Unreadable is a third
-    answer, not a second name for the second -- collapsing it into '' silently changes WHICH task
-    resolves."""
-    try:
-        text = sheet.read_text(encoding='utf-8')
-    except Exception:
-        return None
-    for line in text.splitlines():
-        found = BRANCH_RE.match(line)
-        if found:
-            return found.group(1)
-    return ''
-
-
 def task_sheet(root: Path, cwd: Path):
-    """Which task is this checkout working? The ladder is written down in the backlog protocol, State
-    Files > "Resolving the task", which the phase commands follow too. Rungs 1 and 2 are implemented
-    here; rung 3 -- the ledger -- is deliberately NOT, and that departure from the sibling rail is the
-    point: STATE.md is a roster and carries neither of this rail's two keys, so a checkout that falls to
-    it has no declaration to read and the rail stays silent rather than refusing over a file that could
-    never have opened it.
+    """Which task is this checkout working? The ladder lives in `_aiflow_state.resolve_task_sheet`, and
+    this rail passes `fall_to_ledger=False`: rung 3 is the roster, which carries neither of this rail's
+    two keys.
 
-    Answers a pair: the sheet to read the keys from, and the sheet that stopped the ladder from
-    answering. The second is set only where reading it could have changed the outcome -- a readable claim
-    on the current branch settles it, and an unreadable sibling cannot outrank a claim already found."""
-    aiflow = root / '.ai-flow'
-    try:
-        per_task = sorted((aiflow / 'artifacts').glob('*/state.md'))
-    except OSError:
-        # The ledger directory exists and cannot be listed. pathlib raises here rather than answering,
-        # and an uncaught raise leaves the hook on exit 1 -- which PreToolUse treats as a NON-BLOCKING
-        # error, so the write this rail could not judge would go through with a traceback printed over
-        # it. Caught rather than pre-tested: the raise is the authority, and a readability test in front
-        # of it is still a guess about what the next call will do.
-        return None, aiflow
-    branch = current_branch(cwd)
-    if branch:
-        owned = [s for s in per_task if sheet_branch(s) == branch]
-        if len(owned) == 1:
-            return owned[0], None
-        # Consulted only where NO readable sheet claims the branch: an unreadable sibling cannot change
-        # an answer a readable claim already settled. Two readable claimants is a different stall, which
-        # this rung must not answer for, so it keeps falling through.
-        unreadable = [] if owned else [s for s in per_task if sheet_branch(s) is None]
-        if unreadable:
-            return None, unreadable[0]
-        # `== ''` is explicit: None is falsy too, so `not sheet_branch(...)` would sweep an unreadable
-        # sheet into the rung that must only ever answer for a sheet declaring no branch.
-        unclaimed = [s for s in per_task if sheet_branch(s) == '']
-        if len(unclaimed) == 1:
-            return unclaimed[0], None
-    elif len(per_task) == 1:
-        # No branch to speak of (detached HEAD, no git): the lone sheet answers whatever it declares --
-        # unless it cannot be read, which is the same stop as above.
-        if sheet_branch(per_task[0]) is None:
-            return None, per_task[0]
-        return per_task[0], None
-    return None, None
+    Answers the pair that function answers: the sheet to read the keys from, and the sheet that stopped
+    the ladder from answering."""
+    return resolve_task_sheet(root, cwd, fall_to_ledger=False)
 
 
 def keys_on(sheet: Path):

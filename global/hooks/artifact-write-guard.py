@@ -8,37 +8,24 @@ every close, and a rail over the most-written file is the rail that gets routed 
 Needs neither the phase nor the task-resolution ladder: the verdict is a path test and an existence
 test, and depends on nothing about which task or phase is live.
 Reads the hook JSON on stdin; exit 2 blocks the tool call and feeds the message back to Claude."""
-import sys, json, os, subprocess
+import sys, json, os
 from pathlib import Path
+
+# This rail needs neither the phase nor the task-resolution ladder -- its verdict is a path test
+# and an existence test. It shares `ledger_root` only, and shares it rather than copying it: the
+# boundary rule that stops the climb at the checkout root is one rule, and three copies of it is
+# three places a correction has to land.
+# No bytecode: a hook is a one-shot process that gains nothing from a cache, and the cache is a
+# directory of .pyc files carrying the absolute path they were compiled from -- inside the user's
+# ~/.claude/hooks/, and inside anything that packs this repository. Set before the import, which is
+# the only import that would write one.
+sys.dont_write_bytecode = True
+
+from _aiflow_state import ledger_root
 
 # The four names, and the one deliberately absent from them. A sibling list of the phase commands'
 # rather than a copy of it: discoveries.md is no command's, and execute produces no artifact at all.
 GUARDED = ('understand.md', 'plan.md', 'verify.md', 'discoveries.md')
-
-
-def git(cwd: Path, *args) -> str:
-    try:
-        return subprocess.run(
-            ['git', '-C', str(cwd), *args], capture_output=True, text=True, timeout=3
-        ).stdout.strip()
-    except Exception:
-        return ''
-
-
-def ledger_root(cwd: Path):
-    """The checkout the session runs in owns the answer. The search climbs from the cwd — so a
-    subproject ledger inside a monorepo is still found — but stops at the checkout root: past it lies
-    another working copy, and a worktree nested inside its own primary would otherwise bind to the
-    primary's ledger and judge a path that is not the one being written. Only a non-git tree, which has
-    no boundary to respect, is searched all the way up."""
-    top = git(cwd, 'rev-parse', '--show-toplevel')
-    boundary = Path(top).resolve() if top else None
-    for parent in [cwd, *cwd.parents]:
-        if (parent / '.ai-flow').is_dir():
-            return parent
-        if boundary is not None and parent.resolve() == boundary:
-            return None
-    return None
 
 
 def shown_as(path: Path, root: Path) -> str:

@@ -5,61 +5,19 @@ Acts in whichever checkout the session runs in — primary or linked worktree �
 phase from the task that checkout is working: the per-task state sheet naming its current
 branch, else the single sheet that names no branch, else the ledger.
 Reads the hook JSON on stdin; exit 2 blocks the tool call and feeds the message back to Claude."""
-import sys, json, re, subprocess
+import sys, json
 from pathlib import Path
 
-PHASE_RE = re.compile(r'(?i)^\s*(?:fase actual|current phase|phase)\s*:\s*\*{0,2}\s*([A-Za-z]+)')
-BRANCH_RE = re.compile(r'(?i)^\s*branch\s*:\s*(\S+)\s*$')
+# The ladder this rail follows has ONE implementation, and it is not this file: `_aiflow_state` is its
+# home in code, as the backlog protocol's State Files is its home in prose. This rail takes rung 3 --
+# STATE.md carries a phase, and it is the only state a project that has not migrated yet has.
+# No bytecode: a hook is a one-shot process that gains nothing from a cache, and the cache is a
+# directory of .pyc files carrying the absolute path they were compiled from -- inside the user's
+# ~/.claude/hooks/, and inside anything that packs this repository. Set before the import, which is
+# the only import that would write one.
+sys.dont_write_bytecode = True
 
-
-def git(cwd: Path, *args) -> str:
-    try:
-        return subprocess.run(
-            ['git', '-C', str(cwd), *args], capture_output=True, text=True, timeout=3
-        ).stdout.strip()
-    except Exception:
-        return ''
-
-
-def ledger_root(cwd: Path):
-    """The checkout the session runs in owns the answer. The search climbs from the cwd — so a
-    subproject ledger inside a monorepo is still found — but stops at the checkout root: past it
-    lies another working copy, and a worktree nested inside its own primary would otherwise bind
-    to the primary's ledger and be judged by a task it is not working on. Only a non-git tree,
-    which has no boundary to respect, is searched all the way up."""
-    top = git(cwd, 'rev-parse', '--show-toplevel')
-    boundary = Path(top).resolve() if top else None
-    for parent in [cwd, *cwd.parents]:
-        if (parent / '.ai-flow').is_dir():
-            return parent
-        if boundary is not None and parent.resolve() == boundary:
-            return None
-    return None
-
-
-def current_branch(cwd: Path) -> str:
-    """The checked-out branch, or '' when there is none to speak of — a detached HEAD answers
-    with the literal 'HEAD', which names no branch and must never match a state sheet."""
-    name = git(cwd, 'rev-parse', '--abbrev-ref', 'HEAD')
-    return '' if name in ('', 'HEAD') else name
-
-
-def sheet_branch(sheet: Path):
-    """The branch a state sheet declares as its own, '' when it declares none, and None when the sheet
-    cannot be read at all. A sheet without the line is nobody's: absence is never a match for every
-    branch. Unreadable is a third answer, not a second name for the second one — a sheet whose text is
-    unavailable can neither be claimed as this checkout's nor excluded as another workstream's, and
-    collapsing it into '' silently changed WHICH task the ladder resolves. Only the read is guarded, so
-    a genuine parse miss still answers ''."""
-    try:
-        text = sheet.read_text(encoding='utf-8')
-    except Exception:
-        return None
-    for line in text.splitlines():
-        found = BRANCH_RE.match(line)
-        if found:
-            return found.group(1)
-    return ''
+from _aiflow_state import PHASE_RE, ledger_root, resolve_task_sheet
 
 
 def declared_phase(source: Path) -> str:
@@ -85,68 +43,14 @@ def declared_phase(source: Path) -> str:
 
 
 def phase_source(root: Path, cwd: Path):
-    """Which task is this checkout working? The ladder is written down in the backlog protocol,
-    State Files > "Resolving the task", which the phase commands follow too; rungs 1 and 2 are
-    implemented here and this file wins if the two ever read differently.
+    """Which task is this checkout working? The ladder lives in `_aiflow_state.resolve_task_sheet`, and
+    this rail takes all three rungs: a sheet claiming the branch checked out, else the lone sheet
+    claiming none, else the ledger STATE.md -- which carries a phase, unlike the structure rail's two
+    keys, and which is the only state a project that has not migrated yet has.
 
-    A working copy can hold several state sheets — the coordinator holds every open task's by
-    construction, and a front takes on its next task while the paused one keeps its papers — and the
-    one that declares the branch currently checked out is the task actually being worked here. Failing
-    that, the older rule still answers: exactly one sheet means "this checkout is working that task",
-    and zero or several hand the phase question back to the ledger STATE.md — the coordinator's, and
-    the only state a project that has not migrated yet has.
-
-    Answers a pair: the source to read the phase from, and the sheet that stopped the ladder from
-    answering. The second is set only where reading that sheet could have changed the outcome — a
-    readable claim on the current branch settles it, and an unreadable sibling cannot outrank a claim
-    the ladder already found. Refusing on any unreadable sheet anywhere under artifacts/ would let one
-    stale sheet block every code write, which is a worse rail than the one being repaired."""
-    aiflow = root / '.ai-flow'
-    try:
-        per_task = sorted((aiflow / 'artifacts').glob('*/state.md'))
-    except OSError:
-        # The ledger directory cannot be listed. pathlib raises here instead of answering, and an
-        # uncaught raise leaves the hook on exit 1 — which PreToolUse treats as a non-blocking error, so
-        # the write this rail could not judge was allowed and a traceback was printed over every write
-        # in that state. It is the same directory-level fault the ledger guardian's own gate closes, and
-        # it needs the same answer: the ledger exists and could not be read, so the phase is unknown.
-        # Caught rather than pre-tested with an access check, because the raise is the authority — a
-        # readability test in front of it would still be a guess about what the next call will do.
-        return None, aiflow
-    branch = current_branch(cwd)
-    if branch:
-        owned = [sheet for sheet in per_task if sheet_branch(sheet) == branch]
-        if len(owned) == 1:
-            return owned[0], None
-        # Consulted only where NO readable sheet claims the branch, which is what the rule above says: an
-        # unreadable sibling cannot change an answer a readable claim already settled. Two readable
-        # claimants is a different stall — one this rung must not answer for, or the refusal would name a
-        # sheet that is not the reason the ladder stopped — so it keeps falling through as it did before.
-        unreadable = [] if owned else [sheet for sheet in per_task if sheet_branch(sheet) is None]
-        if unreadable:
-            # No sheet claims this branch and one of them could not be read: it may be the claimant, so
-            # the task is not resolved. Rung 4 of the ladder — stop and name what was looked for — and
-            # for a rail that can act, stopping is a refusal, not the silence a passing exit gives.
-            return None, unreadable[0]
-        # A sheet that names another branch is another workstream's — reading it would judge this
-        # checkout by a task it is not working, the very inversion this resolution exists to end.
-        # Only a sheet claiming no branch at all can still be ours, for either of two reasons: a
-        # project written before the field existed, or a task whose claim was released when this
-        # checkout took on another one — `released-branch:`, which the anchored pattern above cannot
-        # read as a claim.
-        # `== ''` is now explicit: None is falsy too, so `not sheet_branch(...)` would sweep an
-        # unreadable sheet into the rung that must only ever answer for a sheet declaring no branch.
-        unclaimed = [sheet for sheet in per_task if sheet_branch(sheet) == '']
-        if len(unclaimed) == 1:
-            return unclaimed[0], None
-    elif len(per_task) == 1:
-        # No branch to speak of (detached HEAD, no git): the older rule answers, and the lone sheet
-        # answers whatever it declares — unless it cannot be read, which is the same stop as above.
-        if sheet_branch(per_task[0]) is None:
-            return None, per_task[0]
-        return per_task[0], None
-    state = root / '.ai-flow' / 'STATE.md'
-    return (state, None) if state.exists() else (None, None)
+    Answers the pair that function answers: the source to read the phase from, and the sheet that
+    stopped the ladder from answering."""
+    return resolve_task_sheet(root, cwd, fall_to_ledger=True)
 
 
 def refuse_unread(path: Path, root: Path) -> None:
