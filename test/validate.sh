@@ -18888,6 +18888,19 @@ elif [ ! -f "$GUARD92" ]; then
   bad "O1 the refusal text is REACHED, and it names both keys (no hook)"
   bad "O2 every leg feeds the payload shape production sends (no hook)"
   bad "P1-P8 a malformed payload never tracebacks, and the control still refuses (no hook)"
+  # The eight rows added after this list was written, and left out of it. Every one lives in the branch
+  # below and so reported NOTHING at all when the hook was absent -- not a failure, an absence, which is
+  # the one state a suite must never have: the run is shorter and says nothing about why. It was contained
+  # only because the eleven above still fail, and "contained" is not a property worth relying on in the
+  # list whose whole job is to say what could not be checked.
+  bad "R2 a Write against an existing context file is judged on its content (no hook)"
+  bad "R3 every structural subject is refused, not only a title added (no hook)"
+  bad "R4 the judged set has a negative control (no hook)"
+  bad "R5 the guard stands aside on any tool but Edit and Write (no hook)"
+  bad "R6 every payload field the verdict needs has its unusable form (no hook)"
+  bad "S2 every branch the guard's verdict depends on has a fixture (no hook)"
+  bad "S3 the guard's reader and the measure's reader agree (no hook)"
+  bad "S5 a key opens a verdict, never the absence of one (no hook)"
 else
   # The fixture: a project whose own .ai-flow/ holds a member of the measure's default set, and one task
   # sheet claiming the branch the repo is on.
@@ -18956,6 +18969,17 @@ else
     [ "$rc92" = 2 ] || a5_92="$a5_92 [${f92##*/} exit $rc92]"
     printf '%s' "$out92" | grep -qF 'structure: context' || a5_92="$a5_92 [${f92##*/} names no key]"
   done
+  # And the OPENING half, which nothing held. A3/A4 exist because an opening row alone is satisfied by a
+  # guard that never refuses; this is the exact converse -- a refusing row alone is satisfied by a guard
+  # that refuses ALWAYS. Deleting `if keyed: sys.exit(0)` from the is_mechanism arm left every row in this
+  # block green while making the rulebook and the measure permanently unwritable, which is the branch this
+  # engine's own close edits `protocols/context.md` through. Both files separately, for A5's own reason.
+  setsheet92 ARCHIVE
+  for f92 in "$P92/global/protocols/context.md" "$P92/scripts/context-check.sh"; do
+    out92="$(hookcall "$GUARD92" "$P92" "$f92" Write ',"content":"x\n"')"; rc92=$?
+    [ "$rc92" = 0 ] || a5_92="$a5_92 [${f92##*/} is refused at key 1 (exit $rc92), so the mechanism is unwritable by anyone]"
+  done
+  setsheet92 EXECUTE
   [ -z "$a5_92" ] && ok "A5 the mechanism's own two files have no content half" \
                   || bad "A5 the mechanism's own two files have no content half:$a5_92"
 
@@ -18993,6 +19017,27 @@ else
   out92="$(hookcall "$GUARD92" "$P92" "$NEW92" Write ',"content":"# New\n\n## Nano\n\n- **B** - y\n\n## B\n\nrule\n"')"; rc92=$?
   [ "$rc92" = 0 ] || s5_92="$s5_92 [the same fixture readable exits $rc92, so the row above is a guard that refuses everything]"
   rm -f "$NEW92"
+  # The other FOUR key-spending refusals. One of five sites carried a keyed fixture -- the before_text
+  # read above -- and the three payload sites and the stat site all ran at EXECUTE, this row's own
+  # `setsheet92 EXECUTE` being what put them there. So a key short-circuit reinserted anywhere between
+  # the file read and the payload branch restored D12's defect for content, old_string and replace_all
+  # with no row going red, and this row's title was asserted for one input class of five. The fixtures
+  # are R6's and A8's; only the sheet changes, which is A3/A4's construction against A2.
+  s5keyed92() {  # $1 = label, $2 = extra tool_input JSON, $3 = tool
+    local out rc
+    out="$(hookcall "$GUARD92" "$P92" "$DG92" "$3" ",$2")"; rc=$?
+    [ "$rc" = 2 ] || s5_92="$s5_92 [with a key, $1 exits $rc -- the key opened the absence of a verdict]"
+    printf '%s' "$out" | grep -qF 'decisions-global.md' || s5_92="$s5_92 [with a key, $1 does not name the file]"
+  }
+  s5keyed92 "a non-string content"      '"content":7'                                              Write
+  s5keyed92 "a non-boolean replace_all" '"old_string":"a","new_string":"b","replace_all":"yes"'     Edit
+  s5keyed92 "an absent new_string"      '"old_string":"something decided here"'                    Edit
+  # And the stat site: a path that cannot be resolved but lexically sits in the judged set.
+  ln -s s5-loop-b.md "$P92/.ai-flow/steering/s5-loop-a.md" 2>/dev/null
+  ln -s s5-loop-a.md "$P92/.ai-flow/steering/s5-loop-b.md" 2>/dev/null
+  out92="$(hookcall "$GUARD92" "$P92" "$P92/.ai-flow/steering/s5-loop-a.md" Edit ",$STRUCT92")"; rc92=$?
+  [ "$rc92" = 2 ] || s5_92="$s5_92 [with a key, an unresolvable path inside the judged set exits $rc92]"
+  rm -f "$P92/.ai-flow/steering/s5-loop-a.md" "$P92/.ai-flow/steering/s5-loop-b.md"
   setsheet92 EXECUTE
   [ -z "$s5_92" ] && ok "S5 a key opens a verdict, never the absence of one" \
                   || bad "S5 a key opens a verdict, never the absence of one ($s5_92)"
@@ -19538,8 +19583,13 @@ CTX92="$ROOT/global/protocols/context.md"
 r8_92=""
 [ "$(insent "$PRE92" 'claims' 'branch' 'silent|never refused|not refused')" = 1 ] \
   || r8_92="$r8_92 [the checklist preamble does not state the hole the rail actually keeps]"
-printf '%s' "$PRE92" | grep -qiE 'worktree|coordinator' \
-  || r8_92="$r8_92 [it names no topology, so the reader cannot tell whether their own is covered]"
+# The topology, BOUND TO THE HOLE rather than greped as a word. `grep -qiE 'worktree|coordinator'` was
+# answered by the region's own opening sentence -- "it runs in the coordinator" -- which is context in
+# this task's diff and predates it entirely, so the leg was GREEN ON THE BASE COMMIT, before the hole it
+# guards was written, and the topology sentence it means could be deleted with the row still green. One
+# sentence must carry the topology AND the blindness, which no sentence about who runs the ceremony can.
+[ "$(insent "$PRE92" 'worktree' 'claims|claim' 'never refused|not refused|silent|never asks')" = 1 ] \
+  || r8_92="$r8_92 [no single sentence names the worktree topology together with the rail being blind in it]"
 # The over-claim, unqualified, must be gone: "the rail refuses the engine's own close" is false wherever
 # no per-task sheet claims the coordinator's branch.
 printf '%s' "$PRE92" | grep -qE 'Without[^.]*this write the rail refuses the engine' \
