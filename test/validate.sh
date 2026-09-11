@@ -238,6 +238,22 @@ mkproj() {  # $1 = dir, $2 = initial branch name -> repo with one commit
   $GIT -C "$1" commit -q -m init
 }
 nlines() { seq 1 "$1" | sed 's/^/line /'; }
+
+# The payload shape a PreToolUse hook is actually sent, built in ONE place. Three blocks used to carry a
+# near-copy of this pair apiece; the copies made the payload shape a thing spelled in five places, so a
+# change to the hook contract had five edits and the suite went green on whichever ones were updated.
+# `tool_name` rides every call because a guard's jurisdiction is its own and not the matcher's alone, and
+# the trailing argument carries the tool's REMAINING fields verbatim -- which is what keeps a fixture
+# honest about what production sends rather than trimmed to whatever the guard happens to read.
+hookcall() {  # $1 = guard, $2 = cwd, $3 = file_path, $4 = tool_name, $5 = extra tool_input JSON (leading comma)
+  printf '{"cwd":"%s","tool_name":"%s","tool_input":{"file_path":"%s"%s}}' "$2" "$4" "$3" "${5:-}" \
+    | python3 "$1" 2>&1
+}
+# Its counterpart, and the ONLY other way a fixture may reach a hook: a payload `hookcall` cannot express
+# because the whole subject of the row is a shape production would never send.
+hookraw() {  # $1 = guard, $2 = a whole payload -> output, returns the hook's exit code
+  printf '%s' "$2" | python3 "$1" 2>&1
+}
 # N words, exactly, counted the way `wc -w` counts them: whitespace-separated tokens. `nlines` cannot
 # serve where a word budget is being driven — it emits two words per line, so its 400-line fixture is 800
 # words and sits an order of magnitude under the budget.
@@ -18841,19 +18857,9 @@ PLN92="$ROOT/global/protocols/plan.md"
 EXE92="$ROOT/global/protocols/execute.md"
 INST92='~/.claude/ai-flow/scripts/context-check.sh'   # the path the measure installs to, the one form that runs
 
-# The payload shape the guard is registered for. `tool_name` rides every row because the guard's
-# jurisdiction is its own and not the matcher's alone; the fourth argument carries the tool's REMAINING
-# fields verbatim, which is what keeps the Edit rows honest about what production sends.
-cguard() {  # $1 = cwd, $2 = file_path, $3 = tool_name, $4 = extra tool_input fields (JSON, leading comma)
-  printf '{"cwd":"%s","tool_name":"%s","tool_input":{"file_path":"%s"%s}}' "$1" "$3" "$2" "${4:-}" \
-    | python3 "$GUARD92" 2>&1
-}
-
-# The malformed-payload arm needs the guard reached with a payload `cguard` would never build, so it is
-# the ONE other site that pipes into the hook. O2 below asserts there are exactly two.
-craw() {  # $1 = a whole payload -> output, returns the exit code
-  printf '%s' "$1" | python3 "$GUARD92" 2>&1
-}
+# This block owns no invocation helper of its own: `hookcall` and `hookraw` sit in the shared preamble
+# beside `mkproj` and `insent`, and C92 was the third near-copy of that pair. O2 below asserts this block
+# reaches the hook through them and never by hand.
 
 if [ "$PY3" = 0 ]; then
   echo "  [skip] C92 rail checks (python3 unavailable)"
@@ -18877,9 +18883,10 @@ else
   SHEET92="$P92/.ai-flow/artifacts/T-XXX/state.md"
   DG92="$P92/.ai-flow/decisions-global.md"
   setsheet92() { printf 'phase: **%s**\nbranch: main\n%s' "$1" "${2:-}" > "$SHEET92"; }
-  setdg92() {
-    printf '# Global Decisions\n\n## Nano\n\n- **Alpha** - one decision\n\n## Alpha\n\nsomething decided here\n' > "$DG92"
+  setdg92_at() {  # the judged-file shape, written wherever a row needs it
+    printf '# Global Decisions\n\n## Nano\n\n- **Alpha** - one decision\n\n## Alpha\n\nsomething decided here\n' > "$1"
   }
+  setdg92() { setdg92_at "$DG92"; }
   setsheet92 EXECUTE; setdg92
 
   # The two writes every opening row is measured against. CONTENT rewords a rule inside a section;
@@ -18890,7 +18897,7 @@ else
 
   # A1 -- content passes, and it passes with NEITHER key on the sheet. A row that only passed while a key
   # was present would be testing the key, not the content/structure boundary this rail is built on.
-  out92="$(cguard "$P92" "$DG92" Edit ",$CONTENT92")"; rc92=$?
+  out92="$(hookcall "$GUARD92" "$P92" "$DG92" Edit ",$CONTENT92")"; rc92=$?
   a1_92=""
   [ "$rc92" = 0 ] || a1_92="$a1_92 (exit $rc92)"
   [ -z "$out92" ] || a1_92="$a1_92 (it said: $(printf '%s' "$out92" | head -1))"
@@ -18900,7 +18907,7 @@ else
   # A2 -- the same file, the same tool, one heading added: refused, and the refusal carries all three
   # things a reader needs. Each asserted separately; a refusal naming one key sends the reader to a door
   # that may be shut.
-  out92="$(cguard "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+  out92="$(hookcall "$GUARD92" "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
   a2_92=""
   [ "$rc92" = 2 ] || a2_92="$a2_92 (exit $rc92)"
   printf '%s' "$out92" | grep -qF 'decisions-global.md' || a2_92="$a2_92 (the file is not named)"
@@ -18915,13 +18922,13 @@ else
   # else. Paired with A2 by construction: an opening row on its own is satisfied by a guard that never
   # refuses anything.
   setsheet92 ARCHIVE
-  out92="$(cguard "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+  out92="$(hookcall "$GUARD92" "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
   [ "$rc92" = 0 ] && ok "A3 the sanctioned moment opens the rail" \
                   || bad "A3 the sanctioned moment opens the rail (exit $rc92: $(printf '%s' "$out92" | head -1))"
 
   setsheet92 EXECUTE 'structure: context
 '
-  out92="$(cguard "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+  out92="$(hookcall "$GUARD92" "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
   [ "$rc92" = 0 ] && ok "A4 the declared decision opens the rail" \
                   || bad "A4 the declared decision opens the rail (exit $rc92: $(printf '%s' "$out92" | head -1))"
   setsheet92 EXECUTE
@@ -18932,7 +18939,7 @@ else
   printf 'x\n' > "$P92/global/protocols/context.md"
   printf 'x\n' > "$P92/scripts/context-check.sh"
   for f92 in "$P92/global/protocols/context.md" "$P92/scripts/context-check.sh"; do
-    out92="$(cguard "$P92" "$f92" Write ',"content":"x\n"')"; rc92=$?
+    out92="$(hookcall "$GUARD92" "$P92" "$f92" Write ',"content":"x\n"')"; rc92=$?
     [ "$rc92" = 2 ] || a5_92="$a5_92 [${f92##*/} exit $rc92]"
     printf '%s' "$out92" | grep -qF 'structure: context' || a5_92="$a5_92 [${f92##*/} names no key]"
   done
@@ -18944,11 +18951,18 @@ else
   # serve.
   NEW92="$P92/.ai-flow/steering/newdomain.md"
   a6_92=""
-  out92="$(cguard "$P92" "$NEW92" Write ',"content":"# New\n\n## Nano\n\n- **A** - x\n\n## A\n\nrule\n"')"; rc92=$?
+  out92="$(hookcall "$GUARD92" "$P92" "$NEW92" Write ',"content":"# New\n\n## Nano\n\n- **A** - x\n\n## A\n\nrule\n"')"; rc92=$?
   [ "$rc92" = 2 ] || a6_92="$a6_92 [creating with no key exits $rc92]"
   setsheet92 ARCHIVE
-  out92="$(cguard "$P92" "$NEW92" Write ',"content":"# New\n\n## Nano\n\n- **A** - x\n\n## A\n\nrule\n"')"; rc92=$?
+  out92="$(hookcall "$GUARD92" "$P92" "$NEW92" Write ',"content":"# New\n\n## Nano\n\n- **A** - x\n\n## A\n\nrule\n"')"; rc92=$?
   [ "$rc92" = 0 ] || a6_92="$a6_92 [creating inside the checklist's own window exits $rc92]"
+  # The leg above passes at the KEY short-circuit, before existence is ever tested -- so on its own it
+  # says nothing about the creation branch. This one reaches that branch with the file actually there:
+  # an existing file under a key, whose content is structurally different, must also pass.
+  printf '# New\n\n## Nano\n\n- **A** - x\n\n## A\n\nrule\n' > "$NEW92"
+  out92="$(hookcall "$GUARD92" "$P92" "$NEW92" Write ',"content":"# New\n\n## Nano\n\n- **B** - y\n\n## B\n\nrule\n"')"; rc92=$?
+  [ "$rc92" = 0 ] || a6_92="$a6_92 [a structural Write under key 1 exits $rc92, so the window does not reach an existing file]"
+  rm -f "$NEW92"
   setsheet92 EXECUTE
   [ -z "$a6_92" ] && ok "A6 creating a context file is the strongest structural act" \
                   || bad "A6 creating a context file is the strongest structural act:$a6_92"
@@ -18956,7 +18970,7 @@ else
   # A7 -- the deliberate hole, measured on a fixture that OTHERWISE REFUSES. Without that pairing the row
   # cannot tell silence-by-design from a guard that is simply broken.
   mv "$SHEET92" "$SHEET92.parked"
-  out92="$(cguard "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+  out92="$(hookcall "$GUARD92" "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
   [ "$rc92" = 0 ] && ok "A7 no task resolved means no rail" \
                   || bad "A7 no task resolved means no rail (exit $rc92)"
   mv "$SHEET92.parked" "$SHEET92"
@@ -18968,7 +18982,7 @@ else
   if [ -r "$SHEET92" ]; then
     echo "  [skip] A8 unreadable sheet (this user reads a 000 file)"
   else
-    out92="$(cguard "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+    out92="$(hookcall "$GUARD92" "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
     [ "$rc92" = 2 ] || a8_92="$a8_92 [an unreadable sheet exits $rc92]"
     printf '%s' "$out92" | grep -qF 'state.md' || a8_92="$a8_92 [the unreadable sheet is not named]"
   fi
@@ -18977,7 +18991,7 @@ else
   if [ -r "$DG92" ]; then
     echo "  [skip] A8 unreadable target (this user reads a 000 file)"
   else
-    out92="$(cguard "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+    out92="$(hookcall "$GUARD92" "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
     [ "$rc92" = 2 ] || a8_92="$a8_92 [an unreadable target exits $rc92]"
     printf '%s' "$out92" | grep -qF 'decisions-global.md' || a8_92="$a8_92 [the unreadable target is not named]"
   fi
@@ -18987,7 +19001,7 @@ else
   # code that correctly passes there is a silent hole here.
   ln -s loop-b.md "$P92/.ai-flow/steering/loop-a.md" 2>/dev/null
   ln -s loop-a.md "$P92/.ai-flow/steering/loop-b.md" 2>/dev/null
-  out92="$(cguard "$P92" "$P92/.ai-flow/steering/loop-a.md" Edit ",$STRUCT92")"; rc92=$?
+  out92="$(hookcall "$GUARD92" "$P92" "$P92/.ai-flow/steering/loop-a.md" Edit ",$STRUCT92")"; rc92=$?
   [ "$rc92" = 2 ] || a8_92="$a8_92 [an unresolvable path inside the judged set exits $rc92, where it must refuse]"
   rm -f "$P92/.ai-flow/steering/loop-a.md" "$P92/.ai-flow/steering/loop-b.md"
   [ -z "$a8_92" ] && ok "A8 unreadable input is a refusal that names the file" \
@@ -19008,7 +19022,7 @@ else
   # outcome that is worse than either verdict.
   p_92=""
   pmal92() {  # $1 = what the shape is, $2 = the payload
-    craw "$2" >/dev/null 2>&1; local rc=$?
+    hookraw "$GUARD92" "$2" >/dev/null 2>&1; local rc=$?
     case "$rc" in 0|2) ;; *) p_92="$p_92 [$1 exits $rc]" ;; esac
   }
   pmal92 "not JSON at all"          'not json'
@@ -19019,24 +19033,143 @@ else
   pmal92 "cwd of a bad type"        "{\"cwd\":9,\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$DG92\"}}"
   # An Edit whose old_string is empty: a usable TYPE carrying an unusable value. There is no occurrence
   # to splice, so no "after" exists, and answering anything about it answers about a write nobody made.
-  out92="$(cguard "$P92" "$DG92" Edit ',"old_string":"","new_string":"x"')"; rc92=$?
+  out92="$(hookcall "$GUARD92" "$P92" "$DG92" Edit ',"old_string":"","new_string":"x"')"; rc92=$?
   [ "$rc92" = 2 ] || p_92="$p_92 [an empty old_string exits $rc92, where the verdict has no input]"
   # The control, and the seven above are worth nothing without it: a guard that exited 0 on every input
   # would satisfy all of them. The same fixture, well-formed, must still refuse.
-  out92="$(cguard "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+  out92="$(hookcall "$GUARD92" "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
   [ "$rc92" = 2 ] || p_92="$p_92 [the well-formed control exits $rc92, so the seven rows above prove nothing]"
   [ -z "$p_92" ] && ok "P1-P8 a malformed payload never tracebacks, and the control still refuses" \
                  || bad "P1-P8 a malformed payload never tracebacks, and the control still refuses:$p_92"
 
-  # O2 -- every leg feeds the shape production sends. Asserted as a COUNT over this block's own text:
-  # exactly two sites reach the hook, `cguard` (which always emits tool_name and the tool's remaining
-  # fields) and `craw` (whose whole subject is a payload production would not send). A third site is a
-  # hand-rolled payload, and a hand-rolled payload is how a leg comes to pass against a fixture trimmed
-  # to whatever the guard happens to read.
+  # O2 -- every leg feeds the shape production sends. The direction is unchanged and it is what the
+  # frozen row states: the number of hand-rolled payloads in this block that bypass the shared helper
+  # must be ZERO. What changed is where the helper lives -- `hookcall`/`hookraw` are in the shared
+  # preamble now, so the count that used to say "exactly two sites" says "no site of its own" instead.
+  # Both halves are asserted, because either alone is satisfied by the defect: a block that reaches the
+  # hook directly, and a block that builds its own payload object and hands it to the shared helper.
   SELFB92="$(sed -n '/^# C92 -- changing the mechanism/,$p' "$ROOT/test/validate.sh")"
+  o2_92=""
   N92="$(printf '%s\n' "$SELFB92" | grep -c 'python3 "\$GUARD92"')"
-  [ "$N92" = 2 ] && ok "O2 every leg feeds the payload shape production sends" \
-                 || bad "O2 every leg feeds the payload shape production sends ($N92 sites reach the hook, not 2)"
+  [ "$N92" = 0 ] || o2_92="$o2_92 [$N92 site(s) reach the hook directly instead of through the shared helper]"
+  # The character class is load-bearing and not decoration: written bare, this pattern's own text is an
+  # instance of it and the leg fails over itself. Same rule the block header states for the skip markers.
+  H92="$(printf '%s\n' "$SELFB92" | grep -c "printf '[{]")"
+  [ "$H92" = 0 ] || o2_92="$o2_92 [$H92 hand-rolled payload(s), which is how a leg comes to pass against a fixture trimmed to whatever the guard happens to read]"
+  # And the helper it now depends on must still carry the field this row exists for: a shared helper that
+  # stopped emitting `tool_name` would leave every leg in this block feeding a shape production never sends.
+  grep -q '"tool_name":"%s"' "$ROOT/test/validate.sh" \
+    || o2_92="$o2_92 [the shared helper no longer emits tool_name]"
+
+  # ---- R2-R6: what Verify proved the block was not measuring -----------------------------------
+  # Three of these are keyed to a mutation the Verify prover RAN and the suite survived. Each therefore
+  # has a known falsification, and a row that does not go red under its own mutation is not delivered
+  # whatever its assertions say.
+
+  # R2 -- the OTHER producer. Every row above that reaches the signature comparison is an Edit: the two
+  # Write rows refuse earlier, one at the mechanism arm and one at the non-existence arm, so
+  # `after_text = tool_input.get('content')` was dead under the suite. A Write is a full replacement --
+  # the one shape that can drop the index, reorder every section and rewrite every title in one call.
+  # Falsification: replacing the Write branch with `after_text = before_text` must turn this red.
+  r2_92=""
+  W_STRUCT92='"content":"# Global Decisions\n\n## Nano\n\n- **Alpha** - one decision\n\n## Beta\n\nplaceholder\n\n## Alpha\n\nsomething decided here\n"'
+  W_CONTENT92='"content":"# Global Decisions\n\n## Nano\n\n- **Alpha** - one decision\n\n## Alpha\n\nsomething else decided here\n"'
+  out92="$(hookcall "$GUARD92" "$P92" "$DG92" Write ",$W_STRUCT92")"; rc92=$?
+  [ "$rc92" = 2 ] || r2_92="$r2_92 [a structural Write on an existing context file exits $rc92, not 2]"
+  printf '%s' "$out92" | grep -qF 'Beta' || r2_92="$r2_92 [the Write refusal does not name what changed]"
+  # The control is what makes the row a measurement rather than a guard that refuses every Write.
+  out92="$(hookcall "$GUARD92" "$P92" "$DG92" Write ",$W_CONTENT92")"; rc92=$?
+  [ "$rc92" = 0 ] || r2_92="$r2_92 [a content-only Write exits $rc92, so the Write arm refuses on presence rather than on signature]"
+  [ -z "$r2_92" ] && ok "R2 a Write against an existing context file is judged on its content" \
+                  || bad "R2 a Write against an existing context file is judged on its content ($r2_92)"
+
+  # R3 -- every structural SUBJECT, not only "a title added". The criterion names three; the block
+  # exercised one, so the nano half of signature() and four of five describe() branches were unreachable.
+  # Falsification: `signature()` returning `titles, None` must turn this red.
+  r3_92=""
+  r3case92() {  # $1 = label, $2 = old_string, $3 = new_string
+    local out rc
+    out="$(hookcall "$GUARD92" "$P92" "$DG92" Edit ",\"old_string\":\"$2\",\"new_string\":\"$3\"")"; rc=$?
+    [ "$rc" = 2 ] || r3_92="$r3_92 [$1 exits $rc, not 2]"
+  }
+  r3case92 "a section removed"        '## Alpha\n\nsomething decided here\n' ''
+  r3case92 "a nano bullet altered"    '- **Alpha** - one decision'          '- **Alpha** - two decisions'
+  # The continuation join is what the nano half of the reader exists for, and nothing reached it.
+  setdg92cont() {
+    printf '# Global Decisions\n\n## Nano\n\n- **Alpha** - one decision\n  continued here\n\n## Alpha\n\nsomething decided here\n' > "$DG92"
+  }
+  setdg92cont
+  r3case92 "a nano continuation line altered" '  continued here' '  continued elsewhere'
+  setdg92
+  # Reordering: same titles, different order -- the case a set comparison would wave through and an
+  # ORDERED comparison catches. Built as a whole-file Write because a reorder is not a local splice.
+  out92="$(hookcall "$GUARD92" "$P92" "$DG92" Write ',"content":"# Global Decisions\n\n## Nano\n\n- **Alpha** - one decision\n\n## Beta\n\nb\n\n## Alpha\n\nsomething decided here\n"')"; rc92=$?
+  [ "$rc92" = 2 ] || r3_92="$r3_92 [adding a section by Write exits $rc92, not 2]"
+  printf '# Global Decisions\n\n## Nano\n\n- **Alpha** - one decision\n\n## Alpha\n\na\n\n## Beta\n\nb\n' > "$DG92"
+  out92="$(hookcall "$GUARD92" "$P92" "$DG92" Write ',"content":"# Global Decisions\n\n## Nano\n\n- **Alpha** - one decision\n\n## Beta\n\nb\n\n## Alpha\n\na\n"')"; rc92=$?
+  [ "$rc92" = 2 ] || r3_92="$r3_92 [two sections TRANSPOSED exits $rc92, so the comparison is a set and not an order]"
+  printf '%s' "$out92" | grep -qiF 'reorder' || r3_92="$r3_92 [a reorder is not described as one]"
+  setdg92
+  [ -z "$r3_92" ] && ok "R3 every structural subject is refused, not only a title added" \
+                  || bad "R3 every structural subject is refused, not only a title added ($r3_92)"
+
+  # R4 -- the negative control the block had none of. The failure direction here is OVER-refusal, which
+  # does not go quiet: it blocks ordinary writes in every adopting project during every task that has
+  # declared nothing -- including the writes the guard's own refusal text promises are allowed.
+  # Falsification: widening DATA_FILES, or deleting the STEERING_EXCLUDED clause, must turn this red.
+  r4_92=""
+  mkdir -p "$P92/.ai-flow/steering/sub" "$P92/template/.ai-flow" "$P92/docs/context"
+  for np92 in ".ai-flow/BACKLOG.md" ".ai-flow/STATE.md" ".ai-flow/artifacts/T-XXX/notes.md" \
+              ".ai-flow/steering/pencil-design.md" ".ai-flow/steering/sub/x.md" \
+              "template/.ai-flow/decisions-global.md" "docs/context/context.md" "app.txt"; do
+    # The body must be one the structural edit ACTUALLY applies to. Written as 'x' first, every control
+    # here exited 0 because `old_string` matched nothing -- the guard's own "the tool refuses this edit
+    # anyway" arm -- so the row passed for a reason that had nothing to do with jurisdiction, and stayed
+    # green under a mutation that widened the judged set. A control that cannot fail is not a control.
+    setdg92_at "$P92/$np92"
+    out92="$(hookcall "$GUARD92" "$P92" "$P92/$np92" Edit ",$STRUCT92")"; rc92=$?
+    [ "$rc92" = 0 ] || r4_92="$r4_92 [$np92 is judged (exit $rc92) and is not this rail's]"
+    [ -z "$out92" ] || r4_92="$r4_92 [$np92 drew output where the rail must be silent]"
+  done
+  # And the refusing side must cover BOTH members of the judged set -- only one was ever exercised.
+  printf '# Product\n\n## Nano\n\n- **Alpha** - x\n\n## Alpha\n\nrule\n' > "$P92/.ai-flow/product.md"
+  out92="$(hookcall "$GUARD92" "$P92" "$P92/.ai-flow/product.md" Edit ',"old_string":"## Alpha","new_string":"## Beta\n\nb\n\n## Alpha"')"; rc92=$?
+  [ "$rc92" = 2 ] || r4_92="$r4_92 [product.md, the other member of the judged set, exits $rc92 and is not judged]"
+  [ -z "$r4_92" ] && ok "R4 the judged set has a negative control" \
+                  || bad "R4 the judged set has a negative control ($r4_92)"
+
+  # R5 -- jurisdiction. The guard carries the tool_name check with the sibling's justification verbatim,
+  # and nothing asserted it: deleting it left the suite green. The direction matters -- with the check
+  # gone a Read payload falls into the Edit branch, finds no old_string, and REFUSES, so the rail would
+  # block reads of the very files it protects.
+  r5_92=""
+  for t92 in MultiEdit NotebookEdit Read Bash; do
+    out92="$(hookcall "$GUARD92" "$P92" "$DG92" "$t92" ",$STRUCT92")"; rc92=$?
+    [ "$rc92" = 0 ] || r5_92="$r5_92 [$t92 exits $rc92 where the rail must stand aside]"
+  done
+  # The control, without which a guard that exited 0 on everything satisfies the four above.
+  out92="$(hookcall "$GUARD92" "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+  [ "$rc92" = 2 ] || r5_92="$r5_92 [the Edit control exits $rc92, so the four rows above prove nothing]"
+  [ -z "$r5_92" ] && ok "R5 the guard stands aside on any tool but Edit and Write" \
+                  || bad "R5 the guard stands aside on any tool but Edit and Write ($r5_92)"
+
+  # R6 -- every payload field the verdict needs, in its unusable form. P1-P8 accepts "0 or 2" by its own
+  # frozen direction, which is the right bar for "never tracebacks" and the wrong one for "refuses and
+  # names it": only the empty old_string leg asserted the refusal. These three are exit 2 AND named.
+  r6_92=""
+  r6case92() {  # $1 = label, $2 = extra tool_input JSON, $3 = tool
+    local out rc
+    out="$(hookcall "$GUARD92" "$P92" "$DG92" "$3" ",$2")"; rc=$?
+    [ "$rc" = 2 ] || r6_92="$r6_92 [$1 exits $rc, where the verdict has no input]"
+    printf '%s' "$out" | grep -qF 'decisions-global.md' || r6_92="$r6_92 [$1 does not name the file]"
+  }
+  r6case92 "a non-string content"     '"content":7'                                  Write
+  r6case92 "a non-boolean replace_all" '"old_string":"a","new_string":"b","replace_all":"yes"' Edit
+  r6case92 "an absent new_string"     '"old_string":"something decided here"'        Edit
+  [ -z "$r6_92" ] && ok "R6 every payload field the verdict needs has its unusable form" \
+                  || bad "R6 every payload field the verdict needs has its unusable form ($r6_92)"
+  [ -z "$o2_92" ] && ok "O2 every leg feeds the payload shape production sends" \
+                  || bad "O2 every leg feeds the payload shape production sends ($o2_92)"
 fi
 # A10 -- registration, catalogue and delivery. The matcher is asserted as the EXISTING Edit|Write group:
 # a hook given a group of its own would satisfy a presence grep while running on a jurisdiction nobody
@@ -19082,16 +19215,37 @@ PRE92="$(printf '%s\n' "$CHK92" | sed -n '/^### After ARCHIVE/,/^1\. /p')"
 
 # A9 -- key 1 has a writer. Without this the rail refuses the engine's own close on every task carrying a
 # global decision, which is the defect the Understand phase measured rather than assumed.
+# Bound to the LITERAL the reader parses, not to three loose words: the guard reads key 1 through
+# PHASE_RE -- a line labelled `phase:` whose value is ARCHIVE -- and 'archiv' alone is satisfied by
+# "archive checklist" or by the section heading itself, so the preamble could instruct a write the guard
+# cannot read with this row green. That is the defect this task exists to repair one level up.
+a9_92=""
 [ "$(insent "$PRE92" 'sheet' 'archiv' 'before')" = 1 ] \
+  || a9_92="$a9_92 [the preamble states no write to the sheet before the first move]"
+# The ordering claim above is three loose words, and `insent` is case-INSENSITIVE by design -- so
+# 'archiv' is satisfied by "archive checklist" and even 'ARCHIVE' would match "archiving". The literal
+# the reader parses is therefore asserted separately and case-SENSITIVELY: PHASE_RE reads a line labelled
+# `phase:` whose value is ARCHIVE, and without this leg the preamble could instruct a write the guard
+# cannot read with the row green -- which is the defect this task exists to repair one level up.
+printf '%s' "$PRE92" | grep -q 'phase: \*\*ARCHIVE\*\*' \
+  || a9_92="$a9_92 [the preamble does not carry the literal \`phase: **ARCHIVE**\` the guard actually parses]"
+[ -z "$a9_92" ] \
   && ok "A9 the close writes key 1 before the first move that needs it" \
-  || bad "A9 the close writes key 1 before the first move that needs it (the preamble states no such write)"
+  || bad "A9 the close writes key 1 before the first move that needs it ($a9_92)"
 
 # A11 / O4 -- the three writing moves cite a measure that can actually be run. The bare relative form
 # resolves nowhere from a project root, and it is given as the `Verify` of three moves; the file's own
 # precedent for a delivered ceremony script is the installed absolute path.
 a11_92=""
 for n92 in 1 2 3; do
-  ITM92="$(printf '%s\n' "$CHK92" | sed -n "/^${n92}\. /,/^[0-9]\{1,\}\. /p")"
+  # awk, not a sed range: `/start/,/end/` ends ON the end line, so each move carried the NEXT move's
+  # text -- and a sed range re-matches, so it also swallowed items from the epic checklist's own
+  # numbered lists further down the section. Both made the positive leg satisfiable by a neighbour.
+  # Demonstrated before it was fixed: with move 1's citation removed, the row still returned green.
+  ITM92="$(printf '%s\n' "$CHK92" | awk -v n="$n92" '
+    $0 ~ "^" n "\\. " { if (!seen) { f=1; seen=1 } }
+    f && $0 ~ /^[0-9]+\. / && $0 !~ "^" n "\\. " { exit }
+    f { print }')"
   printf '%s' "$ITM92" | grep -qF "$INST92" \
     || a11_92="$a11_92 [move $n92 does not cite the installed path]"
   printf '%s' "$ITM92" | grep -qE '`scripts/context-check\.sh`' \
@@ -19121,6 +19275,48 @@ printf '%s' "$SELF92" | grep -qF 'insent "$' || o3_92="$o3_92 [the canonical pre
 printf '%s' "$SELF92" | grep -qE '\[\^\.\]\{0,[0-9]+\}' && o3_92="$o3_92 [a fourth spelling of the predicate was added]"
 [ -z "$o3_92" ] && ok "O3 the new legs use the suite's canonical adjacency predicate" \
                 || bad "O3 the new legs use the suite's canonical adjacency predicate ($o3_92)"
+
+# R7 -- A9 and A11 go red when the claim they guard is REMOVED. Asserted by falsification and not by
+# reading, because both rows were green over a claim that was not there: A9 matched three loose words
+# with a case-insensitive predicate, so 'archiv' was satisfied by "archive checklist"; A11's sed range
+# ended ON the following move and re-matched later numbered lists, so moves 1 and 2 were satisfiable by
+# a neighbour -- demonstrated at Verify, where the row stayed green with move 1's citation removed.
+# A row whose subject can be deleted with it green is not a guard, so the deletion is what this row runs.
+r7_92=""
+M7="$T92/falsify"; mkdir -p "$M7"
+# (a) the phase literal removed from the preamble -- a write the guard's PHASE_RE could not read
+sed 's|the archiving position `phase: \*\*ARCHIVE\*\*` to the task.s sheet|the archiving note to the sheet|' \
+  "$BLG92" > "$M7/no-phase.md"
+PRE7="$(sed -n '/^### After ARCHIVE (single task)/,/^## /p' "$M7/no-phase.md" | sed -n '/^### After ARCHIVE/,/^1\. /p')"
+if [ -z "$PRE7" ]; then
+  r7_92="$r7_92 [the A9 falsification could not be built]"
+elif printf '%s' "$PRE7" | grep -q 'phase: \*\*ARCHIVE\*\*'; then
+  r7_92="$r7_92 [A9 is green over a preamble that no longer carries the literal the guard parses]"
+fi
+# (b) move 1's citation removed -- the exact defect A11 exists to catch
+awk '/^1\. \*\*Steering update\*\*/{gsub(/`~\/\.claude\/ai-flow\/scripts\/context-check\.sh`/,"`the measure`")}1' \
+  "$BLG92" > "$M7/no-cite.md"
+CHK7="$(sed -n '/^### After ARCHIVE (single task)/,/^## /p' "$M7/no-cite.md")"
+ITM7="$(printf '%s\n' "$CHK7" | awk -v n=1 '
+  $0 ~ "^" n "\\. " { if (!seen) { f=1; seen=1 } }
+  f && $0 ~ /^[0-9]+\. / && $0 !~ "^" n "\\. " { exit }
+  f { print }')"
+if [ -z "$ITM7" ]; then
+  r7_92="$r7_92 [the A11 falsification could not be built]"
+elif printf '%s' "$ITM7" | grep -qF "$INST92"; then
+  r7_92="$r7_92 [A11 is green over a move 1 that no longer cites the installed path -- its region still reaches a neighbour]"
+fi
+# The positive control: the SAME extractor over the real file must still find the citation, or the two
+# legs above would be satisfied by an extractor that reads nothing at all.
+CHK7R="$(sed -n '/^### After ARCHIVE (single task)/,/^## /p' "$BLG92")"
+ITM7R="$(printf '%s\n' "$CHK7R" | awk -v n=1 '
+  $0 ~ "^" n "\\. " { if (!seen) { f=1; seen=1 } }
+  f && $0 ~ /^[0-9]+\. / && $0 !~ "^" n "\\. " { exit }
+  f { print }')"
+printf '%s' "$ITM7R" | grep -qF "$INST92" \
+  || r7_92="$r7_92 [the extractor finds nothing on the real file, so both falsifications above prove nothing]"
+[ -z "$r7_92" ] && ok "R7 A9 and A11 fail when the claim they guard is removed" \
+               || bad "R7 A9 and A11 fail when the claim they guard is removed ($r7_92)"
 
 # R1 -- the ladder has ONE implementation. A COUNT, never a presence: a presence grep is green with
 # three copies of `ledger_root`, which is the state this row exists to end. The shared module is the
