@@ -10,6 +10,11 @@ Two keys open the rail, both read from the sheet of the task this checkout is wo
 moment (the task inside its archive checklist, which the close marks by writing phase: **ARCHIVE**), or
 the declared decision (the line `structure: context`). The refusal names both.
 
+A key opens a VERDICT and never the absence of one. It is read early and spent late, at the three
+refusals and nowhere above them: a key says this task may restructure a context file, and it says
+nothing about an input the guard could not read. So every unreadable input is refused whether or not
+the task holds one.
+
 Reads the hook JSON on stdin; exit 2 blocks the tool call and feeds the message back to Claude."""
 import sys, json, os, re
 from pathlib import Path
@@ -153,15 +158,33 @@ def refuse(message: str) -> None:
     sys.exit(2)
 
 
-def refuse_unread(shown, what: str) -> None:
+# The remedy belongs to the caller, because the cause decides which one helps. A single fixed remedy
+# told three call sites to chmod a file that had opened perfectly well, the payload being what the guard
+# could not use -- advice that reads as a diagnosis and is a wrong one.
+FIX_PERMISSION = (
+    "Fix the permission (chmod u+r on that file) and retry, or correct the sheet this rail should read "
+    "(writes under .ai-flow/ that touch no context file are allowed)"
+)
+FIX_PAYLOAD = (
+    "Nothing on disk is at fault: retry the write with that field present and of the type the tool "
+    "normally sends"
+)
+
+
+def refuse_unread(cause: str, what: str, remedy: str) -> None:
     """A rail that can act says which state it could not read; it never goes quiet because something
     failed to open. An unreadable input has not been found clean -- no verdict was reached at all, and
-    the two must never leave by the same exit."""
+    the two must never leave by the same exit.
+
+    Three parameters rather than one template, because one template did not fit its callers. `cause`
+    names what could not be read and is the caller's, since only three of the seven are a file that
+    would not open. `what` is the question left undecided, supplied whole: the version that wrote
+    "whether this write changes {what}" took clauses that themselves began "this write changes" and
+    printed "whether this write changes this write changes a context file's structure is unknown" at
+    six of its seven call sites."""
     refuse(
-        f"cannot read '{shown}', so whether this write changes {what} is unknown. This is not "
-        f"permission to write -- it is the absence of a verdict. Fix the permission (chmod u+r on that "
-        f"file) and retry, or correct the sheet this rail should read (writes under .ai-flow/ that touch "
-        f"no context file are allowed) -- or ask the user."
+        f"{cause}, so {what} is unknown. This is not permission to write -- it is the absence of a "
+        f"verdict. {remedy} -- or ask the user."
     )
 
 
@@ -253,7 +276,9 @@ def main():
     # --- the task, and only now -------------------------------------------------------------------
     sheet, unread = task_sheet(root, cwd)
     if unread is not None:
-        refuse_unread(os.path.relpath(str(unread), str(root)), 'the structure of a context file')
+        refuse_unread(f"cannot read '{os.path.relpath(str(unread), str(root))}'",
+                      'which task this checkout is working, and so whether this write is declared',
+                      FIX_PERMISSION)
     if sheet is None:
         # No task resolves from this checkout, so there is no declaration to make and nothing to read
         # one from. A deliberate hole, named in the task's papers: an operator between tasks repairs a
@@ -261,20 +286,27 @@ def main():
         # declare on. This is a rail against mistakes, not a sandbox.
         sys.exit(0)
 
+    sheet_shown = os.path.relpath(str(sheet), str(root))
     found = keys_on(sheet)
     if found is None:
-        refuse_unread(os.path.relpath(str(sheet), str(root)), 'this write is a declared act')
+        refuse_unread(f"cannot read '{sheet_shown}'", 'whether this write is a declared act',
+                      FIX_PERMISSION)
     archiving, declared = found
-    if archiving or declared:
-        sys.exit(0)
-
-    sheet_shown = os.path.relpath(str(sheet), str(root))
+    # Read here and SPENT BELOW, at the three refusals and nowhere above them. This used to be an
+    # `exit(0)` on the key, which handed the key every unreadable path beneath it: a sheet, a target or
+    # a payload field the guard could not use was waved through whenever the task held one, against
+    # `refuse_unread`'s own doctrine that an unreadable input has not been found clean. It also made the
+    # creation branch unobservable -- a keyed run left by this exit whether or not it ever reached it,
+    # so no exit code could tell the two apart.
+    keyed = archiving or declared
 
     # --- the verdict ------------------------------------------------------------------------------
     if is_mechanism:
         # No content half to compare. The rulebook states the rule this whole mechanism performs and the
         # measure computes it; a write to either changes how the mechanism works, whatever it changes
         # inside the file.
+        if keyed:
+            sys.exit(0)
         refuse(
             f"'{shown}' is the context mechanism itself -- its rulebook or its measure -- and changing "
             f"how the mechanism works is a declared act. There is no content half to these two.\n"
@@ -289,13 +321,14 @@ def main():
     except OSError:
         # It is there and cannot be looked at -- a permission fault, or a symlink loop, which is the
         # unresolvable path this rail's jurisdiction was settled lexically in order to catch.
-        refuse_unread(shown, "this write changes a context file's structure")
+        refuse_unread(f"cannot read '{shown}'", "whether this write changes a context file's structure",
+                      FIX_PERMISSION)
 
     if not exists:
-        if tool_name == 'Write':
+        if tool_name == 'Write' and not keyed:
             # Creating a context file is the strongest structural act there is, and it costs the
-            # ordinary flow nothing: the one moment the engine itself creates one is the archive
-            # checklist's first step, already inside key 1's window.
+            # ordinary flow nothing: the moments the engine itself creates one are the archive
+            # checklist's writing moves, each already inside key 1's window.
             refuse(
                 f"'{shown}' is a context file that does not exist yet, and creating one is a structural "
                 f"act -- the strongest there is.\n" + KEYS_TEXT.format(sheet=sheet_shown)
@@ -305,13 +338,14 @@ def main():
     try:
         before_text = Path(lex).read_text(encoding='utf-8')
     except Exception:
-        refuse_unread(shown, "this write changes a context file's structure")
+        refuse_unread(f"cannot read '{shown}'", "whether this write changes a context file's structure",
+                      FIX_PERMISSION)
 
     if tool_name == 'Write':
         after_text = tool_input.get('content')
         if not isinstance(after_text, str):
-            refuse_unread(shown, "this write changes a context file's structure -- the payload carries "
-                                 "no usable `content`, and that")
+            refuse_unread(f"the payload for '{shown}' carries no usable `content`",
+                          "whether this write changes a context file's structure", FIX_PAYLOAD)
     else:
         old = tool_input.get('old_string')
         new = tool_input.get('new_string')
@@ -319,14 +353,15 @@ def main():
             # A field the verdict needs, absent or of a type it cannot use. An empty `old_string` is the
             # same case wearing a usable type: there is no occurrence to splice, so no "after" exists to
             # compare, and answering anything about it would be answering about a write nobody made.
-            refuse_unread(shown, "this write changes a context file's structure -- the payload carries "
-                                 "no usable `old_string`/`new_string`, and that")
+            refuse_unread(f"the payload for '{shown}' carries no usable `old_string`/`new_string`",
+                          "whether this write changes a context file's structure", FIX_PAYLOAD)
         replace_all = tool_input.get('replace_all')
         if replace_all is None:
             replace_all = False
         if not isinstance(replace_all, bool):
-            refuse_unread(shown, "this write changes a context file's structure -- `replace_all` is of "
-                                 "a type the guard cannot use, and that")
+            refuse_unread(f"the payload for '{shown}' carries a `replace_all` of a type the guard "
+                          f"cannot use", "whether this write changes a context file's structure",
+                          FIX_PAYLOAD)
         hits = before_text.count(old)
         if hits == 0 or (hits > 1 and not replace_all):
             sys.exit(0)  # the tool refuses this edit anyway; there is no write here to judge
@@ -335,6 +370,8 @@ def main():
     before, after = signature(before_text), signature(after_text)
     if before == after:
         sys.exit(0)  # content, which is what this rail exists to leave alone
+    if keyed:
+        sys.exit(0)  # structural AND declared -- the one verdict a key is allowed to open
 
     refuse(
         f"'{shown}' is a context file and this write changes its structure "

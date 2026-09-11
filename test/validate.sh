@@ -239,9 +239,12 @@ mkproj() {  # $1 = dir, $2 = initial branch name -> repo with one commit
 }
 nlines() { seq 1 "$1" | sed 's/^/line /'; }
 
-# The payload shape a PreToolUse hook is actually sent, built in ONE place. Three blocks used to carry a
-# near-copy of this pair apiece; the copies made the payload shape a thing spelled in five places, so a
-# change to the hook contract had five edits and the suite went green on whichever ones were updated.
+# The payload shape a PreToolUse hook is actually sent, built in ONE place -- and now actually one: the
+# two named helpers below, `wguard` and `aguard`, delegate here instead of printing a near-copy apiece,
+# which is what the sentence claimed while three spellings of the contract were still in the file. They
+# keep their names because 52 call sites read better for them, and a name that forwards is not a second
+# home. The copies made the payload shape a thing spelled in five places, so a change to the hook
+# contract had five edits and the suite went green on whichever ones were updated.
 # `tool_name` rides every call because a guard's jurisdiction is its own and not the matcher's alone, and
 # the trailing argument carries the tool's REMAINING fields verbatim -- which is what keeps a fixture
 # honest about what production sends rather than trimmed to whatever the guard happens to read.
@@ -259,7 +262,10 @@ hookraw() {  # $1 = guard, $2 = a whole payload -> output, returns the hook's ex
 # words and sits an order of magnitude under the budget.
 nwords() { seq 1 "$1" | tr '\n' ' '; printf '\n'; }
 wguard() {  # $1 = cwd, $2 = file_path -> prints output, returns hook exit code
-  printf '{"cwd":"%s","tool_input":{"file_path":"%s"}}' "$1" "$2" | python3 "$HK/understand-write-guard.py" 2>&1
+  # The phase rail reads no `tool_name` -- its jurisdiction is the matcher's -- so this used to send a
+  # payload without one. That trimmed the fixture to what the guard happens to read, which is the very
+  # thing `hookcall` exists to prevent: production sends the field whether or not this rail looks at it.
+  hookcall "$HK/understand-write-guard.py" "$1" "$2" Write
 }
 
 # --- the read-only rail ---------------------------------------------------
@@ -16687,8 +16693,7 @@ MAN70="$ROOT/global/CLAUDE.md"
 # The payload shape the guard is registered for. `tool_name` is carried on every row because D1 makes it
 # load-bearing: the guard's jurisdiction is its own, not the matcher's alone.
 aguard() {  # $1 = cwd, $2 = file_path, $3 = tool_name (default Write) -> output, returns the exit code
-  printf '{"cwd":"%s","tool_name":"%s","tool_input":{"file_path":"%s"}}' "$1" "${3:-Write}" "$2" \
-    | python3 "$GUARD70" 2>&1
+  hookcall "$GUARD70" "$1" "$2" "${3:-Write}"
 }
 
 if [ "$PY3" = 0 ]; then
@@ -18956,10 +18961,23 @@ else
   setsheet92 ARCHIVE
   out92="$(hookcall "$GUARD92" "$P92" "$NEW92" Write ',"content":"# New\n\n## Nano\n\n- **A** - x\n\n## A\n\nrule\n"')"; rc92=$?
   [ "$rc92" = 0 ] || a6_92="$a6_92 [creating inside the checklist's own window exits $rc92]"
-  # The leg above passes at the KEY short-circuit, before existence is ever tested -- so on its own it
-  # says nothing about the creation branch. This one reaches that branch with the file actually there:
-  # an existing file under a key, whose content is structurally different, must also pass.
+  # The leg above used to pass at a KEY SHORT-CIRCUIT that sat before existence was ever tested, so it
+  # said nothing about the creation branch: a keyed run left by the same exit whether or not it reached
+  # it, and no exit code could tell the two apart. The key is now spent at the verdict instead, which
+  # makes the branch observable through the one case where reaching it changes the answer -- a key
+  # present and the judged file unreadable. Under the short-circuit this exited 0.
   printf '# New\n\n## Nano\n\n- **A** - x\n\n## A\n\nrule\n' > "$NEW92"
+  chmod 000 "$NEW92" 2>/dev/null
+  if [ -r "$NEW92" ]; then
+    echo "  [skip] A6 a key over an unreadable file (this user reads a 000 file)"
+  else
+    out92="$(hookcall "$GUARD92" "$P92" "$NEW92" Write ',"content":"# New\n"')"; rc92=$?
+    [ "$rc92" = 2 ] || a6_92="$a6_92 [a key waves through a file the guard cannot read: exit $rc92]"
+    printf '%s' "$out92" | grep -qF 'newdomain.md' || a6_92="$a6_92 [the unreadable file is not named]"
+  fi
+  chmod u+rw "$NEW92" 2>/dev/null
+  # And the branch with the file there and readable: an existing context file under a key, structurally
+  # different, passes at the verdict a key is allowed to open.
   out92="$(hookcall "$GUARD92" "$P92" "$NEW92" Write ',"content":"# New\n\n## Nano\n\n- **B** - y\n\n## B\n\nrule\n"')"; rc92=$?
   [ "$rc92" = 0 ] || a6_92="$a6_92 [a structural Write under key 1 exits $rc92, so the window does not reach an existing file]"
   rm -f "$NEW92"
@@ -19004,6 +19022,37 @@ else
   out92="$(hookcall "$GUARD92" "$P92" "$P92/.ai-flow/steering/loop-a.md" Edit ",$STRUCT92")"; rc92=$?
   [ "$rc92" = 2 ] || a8_92="$a8_92 [an unresolvable path inside the judged set exits $rc92, where it must refuse]"
   rm -f "$P92/.ai-flow/steering/loop-a.md" "$P92/.ai-flow/steering/loop-b.md"
+  # The ledger directory itself unlistable -- the state the ladder reads from, rather than any one file
+  # in it. `Path.glob` swallows that fault inside its own walk and answers with an empty match, so the
+  # rail read it as a checkout with no task open, which is a PASSING exit; the `except OSError` written
+  # around the glob was unreachable for the very fault it named, and looked like the remedy.
+  chmod 000 "$P92/.ai-flow/artifacts" 2>/dev/null
+  if [ -r "$P92/.ai-flow/artifacts" ]; then
+    echo "  [skip] A8 unlistable ledger (this user lists a 000 directory)"
+  else
+    out92="$(hookcall "$GUARD92" "$P92" "$DG92" Edit ",$STRUCT92")"; rc92=$?
+    [ "$rc92" = 2 ] || a8_92="$a8_92 [an unlistable ledger exits $rc92, a passing exit over a state nobody read]"
+    printf '%s' "$out92" | grep -qF 'artifacts' || a8_92="$a8_92 [the unlistable ledger is not named]"
+  fi
+  chmod u+rwx "$P92/.ai-flow/artifacts" 2>/dev/null
+  # The refusal SENTENCE, which nothing held. Two claims and both were false: the template read "whether
+  # this write changes {what}" while six of seven callers passed a clause that itself began "this write
+  # changes", printing "whether this write changes this write changes a context file's structure is
+  # unknown"; and the one fixed remedy named `chmod` at the three payload call sites, where the file had
+  # opened perfectly well and the payload was what the guard could not use. Advice that reads as a
+  # diagnosis and is a wrong one.
+  out92="$(hookcall "$GUARD92" "$P92" "$DG92" Edit ',"old_string":"## Alpha"')"; rc92=$?
+  [ "$rc92" = 2 ] || a8_92="$a8_92 [a payload with no new_string exits $rc92]"
+  printf '%s' "$out92" | grep -qF 'decisions-global.md' || a8_92="$a8_92 [the payload fault does not name the file]"
+  # A COUNT of the clause, not a search for one spelling of the doubling. The first build of this leg
+  # grepped for the literal `this write changes this write`, which is what the OLD template produced
+  # from the OLD callers; restoring the template alone produces `this write changes whether this write
+  # changes` and the leg stayed green. A leg that only catches the exact text someone already wrote
+  # catches nothing anybody will write next.
+  D92="$(printf '%s' "$out92" | grep -oF 'this write changes' | grep -c .)"
+  [ "${D92:-0}" -le 1 ] || a8_92="$a8_92 [the refusal repeats its own clause $D92 times]"
+  printf '%s' "$out92" | grep -qi 'chmod' \
+    && a8_92="$a8_92 [a payload fault is answered with a file-permission remedy]"
   [ -z "$a8_92" ] && ok "A8 unreadable input is a refusal that names the file" \
                   || bad "A8 unreadable input is a refusal that names the file:$a8_92"
 
@@ -19226,6 +19275,76 @@ else
                   || bad "S2 every branch the guard's verdict depends on has a fixture ($s2_92)"
   [ -z "$o2_92" ] && ok "O2 every leg feeds the payload shape production sends" \
                   || bad "O2 every leg feeds the payload shape production sends ($o2_92)"
+
+  # S3 -- `signature()` and the measure's own reader are MEASURED to agree. The README promises the
+  # question is "asked the way the measure asks it", and until now nothing asked both: the guard carries
+  # a second document reader, and a second reader that drifts refuses writes the measure calls clean and
+  # passes writes it calls broken. One fixture carrying every shape the two both claim to handle -- a
+  # fenced block and an HTML comment each holding a decoy heading, an inline comment mid-line, and a nano
+  # bullet with a continuation line -- fed to each, and the section lists compared.
+  MSR92="$ROOT/global/scripts/context-check.sh"
+  s3_92=""
+  FIX92="$T92/parity.md"
+  cat > "$FIX92" <<'PARITY92'
+# Title
+
+## Alpha
+
+body text
+
+```
+## Fenced Decoy
+```
+
+<!--
+## Commented Decoy
+-->
+
+## Beta
+
+body <!-- ## Inline Decoy --> text
+
+## Nano
+
+- **Alpha** - what alpha says
+  and its continuation
+- **Beta** - what beta says
+PARITY92
+  # The measure's reader is its own awk program, taken from the shipped script rather than retyped --
+  # a copy here would be a THIRD reader, which is the defect this row exists to measure.
+  AWK92="$(sed -n "/^AWK_READ='/,/^}'\$/p" "$MSR92" | sed "1s/^AWK_READ='//; \$s/'\$//")"
+  if [ -z "$AWK92" ]; then
+    s3_92="$s3_92 [the measure's reader could not be lifted from $MSR92]"
+  else
+    M3="$(awk "$AWK92" "$FIX92" | sed -n 's/^SEC [0-9]* //p')"
+    MN3="$(awk "$AWK92" "$FIX92" | grep -c '^NANOLINE ')"
+    # The guard's reader, called directly. Its module runs `main()` at import, which would consume this
+    # process's stdin, so the call is stripped -- the one line that is not the subject of the question.
+    G3="$(python3 - "$GUARD92" "$FIX92" <<'PY' 2>&1
+import sys, os
+src = open(sys.argv[1], encoding='utf-8').read().replace('\nmain()\n', '\n')
+sys.path.insert(0, os.path.dirname(os.path.abspath(sys.argv[1])))
+ns = {'__name__': 'parity_probe'}
+exec(compile(src, sys.argv[1], 'exec'), ns)
+titles, nano = ns['signature'](open(sys.argv[2], encoding='utf-8').read())
+for t in titles:
+    print(t)
+print('NANOLINES', -1 if nano is None else len(nano))
+PY
+)"
+    GN3="$(printf '%s\n' "$G3" | sed -n 's/^NANOLINES //p')"
+    GT3="$(printf '%s\n' "$G3" | grep -v '^NANOLINES ')"
+    [ "$GT3" = "$M3" ] \
+      || s3_92="$s3_92 [the two readers disagree on the sections: the guard says '$(printf '%s' "$GT3" | tr '\n' '/')' and the measure says '$(printf '%s' "$M3" | tr '\n' '/')']"
+    [ "$GN3" = "$MN3" ] \
+      || s3_92="$s3_92 [they disagree on the nano block: the guard counts ${GN3:-none} lines and the measure counts $MN3]"
+    # A positive control, or the two legs above are satisfied by a fixture that exercises nothing: the
+    # decoys must actually have been skipped rather than never looked at.
+    [ "$M3" = "$(printf 'Alpha\nBeta')" ] \
+      || s3_92="$s3_92 [the measure reads '$(printf '%s' "$M3" | tr '\n' '/')' on a fixture whose only real sections are Alpha and Beta]"
+  fi
+  [ -z "$s3_92" ] && ok "S3 the guard's reader and the measure's agree on one fixture" \
+                  || bad "S3 the guard's reader and the measure's agree on one fixture ($s3_92)"
 fi
 # A10 -- registration, catalogue and delivery. The matcher is asserted as the EXISTING Edit|Write group:
 # a hook given a group of its own would satisfy a presence grep while running on a jurisdiction nobody
@@ -19351,6 +19470,23 @@ printf '%s' "$SELF92" | grep -q "sed -n '/\^# C92 -- changing the mechanism/,\$p
   || s1_92="$s1_92 [the self-slice no longer starts at this block's own header, so what it judges is unknown]"
 [ -z "$s1_92" ] && ok "S1 no leg of this block is satisfied by its own source text" \
                || bad "S1 no leg of this block is satisfied by its own source text ($s1_92)"
+
+# S4 -- the suite builds a hook file_path payload in ONE place, which is what `hookcall`'s preamble has
+# claimed while three spellings of the contract sat in the file. A COUNT over everything ABOVE this
+# block, which is where every helper lives: a leg reading this file entire would be satisfiable by its
+# own line, the shape S1 forbids. What this count cannot see -- a fourth builder written inside C92 --
+# is O2's subject, and the two rows are the whole of the direction between them.
+s4_92=""
+ABOVE92="$(sed -n '1,/^# C92 -- changing the mechanism/p' "$ROOT/test/validate.sh")"
+B92="$(printf '%s\n' "$ABOVE92" | grep -cE 'printf .*"tool_input":\{"file_path"')"
+[ "${B92:-0}" = 1 ] \
+  || s4_92="$s4_92 [$B92 place(s) build a file_path payload, and the preamble claims one]"
+# And the claim itself: a count that is right over a preamble promising something else is a pair that
+# will be read as agreeing when it is not.
+[ "$(insent "$ABOVE92" 'payload' 'ONE place')" = 1 ] \
+  || s4_92="$s4_92 [the preamble no longer claims one place, so the count above measures nothing stated]"
+[ -z "$s4_92" ] && ok "S4 the suite builds a hook payload in one place" \
+               || bad "S4 the suite builds a hook payload in one place ($s4_92)"
 
 # R8 -- the engine states the hole the rail ACTUALLY keeps. The papers promised one hole, "no task open
 # at all"; the rail stops at rung 2, so the delivered hole is "no per-task sheet claims this checkout's

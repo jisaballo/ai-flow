@@ -95,15 +95,20 @@ def resolve_task_sheet(root: Path, cwd: Path, fall_to_ledger: bool):
     Refusing on any unreadable sheet anywhere under artifacts/ would let one stale sheet block every
     write, which is a worse rail than the one being repaired."""
     aiflow = root / '.ai-flow'
+    artifacts = aiflow / 'artifacts'
     try:
-        per_task = sorted((aiflow / 'artifacts').glob('*/state.md'))
+        # `iterdir`, not `glob`. The directory list is taken by a call that RAISES on a directory it
+        # cannot read; `Path.glob` swallows that fault inside its own walk and answers with an empty
+        # match, so the `except OSError` written around it was unreachable and an unlistable ledger read
+        # as a checkout with no task -- which is a passing exit. The rail failed OPEN on exactly the
+        # state it was meant to refuse over, and the handler that looked like the remedy was what hid it.
+        # The raise is still the authority rather than an access check in front of it: a readability test
+        # is a guess about what the next call will do.
+        per_task = sorted(p / 'state.md' for p in artifacts.iterdir() if (p / 'state.md').is_file())
+    except FileNotFoundError:
+        per_task = []  # no artifacts/ at all is a project with no task open, not a fault
     except OSError:
-        # The ledger directory exists and cannot be listed. pathlib raises here instead of answering, and
-        # an uncaught raise leaves the hook on exit 1 -- which PreToolUse treats as a non-blocking error,
-        # so the write the rail could not judge goes through with a traceback printed over it. Caught
-        # rather than pre-tested with an access check, because the raise is the authority: a readability
-        # test in front of it would still be a guess about what the next call will do.
-        return None, aiflow
+        return None, artifacts
     branch = current_branch(cwd)
     if branch:
         owned = [sheet for sheet in per_task if sheet_branch(sheet) == branch]
