@@ -139,7 +139,7 @@ asked.
 
 ## Keeping
 
-**The check.** `scripts/context-check.sh [file …]` reads only `.ai-flow/`; with no argument it takes the
+**The check.** `~/.claude/ai-flow/scripts/context-check.sh [file …]` reads only `.ai-flow/`; with no argument it takes the
 steering directory's own files plus `product.md` and `decisions-global.md`, once each — where the files
 live, never what a delivery map points at, so a document borrowed from outside is never measured with
 ceilings its own home refuses and a steering file nobody declared is measured all the same. It returns a
@@ -153,11 +153,19 @@ file.
 *Structure* is this protocol, the classes table, the check, and in any context file the `##` lines, the
 nano block and the order of sections. *Content* is a rule added or corrected inside a section, and it
 passes. A structural change is layer-1 visible: one line in chat naming the file and the change, and the
-operator's permission, on the terms the Plan protocol gives irreversible operations. The guard opens on
+operator's permission, on the terms the Plan protocol gives irreversible operations. **The permission is
+granted per task, not per change** — the key below is written once, at the approval, and stands until the
+task ends. Naming it here because the rule and its rail must not read differently: a per-change key would
+need a writer on every change, and a step that writes its own permission is not a gate. What the operator
+approves is therefore a task that will restructure, and the layer-1 line is owed for each change within
+it whether or not the rail asks again. The guard opens on
 two keys, both read from the task's sheet — the **sanctioned moment**, the task inside its archive
 checklist, or the **declared decision**, the line `structure: context`, written when the plan's Decision
 Register entry is approved or after the operator's go-ahead at Auto. A harness adapter denies a structural
-write holding neither key and names both. **The rule is this paragraph; the adapter is its rail.**
+write holding neither key and names both. The sanctioned moment ends when the sheet is deleted; a close
+interrupted before that leaves the position standing, which fails **open** and is corrected by hand.
+**The rule is this paragraph; the adapter is its rail** — and the rail sees only a checkout whose branch
+a per-task sheet claims, so where none does the rule stands alone with nothing performing it.
 
 **Repair moves forward with use.** A file that fails the check is repaired by the first task that needs
 it, and named by nothing until then. The phase reads it whole and says so with the cost. Understand,

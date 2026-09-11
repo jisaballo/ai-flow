@@ -184,6 +184,18 @@ block that shows the form claims nothing. A sheet whose claim is written in any 
 branch, and the resolution below answers for it exactly as it does for a sheet that names none — which
 is silent by construction, so the accepted form is written here rather than left to the pattern.
 
+**`structure: context` is the sheet's one other machine-read line**, and it is a flag rather than a
+position: it declares that this task's approved plan changes the structure of a context file or of the
+context mechanism itself, which `protocols/context.md` owns the rule for. Any line declaring it counts —
+unlike `phase:`, which is read from the first line and no other, because a position is a state and a flag
+is a permission. **One writer**: Conform's close, the same write that advances the sheet to EXECUTE, so
+the line cannot exist without an approval behind it (at **Auto** there is no Decision Register to carry
+the marker and the operator's go-ahead is what writes it — Execute protocol > Ask First). It is
+**task-scoped**: the line `structure: context` is written once and covers every structural write for the
+rest of the task, and nothing clears it before the sheet is deleted. That is coarser than reading the rule alone would suggest, and it is the
+declared unit on purpose — a per-change key would need a writer on every change, which is a step that
+writes its own permission.
+
 A released claim is not a deleted one. The sheet keeps its papers and keeps the branch it belongs to,
 in a field the rail cannot mistake for a claim:
 
@@ -321,7 +333,10 @@ three come from the task's own sheet and its papers, never from what the session
   must have a writer, or the first forgotten edit blocks correct work and teaches everyone to route
   around the rule. `plan` additionally advances the sheet to EXECUTE when Conform closes, because that
   is where the position becomes true and nothing later in the chain reaches back to record it: the
-  command that runs on a position reads it, and never writes the one that admits it.
+  command that runs on a position reads it, and never writes the one that admits it. **That same write
+  carries `structure: context` to the sheet** where the approved plan's Decision Register marks a
+  decision with it — one write, one approval, and the permission recorded where the approval was given
+  rather than at the step that later needs it. A step that writes its own permission is not a gate.
 
   **Two closes carry the end of the session with them: the close of Understand and the close of Execute.**
   Each writes the position the phase *after* it will declare — the close of Understand writes PLAN, the close
@@ -394,7 +409,7 @@ three come from the task's own sheet and its papers, never from what the session
 | Moment | Roster (`STATE.md`) | Sheet (`artifacts/T-XXX/state.md`) |
 |---|---|---|
 | **Activation** | the coordinator adds the workstream row, with the front's declared areas | created, with branch, the first position, step and autonomy — plus any collision acknowledged at the opening (see Opening a Workstream) |
-| **During the phases** | untouched | the phase command writes the phase when it enters one, and the `next action:` line with it wherever that write ends the session (see The phase precondition above); step, decisions and the rest of the resume block kept current by whoever works the task |
+| **During the phases** | untouched | the phase command writes the phase when it enters one, and the `next action:` line with it wherever that write ends the session (see The phase precondition above); `structure: context` at Conform's close where the plan carries that marker; step, decisions and the rest of the resume block kept current by whoever works the task |
 | **Pause** | untouched | carries everything needed to resume — it IS the handoff |
 | **Archive** | the coordinator removes the row, last | collected into the coordinator first, then deleted with the rest of `artifacts/T-XXX/` — in every checkout that holds it, not only the coordinator's |
 | **Quick task** | its row in Quick Tasks Completed, at close | none — a quick task writes no sheet, and states its 1-2 steps in the conversation |
@@ -931,10 +946,22 @@ other moves of the close that reach outside the coordinator.
 Three of the four moves below write a context file and step 3 writes a whole new section of the decision
 log, which is a structural act — and a structural act is refused unless the task has declared it. That
 position is the declaration — the one window in which the engine itself writes these files, whose rule
-`protocols/context.md` owns — and it is exactly this checklist's because the sheet dies a few moves later. Without
-this write the rail refuses the engine's own close on every task carrying a global decision. An
-interrupted close leaves the position to be corrected by hand, which is the accepted cost of keying the
-window on a position rather than on a second field nothing else reads.
+`protocols/context.md` owns — and it is exactly this checklist's because the sheet dies a few moves later.
+
+**Where the rail can see this checkout at all, that write is what keeps the close from being refused**
+on a task carrying a global decision. The qualifier is load-bearing and it is the delivered hole, not a
+caveat: the rail resolves the task by rungs 1 and 2 only, so it is silent wherever **no per-task sheet
+claims the branch this checkout is on** — a project that has not migrated its ledger, and a coordinator
+running worktree fronts, whose own branch each front's sheet declines to claim. That second case is this
+very checklist, which runs in the coordinator, so in a worktree topology the close is never refused and
+never asks for a key. The write is made regardless: it costs one line, and it is what makes the ceremony
+correct in the topology where the rail *is* watching rather than correct by luck.
+
+**The position is cleared at move 7, where the sheet is deleted.** A close interrupted before that move
+fails **open** rather than closed, and that is the direction to know: the position must then be corrected
+by hand, because a sheet stranded at `ARCHIVE` is a standing key and the rail stands aside for every
+context write on that branch until someone notices. That is the accepted cost of keying the window on a position rather
+than on a second field nothing else reads, and it is stated rather than left to be discovered.
 
 1. **Steering update**: did the task teach or modify a domain rule? -> place it and land it as `protocols/context.md` states, which owns where a lesson goes and what one edit must carry. `~/.claude/ai-flow/scripts/context-check.sh` on the file is this move's `Verify`. No new rule learned -> skip.
 2. **product.md write-back**: copy every rule from understand.md's `New business rules minted` into product.md, under the key each belongs to, with provenance — and sharpen a term where the task sharpened one. Which key a business rule belongs to, and the shape of its line, are `protocols/context.md`'s. `~/.claude/ai-flow/scripts/context-check.sh` on the file is this move's `Verify`. None minted -> skip.

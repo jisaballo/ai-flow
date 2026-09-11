@@ -19276,6 +19276,58 @@ printf '%s' "$SELF92" | grep -qE '\[\^\.\]\{0,[0-9]+\}' && o3_92="$o3_92 [a four
 [ -z "$o3_92" ] && ok "O3 the new legs use the suite's canonical adjacency predicate" \
                 || bad "O3 the new legs use the suite's canonical adjacency predicate ($o3_92)"
 
+# R8 -- the engine states the hole the rail ACTUALLY keeps. The papers promised one hole, "no task open
+# at all"; the rail stops at rung 2, so the delivered hole is "no per-task sheet claims this checkout's
+# branch" -- which swallows two populations with a task genuinely open: a project that never migrated its
+# ledger, and a coordinator running worktree fronts. The second is this checklist's own checkout. BOTH
+# directions, because stating the true hole while leaving the old over-claim standing is the case a
+# presence-only row waves through, and the over-claim is the sentence a reader would act on.
+CTX92="$ROOT/global/protocols/context.md"
+r8_92=""
+[ "$(insent "$PRE92" 'claims' 'branch' 'silent|never refused|not refused')" = 1 ] \
+  || r8_92="$r8_92 [the checklist preamble does not state the hole the rail actually keeps]"
+printf '%s' "$PRE92" | grep -qiE 'worktree|coordinator' \
+  || r8_92="$r8_92 [it names no topology, so the reader cannot tell whether their own is covered]"
+# The over-claim, unqualified, must be gone: "the rail refuses the engine's own close" is false wherever
+# no per-task sheet claims the coordinator's branch.
+printf '%s' "$PRE92" | grep -qE 'Without[^.]*this write the rail refuses the engine' \
+  && r8_92="$r8_92 [the unqualified over-claim is still there, and it is untrue in a worktree topology]"
+[ "$(insent "$(cat "$CTX92")" 'rail' 'claims|per-task sheet' 'stands alone|nothing performing')" = 1 ] \
+  || r8_92="$r8_92 [the rulebook does not say the rule stands alone where the rail cannot see the checkout]"
+[ -z "$r8_92" ] && ok "R8 the engine states the hole the rail actually keeps" \
+               || bad "R8 the engine states the hole the rail actually keeps ($r8_92)"
+
+# R9 -- the sheet field has a home and a writer. A machine-read field introduced with no home in the
+# document that owns the sheet is a field nobody can look up; a writer stated only in a template comment
+# is a writer the close does not carry. Regions cut to the section, the rule A12 already follows.
+SF92="$(sed -n '/^## State Files/,/^## Task Entry Format/p' "$BLG92")"
+PP92="$(sed -n '/^### The phase precondition/,/^### Who writes what/p' "$BLG92")"
+r9_92=""
+[ "$(insent "$SF92" 'structure: context' 'sheet|machine-read')" = 1 ] \
+  || r9_92="$r9_92 [the document that owns the sheet does not document the field]"
+[ "$(insent "$SF92" 'structure: context' 'task-scoped|per task|rest of the task')" = 1 ] \
+  || r9_92="$r9_92 [the field's SCOPE is undocumented, which is the half that surprises a reader]"
+[ "$(insent "$PP92" 'structure: context' 'EXECUTE|Conform|approval')" = 1 ] \
+  || r9_92="$r9_92 [the close that performs the write does not state it -- the writer lives only in a template comment]"
+[ -z "$r9_92" ] && ok "R9 the sheet field has a home and a writer" \
+               || bad "R9 the sheet field has a home and a writer ($r9_92)"
+
+# R10 -- the rulebook cites a measure that can be run, and key 1 does not outlive the close. Both
+# directions on the citation, as A11 has them: the installed path present AND the bare relative form
+# absent, because a file carrying both passes a presence-only leg.
+r10_92=""
+grep -qF "$INST92" "$CTX92" \
+  || r10_92="$r10_92 [the rulebook does not cite the measure by the path it installs to]"
+grep -qE '`scripts/context-check\.sh' "$CTX92" \
+  && r10_92="$r10_92 [the rulebook still carries the bare relative form, which resolves nowhere from a project root]"
+# The fail-open direction, stated in both homes rather than left to be discovered by an interrupted close.
+[ "$(insent "$PRE92" 'interrupted|halted' 'open')" = 1 ] \
+  || r10_92="$r10_92 [the checklist does not say which direction an interrupted close fails in]"
+[ "$(insent "$(cat "$CTX92")" 'interrupted|halted' 'open')" = 1 ] \
+  || r10_92="$r10_92 [the rulebook does not say which direction an interrupted close fails in]"
+[ -z "$r10_92" ] && ok "R10 the rulebook cites a runnable measure, and key 1 does not outlive the close" \
+                || bad "R10 the rulebook cites a runnable measure, and key 1 does not outlive the close ($r10_92)"
+
 # R7 -- A9 and A11 go red when the claim they guard is REMOVED. Asserted by falsification and not by
 # reading, because both rows were green over a claim that was not there: A9 matched three loose words
 # with a case-insensitive predicate, so 'archiv' was satisfied by "archive checklist"; A11's sed range
