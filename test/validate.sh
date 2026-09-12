@@ -18839,6 +18839,33 @@ rm -rf "$BOX91"
 # ---------------------------------------------------------------------------------------------------
 # C92 -- changing the mechanism or a context file's structure is a declared act, and a hook rails it.
 #
+# ============================== THIS BLOCK IS PARTIAL. READ THIS FIRST. ==============================
+# What it measures WELL: the guard's behaviour. Thirteen mutations of context-structure-guard.py were run
+# against this block and every one turned a row red naming its own claim -- the fence and nano branches,
+# the Write/content branch, replace_all, the judged set and its exclusion, tool_name jurisdiction, the
+# ladder's single implementation, the unlistable ledger, the key spent late at all five refusals, the
+# mechanism arm's two directions, and the two readers' agreement. Trust those rows.
+#
+# What it measures BADLY: ITSELF. Four verify rounds found the same defect five times -- a leg satisfied
+# by something other than the fact it names -- and the fifth instance sat inside the fix for the fourth.
+# The cause is structural: the self-judging rows (S1, S4, O2, O3) assert over this file's own text, so a
+# leg written carelessly answers itself. Known hollow or weak TODAY, confirmed by mutation, left in place
+# deliberately rather than patched a fifth time:
+#
+#   * S1's probe-invocation leg is single-quoted and unescaped, and the slice it greps contains that very
+#     line -- so it matches itself and is green whether or not the probe ever runs. Nothing else binds
+#     O2's tool_name evidence to a real `hookcall`.
+#   * The three `sed` region-excisions (S1 x2, O3 x1) FAIL GREEN when an end anchor drifts: nothing
+#     asserts the excised region was bounded, so an anchor that stops matching silently empties the sweep.
+#   * S1's sweep is keyed on two variable NAMES, not on the shape its message claims -- blind to the
+#     multi-line pipeline idiom and to any slice under a third name.
+#   * S5's five keyed legs inherit their key from A6 thirty-odd lines above and never re-declare it.
+#
+# A leg here going green is therefore evidence about the guard and NOT evidence about this block. Repairing
+# it needs a different approach to self-judging assertions than "write another grep", which is what the
+# fifth attempt would have been; it left this task at the close and lives in the Icebox.
+# =====================================================================================================
+#
 # Generated in the Conform phase from understand.md's Verifiable Criteria; every row is RED until the
 # rail and the two keys' writers exist. Three properties shape the block. First, the failure this rail
 # can introduce is SILENCE -- a guard that stood aside and a guard that judged and passed look identical
