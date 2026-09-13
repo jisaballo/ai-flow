@@ -1,0 +1,5 @@
+echo "== C10: drift-check capability =="
+test -f global/hooks/drift-check.sh && ok "drift-check hook exists" || bad "drift-check hook missing"
+grep -q "drift-check" global/hooks/settings.hooks.json && ok "drift-check wired in settings" || bad "drift-check not wired"
+grep -q "source.path" install.sh && ok "install.sh records the clone path" || bad "install.sh does not record source.path"
+grep -q "drift-check" global/hooks/README.md && ok "drift-check documented" || bad "drift-check not in hooks README"

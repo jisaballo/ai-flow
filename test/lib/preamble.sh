@@ -170,7 +170,38 @@ S71='[[:space:]]+'
 # describes has left, and report its own blindness as a clean verdict.
 #
 # Unquoted at every call site ON PURPOSE: the word splitting is what hands grep and awk several files.
-SUITE_SRC="$ROOT/test/lib/preamble.sh $ROOT/test/validate.sh"
+# The section files, in NUMERIC order. A glob answers lexically, where C10 precedes C2, and a suite that
+# runs its blocks out of order is one whose output cannot be diffed against a previous run.
+suite_sections() {
+  [ -d "$ROOT/test/sections" ] || return 0
+  find "$ROOT/test/sections" -maxdepth 1 -name 'C*.sh' 2>/dev/null \
+    | awk -F/ '{n=$NF; sub(/^C/,"",n); sub(/-.*/,"",n); print n"\t"$0}' | sort -n | cut -f2-
+}
+
+# The identifier a section answers to on the command line: the C-number its filename opens with, never
+# the slug after it, so renaming a section's words never changes how it is asked for.
+section_id() {
+  local b="${1##*/}"
+  printf '%s' "${b%%-*}"
+}
+
+# Ordered: the machinery, then the sections as they run, then the runner. A row asking for "everything
+# above this block" means by that the text that has already been read, and only this order keeps it true.
+SUITE_SRC="$ROOT/test/lib/preamble.sh $(suite_sections | tr '\n' ' ')$ROOT/test/validate.sh"
+
+# The suite's text as one stream, for a row that counts or slices rather than merely testing presence:
+# `grep -c` over several files prints one count per file, and `grep -m1` stops once per file.
+suite_src() { cat $SUITE_SRC; }
+
+# The suite minus the block now running -- a hole of exactly one block, never a horizon. A row that
+# audits how its neighbours are written must not be answered by its own text, and a row that excluded
+# "everything from here on" would stop covering whatever is appended after it.
+suite_src_others() {
+  local f
+  for f in $SUITE_SRC; do
+    [ "$f" = "${SECTION-}" ] || cat "$f"
+  done
+}
 
 # --- helpers more than one section calls -------------------------------------------------------------
 mkproj() {  # $1 = dir, $2 = initial branch name -> repo with one commit
