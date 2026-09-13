@@ -456,6 +456,11 @@ mbul() { msect "$1" "$2" | awk -v s="$3" '/^- /{ if(f) exit; f=($0 ~ s) } f' | t
 # sections, so every fact below is matched by what it says and never by the text around it. The remedy
 # names the hand-merge because nothing distributes this file: the installer writes it only when absent
 # and the drift guard excludes it as user-owned (global/hooks/drift-check.sh).
+# Initialised HERE, beside the helper that writes it, and not in the one section that reports it. A
+# counter a shared helper increments but only C17 declares dies under `set -u` the moment any OTHER
+# caller reaches the skip branch -- `bash test/validate.sh C47` on a host with no live twin, which is a
+# supported host, not a hypothetical: the `[skip]` line above exists to serve it.
+C17_SKIPPED=0
 manfact() {
   local fn="$1" what="$2"
   "$fn" "$MAN" && ok "$what" || bad "$what"

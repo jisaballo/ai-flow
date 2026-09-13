@@ -111,9 +111,10 @@ fi
 # The 37 names are written out rather than derived from the corpus, and that is the point: derived from
 # the files it judges, this row would assert that whatever is there is what belongs there. This list is
 # the frozen contract from understand.md.
-HELP93='a41 brake clohead dmove hookcall hookraw item23 itm90 keyed ledger malformed manfact manstate
-marker89 mbul mkbig mkproj msect near90 nearok90 nearzero90 nlines nstep nwords off pair purity_sweep
-rung sbullet sec90 sheet vstep waved wguard wti_classify wti_probe wti_tracked_leak'
+HELP93='a41 brake cerstep clohead dmove graw hookcall hookraw insent item23 itm90 keyed ledger
+malformed manfact manstate marker89 mbul mkbig mkproj msect near90 nearok90 nearzero90 nlines nstep
+nwords off pair purity_sweep rung sbullet sec90 shapes83 sheet step_no sweep89 vstep waved word83 wraw
+wguard wti_classify wti_probe wti_tracked_leak'
 r5_93=""
 if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
   for h93 in $HELP93; do
@@ -122,6 +123,17 @@ if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
       grep -qE "^[[:space:]]*${h93}\(\)[[:space:]]*\{" "$f93" && printf '%s' "x"
     done | grep -q x && r5_93="$r5_93 [$h93 is still defined inside a section]"
   done
+  # The list's own COMPLETENESS, which no per-name leg can give. A helper hoisted into the preamble and
+  # not written above is a helper this row certifies nothing about, and the row stays green over it --
+  # which is how the delivered form came to name 37 of the 45 the preamble owns, omitting the two with
+  # the widest reach in the suite. The names stay written out; this leg only refuses a list that has
+  # fallen behind the file it enumerates. The nine run-machinery names are the ones that are NOT helpers.
+  MACH93='ok bad mkbox fatal cleanup_boxes suite_sections section_id suite_src suite_src_others'
+  nd93="$(grep -cE '^[a-zA-Z_][a-zA-Z0-9_]*\(\)[[:space:]]*\{' "$PRE93" | tr -d ' ')"
+  nm93="$(printf '%s\n' $MACH93 | grep -c . | tr -d ' ')"
+  nh93="$(printf '%s\n' $HELP93 | grep -c . | tr -d ' ')"
+  [ "$((nd93 - nm93))" = "$nh93" ] \
+    || r5_93="$r5_93 [the preamble owns $((nd93 - nm93)) helpers and this list names $nh93]"
 else
   r5_93=" [no preamble or no corpus to read]"
 fi
@@ -215,5 +227,31 @@ if [ -r "$SWEEP93" ] && $GIT ls-files --error-unmatch test/tools/self-sufficienc
 else
   bad "the self-sufficiency sweep is a tracked file in the repository"
 fi
+
+# ROW 10 -- the CONSTANTS half of the same criterion, which had no row at all.
+#
+# understand.md reads "No helper function **or constant** read by more than one section is defined inside
+# a section file". ROW 5 answers the first half and nothing answered the second. Three of the names below
+# (VP/VS/VW) existed as DUPLICATE definitions in two sections before this task collapsed them, which is
+# precisely the regrowth this half exists to refuse -- and a criterion half nobody asserts is a half that
+# grows back without anything going red.
+#
+# Both directions, like ROW 8 and for the same reason: present in the shared machinery, absent from every
+# section. The presence half alone passes over a section that keeps its own copy beside the shared one.
+CONST93='HK GIT PY3 VP VS VW MAN MANTWIN BLG24 S71 PY'
+r10_93=""
+if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
+  for c93 in $CONST93; do
+    grep -qE "^${c93}=" "$PRE93" || r10_93="$r10_93 [\$$c93 is not assigned in the shared machinery]"
+    printf '%s\n' "$CORPUS93" | while IFS= read -r f93; do
+      grep -qE "^[[:space:]]*${c93}=" "$f93" && printf '%s' "x"
+    done | grep -q x && r10_93="$r10_93 [\$$c93 is assigned again inside a section]"
+  done
+else
+  r10_93=" [no preamble or no corpus to read]"
+fi
+[ -z "$r10_93" ] \
+  && ok "every constant more than one section reads is assigned in the preamble and in no section" \
+  || bad "every constant more than one section reads is assigned in the preamble and in no section ($r10_93)"
 
 rm -rf "$T93"

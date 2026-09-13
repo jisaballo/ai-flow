@@ -37,6 +37,16 @@ if [ -n "$WANT" ] && [ "$RAN" -eq 0 ]; then
   exit 2
 fi
 
+# A run that produced no row is not a clean run. The branch above covers the filtered half -- an
+# identifier naming no section -- and this covers the other: an absent, renamed or unreadable corpus
+# makes `suite_sections` answer with nothing and a status of 0, which is byte-identical to a corpus of
+# zero files. Without this, `Result: 0 passed, 0 failed` and an exit of 0 report a clean suite over
+# nothing at all, which is the one verdict this harness exists to refuse.
+if [ "$((PASS + FAIL))" -eq 0 ]; then
+  echo "no section produced a row: the section corpus is empty or unreadable" >&2
+  exit 2
+fi
+
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
 [ "$FAIL" -eq 0 ]

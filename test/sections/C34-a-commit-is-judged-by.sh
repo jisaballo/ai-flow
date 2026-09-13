@@ -346,14 +346,26 @@ OWN34
   # The row that makes the guard usable in the repository that ships it: a by-content check whose own
   # source or whose own fixtures it refuses is a machine that cannot commit its own repair.
   mkrepo34 selfsrc
-  mkdir -p "$T34/selfsrc/hooks" "$T34/selfsrc/test"
+  mkdir -p "$T34/selfsrc/hooks"
   cp "$GHK34/pre-commit" "$T34/selfsrc/hooks/pre-commit"
   cp "$GHK34/pre-push" "$T34/selfsrc/hooks/pre-push"
-  cp "$ROOT/test/validate.sh" "$T34/selfsrc/test/validate.sh"
+  # THE WHOLE suite, not the runner alone. The near-miss shapes this row exists to prove committable
+  # live in the section files; staging `test/validate.sh` by itself would stage forty-two lines that
+  # cannot hold one, and the row would go on claiming a subject it no longer carries.
+  n34=0
+  for f34 in $SUITE_SRC; do
+    r34="${f34#$ROOT/}"
+    mkdir -p "$T34/selfsrc/$(dirname "$r34")"
+    cp "$f34" "$T34/selfsrc/$r34" && n34=$((n34 + 1))
+  done
   git -C "$T34/selfsrc" -c core.hooksPath="$NOHOOK34" add -A >/dev/null 2>&1
   b34="$(head34 selfsrc)"
   out="$(sh34 selfsrc "git commit -m 'the guard and its suite'")"; rc=$?
-  if [ "$rc" = 0 ] && [ "$b34" != "$(head34 selfsrc)" ]; then
+  # The count is an assertion, not a comment: a fixture that copied nothing would commit clean and this
+  # row would report that as a pass -- the vacuous shape it is here to refuse.
+  if [ "$n34" -lt 75 ]; then
+    bad "the commit guard's own source and the suite that drives it commit with the guard active (only $n34 suite file(s) staged)"
+  elif [ "$rc" = 0 ] && [ "$b34" != "$(head34 selfsrc)" ]; then
     ok "the commit guard's own source and the suite that drives it commit with the guard active"
   else
     bad "the commit guard's own source and the suite that drives it commit with the guard active (exit $rc, said: $out)"

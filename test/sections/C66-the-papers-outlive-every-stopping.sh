@@ -3,7 +3,6 @@ echo "== C66: the papers outlive every stopping move, and the epic's plan is str
 
 BL66="$ROOT/global/protocols/backlog.md"
 LC66="$ROOT/global/protocols/lifecycle.md"
-VS66="$ROOT/test/validate.sh"
 
 # Local extractors, for the reason C63 and C64 give for defining their own: this block must stand on its
 # own, so an edit to another section's helper cannot silently change what these rows are about.
@@ -99,14 +98,17 @@ fi
 # step's number from the step's own act rather than name it. IB-001's finding, and this task's renumber is
 # the failure it predicted. Each leg is self-avoiding: the literal that would match it is written here with
 # a bracket where the digit would be, so this row cannot report itself.
+# The subject is the WHOLE suite, through the preamble's accessor, and never the runner by path: the
+# extractors this row forbids live in the section files now, so a leg reading `test/validate.sh` alone
+# searches forty-two lines that cannot contain one and reports its own blindness as a clean verdict.
 a4_66=""
-[ "$(grep -cE 'a41 [0-9]' "$VS66" | tr -d ' ')" -eq 0 ] \
+[ "$(suite_src | grep -cE 'a41 [0-9]' | tr -d ' ')" -eq 0 ] \
   || a4_66=" [a41 still extracts a checklist step by its number]"
-[ "$(grep -cE 'item23 [0-9]+ "\$ARCH' "$VS66" | tr -d ' ')" -eq 0 ] \
+[ "$(suite_src | grep -cE 'item23 [0-9]+ "\$ARCH' | tr -d ' ')" -eq 0 ] \
   || a4_66="$a4_66 [item23 still extracts a checklist step by its number]"
-[ "$(grep -cE 'ARC7=.*\^[0-9]' "$VS66" | tr -d ' ')" -eq 0 ] \
+[ "$(suite_src | grep -cE 'ARC7=.*\^[0-9]' | tr -d ' ')" -eq 0 ] \
   || a4_66="$a4_66 [ARC7 is still bounded by literal step numbers]"
-[ "$(grep -cE 'ARC72.*\^[0-9]' "$VS66" | tr -d ' ')" -eq 0 ] \
+[ "$(suite_src | grep -cE 'ARC72.*\^[0-9]' | tr -d ' ')" -eq 0 ] \
   || a4_66="$a4_66 [C72 still pins a checklist position by a literal step number]"
 [ -z "$a4_66" ] && ok "A4 no archive-checklist extractor names a step by its number" \
                 || bad "A4 no archive-checklist extractor names a step by its number ($a4_66)"
