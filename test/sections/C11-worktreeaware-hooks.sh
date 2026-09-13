@@ -1,6 +1,5 @@
 echo "== C11: worktree-aware hooks =="
 T11="$(mkbox)" || fatal 'C11 fixtures'
-trap 'rm -rf "$T11"' EXIT
 
 
 
@@ -603,4 +602,3 @@ printf 'v9\n' > "$TH11/.claude/hooks/x.sh"
               || bad "drift guard still reports an engine that matches no checkout (exit $rc)"
 
 rm -rf "$T11"
-trap - EXIT

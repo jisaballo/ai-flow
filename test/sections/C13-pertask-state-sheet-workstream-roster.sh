@@ -1,6 +1,5 @@
 echo "== C13: per-task state sheet + workstream roster =="
 T13="$(mkbox)" || fatal 'C13 fixtures'
-trap 'rm -rf "$T12" "$T13"' EXIT
 TSTATE="template/.ai-flow/STATE.md"
 BLG="global/protocols/backlog.md"
 

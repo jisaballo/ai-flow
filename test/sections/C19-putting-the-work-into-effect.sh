@@ -161,10 +161,6 @@ fi
 # The installer's own report, in update mode. Functional and sandboxed: a fake HOME and a path that
 # must not exist afterwards. Structural greps cannot see a mkdir that runs before the dispatch.
 TH19="$(mkbox)" || fatal 'C19 fixtures'; TW19="$(mkbox)" || fatal 'C19 fixtures'
-# A trap is global state, and setting one REPLACES what an earlier section installed: this block used to
-# drop T12/T13 from the teardown, so two sandboxes leaked on every run, clean or interrupted. Carry the
-# live trap's paths, and hand it back below rather than clearing it.
-trap 'rm -rf "$TH19" "$TW19" "$T12" "$T13"' EXIT
 GHOST19="$TW19/never-written"
 OUT19="$( cd "$TW19" && HOME="$TH19" bash "$ROOT/install.sh" update "$GHOST19" </dev/null 2>&1 )" || true
 if [ ! -e "$GHOST19" ] && ! printf '%s' "$OUT19" | grep -qF "$GHOST19"; then
@@ -177,10 +173,9 @@ printf '%s' "$OUT19" | grep -qE 'Target:.*\.claude' \
   && ok "update names the toolchain it actually writes" \
   || bad "update names the toolchain it actually writes"
 rm -rf "$TH19" "$TW19"
-trap 'rm -rf "$T12" "$T13"' EXIT   # handed back to the section that owned it
 
 # The teardown is a fact of this block, not a courtesy: the leak above went unnoticed because nothing
 # ever looked. A probe is cheaper than the next reviewer finding it by hand.
-{ [ ! -d "$TH19" ] && [ ! -d "$TW19" ] && [ -d "$T12" ]; } \
-  && ok "the sandbox is torn down and the live cleanup trap survives this block" \
-  || bad "the sandbox is torn down and the live cleanup trap survives this block"
+{ [ ! -d "$TH19" ] && [ ! -d "$TW19" ]; } \
+  && ok "the sandbox is torn down" \
+  || bad "the sandbox is torn down"

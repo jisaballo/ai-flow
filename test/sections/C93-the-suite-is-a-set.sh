@@ -22,7 +22,6 @@ echo ""
 echo "== C93: the suite is a set of independent sections behind a filtering runner =="
 
 T93="$(mkbox)" || fatal 'C93 fixtures'
-trap 'chmod -R u+rwX "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55" "$T69" "$T70" "$T92" "$T93" 2>/dev/null; rm -rf "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55" "$T69" "$T70" "$T92" "$T93"' EXIT   # extended, never replaced
 
 SECD93="$ROOT/test/sections"
 PRE93="$ROOT/test/lib/preamble.sh"
@@ -130,25 +129,37 @@ fi
   && ok "every helper more than one section reads is defined in the preamble and in no section" \
   || bad "every helper more than one section reads is defined in the preamble and in no section ($r5_93)"
 
-# ROW 6 -- no trap names a sandbox another section owns.
+# ROW 6 -- no section writes a trap; the one that exists removes every sandbox mkbox handed out.
 #
-# Read per file: every `$VAR` a trap mentions must be assigned in the same file. The cumulative chain
-# this retires is exactly the shape that fails here -- C92's trap names eleven sandboxes, ten of which
-# belong to other blocks.
+# Rewritten from "every $VAR a trap mentions is assigned in the same file". That form asserted a property
+# OF trap lines, and there are now none in any section -- it would pass over an empty set, green because
+# there is nothing to look at, which is the vacuous shape this harness exists to refuse. The positive
+# fact is asserted instead, and the direction is unchanged: a section that takes teardown into its own
+# hands fails this row.
+#
+# Why there can be only one: `trap ... EXIT` is global state and a second REPLACES the first. Seventeen
+# per-section traps left the last one standing and leaked sixteen sandboxes, which is why the teardown
+# used to be a chain every block extended with its neighbours' paths -- and why a filtered run died on a
+# variable the neighbour that never ran would have set.
 r6_93=""
-if [ "${n93:-0}" -ge 74 ]; then
+if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
   while IFS= read -r f93; do
     [ -n "$f93" ] || continue
-    for v93 in $(grep -hE '^[[:space:]]*trap ' "$f93" | grep -oE '\$\{?[A-Za-z_][A-Za-z0-9_]*' | tr -d '${' | sort -u); do
-      grep -qE "^[[:space:]]*${v93}=" "$f93" || r6_93="$r6_93 [$(basename "$f93"): \$$v93]"
-    done
+    grep -qE '^[[:space:]]*trap ' "$f93" && r6_93="$r6_93 [$(basename "$f93") installs its own trap]"
   done <<< "$CORPUS93"
+  nt93="$(grep -cE '^[[:space:]]*trap ' "$PRE93" || true)"
+  [ "${nt93:-0}" = 1 ] || r6_93="$r6_93 [the shared machinery holds $nt93 traps, not one]"
+  # The trap is only as good as what reaches the registry, and only mkbox writes to it.
+  awk '/^mkbox\(\) \{/{f=1} f{print} f && /^\}/{exit}' "$PRE93" | grep -q '>> "$BOXREG"' \
+    || r6_93="$r6_93 [mkbox does not register the sandbox it hands out]"
+  grep -q 'done < "$BOXREG"' "$PRE93" \
+    || r6_93="$r6_93 [the teardown does not read the registry, so what it removes is a list of names again]"
 else
-  r6_93=" [no corpus to read]"
+  r6_93=" [no corpus or no preamble to read]"
 fi
 [ -z "$r6_93" ] \
-  && ok "every trap names only sandboxes its own section owns" \
-  || bad "every trap names only sandboxes its own section owns ($r6_93)"
+  && ok "no section writes a trap; the one that exists removes every sandbox mkbox handed out" \
+  || bad "no section writes a trap; the one that exists removes every sandbox mkbox handed out ($r6_93)"
 
 # ROW 7 -- the two rows whose claim the split makes impossible carry their new wording, and only it.
 #
@@ -172,18 +183,26 @@ done
   && ok "the two trap-survival rows carry the new wording and no longer claim the neighbour's cleanup" \
   || bad "the two trap-survival rows carry the new wording and no longer claim the neighbour's cleanup ($r7_93)"
 
-# ROW 8 -- marker89's inputs are derived outside C58's readable branch (IB-021).
+# ROW 8 -- marker89's inputs are derived outside the readable branch (IB-021).
 #
-# Scoped to C58's own file for the reason ROW 7 gives: the names below appear in this comment.
-C58F93="$(printf '%s\n' "$CORPUS93" | grep -E '/C58-' | head -1)"
+# They went further than the criterion asked. The helper moved to the shared machinery, and inputs that
+# stayed behind in the section that first needed them would be the same defect one level down -- so they
+# sit beside it, at the top level, where nothing conditional can skip them. Asserted in BOTH directions:
+# present in the preamble, and absent from every section, which is the half that would otherwise let a
+# second copy grow back.
 r8_93=""
-if [ -n "$C58F93" ] && [ -r "$C58F93" ]; then
-  grep -qE '^[[:space:]]*marker89\(\)' "$C58F93" && r8_93="$r8_93 [marker89 is still defined in C58]"
+if [ -r "$PRE93" ] && [ "${n93:-0}" -ge 74 ]; then
   for v93 in now83 stale83 DIM83 k83; do
-    grep -qE "^${v93}=" "$C58F93" || r8_93="$r8_93 [\$$v93 is not derived at the top level]"
+    grep -qE "^${v93}=" "$PRE93" || r8_93="$r8_93 [\$$v93 is not derived in the shared machinery]"
   done
+  grep -qE '^marker89\(\)' "$PRE93" || r8_93="$r8_93 [marker89 is not defined in the shared machinery]"
+  while IFS= read -r f93; do
+    [ -n "$f93" ] || continue
+    grep -qE '^[[:space:]]*(marker89\(\)|now83=|stale83=)' "$f93" \
+      && r8_93="$r8_93 [$(basename "$f93") derives the marker or its inputs again]"
+  done <<< "$CORPUS93"
 else
-  r8_93=" [C58's section file is missing]"
+  r8_93=" [no preamble or no corpus to read]"
 fi
 [ -z "$r8_93" ] \
   && ok "marker89's inputs are derived outside the readable branch" \

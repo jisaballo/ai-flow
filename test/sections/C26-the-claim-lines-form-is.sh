@@ -1,4 +1,7 @@
 echo "== C26: the claim line's form is written where it is read and pinned where it is checked =="
+# A sandbox of this block's own. It used to read the one C11 opens, which is why this section could
+# not be asked for on its own: under a filter C11 never runs and every path below collapses to "/".
+T25="$(mkbox)" || fatal 'C26 fixtures'
 # The sibling of the phase declaration, and the same defect one field over: the reader was already
 # correct and nothing stopped it being reverted with the suite green. These two fixtures discriminate
 # by construction — each names a different file, and returns a different exit code, under the reading

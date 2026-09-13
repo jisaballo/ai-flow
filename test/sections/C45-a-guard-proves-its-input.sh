@@ -1,11 +1,9 @@
 echo "== C45: a guard proves its input usable before it concludes from it =="
 # This section is the only one that chmods a directory to 000, and a tree that cannot be entered defeats
 # `rm -rf` (EACCES on traversal), so an interrupt inside a two-line window would leave an undeletable
-# directory in TMPDIR. The trap therefore restores modes before removing, and it is installed here rather
-# than left to the happy-path cleanup below. T45R is declared empty first: `set -u` is in force and the
-# trap names it long before the block that creates it runs.
+# directory in TMPDIR. That is why the one teardown in the preamble restores modes before removing --
+# this block is the reason that `chmod` is there.
 T45=""; T45R=""
-trap 'chmod -R u+rwX "$T45" "$T45R" 2>/dev/null; rm -rf "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R"' EXIT
 # Conformance rows for the fail-open class: a guard whose input cannot be read must refuse and name the
 # file, while an input that is merely ABSENT keeps the silence each guard documents as designed. The two
 # directions are asserted together on purpose — this class was found four times as a guard nothing
@@ -40,7 +38,7 @@ vio45() { ros45; printf '\n## Notes\n\n**Epic E-007 CLOSED 2026-07-30.** Sealed:
 # Session-close changelog entries, the shape the guard counts.
 log45() { i=0; while [ "$i" -lt "$1" ]; do printf '> 2026-0%s-01 session close\n' "$((i+1))"; i=$((i+1)); done; }
 
-if ! T45="$(mktemp -d 2>/dev/null)" || [ ! -d "$T45" ]; then
+if ! T45="$(mkbox)" || [ ! -d "$T45" ]; then
   bad "an unreadable STATE.md is refused, not reported clean (no sandbox: mktemp -d failed)"
   bad "an unreadable BACKLOG.md is refused, not reported clean (no sandbox: mktemp -d failed)"
   bad "a readable roster with no closed-work narrative still passes (no sandbox: mktemp -d failed)"
@@ -286,7 +284,7 @@ fi
 # --- A9 / A10: the read-only rail's state sheet -------------------------------
 if [ "$PY3" != 1 ]; then
   echo "  [skip] the read-only rail's unreadable-sheet rows (python3 unavailable)"
-elif ! T45R="$(mktemp -d 2>/dev/null)" || [ ! -d "$T45R" ]; then
+elif ! T45R="$(mkbox)" || [ ! -d "$T45R" ]; then
   bad "an unreadable state sheet refuses the write (no sandbox: mktemp -d failed)"
   bad "no declared phase leaves the rail silent (no sandbox: mktemp -d failed)"
 else

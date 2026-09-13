@@ -266,7 +266,7 @@ fi
 # --- the installer names the ignore line the native path needs -----------
 # Executed, not grepped: a message found in the source proves the message exists, never that anything
 # reaches it. The prompts are answered rather than closed, for the reason the block above records.
-if ! T31="$(mktemp -d 2>/dev/null)" || [ ! -d "$T31" ]; then
+if ! T31="$(mkbox)" || [ ! -d "$T31" ]; then
   bad "install names the ignore line the native worktree path needs (no sandbox: mktemp -d failed)"
 else
   H31="$T31/home"; A31="$T31/adopt"; mkdir -p "$H31" "$A31"

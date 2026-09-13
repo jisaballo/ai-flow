@@ -27,7 +27,6 @@ else
 fi
 
 T55=""
-trap 'chmod -R u+rwX "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55" 2>/dev/null; rm -rf "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55"' EXIT   # extended, never replaced
 
 # A roster whose only non-table lines are its own headings: readable, carrying no closure narrative. The
 # control that keeps every refusal row below from being satisfied by a guard that refuses everything.
@@ -65,7 +64,7 @@ STOP55='{"hook_event_name":"Stop"}'
 # own occasion, and it is also what the malformed and re-delivery rows below need.
 UPS55='{"hook_event_name":"UserPromptSubmit"}'
 
-if ! T55="$(mktemp -d 2>/dev/null)" || [ ! -d "$T55" ]; then
+if ! T55="$(mkbox)" || [ ! -d "$T55" ]; then
   bad "A1 a backlog over its word budget is noted, not refused (no sandbox: mktemp -d failed)"
   bad "A2 the firm note states both the measurement and the threshold (no sandbox: mktemp -d failed)"
   bad "A3 the word budget speaks at 8,001 and stays silent at 8,000 (no sandbox: mktemp -d failed)"

@@ -8,18 +8,15 @@ echo "== C44: the audit's base rule is watched everywhere it is stated, and the 
 # The fixture is a throwaway repository, never this one: a sweep proven by littering the tree it audits
 # is the mutation the engine's own rule forbids, and an ignored file left behind would silently change
 # the next run's verdict — which is the very defect this pair exists to close.
-# Extended, never replaced -- the rule this file states at C21 and again at C25. The trap live at this
-# point carries $T12, $T13 and $T25; a trap that named only $T44 would silently drop all three and leak
-# them on every run, which is exactly what it did until this row's own review measured five surviving
-# directories. And the sandbox is guarded: `mktemp -d` can fail, and `rm -rf "$T44"` with $T44 empty is
-# a delete against the filesystem root.
-if ! T44="$(mktemp -d 2>/dev/null)" || [ ! -d "$T44" ]; then
+# The sandbox is guarded: creating one can fail, and a teardown against an empty path is a delete
+# against the filesystem root. `mkbox` answers nothing and a non-zero status when it cannot, and the
+# guard below is what turns that into failed rows rather than a run operating on "/".
+if ! T44="$(mkbox)" || [ ! -d "$T44" ]; then
   T44=""
   bad "the purity sweep ignores what git ignores (no sandbox: mktemp -d failed)"
   bad "the purity sweep still catches a real leak in a file that ships (no sandbox: mktemp -d failed)"
   bad "the sweep refuses to answer when it cannot read, instead of answering clean (no sandbox: mktemp -d failed)"
 else
-trap 'rm -rf "$T12" "$T13" "$T25" "$T44"' EXIT
 mkdir -p "$T44/global/hooks/__pycache__"
 printf '__pycache__/\n' > "$T44/.gitignore"
 # The file that ships, carrying the leak the sweep must still catch.
@@ -108,7 +105,7 @@ printf '%s' "$CMP44" | grep -qE 'verdict about that reach|never about the whole 
 # repository at all -- and the second is the one that turns a missing `.git` into a clean purity verdict.
 r44d=""
 purity_sweep "$T44" nosuchpath >/dev/null 2>&1 && r44d="$r44d empty-selection-read-as-clean"
-if ! NR44="$(mktemp -d 2>/dev/null)" || [ ! -d "$NR44" ]; then
+if ! NR44="$(mkbox)" || [ ! -d "$NR44" ]; then
   r44d="$r44d no-sandbox-for-the-non-repository-leg"
 else
   mkdir -p "$NR44/global"; printf 'x\n' > "$NR44/global/f.txt"

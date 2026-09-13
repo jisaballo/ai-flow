@@ -4,6 +4,9 @@
 # conformance manifest rather than left to be reconstructed from this diff.
 
 echo "== C33: the trunk is defended from what git reports, not from what a command says =="
+# A sandbox of this block's own. It used to read the one C11 opens, which is why this section could
+# not be asked for on its own: under a filter C11 never runs and every path below collapses to "/".
+T11="$(mkbox)" || fatal 'C33 fixtures'
 # The whole section drives REAL operations against a real bare remote rather than feeding strings to a
 # matcher. That is the point and not a stylistic preference: a shape stops being a spelling somebody had
 # to think of and becomes an operation whose effect git computes, so the coverage no longer depends on

@@ -41,7 +41,6 @@ echo ""
 echo "== C92: changing the mechanism or a context file's structure is a declared act =="
 
 T92="$(mkbox)" || fatal 'C92 fixtures'
-trap 'chmod -R u+rwX "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55" "$T69" "$T70" "$T92" 2>/dev/null; rm -rf "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55" "$T69" "$T70" "$T92"' EXIT   # extended, never replaced
 
 GUARD92="$HK/context-structure-guard.py"
 REG92="$HK/settings.hooks.json"

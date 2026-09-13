@@ -17,7 +17,6 @@
 # and kept away from the prover.
 echo "== C58: a fifth axis judges the design itself, and the header keeps every reviewer blunt =="
 
-VW83="global/workflows/verify-review.js"
 SKV83="global/skills/verify/SKILL.md"
 VP83="global/protocols/verify.md"
 LC83="global/protocols/lifecycle.md"
@@ -34,7 +33,6 @@ done
 
 if [ "$c58_readable" = "1" ]; then
 
-  DIM83="$(awk '/^const DIMENSIONS = \[/{f=1;next} /^\]$/{f=0} f' "$VW83")"
   CTX83="$(awk '/^const ctx = \[/{f=1;next} /^\]\.join/{f=0} f' "$VW83")"
   FS83="$(awk '/^const FINDINGS_SCHEMA = \{/{f=1;next} /^\}$/{f=0} f' "$VW83")"
   STRUCT83="$(awk "/^[[:space:]]+key: 'structure'/{f=1} f && /^  \},/{exit} f" "$VW83")"
@@ -50,7 +48,6 @@ if [ "$c58_readable" = "1" ]; then
   # exact shape eight files carrying one count have already produced once.
   a1_83=""
   [ -n "$DIM83" ] || a1_83="$a1_83 [the DIMENSIONS array could not be extracted]"
-  k83="$(printf '%s\n' "$DIM83" | grep -cE "^[[:space:]]+key: '" | tr -d ' ')"
   [ "$k83" = "5" ] || a1_83="$a1_83 [the review defines $k83 auditor dimensions, not five]"
   [ "$(n83 "key: 'structure'" "$DIM83")" -ge 1 ] || a1_83="$a1_83 [no dimension is keyed structure]"
   [ "$(n83 'Simplicity & Structure' "$DIM83")" -ge 1 ] \
@@ -117,15 +114,6 @@ if [ "$c58_readable" = "1" ]; then
   # `simplicity` is the discriminator for the other six rather than `structure`: they already say
   # "structure" about directories and about prose, and none says "simplicity".
   a4_83=""
-  shapes83() { printf '%s auditors|%s auditors|%s-auditor|%s-auditor|%s parallel auditors|%s parallel auditors|%s review agents|%s review agents|%s review auditors|%s review auditors|%s lists|%s lists' \
-    "$1" "$2" "$1" "$2" "$1" "$2" "$1" "$2" "$1" "$2" "$1" "$2"; }
-  word83() { case "$1" in 3) printf three;; 4) printf four;; 5) printf five;; 6) printf six;; 7) printf seven;; *) printf %s "$1";; esac; }
-  now83="$(shapes83 "$k83" "$(word83 "$k83")")"
-  stale83=""
-  for c83 in 3 4 5 6 7; do
-    [ "$c83" = "$k83" ] && continue
-    stale83="${stale83:+$stale83|}$(shapes83 "$c83" "$(word83 "$c83")")"
-  done
   # ---- The homes sweep: one marker per concept, and the corpus every marker runs over ---------------
   # This machinery sits here, inside the auditor-count check, for one reason: the auditor marker IS the
   # count shapes built just above, and a second copy of those shapes is precisely the drift the card's
@@ -139,11 +127,8 @@ if [ "$c58_readable" = "1" ]; then
   # Every file the suite is made of, repo-relative. Excluding ONE of its seventy-six would not be
   # excluding the suite: the harness names every concept it audits, so a sweep that reads any part of it
   # reports that part as a home of all of them.
-  SELFEX89="$(for f89 in $SUITE_SRC; do printf '%s\n' "${f89#$ROOT/}"; done)"
   # The axis names, derived from the same array k83 above is counted from — one source for the count and
   # for the names, so a sixth axis reaches every marker that needs it without an edit anywhere here.
-  ax89="$(printf '%s\n' "$DIM83" | sed -nE "s/^[[:space:]]+key: '([a-z]+)'.*/\\1/p" | paste -sd'|' -)"
-  CORPUS89="$(cd "$ROOT" && git ls-files 2>/dev/null | grep -vxF -f <(printf '%s\n' "$SELFEX89"))"
 
 
 

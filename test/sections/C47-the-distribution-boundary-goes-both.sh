@@ -4,7 +4,6 @@ echo "== C47: the distribution boundary goes both ways, and the manual it never 
 # fixture: a row that only reads the source would prove the text exists and never that anything reaches it.
 
 T47="$(mkbox)" || fatal 'C47: the distribution boundary fixtures'
-trap 'chmod -R u+rwX "$T45" "$T45R" "$T47" 2>/dev/null; rm -rf "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47"' EXIT   # extended, never replaced
 
 # --- the update withdraws -----------------------------------------------------
 # GIVEN an engine installed into a sandbox home,

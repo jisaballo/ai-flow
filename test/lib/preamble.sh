@@ -111,6 +111,10 @@ mkbox() {  # a sandbox on stdout, or nothing and a non-zero status
   local d
   d="$(mktemp -d 2>/dev/null)" || d=""
   [ -n "$d" ] && [ -d "$d" ] || return 1
+  # Registered so the one EXIT trap can remove it. A FILE and not a variable: this function is called
+  # through command substitution, so its body runs in a subshell and any variable it set would die with
+  # that subshell -- the assignment would look right and register nothing.
+  printf '%s\n' "$d" >> "$BOXREG"
   printf '%s' "$d"
 }
 fatal() {  # $1 = what cannot run without a sandbox
@@ -139,12 +143,34 @@ fatal() {  # $1 = what cannot run without a sandbox
 REAL_XDG="${XDG_CONFIG_HOME-}"
 REAL_GCG="${GIT_CONFIG_GLOBAL-}"
 
+# Every sandbox the run creates, and the ONE trap that removes them.
+#
+# A trap is global state: `trap ... EXIT` REPLACES whatever was installed before it, it does not add to
+# it. A suite whose blocks each installed their own kept only the last, and the sixteen before it leaked
+# on every run -- which is why the teardown used to be one chain extended by every block that needed a
+# sandbox, each block naming its neighbours' paths. That chain is the reason a filtered run could not
+# work: under a filter the neighbour never runs, its variable is never set, and the trap dies on it.
+#
+# So the trap lives here, once, and reads a registry instead of a list of names. No section writes a trap
+# and no section needs to know another exists. `chmod` first because a handful of fixtures are made
+# deliberately unwritable, and rm would otherwise fail on exactly the sandboxes that most need removing.
+BOXREG="$(mktemp 2>/dev/null)" || { echo "cannot create the sandbox registry (mktemp failed)" >&2; exit 1; }
+cleanup_boxes() {
+  local d
+  while IFS= read -r d; do
+    [ -n "$d" ] || continue
+    chmod -R u+rwX "$d" 2>/dev/null
+    rm -rf "$d"
+  done < "$BOXREG"
+  rm -f "$BOXREG"
+}
+trap cleanup_boxes EXIT
+
 GITSANDBOX="$(mkbox)" || fatal 'the git sandbox for the whole run'
 mkdir -p "$GITSANDBOX/git"
 : > "$GITSANDBOX/gitconfig"
 export GIT_CONFIG_GLOBAL="$GITSANDBOX/gitconfig"
 export XDG_CONFIG_HOME="$GITSANDBOX"
-trap 'rm -rf "$GITSANDBOX"' EXIT
 
 PY="template/.ai-flow/project.yml"
 
@@ -530,6 +556,32 @@ sweep89() {
     printf '%s\n' "$CORPUS89" | tr '\n' '\0' | (cd "$ROOT" && xargs -0 grep -lIiE -- "$2" 2>/dev/null) | sort -u
   fi
 }
+
+
+# --- what the homes marker runs on -------------------------------------------------------------------
+# `marker89` below closes over every name in this block. They used to be derived inside the section that
+# first needed them, and inside a readable-files branch at that, so a second section calling the marker
+# got an unbound variable or a silently empty sweep depending on where it ran. A helper's inputs belong
+# with the helper: that is the rule this whole restructuring is an instance of.
+#
+# Tolerant by construction. An unreadable workflow file leaves these empty rather than stopping the run,
+# because whether the file is readable is a VERDICT some section owns, not a fact the machinery may
+# assume. An empty extraction makes the rows that depend on it fail, which is what it is for.
+VW83="global/workflows/verify-review.js"
+DIM83="$(awk '/^const DIMENSIONS = \[/{f=1;next} /^\]$/{f=0} f' "$VW83")"
+k83="$(printf '%s\n' "$DIM83" | grep -cE "^[[:space:]]+key: '" | tr -d ' ')"
+shapes83() { printf '%s auditors|%s auditors|%s-auditor|%s-auditor|%s parallel auditors|%s parallel auditors|%s review agents|%s review agents|%s review auditors|%s review auditors|%s lists|%s lists' \
+  "$1" "$2" "$1" "$2" "$1" "$2" "$1" "$2" "$1" "$2" "$1" "$2"; }
+word83() { case "$1" in 3) printf three;; 4) printf four;; 5) printf five;; 6) printf six;; 7) printf seven;; *) printf %s "$1";; esac; }
+now83="$(shapes83 "$k83" "$(word83 "$k83")")"
+stale83=""
+for c83 in 3 4 5 6 7; do
+  [ "$c83" = "$k83" ] && continue
+  stale83="${stale83:+$stale83|}$(shapes83 "$c83" "$(word83 "$c83")")"
+done
+SELFEX89="$(for f89 in $SUITE_SRC; do printf '%s\n' "${f89#$ROOT/}"; done)"
+ax89="$(printf '%s\n' "$DIM83" | sed -nE "s/^[[:space:]]+key: '([a-z]+)'.*/\\1/p" | paste -sd'|' -)"
+CORPUS89="$(cd "$ROOT" && git ls-files 2>/dev/null | grep -vxF -f <(printf '%s\n' "$SELFEX89"))"
 
 # One marker per concept: the rule that recognises a HOME of it, as against a file that merely mentions
 # it. The difference is not cosmetic and two of the six prove it — `**Audited**` unanchored finds three

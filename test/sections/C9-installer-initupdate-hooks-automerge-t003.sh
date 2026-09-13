@@ -5,7 +5,6 @@ grep -A3 '^PROTOCOLS=' install.sh | grep -q discover && ok "PROTOCOLS includes d
 grep -q "python3" install.sh && ok "install.sh uses python3 (hook merge)" || bad "no python3 hook merge"
 # --- functional (sandboxed HOME + temp target; NEVER touches the real ~/.claude) ---
 TH="$(mkbox)" || fatal 'C9 fixtures'; TT="$(mkbox)" || fatal 'C9 fixtures'; TW="$(mkbox)" || fatal 'C9 fixtures'
-trap 'rm -rf "$TH" "$TT" "$TW"' EXIT
 mkdir -p "$TT/.ai-flow/protocols"
 echo "SENTINEL-KEEP-ME" > "$TT/.ai-flow/BACKLOG.md"
 ( cd "$TW" && HOME="$TH" bash "$ROOT/install.sh" update "$TT" </dev/null >/dev/null 2>&1 ) || true
@@ -24,5 +23,4 @@ if [ -f "$SJ" ] && command -v python3 >/dev/null 2>&1; then
 else
   bad "update did not create settings.json (expected hook auto-merge)"
 fi
-trap - EXIT
 rm -rf "$TH" "$TT" "$TW"

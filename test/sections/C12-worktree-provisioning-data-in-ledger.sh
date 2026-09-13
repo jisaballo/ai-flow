@@ -4,7 +4,6 @@ echo "== C12: worktree provisioning — data in, ledger out =="
 # this repo dogfoods its own mechanism, and the parity check keeps the two from drifting apart.
 WTI="$ROOT/template/.worktreeinclude"
 T12="$(mkbox)" || fatal 'C12 fixtures'
-trap 'rm -rf "$T12"' EXIT
 
 
 

@@ -1,4 +1,7 @@
 echo "== C31: the Bash rail judges the fields it can read =="
+# A sandbox of this block's own. It used to read the one C11 opens, which is why this section could
+# not be asked for on its own: under a filter C11 never runs and every path below collapses to "/".
+T11="$(mkbox)" || fatal 'C31 fixtures'
 # The first behavioural coverage this rail has ever had. Until now the only assertions naming it counted
 # its entry in settings.json, which is installer structure — so there was no positive control anywhere in
 # this file to borrow, and A4 builds one here, in the same fixture as the payload checks. That control is

@@ -25,7 +25,7 @@ echo "== C38: the ledger guardian judges the narrative a ledger accumulates =="
 HK38="global/hooks/check-state-size.sh"
 BLG38="global/protocols/backlog.md"
 
-if ! T38="$(mktemp -d 2>/dev/null)" || [ ! -d "$T38" ]; then
+if ! T38="$(mkbox)" || [ ! -d "$T38" ]; then
   bad "a closed-epic narrative in the notes blocks the turn close (no sandbox: mktemp -d failed)"
   bad "a roster with nothing but its own notes passes (no sandbox: mktemp -d failed)"
   bad "the completed-quick-task table is never counted as a violation (no sandbox: mktemp -d failed)"

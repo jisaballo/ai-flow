@@ -2,14 +2,9 @@ echo "== C39: the drift guard speaks once per request, and its detached-workspac
 # Conformance rows for the engine drift guard's continuation handling and its front-variant message.
 # The guard is exercised, never grepped: every verdict below is this hook's own exit code or its own
 # stderr, produced over a fixture where the installed engine genuinely matches no checkout.
-T39="$(mktemp -d 2>/dev/null)"
-if [ -z "$T39" ] || [ ! -d "$T39" ]; then
+if ! T39="$(mkbox)" || [ ! -d "$T39" ]; then
   bad "C39 cannot run: mktemp -d failed"
 else
-  # A trap is global state and setting one REPLACES what an earlier section installed — the rule this
-  # file states at C19 and follows at C25. Carry the live paths, and hand the trap back below rather
-  # than clearing it: this is the last block, so a cleared trap leaks every earlier sandbox on every run.
-  trap 'rm -rf "$T12" "$T13" "$T25" "$T39"' EXIT
   # A clone with an engine, plus a linked worktree of it — the shape that makes the guard's SRC2
   # branch reachable, which is the only branch where the front remedy is ever printed.
   E39="$T39/engine"; mkdir -p "$E39/global/hooks"
@@ -147,5 +142,4 @@ else
                 || bad "the ordinary remedy is still offered, and still first:$o39"
 
   rm -rf "$T39"
-  trap 'rm -rf "$T12" "$T13" "$T25"' EXIT   # handed back to the section that owned it
 fi

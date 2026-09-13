@@ -193,7 +193,7 @@ if [ ! -x "$SEED25" ]; then
   bad "the seeder leaves only the papers of the task it seeds (no executable $SEED25)"
   bad "the seeder reads the project data from the primary, not from the checkout it runs in (no executable $SEED25)"
   bad "the seeder refuses an unusable pattern file and copies nothing (no executable $SEED25)"
-elif ! T25="$(mktemp -d 2>/dev/null)" || [ ! -d "$T25" ]; then
+elif ! T25="$(mkbox)" || [ ! -d "$T25" ]; then
   # A sandbox that silently failed to exist degenerates every verdict below into "nothing went wrong".
   bad "the seeder leaves the ledger behind from a project that ignores its own data directory (no sandbox: mktemp -d failed)"
   bad "the seeder leaves only the papers of the task it seeds (no sandbox: mktemp -d failed)"
@@ -708,7 +708,7 @@ fi
 # Executed, not grepped: the drift guard maps an engine path to its installed location by prefix and
 # returns "" for anything it does not recognise — a silent skip. What proves the mapping exists is the
 # guard REPORTING the installed copy missing, which it cannot do for a path it skips.
-if ! T25D="$(mktemp -d 2>/dev/null)" || [ ! -d "$T25D" ]; then
+if ! T25D="$(mkbox)" || [ ! -d "$T25D" ]; then
   bad "the seeder is distributed by the installer and mapped by the drift guard (no sandbox: mktemp -d failed)"
 else
   i25=""

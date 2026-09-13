@@ -7,7 +7,6 @@ echo "== C69: the brake speaks once per oversized step, counts what was added, a
 # green today against a mechanism that does not exist.
 
 T69="$(mkbox)" || fatal 'C69 fixtures'
-trap 'chmod -R u+rwX "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55" "$T69" 2>/dev/null; rm -rf "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55" "$T69"' EXIT   # extended, never replaced
 
 # The note's own event, with stderr kept apart: at exit 0 anything on stderr is discarded, so a row that
 # merged the streams could not tell a delivered note from a hook complaining.

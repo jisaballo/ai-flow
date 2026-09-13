@@ -8,7 +8,6 @@ echo "== C70: two remembered rules become a refusal at the act and a report at t
 # literal marker added here would be reported against this task's own diff.
 
 T70="$(mkbox)" || fatal 'C70 fixtures'
-trap 'chmod -R u+rwX "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55" "$T69" "$T70" 2>/dev/null; rm -rf "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55" "$T69" "$T70"' EXIT   # extended, never replaced
 
 GUARD70="$HK/artifact-write-guard.py"
 VFY70="$ROOT/global/protocols/verify.md"

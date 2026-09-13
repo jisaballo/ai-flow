@@ -1,5 +1,8 @@
 echo ""
 echo "== C65: every non-blocking note reaches the model, and the close reads the numbers it is given =="
+# A sandbox of this block's own. It used to read the one C11 opens, which is why this section could
+# not be asked for on its own: under a filter C11 never runs and every path below collapses to "/".
+T11="$(mkbox)" || fatal 'C65 fixtures'
 # Conformance: three guardrail notes are printed for the operator and never enter the model's context, so
 # the actor the note is addressed to cannot act on it; and the phase close, by its own written rule,
 # therefore states no recommendation about stopping. Generated in the Conform phase from understand.md's

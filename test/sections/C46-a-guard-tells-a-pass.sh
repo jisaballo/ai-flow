@@ -169,7 +169,10 @@ fi
 # row standing for it: deleting a caller's `|| fatal` reinstated the whole defect with the row green.
 # What is policed now is the entry point and the two properties that make it work.
 BOX46="$(grep -o -E '\$\(mkbox\)' $SUITE_SRC 2>/dev/null | wc -l | tr -d ' ')"
-GRD46="$(grep -o -E '\$\(mkbox\)" \|\| fatal ' $SUITE_SRC 2>/dev/null | wc -l | tr -d ' ')"
+# Two guard shapes, both deliberate and both documented in the preamble: `|| fatal` stops the whole run,
+# and `if ! X="$(mkbox)" || [ ! -d "$X" ]` lets a block report its own rows failed and carry on. Counting
+# only the first reads every block of the second kind as unguarded, which is the opposite of the truth.
+GRD46="$(grep -o -E '\$\(mkbox\)" (\|\| fatal |\|\| \[ ! -d )' $SUITE_SRC 2>/dev/null | wc -l | tr -d ' ')"
 RAW46="$(grep -o -E '\$\(mktemp -d' $SUITE_SRC 2>/dev/null | wc -l | tr -d ' ')"
 RGD46="$(grep -o -E '\$\(mktemp -d 2>/dev/null' $SUITE_SRC 2>/dev/null | wc -l | tr -d ' ')"
 if [ "$BOX46" -eq 0 ]; then

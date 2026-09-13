@@ -3,7 +3,6 @@ echo "== C25: a guard tells a failed probe from a clean answer =="
 # assertion below states the fact it establishes; a guard whose probe cannot answer must fail naming
 # the probe, because in a report a clean verdict and an unanswered question read identically.
 T25="$(mkbox)" || fatal 'C25 fixtures'
-trap 'rm -rf "$T12" "$T13" "$T25"' EXIT   # extended, never replaced — see C21's note on the leak
 
 # --- the probe answers three ways ----------------------------------------
 # 0 = the pattern file selects this path, 1 = it does not, 2 = the probe could not answer.

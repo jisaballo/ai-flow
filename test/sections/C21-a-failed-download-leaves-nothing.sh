@@ -8,9 +8,6 @@ if ! command -v curl >/dev/null 2>&1; then
 else
 TH21="$(mkbox)" || fatal 'C21 fixtures'; TH21B="$(mkbox)" || fatal 'C21 fixtures'; TH21C="$(mkbox)" || fatal 'C21 fixtures'
 TH21D="$(mkbox)" || fatal 'C21 fixtures'; TH21E="$(mkbox)" || fatal 'C21 fixtures'; TW21="$(mkbox)" || fatal 'C21 fixtures'
-# The trap carries the sandboxes still live from earlier blocks: replacing it instead of extending it
-# leaked two sandboxes per run once already, so it is extended here and handed back below, not cleared.
-trap 'rm -rf "$TH21" "$TH21B" "$TH21C" "$TH21D" "$TH21E" "$TW21" "$T12" "$T13"' EXIT
 PROTO21="ai-flow/protocols/understand.md"
 
 # Run A — a source that cannot be read, and a destination that does not exist yet.
@@ -137,8 +134,7 @@ else
 fi
 
 rm -rf "$TH21" "$TH21B" "$TH21C" "$TH21D" "$TH21E" "$TW21"
-trap 'rm -rf "$T12" "$T13"' EXIT   # handed back to the section that owned it
-{ [ ! -d "$TH21" ] && [ ! -d "$TW21" ] && [ -d "$T12" ]; } \
-  && ok "the sandbox is torn down and the live cleanup trap survives this block" \
-  || bad "the sandbox is torn down and the live cleanup trap survives this block"
+{ [ ! -d "$TH21" ] && [ ! -d "$TW21" ]; } \
+  && ok "the sandbox is torn down" \
+  || bad "the sandbox is torn down"
 fi

@@ -463,7 +463,7 @@ else
   done <<< "$SELFEX89"
   # Anchored to the ASSIGNMENT, because the unanchored form matched this very line: a leg whose pattern
   # occurs inside its own text is satisfied by itself and can never fail, whatever the corpus does.
-  grep -qE '^  CORPUS89=.*grep -vxF -f .*\$SELFEX89' $SUITE_SRC \
+  grep -qE '^CORPUS89=.*grep -vxF -f .*\$SELFEX89' $SUITE_SRC \
     || a11_89="$a11_89 [the corpus does not exclude the suite through a named constant]"
   [ -n "$KEYS89" ] || a11_89="$a11_89 [no marker key was extracted, so no marker was swept]"
   while IFS= read -r k89; do

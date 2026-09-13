@@ -89,15 +89,14 @@ T40BLK="$(awk '/^### `artifacts\/T-XXX\/state.md`/{f=1;next} f&&index($0,"**The 
 # UNDERSTAND arm is not decoration — a fixture that only proves "exit 0" is satisfied by a hook that
 # never blocks anything, so both verdicts are taken from the same fixture. A missing interpreter is a
 # skip, the way every sibling section treats it: reporting it as a failure blames the protocol for the
-# machine. The sandbox is guarded and registered on the trap, the convention this file states and keeps.
+# machine. The sandbox comes from `mkbox`, which is what registers it for teardown.
 if [ -z "$POS40" ]; then
   bad "the position the ceremony writes leaves the read-only rail down [no position to derive from]"
 elif [ "$PY3" != 1 ]; then
   echo "  [skip] the read-only rail fixture (python3 unavailable)"
-elif ! T40="$(mktemp -d 2>/dev/null)" || [ ! -d "$T40" ]; then
+elif ! T40="$(mkbox)" || [ ! -d "$T40" ]; then
   bad "the position the ceremony writes leaves the read-only rail down (no sandbox: mktemp -d failed)"
 else
-  trap 'rm -rf "$T12" "$T13" "$T25" "$T40"' EXIT
   P40="$T40/p"; mkproj "$P40" main
   mkdir -p "$P40/.ai-flow/artifacts/opened"
   a3_40=""
@@ -116,5 +115,4 @@ else
   [ -z "$a3_40" ] && ok "the position the ceremony writes leaves the read-only rail down" \
                   || bad "the position the ceremony writes leaves the read-only rail down:$a3_40"
   rm -rf "$T40"
-  trap 'rm -rf "$T12" "$T13" "$T25"' EXIT   # handed back to the section that owned it
 fi
