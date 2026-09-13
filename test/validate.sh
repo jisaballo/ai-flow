@@ -8,141 +8,7 @@ set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-PASS=0
-FAIL=0
-ok()   { echo "  [ok]   $1"; PASS=$((PASS+1)); }
-bad()  { echo "  [FAIL] $1"; FAIL=$((FAIL+1)); }
-
-# The number of the numbered item whose LEAD LINE performs an act. $1 = an ERE matched against the
-# lowercased lead line; $2 = the section's text.
-#
-# A step read by its literal number is silently wrong after a renumber: it extracts the neighbour that
-# now sits there, the neighbour answers the same legs, and the row goes on claiming it judged the step
-# its name still spells. That has happened twice in this file, and the second time one leg passed on the
-# wrong step while its twin went red -- which is luck, not a mechanism.
-#
-# When no item performs the act it prints NOTHING, names the act on stderr and returns 1. Never a default
-# index: a `:-0` fallback turns "the act is gone" into "the act is item zero", and item zero is the
-# section's preamble, which answers a surprising number of prose legs.
-step_no() {
-  local n
-  n="$(printf '%s\n' "$2" | awk -v p="$1" '/^[0-9]+\. /{h=tolower($0); if (h ~ p) {print $0+0; exit}}')"
-  if [ -z "$n" ]; then
-    echo "  step_no: no numbered item performs the act: $1" >&2
-    return 1
-  fi
-  printf '%s' "$n"
-}
-
-# How the close states the destruction of the task's papers, in every wording the protocol uses for it.
-# ONE home, because three blocks match on it and a fourth phrasing added to two of them silently narrows
-# the third: an absence leg is only as wide as the ways the claim can be written, and a leg answered by
-# none of them reports "the act is gone" when the act was merely reworded.
-#
-# NO BACKSLASH belongs in this pattern. It is handed to awk over `-v`, where an escape the language does
-# not define is undefined behaviour: written with `\*`, it reached the matcher as a bare `*`, the whole
-# alternation stopped matching an item that had not moved, and four green rows went red with nothing but
-# the act-not-found line to say why.
-DEL_ACT='delete[^a-z]*artifacts/t-xxx|papers are deleted|deletes the task.s papers'
-
-# Does one sentence of $1 carry every pattern given after it? Prints 1, 0, or E.
-#
-# The form a proximity claim about prose takes at the legs that were moved to it. The `a[^.]{0,140}b`
-# bridge is still written at other sites in this file and this helper asserts nothing about those. Two
-# reasons it exists: a bounded repeat over a negated class compiles to an automaton the stricter of the
-# two search engines a developer may have refuses outright, and a refusal read as "nothing found" reports
-# a rule these documents still carry as one they lost; and a character count was only ever an
-# approximation of "in one sentence" that a rewrite ten characters longer breaks.
-#
-# The boundary is the period and only the period: the region's own line breaks are flattened first, so no
-# leg can go red because unchanged words were re-wrapped. A period inside a filename splits a sentence
-# here, exactly as it did for the bridge.
-#
-# Three things it gives up against the bridge, and the third has already produced a hollow leg in this
-# file: the order of the parts; the ceiling on how far apart they may sit; and any ability to tell one
-# clause from another inside a long sentence — where two cases are joined by a semicolon, the wrong case's
-# clause answers the leg. So cut the region to the clause, bind a part to the mechanism that distinguishes
-# that case, and size every leg by splitting its own clause and watching it go red.
-#
-# `E` is the answer that is neither 1 nor 0: no patterns to test, or a pattern the engine refused. It
-# fails the callers' `= 1` test so the leg reports, and the reason goes to stderr — a refusal counted as
-# an absence is the exact defect this helper was written to remove, and reproducing it one level down
-# would be worse than the bridge.
-insent() {  # $1 = region, $2… = patterns; 1 when one sentence of the region carries all of them
-  local region="$1"; shift
-  [ "$#" -ge 1 ] || { echo 'insent: called with no patterns' >&2; printf 'E'; return; }
-  [ -n "$region" ] || { printf '0'; return; }
-  local sent p all rc
-  while IFS= read -r sent; do
-    all=1
-    for p in "$@"; do
-      printf '%s' "$sent" | grep -qiE "$p"; rc=$?
-      case "$rc" in
-        0) ;;
-        1) all=0; break ;;
-        *) echo "insent: the search engine refused a pattern (status $rc): $p" >&2; printf 'E'; return ;;
-      esac
-    done
-    [ "$all" = 1 ] && { printf '1'; return; }
-  done <<SENTENCES
-$(printf '%s' "$region" | tr '\n' ' ' | tr '.' '\n')
-SENTENCES
-  printf '0'
-}
-
-# A usable sandbox, or a named cause and a stopped run. `mktemp -d` failing is a broken environment, not
-# a failing test: the substitution yields an empty string, every fixture path under it collapses to the
-# filesystem root, and the section then scores whatever the greps make of files that were never written.
-#
-# Two things about the shape are load-bearing. The diagnostic goes to **stderr**, because this is called
-# inside a command substitution and anything on stdout becomes the sandbox path. And the **caller**
-# performs the exit, because a command substitution runs in a subshell: an `exit` here would end only
-# that subshell and leave the caller running with the empty path this exists to prevent.
-#
-# The sections guarded when they were written wrap their whole body in an `else` instead. That shape was
-# not retrofitted here: doing so re-indents 1,532 lines across nine sections, and a whitespace diff that
-# size buries whatever change it arrives with.
-mkbox() {  # a sandbox on stdout, or nothing and a non-zero status
-  local d
-  d="$(mktemp -d 2>/dev/null)" || d=""
-  [ -n "$d" ] && [ -d "$d" ] || return 1
-  printf '%s' "$d"
-}
-fatal() {  # $1 = what cannot run without a sandbox
-  # Called from the CALLER, never from inside the substitution, and that placement is the whole point:
-  # here it runs in the parent shell, so `bad` really counts and the `Result:` line below is the run's
-  # own tail rather than a second copy. Reporting from inside `mkbox` would increment a counter in a
-  # subshell that is about to vanish, and would put the message on stdout, where it becomes the path.
-  bad "$1 (no sandbox: mktemp -d failed)"
-  echo ""
-  echo "Result: $PASS passed, $FAIL failed"
-  echo "  run stopped here: a section cannot build its fixtures, so every verdict after it would be about nothing"
-  exit 1
-}
-
-# Git's global configuration is sandboxed for the whole run, and this is a guard rather than tidiness.
-# The installer this suite exercises writes `core.hooksPath` with `git config --global`; a sandbox that
-# only redirects HOME does not contain that, because git writes its global config to
-# $XDG_CONFIG_HOME/git/config when that file exists. On a developer who sets XDG_CONFIG_HOME, running
-# this suite rewrote their real global hook path. Both variables are set here, at the top, so no call
-# site can be added later that escapes it.
-# Captured before the sandbox below replaces them. One row has to ask git what a developer's REAL ignore
-# rules hide, because that set — a personal global ignore, .git/info/exclude — is precisely what npm cannot
-# see and therefore ships. Asked inside the sandbox the question is answered by an empty configuration, and
-# the row comes back clean over a package that leaks. Read-only: the sandbox exists to stop this suite
-# WRITING a developer's git configuration, and nothing here writes.
-REAL_XDG="${XDG_CONFIG_HOME-}"
-REAL_GCG="${GIT_CONFIG_GLOBAL-}"
-
-GITSANDBOX="$(mkbox)" || fatal 'the git sandbox for the whole run'
-mkdir -p "$GITSANDBOX/git"
-: > "$GITSANDBOX/gitconfig"
-export GIT_CONFIG_GLOBAL="$GITSANDBOX/gitconfig"
-export XDG_CONFIG_HOME="$GITSANDBOX"
-trap 'rm -rf "$GITSANDBOX"' EXIT
-
-PY="template/.ai-flow/project.yml"
-
+. "$ROOT/test/lib/preamble.sh"
 echo "== C1: template project.yml exists, valid, required keys =="
 if [ -f "$PY" ]; then
   ok "project.yml exists"
@@ -222,51 +88,10 @@ trap - EXIT
 rm -rf "$TH" "$TT" "$TW"
 
 echo "== C11: worktree-aware hooks =="
-HK="$ROOT/global/hooks"
 T11="$(mkbox)" || fatal 'C11 fixtures'
 trap 'rm -rf "$T11"' EXIT
-GIT="git -c user.email=t@t.t -c user.name=t -c commit.gpgsign=false"
-PY3=1
-command -v python3 >/dev/null 2>&1 || PY3=0
 
-mkproj() {  # $1 = dir, $2 = initial branch name -> repo with one commit
-  mkdir -p "$1"
-  $GIT init -q "$1"
-  $GIT -C "$1" symbolic-ref HEAD "refs/heads/$2"
-  printf 'x\n' > "$1/app.txt"
-  $GIT -C "$1" add -A >/dev/null 2>&1
-  $GIT -C "$1" commit -q -m init
-}
-nlines() { seq 1 "$1" | sed 's/^/line /'; }
 
-# The payload shape a PreToolUse hook is actually sent, built in ONE place -- and now actually one: the
-# two named helpers below, `wguard` and `aguard`, delegate here instead of printing a near-copy apiece,
-# which is what the sentence claimed while three spellings of the contract were still in the file. They
-# keep their names because 52 call sites read better for them, and a name that forwards is not a second
-# home. The copies made the payload shape a thing spelled in five places, so a change to the hook
-# contract had five edits and the suite went green on whichever ones were updated.
-# `tool_name` rides every call because a guard's jurisdiction is its own and not the matcher's alone, and
-# the trailing argument carries the tool's REMAINING fields verbatim -- which is what keeps a fixture
-# honest about what production sends rather than trimmed to whatever the guard happens to read.
-hookcall() {  # $1 = guard, $2 = cwd, $3 = file_path, $4 = tool_name, $5 = extra tool_input JSON (leading comma)
-  printf '{"cwd":"%s","tool_name":"%s","tool_input":{"file_path":"%s"%s}}' "$2" "$4" "$3" "${5:-}" \
-    | python3 "$1" 2>&1
-}
-# Its counterpart, and the ONLY other way a fixture may reach a hook: a payload `hookcall` cannot express
-# because the whole subject of the row is a shape production would never send.
-hookraw() {  # $1 = guard, $2 = a whole payload -> output, returns the hook's exit code
-  printf '%s' "$2" | python3 "$1" 2>&1
-}
-# N words, exactly, counted the way `wc -w` counts them: whitespace-separated tokens. `nlines` cannot
-# serve where a word budget is being driven — it emits two words per line, so its 400-line fixture is 800
-# words and sits an order of magnitude under the budget.
-nwords() { seq 1 "$1" | tr '\n' ' '; printf '\n'; }
-wguard() {  # $1 = cwd, $2 = file_path -> prints output, returns hook exit code
-  # The phase rail reads no `tool_name` -- its jurisdiction is the matcher's -- so this used to send a
-  # payload without one. That trimmed the fixture to what the guard happens to read, which is the very
-  # thing `hookcall` exists to prevent: production sends the field whether or not this rail looks at it.
-  hookcall "$HK/understand-write-guard.py" "$1" "$2" Write
-}
 
 # --- the read-only rail ---------------------------------------------------
 if [ "$PY3" = 1 ]; then
@@ -410,29 +235,6 @@ if [ "$PY3" = 1 ]; then
     *) ok "the guard spills no traceback on an unresolvable path" ;;
   esac
 
-  # --- a payload whose fields are not the shape the guard expects ----------
-  # The guard reads three fields and assumed the type of every one: `tool_input`, the `file_path`
-  # inside it, and `cwd`. Each assumption was a traceback with the rail down — a non-blocking exit, so
-  # the write it was meant to judge went through anyway, on every Edit and Write. Exit 0 is the answer
-  # the file already gives everywhere it cannot judge: a field it cannot read is a write it cannot
-  # judge. The helper below exists because the well-formed one above cannot express a malformed payload.
-  wraw() {  # $1 = raw payload -> prints output, returns the hook's exit code
-    printf '%s' "$1" | python3 "$HK/understand-write-guard.py" 2>&1
-  }
-  malformed() {  # $1 = label, $2 = raw payload -> asserts the pair: waved through, and nothing said
-    out="$(wraw "$2")"; rc=$?
-    # Silence, not merely the absence of a crash: a guard that stands aside with a diagnostic is chatter
-    # on every Edit and Write, which is the noise the silent stand-aside was chosen over in the first
-    # place. A traceback is named separately in the failure label so a crash still reads as a crash.
-    if [ "$rc" = 0 ] && [ -z "$out" ]; then
-      ok "$1"
-    else
-      case "$out" in
-        *Traceback*) bad "$1 (exit $rc, traceback)" ;;
-        *)           bad "$1 (exit $rc, said: $out)" ;;
-      esac
-    fi
-  }
 
   PBAD="$T11/pbad"; mkproj "$PBAD" main
   mkdir -p "$PBAD/.ai-flow/artifacts/bad"
@@ -478,12 +280,6 @@ else
   echo "  [skip] read-only rail checks (python3 unavailable)"
 fi
 
-# --- the diff brake ------------------------------------------------------
-# The payload DECLARES `Stop`, where the ceilings live and where a refusal is possible. It used to send
-# `{}` and lean on the hook treating an unplaceable event as the refusing half — the very default that
-# let a refusal reach the prompt event, now removed. A fixture that says which occasion it means is what
-# the split needs from both sides.
-brake() { ( cd "$1" && printf '{"hook_event_name":"Stop"}' | python3 "$HK/diff-size-guard.py" 2>&1 ); }
 
 if [ "$PY3" = 1 ]; then
   P5="$T11/p5"; mkproj "$P5" main
@@ -558,17 +354,6 @@ fi
 # Channels are asserted separately here because the two are the contract: the combined-output helper
 # above cannot tell a note that blocked from one that did not.
 brake_out() { ( cd "$1" && printf '{"hook_event_name":"UserPromptSubmit"}' | python3 "$HK/diff-size-guard.py" 2>"$T11/note-err" ); }
-# A repo whose base commit already holds one large file, on a branch: the shape the note exists for is
-# a small change to a file that was big before the task began, so neither ceiling fires.
-mkbig() {  # $1 = dir, $2 = path of the big file, $3 = its committed line count
-  mkproj "$1" main
-  mkdir -p "$1/.ai-flow"; printf 'Current phase: **EXECUTE**\n' > "$1/.ai-flow/STATE.md"
-  mkdir -p "$(dirname "$1/$2")"
-  nlines "$3" > "$1/$2"
-  $GIT -C "$1" add -A >/dev/null 2>&1
-  $GIT -C "$1" commit -q -m big
-  $GIT -C "$1" checkout -q -b feat
-}
 
 if [ "$PY3" = 1 ]; then
   N1="$T11/n1"; mkbig "$N1" big.py 1050
@@ -917,75 +702,8 @@ WTI="$ROOT/template/.worktreeinclude"
 T12="$(mkbox)" || fatal 'C12 fixtures'
 trap 'rm -rf "$T12"' EXIT
 
-# git stands in for the pattern engine the product uses: same gitignore specification, no package
-# dependency in a harness that is otherwise pure shell and git. Anchoring and negation are git's to
-# resolve — a harness that re-implements either gets a different answer than the product does.
-#
-# THREE answers, never two. check-ignore reports a verdict with 0 (this path is selected) and 1 (it is
-# not), and a failure with anything above. Collapsing the failure into "not selected" makes every
-# verdict built on it vacuous: a git that cannot run then reads as "the ledger stays behind", which is
-# the very answer the guard exists to earn rather than assume.
-#
-# The evaluator must be a repository with NO .gitignore of its own. core.excludesFile is ADDITIVE, so
-# evaluating inside a checkout that already ignores .ai-flow/ reports every path under it as ignored no
-# matter what the pattern file says, and the file becomes untestable. Isolation is the check.
-#
-# The caller establishes that the pattern file exists: a missing one is not a probe failure to git,
-# which reads it as an empty set of patterns and answers "not selected" for everything.
-wti_probe() {  # $1 = evaluator repo, $2 = pattern file, $3 = path -> 0 selected, 1 not, 2 unanswerable
-  # The pattern set is asserted readable and non-empty before anything is concluded from it — the same
-  # law the path list below carries, applied to the other input. git does not report an unreadable or
-  # empty pattern file as a failure: it reads it as an empty set of patterns and answers "not selected"
-  # for every path, so "the ledger stays behind" comes back established from a file nobody read.
-  # Existence is not readability, and neither is content.
-  { [ -r "$2" ] && [ -s "$2" ]; } || return 2
-  ( cd "$1" 2>/dev/null || exit 2
-    $GIT -c core.excludesFile="$2" check-ignore -q --no-index "$3" ) >/dev/null 2>&1
-  case $? in 0) return 0 ;; 1) return 1 ;; *) return 2 ;; esac
-}
 
-# The classification is a function because an assertion can execute a function and cannot execute a
-# shape inlined in a verdict. Grepping the harness for the message a verdict would print proves the
-# message exists, never that any path reaches it — and the arm that counts the probe's third answer is
-# exactly such a path. `want` is which answer the caller expects for these paths: `in` for the project
-# data that must travel, `out` for the ledger that must not.
-wti_classify() {  # $1 = evaluator, $2 = pattern file, $3 = in|out, $4.. = paths
-                  # -> echoes "clean" | "unanswered N" | "wrong N"; diagnostics to stderr
-  local ev="$1" pf="$2" want="$3"; shift 3
-  local wrong=0 un=0 p rc
-  for p in "$@"; do
-    wti_probe "$ev" "$pf" "$p"; rc=$?
-    if [ "$rc" = 2 ]; then
-      un=$((un+1)); echo "         unanswered: $p" >&2
-    elif [ "$want" = in ] && [ "$rc" != 0 ]; then
-      wrong=$((wrong+1)); echo "         not selected: $p" >&2
-    elif [ "$want" = out ] && [ "$rc" = 0 ]; then
-      wrong=$((wrong+1)); echo "         ledger would travel: $p" >&2
-    fi
-  done
-  if   [ "$un" != 0 ];    then printf 'unanswered %s\n' "$un"
-  elif [ "$wrong" != 0 ]; then printf 'wrong %s\n' "$wrong"
-  else printf 'clean\n'; fi
-}
 
-# Does this pattern file select any path git already tracks? Asked of the PATHS, never of the patterns:
-# a gitignore pattern is not a pathspec, and reading it as one silently changes the question. `/x` is a
-# legal anchored pattern and an illegal pathspec, `!x` names nothing at all — both answer empty, and an
-# empty answer read as a clean verdict is how a real mistake passes. Handing the file to git instead
-# also settles negation without a rule of our own: a negation only ever subtracts from the travel set,
-# so it can never be the reason a tracked path is selected.
-#
-# The path list is asserted non-empty before anything is concluded from it — a guard whose extractor
-# returned nothing otherwise passes every check it makes.
-wti_tracked_leak() {  # $1 = evaluator repo, $2 = pattern file -> 0 a tracked path is selected, 1 none, 2 unanswerable
-  local list
-  list="$( $GIT -C "$ROOT" ls-files 2>/dev/null )" || return 2
-  [ -n "$list" ] || return 2
-  printf '%s\n' "$list" \
-    | ( cd "$1" 2>/dev/null || exit 2
-        $GIT -c core.excludesFile="$2" check-ignore -q --no-index --stdin ) >/dev/null 2>&1
-  case $? in 0) return 0 ;; 1) return 1 ;; *) return 2 ;; esac
-}
 
 if [ -r "$WTI" ] && [ -s "$WTI" ]; then
   EV="$T12/eval"; mkdir -p "$EV"; ( cd "$EV" && $GIT init -q . >/dev/null 2>&1 )
@@ -1249,16 +967,6 @@ grep -qi 'branch' global/hooks/README.md                               || sweep=
 [ -z "$sweep" ] && ok "no engine file routes per-task state to the ledger" \
                || bad "no engine file routes per-task state to the ledger (stale:$sweep)"
 
-# One fact with two halves, and each copy judged on both of them: the manual names the task's own
-# sheet, AND it no longer routes step progress to the roster. The shipped copy gets the negative half
-# from the sweep above. The live twin was getting the positive half alone — so a manual that names the
-# new path while still carrying the old line passed, and the copy that governs real sessions is the one
-# no tool can repair: the installer writes it only when absent and the drift guard excludes it as
-# user-owned (global/hooks/drift-check.sh). Half a fact about that file is the half that matters least.
-manstate() {  # $1 = a manual -> 0 when it routes step progress to the task's own sheet and nowhere else
-  grep -q 'artifacts/T-XXX/state.md' "$1" \
-    && ! grep -q 'Update STATE.md with step progress' "$1"
-}
 twin="$HOME/.claude/CLAUDE.md"
 if manstate global/CLAUDE.md; then
   ok "the shipped manual sends step progress to the task sheet"
@@ -1277,17 +985,6 @@ fi
 
 # --- the rail resolves its own task by branch ----------------------------
 if [ "$PY3" = 1 ]; then
-  ledger() {  # $1 = repo, $2 = phase -> the ledger STATE.md of a project that has not migrated
-    mkdir -p "$1/.ai-flow"
-    printf 'Current phase: **%s**\n' "$2" > "$1/.ai-flow/STATE.md"
-  }
-  sheet() {  # $1 = repo, $2 = task dir, $3 = branch line or "-", $4 = phase
-    mkdir -p "$1/.ai-flow/artifacts/$2"
-    { printf '# Task state\n\n'
-      [ "$3" = "-" ] || printf 'branch: %s\n' "$3"
-      printf 'phase: **%s**\n' "$4"
-    } > "$1/.ai-flow/artifacts/$2/state.md"
-  }
 
   # the sheet naming this branch wins over a sibling and over the ledger
   Q1="$T13/q1"; mkproj "$Q1" main
@@ -1481,14 +1178,6 @@ BLG3="global/protocols/backlog.md"
 # start their lines with "## " and must not be read as the end of it.
 CER="$(awk '/^## Opening a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG3")"
 cerline() { printf '%s' "$CER" | grep -niEm1 "$1" | cut -d: -f1; }
-# One numbered step, flattened to a single line. What a step must SAY is a property of the step,
-# not of where its prose happens to wrap: matching per physical line made re-wrapping unchanged
-# text load-bearing, and scoped a fact to the whole section when it belongs to one move.
-cerstep() { printf '%s\n' "$CER" | awk -v s="^$1\\\\. " -v e="^$(($1 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' | tr '\n' ' '; }
-pair() { # step, pattern A, pattern B, label
-  printf '%s' "$(cerstep "$1")" | grep -qiE "$2" && printf '%s' "$(cerstep "$1")" | grep -qiE "$3" \
-    && ok "$4" || bad "$4"
-}
 
 if [ -n "$CER" ]; then
   # the seven moves, present AND in the only order that is safe: nothing is created before the
@@ -1625,9 +1314,6 @@ else
 fi
 
 echo "== C14: the audit judges the branch, not the working tree =="
-VP="global/protocols/verify.md"
-VS="global/skills/verify/SKILL.md"
-VW="global/workflows/verify-review.js"
 BRAKE="global/hooks/diff-size-guard.py"
 
 # The two steps this block reaches into, resolved by CONTENT. Moving a step renumbers every step after
@@ -1647,18 +1333,6 @@ DEF="$(awk '
   /^\*\*The task diff is/ { b=$0; sub(/^\*\*/,"",b); if (index(b,"**")) { print substr(b,1,index(b,"**")-1); exit } f=1; next }
   f { b = b " " $0; if (index(b,"**")) { print substr(b,1,index(b,"**")-1); exit } }
 ' "$VP")"
-# A numbered step, flattened: what a step must say is a property of the step, never of where its prose
-# happens to wrap.
-nstep() { awk -v s="^$2\\\\. " -v e="^$(($2 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' "$1" | tr '\n' ' '; }
-# One bullet inside one step. Two bounds, not one: a fact scoped to a whole step passes on a
-# neighbouring bullet's words, and an extractor anchored on the whole file can be retargeted by an
-# edit anywhere else in it.
-sbullet() { # file, step, pattern
-  awk -v s="^$2\\\\. " -v e="^$(($2 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' "$1" \
-    | awk -v p="$3" 'g && (/^[[:space:]]*[-*][[:space:]]/ || /^[0-9]+\./) {exit} $0 ~ p {g=1} g' | tr '\n' ' '
-}
-# Byte offset of a fixed string: for the facts that are an ORDER, which presence greps cannot see.
-off() { printf '%s' "$1" | grep -obF "$2" | head -1 | cut -d: -f1; }
 
 if [ -n "$DEF" ] \
    && printf '%s' "$DEF" | grep -qiE 'since its base|since the base' \
@@ -1877,9 +1551,6 @@ CLO="$(awk '/^## Closing a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next
 # so a two-word fact split across a line break reads as 'never    before' and every single-space
 # pattern misses it. Re-wrapping unchanged prose must never change a verdict.
 clomove() { printf '%s\n' "$CLO" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
-# The move's own lead line — its identity. Classifying on the lead rather than on the body is what
-# lets the order assertion see a MOVED move: a body pattern matches wherever its words landed.
-clohead() { printf '%s\n' "$CLO" | grep -E "^$1\. " | head -1; }
 mpair() { # move, pattern A, pattern B, label
   printf '%s' "$(clomove "$1")" | grep -qiE "$2" && printf '%s' "$(clomove "$1")" | grep -qiE "$3" \
     && ok "$4" || bad "$4"
@@ -2148,9 +1819,6 @@ PHASE_SKILLS="understand plan execute verify"
 # a section-wide grep over State Files would pass on the neighbouring paragraph that already describes
 # the branch field for the rail alone.
 BLK="$(awk '/^### Resolving the task/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^#+ /){f=0} f' "$BLG5" | tr -s ' ')"
-# One rung of the numbered ladder, flattened: what a rung must say is a property of the rung, never of
-# where its prose happens to wrap, and never of a neighbouring rung's words.
-rung() { printf '%s\n' "$BLK" | awk -v s="^$1\\\\. " -v e="^$(($1 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' | tr '\n' ' '; }
 
 if [ -n "$BLK" ]; then
   ok "the protocol names the ladder a reader follows to find its task"
@@ -2314,37 +1982,12 @@ fi
 
 
 echo "== C17: the manual describes the parallel model it implements =="
-MAN="global/CLAUDE.md"
-MANTWIN="${HOME:-}/.claude/CLAUDE.md"   # guarded: the suite runs under set -u and the twin is optional
 C17_SKIPPED=0
 
-# A section body, bounded by the next heading of any depth: a fact belongs to the section that governs
-# it, and a file-wide grep finds the first line that happens to match anywhere in a 200-line manual.
-msect() { awk -v h="$2" '$0 ~ h {f=1;next} (f && /^#+ /){exit} f' "$1"; }
-# One bullet of that section, from its lead to the next bullet, flattened: what a bullet says is a
-# property of the bullet, never of where its prose wraps or of the neighbouring bullet's words.
-mbul() { msect "$1" "$2" | awk -v s="$3" '/^- /{ if(f) exit; f=($0 ~ s) } f' | tr -s ' \n' '  '; }
 # A table row, by the command it names, inside the section that owns the table — same reason msect and
 # mbul exist: a file-wide row grep retargets itself the day any earlier table happens to name the command.
 mrow() { msect "$1" "$3" | grep -m1 -E "^\|[^|]*$2[^|]*\|" | tr -s ' '; }
 
-# One fact, checked identically in both copies. The live twin carries the user's own language and
-# sections, so every fact below is matched by what it says and never by the text around it. The remedy
-# names the hand-merge because nothing distributes this file: the installer writes it only when absent
-# and the drift guard excludes it as user-owned (global/hooks/drift-check.sh).
-manfact() {
-  local fn="$1" what="$2"
-  "$fn" "$MAN" && ok "$what" || bad "$what"
-  # Each copy is judged on itself. A verdict about the twin printed without opening the twin blames a
-  # manual the reader may not own — and on a host without one it turns the documented skip into a failure.
-  if [ -f "$MANTWIN" ]; then
-    "$fn" "$MANTWIN" && ok "the live twin: $what" \
-      || bad "the live twin: $what (port the edit by hand — nothing distributes ~/.claude/CLAUDE.md)"
-  else
-    echo "  [skip] live CLAUDE.md twin absent — the shipped copy carries the fact"
-    C17_SKIPPED=$((C17_SKIPPED+1))
-  fi
-}
 
 # Fact 1 — the limit is per front, and the ceiling is a number a reader can act on. Scoped to the bullet
 # whose bold lead names the limit: the guard bullet below it also says "active task" and would pass a
@@ -2464,9 +2107,6 @@ manfact mf_resume "both resume entries resolve the task by the written ladder, a
 [ "$C17_SKIPPED" -eq 0 ] || echo "  [note] $C17_SKIPPED twin half/halves not evaluated (no live CLAUDE.md twin on this host) — a green run does not prove the two copies agree"
 
 echo "== C18: a review leaves the working copy as it found it =="
-VP="global/protocols/verify.md"
-VS="global/skills/verify/SKILL.md"
-VW="global/workflows/verify-review.js"
 PP="global/protocols/plan.md"
 RULE_SECTION="Mutation and the Working Copy"
 
@@ -2784,9 +2424,6 @@ else
   bad "the prover is guarded by the presence of a proposal"
 fi
 
-# A numbered step of the skill, flattened. Not pinned to a literal number: inserting the bracket step
-# renumbers everything after it, and an assertion that dies to renumbering tests the numbering.
-vstep() { awk -v s="^$2\\\\. " -v e="^$(($2 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' "$1" | tr '\n' ' '; }
 N_INV="$(grep -nE '^[0-9]+\. \*\*Invoke the verify-review workflow' "$VS" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/')"
 N_COPY="$(grep -nE '^[0-9]+\. \*\*Take the byte-exact copy' "$VS" | head -1 | sed -E 's/^[0-9]+:([0-9]+)\..*/\1/')"
 
@@ -2987,10 +2624,6 @@ PY19="template/.ai-flow/project.yml"
 # The ceremony, bounded at the next section, fence-aware. Re-declared rather than inherited from C15:
 # a criterion that reads another's extractor changes verdict when that one is re-scoped.
 CLO6="$(awk '/^## Closing a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG6")"
-# One numbered move, flattened AND whitespace-squeezed. What a move must say is a property of the move,
-# never of where its prose happens to wrap, and never of a neighbouring move's words — a section-wide
-# grep here would pass on the record move above it and on the dismantle move below.
-dmove() { printf '%s\n' "$CLO6" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
 D5="$(dmove 5)"
 
 if [ -n "$D5" ]; then
@@ -3087,10 +2720,6 @@ fi
 KEY6="$(printf '%s' "$D5" | grep -oE 'commands\.[a-z_]+' | head -1 | cut -d. -f2)"
 if [ -n "$KEY6" ]; then
   ok "the distribution move names the key it reads, not just the map (commands.$KEY6)"
-  # As a KEY, never as a word: both the template's comment and the doc's list the candidate verbs in
-  # prose ("publish, deploy, regenerate"), so a bare word match answered from a neighbouring sentence —
-  # renaming the key on the protocol side alone stayed green on the word it happened to pick.
-  keyed() { printf '%s' "$1" | grep -qE "(^|[[:space:]#])${KEY6}:"; }
   keyed "$CMDS6" \
     && ok "the shipped template documents the same key the move reads" \
     || bad "the shipped template documents the same key the move reads"
@@ -3182,14 +2811,13 @@ echo "== C20: the remedy for a user-owned file names the hand-merge =="
 # (global/hooks/drift-check.sh). Nothing distributes it, so the only action that changes it is a hand
 # edit. A check that finds the live copy stale and sends the operator anywhere else is worse than one
 # that prints nothing: they act, the file does not change, and the failure persists.
-SELF20="test/validate.sh"
 # The guard skips THIS block and nothing else. An earlier form stopped the scan at C20's own heading,
 # which is not the same thing: this harness is append-only, so "everything before C20" excluded the very
 # region where the next hand-written verdict will be added — C21 below was already outside it, and a
 # fifth mis-worded verdict appended later would leave the count at four and every assertion green. The
 # self-exclusion has to be a hole of one block, not a horizon. Second half of the predicate: a verdict
 # naming the shipped copy is a different fault with a different remedy (edit the repo), not ours to judge.
-LIVEMSG20="$(awk '/^echo "== /{mine = ($0 ~ /^echo "== C20:/)} !mine && /bad "/ && /live twin/ && !/shipped copy/' "$SELF20")"
+LIVEMSG20="$(awk '/^echo "== /{mine = ($0 ~ /^echo "== C20:/)} !mine && /bad "/ && /live twin/ && !/shipped copy/' $SUITE_SRC)"
 LIVEN20="$(printf '%s' "$LIVEMSG20" | grep -c 'bad "' || true)"
 
 # Counted first, and the count is an assertion rather than a comment: a guard whose extractor returns
@@ -3895,11 +3523,6 @@ sec23() {  # a "### " section, fence-aware: the skeletons it quotes start lines 
   awk -v h="$1" '$0 ~ h {f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^#+ /){f=0} f' "$BLG23" \
     | tr '\n' ' ' | tr -s ' '
 }
-item23() {  # one numbered item of a section, flattened: what an item must say is a property of that
-            # item, never of a neighbour's words nor of where its prose happens to wrap
-  printf '%s\n' "$2" | awk -v s="^$1\\\\. " -v e="^$(($1 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' \
-    | tr '\n' ' ' | tr -s ' '
-}
 raw23() { awk -v h="$1" '$0 ~ h {f=1;next} /^```/{c=1-c; next} (c==0 && /^#+ /){f=0} f' "$BLG23"; }
 
 SHEET23="$(sec23 '^### .artifacts/T-XXX/state.md.')"
@@ -4057,7 +3680,6 @@ fi
 
 echo "== C24: a machine-read field is read where it is declared =="
 RAIL24="global/hooks/understand-write-guard.py"
-BLG24="global/protocols/backlog.md"
 
 # The paragraph that carries the rule, not the subsection around it: a section-wide grep passes on a
 # neighbour's words, and the neighbours here are the claim rules that talk about lines and fields too.
@@ -4281,7 +3903,7 @@ fi
 # --- with no personal manual, the verdict claims only what it opened ------
 # A verdict about a file the host does not have is a verdict about nothing. The skip stays a skip,
 # and the pair is never reported as established on the strength of one copy.
-TWINBLK25="$(awk '/^manstate\(\)/{f=1} f && /^# --- the rail resolves/{exit} f' "$SELF25")"
+TWINBLK25="$(awk '/^twin="\$HOME/{f=1} f && /^# --- the rail resolves/{exit} f' "$SELF25")"
 # The branch that runs on a host with no personal manual. It must announce the skip and carry no
 # verdict at all: a verdict there would be a claim about a file nobody opened, and counting it would
 # let a green run read as proof that the two copies agree.
@@ -4641,7 +4263,6 @@ printf '%s' "$TRM24" | grep -qiE 'down to the (active|current|open|single|one)' 
   && ok "the state-size hook trims to the roster, not to the active task" \
   || bad "the state-size hook trims to the roster, not to the active task (missing:$a5)"
 
-BLG24="global/protocols/backlog.md"
 # Terminated at the next heading. Without one the window runs to end of file, so "scoped to the section"
 # is a claim the extractor does not keep — true only for as long as this happens to be the last section.
 AS24="$(awk '/^### Allowed structure/{f=1;next} f && /^#{2,3} /{exit} f' "$BLG24")"
@@ -4788,38 +4409,6 @@ done
   && ok "the swept phase protocols carry no origin-project identifier" \
   || bad "the swept phase protocols carry no origin-project identifier (found:$p1)"
 
-# What ships is what the installer fetches out of version control, which is what git can name: tracked
-# files, plus untracked ones git is not ignoring. A recursive walk of the directory reads more than
-# that. Running the hooks in place leaves Python bytecode under `global/hooks/__pycache__/`, and that
-# bytecode carries the absolute path it was compiled from -- so an ignored directory the installer
-# never distributes turned this row red, accusing the shipped engine of carrying an author home path
-# it does not carry. Neither probe the working-copy comparison uses reaches an ignored file, so the run
-# reported the tree left as found while this verdict had already changed. The failure was also
-# intermittent: the system grep announces a binary match and the row fails, ugrep suppresses it and the
-# row passes, so the same tree answered differently on different machines.
-purity_sweep() { # repo root, subpath -- one `file:line:text` per hit among the files that could ship
-  local root="$1" sub="$2" list
-  # Reading the file list from git buys precision and brings git's own failure modes with it. A tree
-  # that is not a repository, or a git that cannot answer, yields an empty list -- and an empty list
-  # grepped for a leak finds none, so the row would report a clean engine on the strength of having
-  # read nothing. The walk this replaced could not fail that way, so the guard is part of the
-  # replacement: every input a verdict concludes from is proven usable before it is concluded from.
-  # Non-zero here means "could not run", which the caller reports as such and never as a pass.
-  git -C "$root" rev-parse --git-dir >/dev/null 2>&1 || return 2
-  list="$(git -C "$root" ls-files --cached --others --exclude-standard -- "$sub" 2>/dev/null)" || return 2
-  # Selecting nothing is the same defect wearing a mistyped path: the seeder's empty-selection case.
-  [ -n "$list" ] || return 2
-  # `-H` because grep omits the filename when it is handed exactly one file, and a hit that cannot say
-  # which file carries it is a hit nobody can act on.
-  # The subshell's own status is grep's, and grep answers 1 for "found nothing" -- which is the passing
-  # case here, not a failure. So the only status this function forwards is the one that means the files
-  # could not be reached; everything else is a completed sweep whose hits are its output.
-  ( cd "$root" 2>/dev/null || exit 9
-    printf '%s\n' "$list" | tr '\n' '\0' \
-      | xargs -0 grep -HniEI 'residents|gate-manager|zoomin|esp32|/Users/[a-z]' 2>/dev/null )
-  [ $? -eq 9 ] && return 2
-  return 0
-}
 P2OUT="$(purity_sweep . global)"; P2RC=$?
 p2="$(printf '%s' "$P2OUT" | grep -c . | tr -d ' ')"
 if [ "$P2RC" -ne 0 ]; then
@@ -5962,31 +5551,11 @@ echo "== C31: the Bash rail judges the fields it can read =="
 # section can hold, and the evidence went back to the backlog with it.
 if [ "$PY3" = 1 ]; then
   GS="$HK/git-safety.py"
-  graw() {  # $1 = raw payload -> prints combined output, returns the hook's exit code
-    printf '%s' "$1" | python3 "$GS" 2>&1
-  }
   gcmd() {  # $1 = command string -> same, wrapped in a well-formed payload
     python3 -c 'import json,sys; print(json.dumps({"tool_input":{"command":sys.argv[1]}}))' "$1" \
       | python3 "$GS" 2>&1
   }
 
-  # --- Step 1: a field the rail cannot read is a command it cannot judge ----
-  # Each check below drives several payload shapes and reports ONE verdict, naming the shapes that
-  # failed. Silence, not merely the absence of a crash: a rail that stands aside with a diagnostic is
-  # chatter on every Bash command, and a traceback is named separately so a crash still reads as a crash.
-  waved() {  # $1 = label, $2.. = raw payloads -> one verdict for the whole set
-    label="$1"; shift; whyw=""
-    for p in "$@"; do
-      out="$(graw "$p")"; rc=$?
-      if [ "$rc" != 0 ] || [ -n "$out" ]; then
-        case "$out" in
-          *Traceback*) whyw="$whyw [$p -> exit $rc, traceback]" ;;
-          *)           whyw="$whyw [$p -> exit $rc, said: $out]" ;;
-        esac
-      fi
-    done
-    [ -z "$whyw" ] && ok "$label" || bad "$label ($whyw)"
-  }
 
   # The oldest arm of the promise and the one nothing had ever sent: this rail has no dict check at all,
   # so every one of these is a traceback today. `null` and `true` were in nobody's report — the reach of
@@ -8125,7 +7694,6 @@ sec41() { awk -v h="$1" '$0 ~ h {f=1;next} /^```/{c=1-c; if(f) print; next} (c==
 # The checklist's items one at a time. The deletion step is item 4 and its neighbours talk about the same
 # papers in the same words, so a section-wide grep passes on a neighbour's sentence.
 ARCH41="$(awk '/^### After ARCHIVE/{f=1;next} /^#+ /{if(f) exit} f' "$BLG41")"
-a41() { printf '%s\n' "$ARCH41" | awk -v s="^$1\\\\. " -v e="^$(($1 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' | tr '\n' ' ' | tr -s ' '; }
 
 M2_41="$(c41 2)"
 if [ -n "$M2_41" ]; then
@@ -9276,21 +8844,21 @@ fi
 # converted sites carry no `mktemp` text at all, so the entry point this task built was invisible to the
 # row standing for it: deleting a caller's `|| fatal` reinstated the whole defect with the row green.
 # What is policed now is the entry point and the two properties that make it work.
-BOX46="$(grep -o -E '\$\(mkbox\)' "$VS46" 2>/dev/null | wc -l | tr -d ' ')"
-GRD46="$(grep -o -E '\$\(mkbox\)" \|\| fatal ' "$VS46" 2>/dev/null | wc -l | tr -d ' ')"
-RAW46="$(grep -o -E '\$\(mktemp -d' "$VS46" 2>/dev/null | wc -l | tr -d ' ')"
-RGD46="$(grep -o -E '\$\(mktemp -d 2>/dev/null' "$VS46" 2>/dev/null | wc -l | tr -d ' ')"
+BOX46="$(grep -o -E '\$\(mkbox\)' $SUITE_SRC 2>/dev/null | wc -l | tr -d ' ')"
+GRD46="$(grep -o -E '\$\(mkbox\)" \|\| fatal ' $SUITE_SRC 2>/dev/null | wc -l | tr -d ' ')"
+RAW46="$(grep -o -E '\$\(mktemp -d' $SUITE_SRC 2>/dev/null | wc -l | tr -d ' ')"
+RGD46="$(grep -o -E '\$\(mktemp -d 2>/dev/null' $SUITE_SRC 2>/dev/null | wc -l | tr -d ' ')"
 if [ "$BOX46" -eq 0 ]; then
   bad "a section that cannot create its sandbox says so (no sandbox call sites found — extractor is wrong)"
 elif [ "$BOX46" -ne "$GRD46" ]; then
   bad "a section that cannot create its sandbox says so ($((BOX46 - GRD46)) call sites do not stop on failure)"
 elif [ "$((RAW46 - RGD46))" -ne 0 ]; then
   bad "a section that cannot create its sandbox says so ($((RAW46 - RGD46)) sites bypass the helper entirely)"
-elif ! grep -qE '^\s*\[ -n "\$d" \] && \[ -d "\$d" \] \|\| return 1' "$VS46"; then
+elif ! grep -qE '^\s*\[ -n "\$d" \] && \[ -d "\$d" \] \|\| return 1' $SUITE_SRC; then
   # The helper must RETURN, never exit: a command substitution runs in a subshell, so an exit inside it
   # ends only that subshell and leaves the caller running with the empty path this exists to prevent.
   bad "a section that cannot create its sandbox says so (the helper does not return a status to its caller)"
-elif ! printf '%s' "$(awk '/^fatal\(\) \{/{f=1} f{print} f && /^\}/{exit}' "$VS46")" | grep -q 'bad "'; then
+elif ! printf '%s' "$(awk '/^fatal\(\) \{/{f=1} f{print} f && /^\}/{exit}' $SUITE_SRC)" | grep -q 'bad "'; then
   # And the report must go through the run's own accounting, in the parent — not an open-coded echo.
   bad "a section that cannot create its sandbox says so (the failure is reported outside the run accounting)"
 else
@@ -13061,76 +12629,7 @@ if [ "$c58_readable" = "1" ]; then
   ax89="$(printf '%s\n' "$DIM83" | sed -nE "s/^[[:space:]]+key: '([a-z]+)'.*/\\1/p" | paste -sd'|' -)"
   CORPUS89="$(cd "$ROOT" && git ls-files 2>/dev/null | grep -vxF "$SELFEX89")"
 
-  # $1: i case-insensitive, s case-sensitive. $2: extended regex. Paths print relative to $ROOT, which is
-  # the form the card cites them in, so neither side needs normalising before they are compared.
-  sweep89() {
-    if [ "$1" = "s" ]; then
-      printf '%s\n' "$CORPUS89" | tr '\n' '\0' | (cd "$ROOT" && xargs -0 grep -lIE -- "$2" 2>/dev/null) | sort -u
-    else
-      printf '%s\n' "$CORPUS89" | tr '\n' '\0' | (cd "$ROOT" && xargs -0 grep -lIiE -- "$2" 2>/dev/null) | sort -u
-    fi
-  }
 
-  # One marker per concept: the rule that recognises a HOME of it, as against a file that merely mentions
-  # it. The difference is not cosmetic and two of the six prove it — `**Audited**` unanchored finds three
-  # referrers beside the one home, and the template's axis keys sit inside `#` comments, so a marker blind
-  # to either is wrong, in opposite directions. An unknown concept returns non-zero: that is the signal a
-  # row has no marker, and it is why every known branch ends by returning zero even when it matched nothing.
-  marker89() {
-    case "$1" in
-      "Auditor list")
-        # Current OR stale shapes. A document naming a count that is no longer current is a home that has
-        # gone wrong, and a marker sweeping only the current shapes goes quiet on exactly that document.
-        sweep89 i "$now83|$stale83" ;;
-      "Axis content (what each auditor looks for)")
-        # The array itself, not a phrase out of one axis's prompt. A lexical fingerprint recognises the
-        # dimension it was copied from and no other, so a rewording of those two sentences would empty the
-        # set — and the two phrases already have a home in A5 above, which is the duplication this whole
-        # mechanism exists to refuse.
-        sweep89 s '^const DIMENSIONS = \[' ;;
-      "Workflow arguments")
-        sweep89 i 'understandPath|claudeMdPath|steeringPath|diffText|changedFiles|testCommand' ;;
-      "Declarable profile axes")
-        # Two ways to carry the set: as YAML keys, or as the `<axis>Checklist` identifiers the call and the
-        # prompts use. The comment prefix is stripped before the keys are read, because the shipped
-        # template hands every adopter its example commented out — a marker that read typography would
-        # miss the one file every project starts from.
-        # The five names come from DIMENSIONS, never from a list written here: a marker inside machinery
-        # whose whole claim is "computed, never enumerated" cannot itself enumerate the thing it looks for,
-        # and a sixth axis would otherwise be declarable everywhere except in the guard that finds it.
-        printf '%s\n' "$CORPUS89" | while IFS= read -r f89; do
-          [ -n "$f89" ] || continue
-          if sed 's/^[[:space:]]*#[[:space:]]*//' "$ROOT/$f89" 2>/dev/null \
-               | grep -qE "^[[:space:]]*($ax89):[[:space:]]" \
-             || grep -qE "($ax89)Checklist" "$ROOT/$f89" 2>/dev/null
-          then printf '%s\n' "$f89"; fi
-        done | sort -u ;;
-      "Report template")
-        # Anchored at line start, which is the whole marker: the template's own first line begins with it,
-        # while every reference to it names it mid-sentence.
-        sweep89 s '^\*\*Audited\*\*:' ;;
-      "Outcome disclosure")
-        # The table's own header is the marker — three columns naming the outcome, what the run says and
-        # what the report records. Case-sensitive and anchored at the row, because every other surface
-        # names the table mid-sentence in order to cite it, and a marker that reached those would report
-        # the citers as homes. One home is the point of the row, and a matrix stated in prose is the
-        # shape that acquires more of them without anyone deciding to: every copy reads as a restatement
-        # until the day two of them disagree.
-        sweep89 s '^[[:space:]]*\| Outcome \| What the run says' ;;
-      "Severities")
-        # All three levels, not any one: a file naming a single level is stating a rule about that level,
-        # not carrying the scheme, and the scheme is what a change to severities would have to tick.
-        printf '%s\n' "$CORPUS89" | while IFS= read -r f89; do
-          [ -n "$f89" ] || continue
-          grep -qE '\bHIGH\b' "$ROOT/$f89" 2>/dev/null \
-            && grep -qE '\bMEDIUM\b' "$ROOT/$f89" 2>/dev/null \
-            && grep -qE '\bLOW\b' "$ROOT/$f89" 2>/dev/null \
-            && printf '%s\n' "$f89"
-        done | sort -u ;;
-      *) return 1 ;;
-    esac
-    return 0
-  }
 
   # The documents are COMPUTED, never enumerated. This list was hand-written until it was measured against
   # the sweep above and found to agree — and agreement proves the sweep, not the list: what a hand list
@@ -13141,7 +12640,7 @@ if [ "$c58_readable" = "1" ]; then
   # can be deleted with the suite green — and with it goes the one behaviour it exists for: a document
   # naming an obsolete count must stay IN the set, to be failed by the count leg rather than vanish from
   # it. Anchored to the marker line, which the assertion's own line cannot match.
-  grep -qE "^        sweep89 i \"\\\$now83[|]\\\$stale83\" ;;\$" test/validate.sh \
+  grep -qE "^      sweep89 i \"\\\$now83[|]\\\$stale83\" ;;\$" $SUITE_SRC \
     || a4_83="$a4_83 [the auditor marker no longer sweeps stale counts, so a stale home would leave the set]"
   DOCS83="$(marker89 "Auditor list")"
   nd83="$(printf '%s\n' "$DOCS83" | grep -c . | tr -d ' ')"
@@ -13903,8 +13402,8 @@ else
   done <<< "$CARDS88"
   # The keys the marker table actually knows, read out of the case statement itself. A second list here
   # would go green while the table it claims to describe had lost a branch, which is the whole defect.
-  KEYS89="$(awk '/^  marker89\(\) \{$/{f=1;next} f&&/^    esac$/{exit} f' test/validate.sh \
-            | grep -oE '^      "[^"]+"\)' | sed -E 's/^ +"(.*)"\)$/\1/' | sort -u)"
+  KEYS89="$(awk '/^marker89\(\) \{$/{f=1;next} f&&/^  esac$/{exit} f' $SUITE_SRC \
+            | grep -oE '^    "[^"]+"\)' | sed -E 's/^ +"(.*)"\)$/\1/' | sort -u)"
 
   # --- A8: every row has a marker, and every marker a row --------------------
   # Set equality, not containment, and the second direction is not decoration: a marker left behind for a
@@ -17124,7 +16623,6 @@ RRB71="$(awk '/^   - \*\*No reassurance re-runs\*\*/{f=1;print;next} f&&/^   - /
 # subject" onto the next line and B4 went red over prose that still said exactly what it had to. The legs
 # this remedy rewrites are written tolerant; B1 and B7 are frozen rows it does not touch, and the trap is
 # recorded against the helper rather than papered over one block at a time.
-S71='[[:space:]]+'
 
 # B1 -- the ordering rule itself. "Most likely to break" is the phrase that carries the criterion; a
 # constraint merely mentioning order would leave the plan free to order by convenience.
@@ -17736,46 +17234,13 @@ RDM90="README.md"
 TPR90="template/.ai-flow/product.md"
 TYM90="template/.ai-flow/project.yml"
 
-# A section body, FENCE-AWARE. Three of the regions below quote a steering skeleton whose own lines begin
-# with `## `, and a fence-blind extractor ends the section on the skeleton's first heading -- inside the
-# fence, which is precisely where the shape A4 measures lives.
-sec90() { [ -r "$1" ] || return 0
-          awk -v h="$2" '$0 ~ h {f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^#+ /){f=0} f' "$1"; }
 # The fenced block inside a section: what A4 measures for the three homes that quote a skeleton rather
 # than being one.
 fen90() { sec90 "$1" "$2" | awk '/^```/{c=1-c; next} c'; }
-# 1 when two patterns sit inside ONE CLAUSE of a region, in either order -- an ordered co-occurrence that
-# cannot span a sentence. Two loose greps over a region accept either claim NEGATED and accept a
-# comma-joined exchange as one chunk; a window bounded at the sentence binds a predicate to its own
-# subject and holds whatever the punctuation does.
-#
-# The window is `[^.]` OR a period followed by a letter, which is the difference between a sentence end
-# and a FILENAME. Every clause this block reads is prose about files -- `product.md`, `.ai-flow`,
-# `context.md` -- so a window that stops at any period stops in the middle of the subject it is binding,
-# and the leg then reddens a document that says exactly the right thing.
-#
-# A REFUSED pattern is not an absence. `grep -ci` exits 1 for no match and >1 when the engine rejects the
-# expression, and a bare count pipeline throws that away -- so a leg keyed on a malformed pattern reads
-# "clean" and passes forever. This helper answers `E` for that case, the way the suite's own `insent()`
-# does, and its seven callers go through the two wrappers below so a refusal fails CLOSED at the leg that
-# suffered it. An accumulator was written first and could never fire: every call sits inside `$( )`, so
-# anything the helper assigns dies with the subshell.
-near90() { [ -n "$1" ] || { printf '0'; return; }
-           n90="$(printf '%s' "$1" | tr '\n' ' ' | tr -s ' ' \
-             | grep -ciE "($2)([^.]|\.[a-zA-Z]){0,$4}($3)|($3)([^.]|\.[a-zA-Z]){0,$4}($2)")"
-           case "$?" in 0|1) printf '%s' "$n90" | tr -d ' ';; *) printf 'E';; esac; }
-# True when near90 found at least one adjacency; false for zero AND for `E`, which is neither present nor
-# absent. Same for the zero form, which asks that something be ABSENT: a refusal must not satisfy it.
-nearok90()   { case "${1:-}" in ''|*[!0-9]*) return 1;; esac; [ "$1" -ge 1 ]; }
-nearzero90() { case "${1:-}" in ''|*[!0-9]*) return 1;; esac; [ "$1" = 0 ]; }
 # One clause per line, split on the sentence end and never inside a filename -- `. ` ends a sentence,
 # `.md` does not. A3 reads clauses rather than files for a reason its own comment states.
 clauses90() { printf '%s' "$1" | tr '\n' ' ' | tr -s ' ' | sed 's/\. /.\n/g'; }
 
-# One numbered item of the archive checklist, located BY NAME and never by its literal number: this task
-# adds a move to that list, and a reader pinned to a number extracts the neighbour that now sits there.
-itm90() { printf '%s\n' "$2" | awk -v s="^$1\\\\. " -v e="^$(($1 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' \
-            | tr '\n' ' ' | tr -s ' '; }
 
 # --- the regions, extracted once ------------------------------------------------------------------
 CTXB90="$([ -r "$CTX90" ] && tr '\n' ' ' < "$CTX90" | tr -s ' ')"
@@ -19597,7 +19062,7 @@ printf '%s' "$SELF92" | grep -q "printf '%s' \"\$SEEN92\" | grep -q '\"tool_name
 # own line, the shape S1 forbids. What this count cannot see -- a fourth builder written inside C92 --
 # is O2's subject, and the two rows are the whole of the direction between them.
 s4_92=""
-ABOVE92="$(sed -n '1,/^# C92 -- changing the mechanism/p' "$ROOT/test/validate.sh")"
+ABOVE92="$( cat "$ROOT/test/lib/preamble.sh"; sed -n '1,/^# C92 -- changing the mechanism/p' "$ROOT/test/validate.sh" )"
 B92="$(printf '%s\n' "$ABOVE92" | grep -cE 'printf .*"tool_input":\{"file_path"')"
 [ "${B92:-0}" = 1 ] \
   || s4_92="$s4_92 [$B92 place(s) build a file_path payload, and the preamble claims one]"
@@ -19754,6 +19219,207 @@ grep -qE '^HOOKS=.*_aiflow_state\.py' "$ROOT/install.sh" \
                || bad "R1 the ladder has one implementation ($r1_92)"
 
 rm -rf "$T92"
+
+# =====================================================================================================
+# C93 -- the suite is a set of independent sections behind a filtering runner
+#
+# Generated in the Conform phase from understand.md's Verifiable Criteria; every row is RED until the
+# preamble, the section files, the runner's filter and the sweep exist.
+#
+# This block judges THIS suite's own source, which is the shape that produced one defect class five
+# times in C92 and cost that task four verify rounds. Three rules are applied here because of that, and
+# a row added later that breaks one of them is a hollow row whatever it prints:
+#
+#   1. Every corpus EXCLUDES this block's own file by name, and the exclusion is ASSERTED POPULATED
+#      before any verdict is read from it. An absence leg over a corpus that silently emptied is green
+#      for the wrong reason, and a glob that stops matching is how it empties.
+#   2. Every absence leg is PAIRED with a presence control over the same corpus and the same machinery.
+#      "the old wording is gone" and "the corpus carries no wordings at all" are otherwise the same
+#      green row.
+#   3. The three runner rows are FUNCTIONAL and run against a FIXTURE section set inside a sandbox,
+#      never against this repo's own sections: a row that invoked the real runner would re-enter this
+#      file, and a structural grep over the runner's source would judge the words rather than the act.
+# =====================================================================================================
+echo ""
+echo "== C93: the suite is a set of independent sections behind a filtering runner =="
+
+T93="$(mkbox)" || fatal 'C93 fixtures'
+trap 'chmod -R u+rwX "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55" "$T69" "$T70" "$T92" "$T93" 2>/dev/null; rm -rf "$T12" "$T13" "$T25" "$T44" "$T45" "$T45R" "$T47" "$T55" "$T69" "$T70" "$T92" "$T93"' EXIT   # extended, never replaced
+
+SECD93="$ROOT/test/sections"
+PRE93="$ROOT/test/lib/preamble.sh"
+SWEEP93="$ROOT/test/tools/self-sufficiency.sh"
+
+# The corpus, minus this block's own file. Rule 1 above: read once, asserted below before any verdict
+# reads it. `find` on a directory that does not exist prints nothing and says so on stderr; the guard
+# keeps that off the transcript without turning the absence into a pass.
+corpus93() {
+  [ -d "$SECD93" ] || return 0
+  find "$SECD93" -maxdepth 1 -name 'C*.sh' 2>/dev/null | grep -v '/C93-' | sort
+}
+CORPUS93="$(corpus93)"
+n93="$(printf '%s\n' "$CORPUS93" | grep -c .)"
+
+# ROW 1 -- the corpus itself. Nothing below means anything without it.
+if [ "${n93:-0}" -ge 74 ] && ! printf '%s\n' "$CORPUS93" | grep -q '/C93-'; then
+  ok "the section corpus is populated and holds every section but this one"
+else
+  bad "the section corpus is populated and holds every section but this one (${n93:-0} file(s))"
+fi
+
+# -----------------------------------------------------------------------------------------------------
+# The runner, exercised functionally against a fixture section set (rule 3).
+#
+# Three sections named C2, C9 and C10, because that triple is the only one that tells a NUMERIC
+# iteration from a LEXICAL one: sorted as text the answer is C10 C2 C9, and a runner that iterates its
+# directory with a bare glob gets exactly that and looks fine on any single-digit suite.
+# -----------------------------------------------------------------------------------------------------
+mkdir -p "$T93/test/lib" "$T93/test/sections" "$T93/test/tools"
+if [ -d "$SECD93" ] && [ -r "$ROOT/test/validate.sh" ] && [ -r "$PRE93" ]; then
+  cp "$ROOT/test/validate.sh" "$T93/test/validate.sh"
+  cp "$PRE93" "$T93/test/lib/preamble.sh"
+  for f93 in 2 9 10; do
+    printf 'echo "== C%s: fixture =="\nok "C%s ran"\n' "$f93" "$f93" > "$T93/test/sections/C$f93-fixture.sh"
+  done
+  r93_ready=1
+else
+  r93_ready=0
+fi
+
+# ROW 2 -- no argument runs everything, in numeric order.
+if [ "$r93_ready" = 1 ]; then
+  ord93="$( cd "$T93" && bash test/validate.sh 2>/dev/null | sed -n 's/^== C\([0-9][0-9]*\).*/\1/p' | tr '\n' ' ' )"
+else
+  ord93=""
+fi
+[ "$ord93" = "2 9 10 " ] \
+  && ok "an unfiltered run executes every section in numeric order" \
+  || bad "an unfiltered run executes every section in numeric order (order: '${ord93}')"
+
+# ROW 3 -- a filter runs one section and reports that section's totals, not the suite's.
+if [ "$r93_ready" = 1 ]; then
+  flt93="$( cd "$T93" && bash test/validate.sh C9 2>/dev/null )"
+else
+  flt93=""
+fi
+if printf '%s\n' "$flt93" | grep -q '^== C9:' \
+   && ! printf '%s\n' "$flt93" | grep -qE '^== C(2|10):' \
+   && printf '%s\n' "$flt93" | grep -qF 'Result: 1 passed, 0 failed'; then
+  ok "a filtered run executes only the named section and reports only its totals"
+else
+  bad "a filtered run executes only the named section and reports only its totals"
+fi
+
+# ROW 4 -- an identifier naming no section is named, and the run fails.
+#
+# BOTH legs, because either alone is satisfied by a broken runner: a run that names the identifier and
+# exits 0 is a silent full run, and a run that exits non-zero saying nothing is indistinguishable from a
+# crash.
+if [ "$r93_ready" = 1 ]; then
+  ( cd "$T93" && bash test/validate.sh C999 ) > "$T93/unknown.out" 2>&1
+  rc93=$?
+else
+  rc93=0; : > "$T93/unknown.out"
+fi
+{ [ "$rc93" != 0 ] && grep -qF 'C999' "$T93/unknown.out"; } \
+  && ok "an identifier naming no section is named and the run exits non-zero" \
+  || bad "an identifier naming no section is named and the run exits non-zero (status $rc93)"
+
+# -----------------------------------------------------------------------------------------------------
+# The independence properties, read off the corpus.
+# -----------------------------------------------------------------------------------------------------
+
+# ROW 5 -- no section file defines a helper the preamble owns.
+#
+# The 37 names are written out rather than derived from the corpus, and that is the point: derived from
+# the files it judges, this row would assert that whatever is there is what belongs there. This list is
+# the frozen contract from understand.md.
+HELP93='a41 brake clohead dmove hookcall hookraw item23 itm90 keyed ledger malformed manfact manstate
+marker89 mbul mkbig mkproj msect near90 nearok90 nearzero90 nlines nstep nwords off pair purity_sweep
+rung sbullet sec90 sheet vstep waved wguard wti_classify wti_probe wti_tracked_leak'
+r5_93=""
+if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
+  for h93 in $HELP93; do
+    grep -qE "^${h93}\(\) \{" "$PRE93" || r5_93="$r5_93 [$h93 is not defined in the preamble]"
+    printf '%s\n' "$CORPUS93" | while IFS= read -r f93; do
+      grep -qE "^[[:space:]]*${h93}\(\)[[:space:]]*\{" "$f93" && printf '%s' "x"
+    done | grep -q x && r5_93="$r5_93 [$h93 is still defined inside a section]"
+  done
+else
+  r5_93=" [no preamble or no corpus to read]"
+fi
+[ -z "$r5_93" ] \
+  && ok "every helper more than one section reads is defined in the preamble and in no section" \
+  || bad "every helper more than one section reads is defined in the preamble and in no section ($r5_93)"
+
+# ROW 6 -- no trap names a sandbox another section owns.
+#
+# Read per file: every `$VAR` a trap mentions must be assigned in the same file. The cumulative chain
+# this retires is exactly the shape that fails here -- C92's trap names eleven sandboxes, ten of which
+# belong to other blocks.
+r6_93=""
+if [ "${n93:-0}" -ge 74 ]; then
+  while IFS= read -r f93; do
+    [ -n "$f93" ] || continue
+    for v93 in $(grep -hE '^[[:space:]]*trap ' "$f93" | grep -oE '\$\{?[A-Za-z_][A-Za-z0-9_]*' | tr -d '${' | sort -u); do
+      grep -qE "^[[:space:]]*${v93}=" "$f93" || r6_93="$r6_93 [$(basename "$f93"): \$$v93]"
+    done
+  done <<< "$CORPUS93"
+else
+  r6_93=" [no corpus to read]"
+fi
+[ -z "$r6_93" ] \
+  && ok "every trap names only sandboxes its own section owns" \
+  || bad "every trap names only sandboxes its own section owns ($r6_93)"
+
+# ROW 7 -- the two rows whose claim the split makes impossible carry their new wording, and only it.
+#
+# Scoped to the two files that own the rows, never to the corpus: this block quotes both wordings above
+# and would answer itself over any corpus that included it. The presence control is rule 2 -- a
+# neighbouring description from the same file, read by the same grep, so "the old wording is gone"
+# cannot be satisfied by a file that was never read.
+C19F93="$(printf '%s\n' "$CORPUS93" | grep -E '/C19-' | head -1)"
+C21F93="$(printf '%s\n' "$CORPUS93" | grep -E '/C21-' | head -1)"
+r7_93=""
+for f93 in "$C19F93" "$C21F93"; do
+  if [ -z "$f93" ] || [ ! -r "$f93" ]; then r7_93="$r7_93 [a section file is missing]"; continue; fi
+  grep -qF 'ok "the sandbox is torn down"' "$f93" \
+    || r7_93="$r7_93 [$(basename "$f93") does not carry the new wording]"
+  grep -qF 'the sandbox is torn down and the live cleanup trap survives this block' "$f93" \
+    && r7_93="$r7_93 [$(basename "$f93") still carries the old wording]"
+  grep -qF 'the sandbox is torn down' "$f93" \
+    || r7_93="$r7_93 [$(basename "$f93") was not read at all]"
+done
+[ -z "$r7_93" ] \
+  && ok "the two trap-survival rows carry the new wording and no longer claim the neighbour's cleanup" \
+  || bad "the two trap-survival rows carry the new wording and no longer claim the neighbour's cleanup ($r7_93)"
+
+# ROW 8 -- marker89's inputs are derived outside C58's readable branch (IB-021).
+#
+# Scoped to C58's own file for the reason ROW 7 gives: the names below appear in this comment.
+C58F93="$(printf '%s\n' "$CORPUS93" | grep -E '/C58-' | head -1)"
+r8_93=""
+if [ -n "$C58F93" ] && [ -r "$C58F93" ]; then
+  grep -qE '^[[:space:]]*marker89\(\)' "$C58F93" && r8_93="$r8_93 [marker89 is still defined in C58]"
+  for v93 in now83 stale83 DIM83 k83; do
+    grep -qE "^${v93}=" "$C58F93" || r8_93="$r8_93 [\$$v93 is not derived at the top level]"
+  done
+else
+  r8_93=" [C58's section file is missing]"
+fi
+[ -z "$r8_93" ] \
+  && ok "marker89's inputs are derived outside the readable branch" \
+  || bad "marker89's inputs are derived outside the readable branch ($r8_93)"
+
+# ROW 9 -- the sweep ships. A session script that produced the same numbers would leave the next task
+# re-deriving them, which is what this one paid twice for.
+if [ -r "$SWEEP93" ] && $GIT ls-files --error-unmatch test/tools/self-sufficiency.sh >/dev/null 2>&1; then
+  ok "the self-sufficiency sweep is a tracked file in the repository"
+else
+  bad "the self-sufficiency sweep is a tracked file in the repository"
+fi
+
+rm -rf "$T93"
 
 echo ""
 echo "Result: $PASS passed, $FAIL failed"
