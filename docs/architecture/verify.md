@@ -29,7 +29,7 @@ is the only piece whose content the reviewing agents actually receive.
 | Artifact | Inputs | Outputs |
 |---|---|---|
 | The skill's run | the task's sheet, `understand.md`, `plan.md` and its Criteria Coverage table, `project.yml` (`commands.test`, `steering`, `review`, `review_profile`), the task diff from git | `.ai-flow/artifacts/T-XXX/verify.md` |
-| The workflow call | `args`: `taskId`, `area`, `understandPath`, `planPath`, `steeringPath`, `claudeMdPath`, `changedFiles`, `diffText`, `testCommand`, and the five optional `*Checklist` paths | `{ confirmed, refuted, unverified, proofs, summary }` |
+| The workflow call | `args`: `taskId`, `area`, `understandPath`, `planPath`, `contextPaths` (the task's context files as one list of `{ key, path }`, `workspace` reserved), `changedFiles`, `diffText`, `testCommand`, and the five optional `*Checklist` paths | `{ confirmed, refuted, unverified, proofs, summary }` |
 | The protocol | nothing — it is read, not executed | nothing |
 
 The skill is the only piece that touches the filesystem. The workflow is pure with respect to the

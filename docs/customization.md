@@ -37,7 +37,7 @@ commands:
 # distribute: "..."         # optional — a key UNDER commands: what puts merged work into effect
                             # (publish/deploy/reinstall); absent, the close's distribution move is a
                             # stated no-op
-steering:                   # area -> steering file the verify phase loads
+steering:                   # area -> the rules file the verify phase hands the review
   auth: steering/auth.md
 review:                     # optional — what the review auditors look for, per stack
   angular-app:

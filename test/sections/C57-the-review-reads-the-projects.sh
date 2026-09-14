@@ -30,7 +30,7 @@ if [ "$c57_readable" -eq 0 ]; then
 else
   DIM82="$(awk '/^const DIMENSIONS = \[/{f=1;next} /^\]$/{f=0} f' "$VW82")"
   # One region per axis: from that axis's `key:` to the next one. A row asserting over the whole array
-  # would be answered by a sibling prompt, which is how `steeringPath` came to be believed present on an
+  # would be answered by a sibling prompt, which is how the steering argument came to be believed present on an
   # auditor that never received it.
   dim_region() { printf '%s' "$DIM82" | awk -v k="key: '$1'" 'index($0,k){f=1;next} f && /key: '"'"'/{exit} f'; }
   SEC82="$(dim_region security)"
@@ -127,8 +127,10 @@ EOF82
   # Both halves; the architecture half was already true, so a row asserting only the new half stays green
   # after a refactor drops the old one.
   a4_82=""
-  [ "$(n82 'steeringPath' "$SEC82")" -ge 1 ]  || a4_82="$a4_82 [security]"
-  [ "$(n82 'steeringPath' "$ARC82")" -ge 1 ]  || a4_82="$a4_82 [architecture]"
+  [ "$(n82 'ctxArea' "$SEC82")" -ge 1 ]  || a4_82="$a4_82 [security]"
+  [ "$(n82 'ctxArea' "$ARC82")" -ge 1 ]  || a4_82="$a4_82 [architecture]"
+  # The half that replaces the harness file: the repository-wide entry reaches architecture and only it.
+  [ "$(n82 'ctxWorkspace' "$ARC82")" -ge 1 ] || a4_82="$a4_82 [architecture has no repository-wide entry]"
   [ -z "$a4_82" ] && ok "A4 the steering file reaches both the security and the architecture auditor" \
                   || bad "A4 the steering file reaches both the security and the architecture auditor (missing:$a4_82)"
 

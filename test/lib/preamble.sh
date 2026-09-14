@@ -626,7 +626,7 @@ marker89() {
       # mechanism exists to refuse.
       sweep89 s '^const DIMENSIONS = \[' ;;
     "Workflow arguments")
-      sweep89 i 'understandPath|claudeMdPath|steeringPath|diffText|changedFiles|testCommand' ;;
+      sweep89 i 'understandPath|contextPaths|diffText|changedFiles|testCommand' ;;
     "Declarable profile axes")
       # Two ways to carry the set: as YAML keys, or as the `<axis>Checklist` identifiers the call and the
       # prompts use. The comment prefix is stripped before the keys are read, because the shipped

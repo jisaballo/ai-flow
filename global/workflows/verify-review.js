@@ -8,8 +8,13 @@ export const meta = {
   ],
 }
 
-// args (from the /verify skill): { taskId, area, understandPath, planPath, steeringPath, claudeMdPath, changedFiles, diffText, testCommand,
+// args (from the /verify skill): { taskId, area, understandPath, planPath, contextPaths, changedFiles, diffText, testCommand,
 //                                  contractChecklist, coverageChecklist, securityChecklist, architectureChecklist, structureChecklist }
+// `contextPaths` is the task's context files as ONE list of { key, path } entries, in the order the
+// mechanism resolves them — the same files the earlier phases of the task read. The KEY is what makes an
+// entry findable: a value may name any path, so `workspace` (the repository-wide rules, a reserved key)
+// cannot be recovered from a path alone. An entry that is absent is absent on purpose and nothing here
+// substitutes for it: the skill has already said so in the run's own output.
 // The five `*Checklist` paths are the project's own list for that axis, resolved by the skill from the
 // review profile of the area under audit. Each is OPTIONAL and each is ADDITIVE: the engine's list below
 // is stack-agnostic and always applies, and a checklist extends it rather than replacing it. An axis given
@@ -32,8 +37,17 @@ if (typeof a === 'string') {
 // unadjudicated instead, to the phase that already holds the context needed to decide them.
 const REFUTE = ['high']
 
+// The list, and the two entries the prompts below name. Read once, here, rather than inside the prompts:
+// an entry looked up where it is used is an entry the next reader of that prompt cannot see is optional.
+const ctxList = Array.isArray(a.contextPaths) ? a.contextPaths : []
+const ctxOf = (k) => (ctxList.find((e) => e && e.key === k) || {}).path || ''
+const ctxWorkspace = ctxOf('workspace')
+const ctxArea = ctxOf(a.area)
+
 const ctx = [
   `Task: ${a.taskId || '(unknown)'} — area: ${a.area || '?'}`,
+  `Context files this task was written against:`,
+  (ctxList.length ? ctxList.map((e) => `  - ${e.key}: ${e.path}`).join('\n') : '  (none resolved)'),
   `Changed files:`,
   (a.changedFiles && a.changedFiles.length ? a.changedFiles.map((f) => `  - ${f}`).join('\n') : '  (none provided)'),
   ``,
@@ -186,7 +200,7 @@ const DIMENSIONS = [
     prompt: [
       ctx,
       ``,
-      `You are the SECURITY & ERROR HANDLING auditor for an ai-flow verify phase.${a.steeringPath ? ` The project's rules for this area are in ${a.steeringPath} — read them: an area whose stack or threat model differs from the rest of the project says so there.` : ''} Inspect the diff and the changed files (Read them as needed). Find:`,
+      `You are the SECURITY & ERROR HANDLING auditor for an ai-flow verify phase.${ctxArea ? ` The project's rules for this area are in ${ctxArea} — read them: an area whose stack or threat model differs from the rest of the project says so there.` : ''} Inspect the diff and the changed files (Read them as needed). Find:`,
       `- Inputs without validation, especially any value that crosses a trust boundary into this code`,
       `- Operations that can fail with no path for the failure — it is swallowed, or it never reaches a caller that could act on it`,
       `- Resources acquired and never released, including on the paths where something went wrong`,
@@ -206,7 +220,7 @@ const DIMENSIONS = [
     prompt: [
       ctx,
       ``,
-      `You are the ARCHITECTURE BOUNDARIES auditor for an ai-flow verify phase. Read the project's architecture and import rules in ${a.claudeMdPath || 'CLAUDE.md'}${a.steeringPath ? ` and the steering file ${a.steeringPath}` : ''}.`,
+      `You are the ARCHITECTURE BOUNDARIES auditor for an ai-flow verify phase.${ctxWorkspace ? ` Read the project's repository-wide architecture and import rules in ${ctxWorkspace}.` : ` This project declared no repository-wide rules file, so you were given none: judge boundaries from the diff, from the area's own rules where they reach you, and from the list below — and never invent a rule the project has not written down.`}${ctxArea ? ` The affected area's own rules are in ${ctxArea} — read them: a domain states there the boundaries and module layout the repository-wide rules cannot know about.` : ''}`,
       ``,
       `Inspect the diff and the changed files. Find:`,
       `- Dependencies crossing forbidden module/layer boundaries defined by the project`,
