@@ -69,8 +69,14 @@ OUT46="$(RNG46 | wc -l | tr -d ' ')"
 # ordinary fixture, and a row that fires on those is one the next person deletes. For each marker, the
 # six lines above it must bound the loop on a value derived from the protocol — which refuses a literal
 # list, a bare numeric bound and a `seq` alike, without naming any of them.
-LOOPS46="$(RNG46 | grep -cE 'clohead "\$i"|dmove "\$i"' || true)"
-BOUND46="$(RNG46 | grep -B6 -E 'clohead "\$i"|dmove "\$i"' | grep -cE 'while \[ "\$i" -le "\$nclo6?" \]' || true)"
+# The marker names the WHOLE call, argument included, and not the prefix the call happens to open with.
+# These two helpers take the ceremony text as a second argument; a pattern stopping at `dmove "$i"` still
+# matches `dmove "$i" "$CLO6"`, so it would keep reporting on a shape it no longer pins and go on passing
+# through the next re-parameterisation as well. A marker that matches a prefix of what it means to find is
+# the vacuous pass this block exists to refuse.
+MARK46='clohead "\$i" "\$CLO"|dmove "\$i" "\$CLO6"'
+LOOPS46="$(RNG46 | grep -cE "$MARK46" || true)"
+BOUND46="$(RNG46 | grep -B6 -E "$MARK46" | grep -cE 'while \[ "\$i" -le "\$nclo6?" \]' || true)"
 DERIV46="$(RNG46 | grep -cE 'nclo6?="\$\(printf' || true)"
 if [ -z "$LINES46" ] || [ "$LINES46" -lt 100 ] || [ -z "$OUT46" ] || [ "$OUT46" -lt 100 ] \
    || [ -z "$LOOPS46" ] || [ -z "$BOUND46" ] || [ -z "$DERIV46" ]; then

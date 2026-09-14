@@ -253,5 +253,73 @@ fi
 [ -z "$r10_93" ] \
   && ok "every constant more than one section reads is assigned in the preamble and in no section" \
   || bad "every constant more than one section reads is assigned in the preamble and in no section ($r10_93)"
+# ROW 11 -- no helper in the shared machinery reads a name only a section assigns.
+#
+# The doctrine this row enforces: a shared helper takes what it needs as an ARGUMENT; it does not read a
+# value its caller happens to have set. Seven helpers were hoisted into the preamble closing over a global
+# that exactly one section assigns, and nothing went red -- because each had one caller, which assigned
+# first. The failure mode when a second caller appears is SILENT, not loud: every one of the seven is a
+# pipeline whose last stage exits 0 on empty input, so `set -u` kills the first subshell and the caller
+# reads success over nothing. An absence leg built on any of them reports ABSENT and goes green.
+#
+# The admission rule that let them in was applied to a caller count produced by a lexical detector, which
+# counted a grep PATTERN STRING as a call. That detector is retired: no lexical pass over bash separates
+# the two, proven twice. This row replaces it with a derivation that asks a different question -- not who
+# calls a helper, but what a helper reads that its own file never assigns.
+#
+# Rule 2 above, and the class this row belongs to: a guard for a defect whose whole characteristic is that
+# it stays green is the last place to accept a one-directional check. So the machinery is exercised on a
+# fixture carrying a PLANTED leak before the real verdict is read from it -- an empty answer then means
+# "no leaks", never "the extractor stopped extracting".
+leak93() { # $1 = preamble file, $2 = newline list of section files -> one `fn:VAR` per leak
+  local pre="$1" secs="$2" reads
+  # Every name READ inside a function body of the preamble, paired with the function that reads it. A
+  # helper called only by another helper is still shared layer, so the pairing is per definition and the
+  # verdict below is per name: threading a value through a wrapper is a repair, not an evasion.
+  reads="$(awk '
+    /^[a-zA-Z_][a-zA-Z0-9_]*\(\)[[:space:]]*\{/ { fn=$0; sub(/\(\).*/,"",fn); d=1 }
+    d && fn != "" {
+      line=$0
+      while (match(line, /\$\{?[a-zA-Z_][a-zA-Z0-9_]*/)) {
+        v=substr(line, RSTART, RLENGTH); gsub(/[${]/,"",v)
+        print fn ":" v
+        line=substr(line, RSTART+RLENGTH)
+      }
+      if ($0 ~ /^\}/ || ($0 ~ /\}[[:space:]]*$/ && $0 ~ /^[a-zA-Z_][a-zA-Z0-9_]*\(\)/)) { fn=""; d=0 }
+    }' "$pre" | sort -u)"
+  printf '%s\n' "$reads" | while IFS=: read -r fn v; do
+    [ -n "$v" ] || continue
+    # Assigned somewhere in the preamble itself -- as a constant, a local, a loop variable or a read
+    # target -- is the ordinary case and not a leak.
+    grep -qE "(^|[[:space:]]|;|\(|local |for |read -r )${v}=" "$pre" && continue
+    grep -qE "(for|read -r|local)[[:space:]]+${v}([[:space:]]|$)" "$pre" && continue
+    # Assigned by at least one section is what makes it a leak. The pattern allows LEADING WHITESPACE:
+    # C31 assigns $GS indented inside `if [ "$PY3" = 1 ]`, and an anchor at column 0 misses exactly the
+    # one of the seven that sits in the readable branch ROW 8 was written against.
+    printf '%s\n' "$secs" | while IFS= read -r f; do
+      [ -n "$f" ] && grep -qE "^[[:space:]]*${v}=" "$f" && printf '%s:%s\n' "$fn" "$v"
+    done
+  done | sort -u
+}
+r11_93=""
+if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
+  # The presence control, on the same machinery the verdict uses: a fixture preamble whose helper closes
+  # over a value only the fixture section assigns. Found here, an empty answer over the real tree means
+  # what it says.
+  mkdir -p "$T93/leak/lib" "$T93/leak/sections"
+  printf '%s\n' 'planted() { printf "%s" "$PLANT93"; }' > "$T93/leak/lib/preamble.sh"
+  printf '%s\n' 'PLANT93="x"' > "$T93/leak/sections/C01-fixture.sh"
+  if [ "$(leak93 "$T93/leak/lib/preamble.sh" "$T93/leak/sections/C01-fixture.sh")" != "planted:PLANT93" ]; then
+    r11_93=" [the extractor did not find a planted leak: it is not measuring]"
+  else
+    LEAKS93="$(leak93 "$PRE93" "$CORPUS93")"
+    [ -n "$LEAKS93" ] && r11_93=" [$(printf '%s' "$LEAKS93" | tr '\n' ' ')]"
+  fi
+else
+  r11_93=" [no preamble or no corpus to read]"
+fi
+[ -z "$r11_93" ] \
+  && ok "no helper in the shared machinery reads a name only a section assigns" \
+  || bad "no helper in the shared machinery reads a name only a section assigns ($r11_93)"
 
 rm -rf "$T93"

@@ -4,7 +4,7 @@ PY19="template/.ai-flow/project.yml"
 # The ceremony, bounded at the next section, fence-aware. Re-declared rather than inherited from C15:
 # a criterion that reads another's extractor changes verdict when that one is re-scoped.
 CLO6="$(awk '/^## Closing a Workstream/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^## /){f=0} f' "$BLG6")"
-D5="$(dmove 5)"
+D5="$(dmove 5 "$CLO6")"
 
 if [ -n "$D5" ]; then
   # Where it runs and what it distributes. Running it from a front repoints the installed engine's
@@ -58,8 +58,8 @@ if [ -n "$D5" ]; then
   nclo6="$(printf '%s\n' "$CLO6" | grep -cE '^[0-9]+\. ')"
   if printf '%s' "$D5" | grep -qiE 'every (task )?close|each (task )?close|always' \
      && ! printf '%s' "$D5" | grep -qiE 'no next task|has no next|last task' \
-     && printf '%s' "$(dmove $((nclo6-1)))" | grep -qiE 'no next task|has no next|last task' \
-     && printf '%s' "$(dmove "$nclo6")" | grep -qiE 'no next task|has no next|last task'; then
+     && printf '%s' "$(dmove $((nclo6-1)) "$CLO6")" | grep -qiE 'no next task|has no next|last task' \
+     && printf '%s' "$(dmove "$nclo6" "$CLO6")" | grep -qiE 'no next task|has no next|last task'; then
     ok "the distribution move runs at every close, unlike the tail"
   else
     bad "the distribution move runs at every close, unlike the tail"
@@ -125,7 +125,7 @@ TAIL6=""; DIS6=""; MRG6=""
 nclo6="$(printf '%s\n' "$CLO6" | grep -cE '^[0-9]+\. ')"
 i=1
 while [ "$i" -le "$nclo6" ]; do
-  m="$(dmove "$i")"
+  m="$(dmove "$i" "$CLO6")"
   printf '%s' "$m" | grep -qiE 'no next task|has no next|last task' && TAIL6="$TAIL6 $i"
   printf '%s' "$m" | grep -qi 'dismantl' && DIS6="$i"
   printf '%s' "$m" | grep -qi 'merge lands' && MRG6="$i"

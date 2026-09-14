@@ -438,7 +438,11 @@ off() { printf '%s' "$1" | grep -obF "$2" | head -1 | cut -d: -f1; }
 
 # The move's own lead line — its identity. Classifying on the lead rather than on the body is what
 # lets the order assertion see a MOVED move: a body pattern matches wherever its words landed.
-clohead() { printf '%s\n' "$CLO" | grep -E "^$1\. " | head -1; }
+# $1 = move number, $2 = the ceremony text. The text is an ARGUMENT and never a global this reaches
+# for: a shared helper closing over a value one caller happens to assign answers empty-and-successful
+# for every other caller — this is a pipeline whose last stage exits 0 on empty input, so the unbound
+# expansion dies in the first subshell and never reaches the caller.
+clohead() { printf '%s\n' "$2" | grep -E "^$1\. " | head -1; }
 
 # One rung of the numbered ladder, flattened: what a rung must say is a property of the rung, never of
 # where its prose happens to wrap, and never of a neighbouring rung's words.
@@ -482,7 +486,8 @@ vstep() { awk -v s="^$2\\\\. " -v e="^$(($2 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f
 # One numbered move, flattened AND whitespace-squeezed. What a move must say is a property of the move,
 # never of where its prose happens to wrap, and never of a neighbouring move's words — a section-wide
 # grep here would pass on the record move above it and on the dismantle move below.
-dmove() { printf '%s\n' "$CLO6" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
+# $1 = move number, $2 = the ceremony text — passed in, for the reason clohead's own note gives.
+dmove() { printf '%s\n' "$2" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{cur=$0+0} cur==n' | tr '\n' ' ' | tr -s ' '; }
 
 # As a KEY, never as a word: both the template's comment and the doc's list the candidate verbs in
 # prose ("publish, deploy, regenerate"), so a bare word match answered from a neighbouring sentence —

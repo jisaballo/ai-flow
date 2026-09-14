@@ -27,7 +27,7 @@ if [ -n "$CLO" ]; then
   seq=""
   i=1
   while [ "$i" -le "$nclo" ]; do
-    case "$(clohead "$i" | tr 'A-Z' 'a-z')" in
+    case "$(clohead "$i" "$CLO" | tr 'A-Z' 'a-z')" in
       *valid*)               seq="$seq V" ;;
       *collect*|*harvest*)   seq="$seq C" ;;
       *merge*)               seq="$seq M" ;;
