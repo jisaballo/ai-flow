@@ -502,10 +502,53 @@ fi
 
 # Fact 10 — the template ships no copy of the rule. It carries project data only; a copy there would be
 # a second home nothing keeps in step.
-# Precondition, or the check is free: with the rule written nowhere, "the template does not carry it"
-# passes on an empty repository and proves nothing.
-if [ "$RULE_HOMES" -ge 1 ] 2>/dev/null && ! grep -rqie 'never modifies what it audits' template/ 2>/dev/null; then
-  ok "the template ships no copy of the rule"
+#
+# The key is DERIVED FROM THE RULE, never written here. This leg used to grep template/ for the literal
+# `never modifies what it audits`, and as an absence keyed on a phrase it failed both ways: reword the
+# rule in global/ and the leg went on searching for words the engine no longer used, so a copy carrying
+# the NEW wording passed unseen; and the pin was the whole check, so nothing else would have noticed.
+# Taking the lines out of the rule's own extracted region instead means a reword re-keys the search in
+# the same edit that performs it -- which is what keying on the claim rather than the word means here.
+#
+# Long lines only. A short one ("It carries project data only.") is a sentence any document might share by
+# coincidence, and a coincidence reported as a second home is a false red that teaches people to ignore
+# the row.
+rulelines18() { # -> the rule's own lines, one per line, long enough to be distinctive
+  awk '/^## Mutation and the Working Copy/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^#+ /){f=0} f' "$VP" \
+    | sed 's/^[[:space:]]*[-*][[:space:]]*//; s/\*\*//g; s/`//g' \
+    | awk 'NF >= 8'
+}
+copyin18() { # $1 = directory -> every rule line that also appears there
+  local dir="$1" ln
+  rulelines18 | while IFS= read -r ln; do
+    [ -n "$ln" ] || continue
+    grep -rqF "$ln" "$dir" 2>/dev/null && printf '%s\n' "$ln"
+  done
+}
+# The precondition is the rule's own region, and deliberately NOT $RULE_HOMES. That count is a grep of
+# global/ for one literal spelling of the invariant, and leaning on it here left this leg phrase-coupled
+# through the back door after its search terms had been freed of the phrase: the reword battery turned the
+# row red reporting `homes=0` while the template shipped no copy, which is the false red the re-key existed
+# to remove. The region being non-empty and carrying distinctive lines is the whole precondition this leg
+# needs -- it is what makes the comparison meaningful, and it survives any rewording of what it extracts.
+n18f10="$(rulelines18 | grep -c . | tr -d ' ')"
+r18f10=""
+if [ "${n18f10:-0}" -ge 1 ]; then
+  # The presence control, on the same machinery: a fixture directory carrying one of the rule's own lines
+  # must be reported. Without it, an extraction that quietly yielded nothing would report the template
+  # clean for the one reason the row can never afford -- that it stopped being able to look.
+  CTL18="$(mkbox)" || fatal 'C18 fact10 fixture'
+  rulelines18 | head -1 > "$CTL18/planted.md"
+  if [ -z "$(copyin18 "$CTL18")" ]; then
+    r18f10=" [the extractor did not find a planted copy of the rule: it is not measuring]"
+  else
+    FOUND18="$(copyin18 template/ | head -1)"
+    [ -n "$FOUND18" ] && r18f10=" [template/ carries a line of the rule: ${FOUND18%% *}...]"
+  fi
+  rm -rf "$CTL18"
 else
-  bad "the template ships no copy of the rule"
+  r18f10=" [the rule section yielded no distinctive line to compare against]"
 fi
+[ -z "$r18f10" ] \
+  && ok "the template ships no copy of the rule" \
+  || bad "the template ships no copy of the rule ($r18f10)"

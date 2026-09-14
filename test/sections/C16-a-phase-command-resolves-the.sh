@@ -83,6 +83,19 @@ done
   && ok "the rail points back at the block that owns the ladder" \
   || bad "the rail points back at the block that owns the ladder ($p5)"
 
+# The presence control for the rung detector below. An absence verdict is worth what its extractor is
+# worth, and the cheapest way to make "no skill restates the ladder" green is a pattern that matches
+# nothing at all. The planted line restates rung 3 in a wording the two retired pins would both have
+# missed, so passing this proves the widening rather than the plumbing.
+RCTL16='(declares|names|carries|holds|with|without) no branch|lone sheet|sheet that declares none'
+RCTL16="$RCTL16"'|(exactly|only|just|precisely) one task|a single task|one task only|names one task'
+if printf '%s' 'failing that, the roster answers where it names just one task' | grep -qiE "$RCTL16" \
+   && ! printf '%s' 'the sheet whose claim is the branch this checkout is on' | grep -qiE "$RCTL16"; then
+  ok "the rung detector finds a reworded fallback rung and reports nothing on the ordinary case"
+else
+  bad "the rung detector finds a reworded fallback rung and reports nothing on the ordinary case"
+fi
+
 for s in $PHASE_SKILLS; do
   f="global/skills/$s/SKILL.md"
   if [ ! -f "$f" ]; then
@@ -107,7 +120,21 @@ for s in $PHASE_SKILLS; do
   # The anti-drift assertion. A skill may name the ordinary case (the sheet claiming this branch) —
   # that is the headline, not the ladder. What it may never do is re-spell the FALLBACK rungs, because
   # a second statement of those is the copy that drifts.
-  if printf '%s' "$c" | grep -qi 'exactly one task' || printf '%s' "$c" | grep -qi 'declares no branch'; then
+  #
+  # This was two literal pins, `exactly one task` and `declares no branch`, and as an ABSENCE keyed on a
+  # phrase it was wrong in both directions: red when the ladder reworded a rung it still stated, green when
+  # a skill re-spelled that rung in any words nobody had listed. The second is the drift the row exists for,
+  # and it walked straight past.
+  #
+  # Widened to the rungs' CONTENT rather than their spelling, and — because a widening is still lexical —
+  # given the presence control below, which is what the engine's own rule asks of an absence leg. What it
+  # still cannot catch is a rung restated with no word in common with any listed here; that gap is real,
+  # it is smaller than the one it replaces, and it is written down rather than left for the next reader to
+  # discover by being bitten. A structural key exists for the sibling row in C22, where the subject is an
+  # enumeration and can be counted; a fallback rung has no such shape.
+  RUNGS16='(declares|names|carries|holds|with|without) no branch|lone sheet|sheet that declares none'
+  RUNGS16="$RUNGS16"'|(exactly|only|just|precisely) one task|a single task|one task only|names one task'
+  if printf '%s' "$c" | grep -qiE "$RUNGS16"; then
     bad "$s does not restate the ladder"
   else
     ok "$s does not restate the ladder"

@@ -209,6 +209,47 @@ else
   bad "the handover to EXECUTE carries the reason it exists"
 fi
 
+
+# Every line naming two or more of the accepted positions as a set -- which is what restating them looks
+# like, in any wording. $1 = a document's text.
+#
+# This replaces a pair of literal pins (`UNDERSTAND or PLAN`, `EXECUTE or VERIFY`). Those were an ABSENCE
+# keyed on a phrase: red when the precondition reworded its own enumeration and still said the same thing,
+# green when a skill restated the set in words nobody had listed -- which is the drift the rows exist to
+# catch, walking past them. The claim was never about those two spellings; it is that a second document
+# enumerates the set at all. Counting DISTINCT positions per line asks that question directly, so
+# `PLAN and EXECUTE`, `VERIFY, EXECUTE` and `either UNDERSTAND or else PLAN` are all caught without anyone
+# having to have thought of them.
+#
+# Per LINE and not per document, because every one of these files names its own phase many times over and
+# a document-wide count would report all of them. A line is the unit at which two positions sit together
+# as a set.
+enum22() {
+  printf '%s\n' "$1" | awk '
+    { n = 0; delete seen; s = $0
+      while (match(s, /(ACTIVATE|UNDERSTAND|PLAN|EXECUTE|VERIFY)/)) {
+        w = substr(s, RSTART, RLENGTH)
+        if (!(w in seen)) { seen[w] = 1; n++ }
+        s = substr(s, RSTART + RLENGTH)
+      }
+      if (n >= 2) printf "L%d ", NR
+    }'
+}
+
+# The presence control for it, run once and read by both loops below. Rule of the class: an absence
+# verdict is worth exactly what the extractor behind it is worth, and the cheapest way to make "no
+# document restates the set" green is an extractor that finds nothing anywhere. The fixture restates the
+# set in a wording NEITHER retired pin would have matched, so passing it proves the widening and not just
+# the plumbing.
+CTL22="$(enum22 'the command runs on PLAN and EXECUTE, never on the position before them')"
+NCTL22="$(enum22 'the command runs on its own position and names no other')"
+ENUMOK22=1
+[ -n "$CTL22" ] || ENUMOK22=0
+[ -z "$NCTL22" ] || ENUMOK22=0
+[ "$ENUMOK22" = 1 ] \
+  && ok "the restatement detector finds a reworded enumeration and reports nothing on a clean line" \
+  || bad "the restatement detector finds a reworded enumeration and reports nothing on a clean line (planted=[$CTL22] clean=[$NCTL22])"
+
 # --- the three commands obey it, and restate none of it ------------------
 for s in $C22_SKILLS; do
   f="global/skills/$s/SKILL.md"
@@ -230,10 +271,11 @@ for s in $C22_SKILLS; do
 
   # The anti-drift assertion, the same one the ladder already earned: a skill may name its own phase,
   # never re-spell the accepted SETS, because a second statement of those is the copy that drifts.
-  if printf '%s' "$c" | grep -q 'UNDERSTAND or PLAN' \
-     || printf '%s' "$c" | grep -q 'EXECUTE or VERIFY' \
-     || printf '%s' "$c" | grep -qiE 'not later than|no later than'; then
-    bad "$s does not restate the accepted positions"
+  e22="$(enum22 "$c")"
+  if [ "$ENUMOK22" != 1 ]; then
+    bad "$s does not restate the accepted positions (the detector is not measuring)"
+  elif [ -n "$e22" ] || printf '%s' "$c" | grep -qiE 'not later than|no later than'; then
+    bad "$s does not restate the accepted positions ($e22)"
   else
     ok "$s does not restate the accepted positions"
   fi
@@ -323,10 +365,11 @@ for pr in understand plan execute verify; do
   else
     bad "the $pr protocol cites the phase precondition"
   fi
-  if printf '%s' "$pc" | grep -q 'UNDERSTAND or PLAN' \
-     || printf '%s' "$pc" | grep -q 'EXECUTE or VERIFY' \
-     || printf '%s' "$pc" | grep -qiE 'not later than|no later than'; then
-    bad "the $pr protocol does not restate the accepted positions"
+  pe22="$(enum22 "$pc")"
+  if [ "$ENUMOK22" != 1 ]; then
+    bad "the $pr protocol does not restate the accepted positions (the detector is not measuring)"
+  elif [ -n "$pe22" ] || printf '%s' "$pc" | grep -qiE 'not later than|no later than'; then
+    bad "the $pr protocol does not restate the accepted positions ($pe22)"
   else
     ok "the $pr protocol does not restate the accepted positions"
   fi
