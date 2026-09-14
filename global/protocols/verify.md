@@ -238,10 +238,13 @@ resolved: `branch scope unavailable — uncommitted work only`. Where the trunk 
 commit(s) ahead of its remote, and publishing what is not this task's own removes the overlap; where
 the trunk is current, where no remote trunk resolved, or where no base resolved, no lag line is
 written. The working copy was left as found; if it was
-not, what changed and what was restored. The review profile step 7 resolved and the checklist each axis
+not, what changed and what was restored. The context files the review was handed, each by key and path;
+where no `workspace` entry was among them, the line the run wrote saying so and naming what to declare,
+and where one was, no such line. The review profile step 7 resolved and the checklist each axis
 received. **What each resolution obliges this line to carry is the table at step 7 of the `/verify`
 skill, third column, and is stated there and only there** — every outcome with the line it owes, and
-the one case that owes nothing. If the audit ran out of phase on the operator's word, that it did and that the sheet's position
+the one case that owes nothing. The context half is not in that table and is not one of its outcomes:
+the table is the profile's, and step 7 states the context pair beside it. If the audit ran out of phase on the operator's word, that it did and that the sheet's position
 was not moved.
 
 ## Criteria Audit

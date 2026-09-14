@@ -77,7 +77,10 @@ else
   [ -n "$S10_94" ] || a3_94="$a3_94 [step 10 could not be extracted]"
   [ -n "$TPL94" ]  || a3_94="$a3_94 [the report template could not be extracted]"
   [ "$(n94 'workspace' "$S7_94")" -ge 1 ] || a3_94="$a3_94 [step 7 never names the reserved entry]"
-  [ "$(n94 'no workspace|holds none|holds no workspace|without a workspace' "$S7_94")" -ge 1 ] \
+  # The alternatives tolerate an inline code span around the key, which is how this repository spells it
+  # everywhere else. Tolerating the span does not weaken the leg: with no absent case stated at all, none
+  # of the four alternatives matches, and the row is red exactly as before.
+  [ "$(n94 'holds no .?workspace|holds none|without a .?workspace|no .?workspace.? entry' "$S7_94")" -ge 1 ] \
     || a3_94="$a3_94 [step 7 states no absent case]"
   [ "$(n94 'declare|what to declare' "$S7_94")" -ge 1 ] \
     || a3_94="$a3_94 [step 7's absent case names no remedy]"
