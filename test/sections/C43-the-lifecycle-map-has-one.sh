@@ -125,18 +125,18 @@ fi
 # slip into an unrecoverable loss. Counted rather than spot-checked — a check naming three phases
 # passes on a document that lost the other six.
 np5="$(grep -cE '^### [0-9]+\. ' "$MAP43" 2>/dev/null || true)"
-a5=""
-[ "$np5" = "9" ] || a5="$a5 phase-sections=$np5(want 9)"
-grep -qE '^## Execution Paths'  "$MAP43" 2>/dev/null || a5="$a5 paths-section"
-grep -qE '^## Autonomy Levels'  "$MAP43" 2>/dev/null || a5="$a5 autonomy-section"
-grep -qiE '^\| *\*{0,2}Full\b'  "$MAP43" 2>/dev/null || a5="$a5 full-row"
-grep -qiE '^\| *\*{0,2}Quick\b' "$MAP43" 2>/dev/null || a5="$a5 quick-row"
+a5_43=""
+[ "$np5" = "9" ] || a5_43="$a5_43 phase-sections=$np5(want 9)"
+grep -qE '^## Execution Paths'  "$MAP43" 2>/dev/null || a5_43="$a5_43 paths-section"
+grep -qE '^## Autonomy Levels'  "$MAP43" 2>/dev/null || a5_43="$a5_43 autonomy-section"
+grep -qiE '^\| *\*{0,2}Full\b'  "$MAP43" 2>/dev/null || a5_43="$a5_43 full-row"
+grep -qiE '^\| *\*{0,2}Quick\b' "$MAP43" 2>/dev/null || a5_43="$a5_43 quick-row"
 for lv5 in Auto Guided Supervised; do
-  grep -qiE "^\| *\*{0,2}$lv5\b" "$MAP43" 2>/dev/null || a5="$a5 ${lv5}-row"
+  grep -qiE "^\| *\*{0,2}$lv5\b" "$MAP43" 2>/dev/null || a5_43="$a5_43 ${lv5}-row"
 done
-[ -z "$a5" ] \
+[ -z "$a5_43" ] \
   && ok "the map carries all nine phases, both paths and all three autonomy levels" \
-  || bad "the map carries all nine phases, both paths and all three autonomy levels (missing:$a5)"
+  || bad "the map carries all nine phases, both paths and all three autonomy levels (missing:$a5_43)"
 
 # --- the map is delivered, not merely written ------------------------------
 # A3. The front door sends a reader to the map, and sends them to the copy that ships. A link into

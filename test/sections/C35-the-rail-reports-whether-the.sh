@@ -1,14 +1,14 @@
 echo "== C35: the rail reports whether the protection is here, and judges nothing else =="
 # A sandbox of this block's own. It used to read the one C11 opens, which is why this section could
 # not be asked for on its own: under a filter C11 never runs and every path below collapses to "/".
-T11="$(mkbox)" || fatal 'C35 fixtures'
+BOX35="$(mkbox)" || fatal 'C35 fixtures'
 # The rail's new job, and the whole reason this section is short where the matcher it replaces needed
 # forty-six rows: the rail no longer decides anything about a command. Its trigger is a crude text test
 # and is allowed to be one, because a shape it misses is a reminder that does not fire in a repository
 # git's own hooks are not guarding either way. What it must never do again is refuse work.
 if [ "$PY3" = 1 ] && command -v git >/dev/null 2>&1; then
   GS35="$HK/git-safety.py"
-  T35="$T11/c35"; mkdir -p "$T35"
+  T35="$BOX35/c35"; mkdir -p "$T35"
   ENG35="$T35/enginehooks"; mkdir -p "$ENG35"
   printf '#!/bin/sh\nexit 0\n' > "$ENG35/pre-push"; chmod 755 "$ENG35/pre-push"
   printf '#!/bin/sh\nexit 0\n' > "$ENG35/pre-commit"; chmod 755 "$ENG35/pre-commit"

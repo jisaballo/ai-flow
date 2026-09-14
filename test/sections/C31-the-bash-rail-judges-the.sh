@@ -1,7 +1,7 @@
 echo "== C31: the Bash rail judges the fields it can read =="
 # A sandbox of this block's own. It used to read the one C11 opens, which is why this section could
 # not be asked for on its own: under a filter C11 never runs and every path below collapses to "/".
-T11="$(mkbox)" || fatal 'C31 fixtures'
+BOX31="$(mkbox)" || fatal 'C31 fixtures'
 # The first behavioural coverage this rail has ever had. Until now the only assertions naming it counted
 # its entry in settings.json, which is installer structure — so there was no positive control anywhere in
 # this file to borrow, and A4 builds one here, in the same fixture as the payload checks. That control is
@@ -49,11 +49,11 @@ if [ "$PY3" = 1 ]; then
   # HOME, so a control that leaves it real reads the state of the machine running the suite and inverts
   # once the installer has been run there. The engine copies here are throwaway and executable, so the
   # fixture reaches the question it means to ask instead of stopping at "no engine hooks installed".
-  C31H="$T11/c31home"; mkdir -p "$C31H/.claude/hooks/git"
+  C31H="$BOX31/c31home"; mkdir -p "$C31H/.claude/hooks/git"
   printf '#!/bin/sh\nexit 0\n' > "$C31H/.claude/hooks/git/pre-push"
   printf '#!/bin/sh\nexit 0\n' > "$C31H/.claude/hooks/git/pre-commit"
   chmod 755 "$C31H/.claude/hooks/git/pre-push" "$C31H/.claude/hooks/git/pre-commit"
-  C31R="$T11/c31rail"; mkproj "$C31R" main
+  C31R="$BOX31/c31rail"; mkproj "$C31R" main
   out="$(printf '{"cwd":"%s","tool_input":{"command":"git push origin main"}}' "$C31R" | HOME="$C31H" python3 "$GS" 2>&1)"; rc=$?
   case "$out" in *"not active in this repository"*) said=1 ;; *) said=0 ;; esac
   { [ "$rc" = 2 ] && [ "$said" = 1 ]; } \

@@ -13,6 +13,18 @@
 # that has merely moved, which is the exact failure this file exists to remove.
 
 
+# The runner's per-section variable, declared here because it is read across files.
+#
+# The runner assigns it once per iteration of the run, to the path of the section it is about to source;
+# this file and two sections read it. That makes it a cross-file API, and an API nobody declares is one a
+# reader has to discover by grepping the runner -- the same shape a shared helper closing over a caller's
+# global has, arrived at from the other side. Declared rather than renamed: the name was never the defect,
+# and four call sites moved would buy nothing this line does not.
+#
+# The `-` default is what makes the declaration real rather than decorative: sourced outside a run, or by
+# a section asked for on its own, every reader below still sees a defined name instead of dying on `set -u`.
+SECTION="${SECTION-}"
+
 PASS=0
 FAIL=0
 ok()   { echo "  [ok]   $1"; PASS=$((PASS+1)); }

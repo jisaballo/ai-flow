@@ -367,4 +367,121 @@ fi
   && ok "no helper in the shared machinery reads a name only a section assigns" \
   || bad "no helper in the shared machinery reads a name only a section assigns ($r11_93)"
 
+# ROW 12 -- no name a section declares at top level is declared by another section.
+#
+# ROW 10 answers the names the SHARED layer owns: present in the preamble, absent from every section.
+# Nothing answered the other half -- two sections declaring the same name with the preamble holding
+# neither. Three did: T11 (a sandbox path six sections reached for), T25 (a sandbox), a5 (an accumulator).
+#
+# The unit is a TOP-LEVEL declaration, at column 0, and that is the claim rather than a convenience. An
+# indented assignment sits inside an `if`, a `for` or a function body: it is scratch, written before it is
+# read in the same block, and eighteen names are shared that way with nothing at stake -- `i`, `f`, `c`,
+# `out`, `miss`. A row that reported those would report eighteen non-defects beside every real one, which
+# is the alarm nobody acts on. What makes a collision cost something is a name a section DECLARES and a
+# later section silently inherits, and a declaration is what column 0 marks.
+#
+# The cost of the boundary, stated so the next reader does not have to find it: a genuine collision written
+# indented escapes this row. That is accepted here because the failure it protects against is inheritance
+# across sections, and a value inherited across sections is one declared where the section can see it.
+#
+# Rule 2 of this block's header: the verdict is an absence, so it is read only after the same machinery has
+# been made to speak on a fixture that plants one.
+decl93() { # $1 = newline list of section files -> `NAME SECTIONID` per top-level declaration
+  printf '%s\n' "$1" | while IFS= read -r f93d; do
+    [ -n "$f93d" ] || continue
+    id93d="$(section_id "$f93d")"
+    grep -oE '^[A-Za-z_][A-Za-z0-9_]*=' "$f93d" | tr -d '=' | sort -u \
+      | while IFS= read -r n93d; do [ -n "$n93d" ] && printf '%s %s\n' "$n93d" "$id93d"; done
+  done
+}
+coll93() { # $1 = newline list of section files -> `NAME: id id ...` per name declared by more than one
+  decl93 "$1" | sort | awk '{ n[$1] = n[$1] " " $2; c[$1]++ }
+                            END { for (k in c) if (c[k] > 1) print k ":" n[k] }' | sort
+}
+r12_93=""
+if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
+  # The presence control, on the same machinery the verdict uses. Two fixture sections declaring one name
+  # between them: found here, an empty answer over the real corpus means what it says rather than meaning
+  # that the extractor stopped extracting.
+  mkdir -p "$T93/coll/sections"
+  printf '%s\n' 'PLANT93="a"' > "$T93/coll/sections/C01-fixture.sh"
+  { printf '%s\n' 'PLANT93="b"'
+    printf '%s\n' '  INDENTED93="c"'
+  } > "$T93/coll/sections/C02-fixture.sh"
+  printf '%s\n' '  INDENTED93="d"' >> "$T93/coll/sections/C01-fixture.sh"
+  PLANTC93="$(coll93 "$(find "$T93/coll/sections" -name 'C*.sh' | sort)" | tr '\n' ' ' | sed 's/ *$//')"
+  if [ "$PLANTC93" != "PLANT93: C01 C02" ]; then
+    # Both halves in one comparison: the planted top-level collision must be found, and the planted
+    # INDENTED one must NOT be -- a machine that reported both would be the false-red machine this row
+    # was shaped to avoid, and it would pass a control that only asked whether anything was found.
+    r12_93=" [the extractor did not answer the planted corpus exactly: it is not measuring ($PLANTC93)]"
+  else
+    COLL93="$(coll93 "$CORPUS93")"
+    # A name the preamble also assigns is ROW 10's subject, not this row's: reporting it here would bill
+    # one defect to two rows and send the repair to the wrong layer.
+    COLL93="$(printf '%s\n' "$COLL93" | while IFS= read -r l93; do
+      [ -n "$l93" ] || continue
+      grep -qE "^${l93%%:*}=" "$PRE93" || printf '%s\n' "$l93"
+    done)"
+    [ -n "$COLL93" ] && r12_93=" [$(printf '%s' "$COLL93" | tr '\n' ' ')]"
+  fi
+else
+  r12_93=" [no preamble or no corpus to read]"
+fi
+[ -z "$r12_93" ] \
+  && ok "no name a section declares at top level is declared by another section" \
+  || bad "no name a section declares at top level is declared by another section ($r12_93)"
+
+# ROW 13 -- a section may read the runner's per-section variable only because the shared layer declares it.
+#
+# The runner assigns $SECTION once, as the loop variable of the run, and three readers close over it: the
+# preamble's own extractor and two sections. Read across files and declared nowhere, it is an undeclared
+# cross-file API -- the shape ROW 11 refuses for helpers, arrived at from the other side. ROW 11 asks what a
+# shared helper reads that its own file never assigns; this asks what a SECTION reads that neither it nor
+# the shared layer ever assigns, which no row covered.
+#
+# The repair the row drives is a declaration, never a rename: four call sites moved would buy nothing the
+# declaration does not already give, and the name is not the defect.
+#
+# Rule 2 again, and it bites harder here than anywhere: the verdict is "no section reads an undeclared
+# name", and the cheapest way to make that green is an extractor that finds no readers at all. So the
+# machinery is shown a fixture whose shared layer declares nothing and whose section reads the name, and
+# its answer is checked before the real corpus is read.
+reads93() { # $1 = newline list of section files -> one section id per file reading the runner's variable
+  printf '%s\n' "$1" | while IFS= read -r f93r; do
+    [ -n "$f93r" ] || continue
+    grep -qE '\$\{?SECTION\b' "$f93r" && printf '%s\n' "$(section_id "$f93r")"
+  done
+}
+undecl93() { # $1 = preamble file, $2 = newline list of section files -> readers left undeclared
+  grep -qE '^SECTION=' "$1" && return 0
+  reads93 "$2"
+}
+r13_93=""
+if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
+  mkdir -p "$T93/decl/lib" "$T93/decl/sections"
+  printf '%s\n' 'nothing_declared_here() { :; }' > "$T93/decl/lib/preamble.sh"
+  printf '%s\n' 'printf "%s" "$SECTION"' > "$T93/decl/sections/C01-fixture.sh"
+  FX93="$(find "$T93/decl/sections" -name 'C*.sh' | sort)"
+  PLANTD93="$(undecl93 "$T93/decl/lib/preamble.sh" "$FX93" | tr '\n' ' ' | sed 's/ *$//')"
+  if [ "$PLANTD93" != "C01" ]; then
+    r13_93=" [the extractor did not name the planted undeclared reader: it is not measuring ($PLANTD93)]"
+  else
+    # The other direction of the same fixture: with the declaration added, the same machinery must fall
+    # silent. A control that only proves the row can go red leaves it free to be red always.
+    printf '%s\n' 'SECTION="${SECTION-}"' >> "$T93/decl/lib/preamble.sh"
+    if [ -n "$(undecl93 "$T93/decl/lib/preamble.sh" "$FX93")" ]; then
+      r13_93=" [the extractor still reports a reader after the fixture declared the name: it cannot go green]"
+    else
+      U93="$(undecl93 "$PRE93" "$CORPUS93" | tr '\n' ' ')"
+      [ -n "$U93" ] && r13_93=" [the shared layer declares no SECTION, and these sections read it: $U93]"
+    fi
+  fi
+else
+  r13_93=" [no preamble or no corpus to read]"
+fi
+[ -z "$r13_93" ] \
+  && ok "the runner's per-section variable is declared in the shared machinery" \
+  || bad "the runner's per-section variable is declared in the shared machinery ($r13_93)"
+
 rm -rf "$T93"

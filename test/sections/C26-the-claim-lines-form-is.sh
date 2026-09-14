@@ -1,7 +1,7 @@
 echo "== C26: the claim line's form is written where it is read and pinned where it is checked =="
 # A sandbox of this block's own. It used to read the one C11 opens, which is why this section could
 # not be asked for on its own: under a filter C11 never runs and every path below collapses to "/".
-T25="$(mkbox)" || fatal 'C26 fixtures'
+BOX26="$(mkbox)" || fatal 'C26 fixtures'
 # The sibling of the phase declaration, and the same defect one field over: the reader was already
 # correct and nothing stopped it being reverted with the suite green. These two fixtures discriminate
 # by construction — each names a different file, and returns a different exit code, under the reading
@@ -10,7 +10,7 @@ if [ "$PY3" = 1 ]; then
   # A later mention is not the declaration. The claiming sheet names another branch and its prose
   # quotes this one; a whole-file reader resolves that sheet (phase EXECUTE, no block), a
   # first-line reader falls to the lone unclaimed sheet (phase UNDERSTAND, blocked and named).
-  F26A="$T25/f26a"; mkproj "$F26A" main
+  F26A="$BOX26/f26a"; mkproj "$F26A" main
   mkdir -p "$F26A/.ai-flow/artifacts/elsewhere" "$F26A/.ai-flow/artifacts/lone"
   # The later mention must itself begin with the label, or no reader would match it and the fixture
   # discriminates nothing: a mention inside a sentence is invisible to a whole-file reader too. A
@@ -33,7 +33,7 @@ if [ "$PY3" = 1 ]; then
   # An annotated value declares no claim. Beside a second unclaimed sheet the strict reading has no
   # lone one to fall back on, so it reaches the ledger; a first-token reading would claim the branch
   # and answer with a sheet whose phase raises no rail at all.
-  F26B="$T25/f26b"; mkproj "$F26B" main
+  F26B="$BOX26/f26b"; mkproj "$F26B" main
   mkdir -p "$F26B/.ai-flow/artifacts/annotated" "$F26B/.ai-flow/artifacts/second"
   printf 'Current phase: **UNDERSTAND**\n' > "$F26B/.ai-flow/STATE.md"
   printf '# Task state\n\nbranch: main (paused)\nphase: **EXECUTE**\n' > "$F26B/.ai-flow/artifacts/annotated/state.md"
@@ -51,7 +51,7 @@ if [ "$PY3" = 1 ]; then
   # shape as the fixture above: beside a second unclaimed sheet a colonless line leaves no lone sheet
   # to fall back on, so the ledger answers; a reader that treated the colon as optional would claim
   # the branch and answer with a sheet whose phase raises no rail.
-  F26C="$T25/f26c"; mkproj "$F26C" main
+  F26C="$BOX26/f26c"; mkproj "$F26C" main
   mkdir -p "$F26C/.ai-flow/artifacts/nocolon" "$F26C/.ai-flow/artifacts/other2"
   printf 'Current phase: **UNDERSTAND**\n' > "$F26C/.ai-flow/STATE.md"
   printf '# Task state\n\nbranch main\nphase: **EXECUTE**\n' > "$F26C/.ai-flow/artifacts/nocolon/state.md"

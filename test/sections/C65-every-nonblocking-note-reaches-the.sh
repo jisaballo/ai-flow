@@ -2,7 +2,7 @@ echo ""
 echo "== C65: every non-blocking note reaches the model, and the close reads the numbers it is given =="
 # A sandbox of this block's own. It used to read the one C11 opens, which is why this section could
 # not be asked for on its own: under a filter C11 never runs and every path below collapses to "/".
-T11="$(mkbox)" || fatal 'C65 fixtures'
+BOX65="$(mkbox)" || fatal 'C65 fixtures'
 # Conformance: three guardrail notes are printed for the operator and never enter the model's context, so
 # the actor the note is addressed to cannot act on it; and the phase close, by its own written rule,
 # therefore states no recommendation about stopping. Generated in the Conform phase from understand.md's
@@ -41,7 +41,7 @@ CTX65=87000     # later turns: what this session is now carrying
 if [ "$PY3" = 0 ]; then
   echo "  [skip] C65 (python3 unavailable)"
 else
-T65="$T11/c65"; mkdir -p "$T65"
+T65="$BOX65/c65"; mkdir -p "$T65"
 P65="$T65/proj"; mkdir -p "$P65/.ai-flow"
 
 # A transcript of $2 main-loop turns rising from the floor to the carried context, plus any extra raw

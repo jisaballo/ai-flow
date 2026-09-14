@@ -6,7 +6,7 @@
 echo "== C33: the trunk is defended from what git reports, not from what a command says =="
 # A sandbox of this block's own. It used to read the one C11 opens, which is why this section could
 # not be asked for on its own: under a filter C11 never runs and every path below collapses to "/".
-T11="$(mkbox)" || fatal 'C33 fixtures'
+BOX33="$(mkbox)" || fatal 'C33 fixtures'
 # The whole section drives REAL operations against a real bare remote rather than feeding strings to a
 # matcher. That is the point and not a stylistic preference: a shape stops being a spelling somebody had
 # to think of and becomes an operation whose effect git computes, so the coverage no longer depends on
@@ -23,7 +23,7 @@ T11="$(mkbox)" || fatal 'C33 fixtures'
 #     is out of the way.
 if command -v git >/dev/null 2>&1; then
   GHK="$ROOT/global/hooks/git"
-  T33="$T11/c33"; mkdir -p "$T33"
+  T33="$BOX33/c33"; mkdir -p "$T33"
   NOHOOK="$T33/nohook"; mkdir -p "$NOHOOK"   # an empty hook path: setup work bypasses the guard
 
   mkpair33() {  # $1 = fixture name, $2 = the branch the remote's HEAD names -> remote.git + work

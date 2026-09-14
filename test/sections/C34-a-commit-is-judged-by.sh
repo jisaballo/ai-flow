@@ -1,7 +1,7 @@
 echo "== C34: a commit is judged by what it would record =="
 # A sandbox of this block's own. It used to read the one C11 opens, which is why this section could
 # not be asked for on its own: under a filter C11 never runs and every path below collapses to "/".
-T11="$(mkbox)" || fatal 'C34 fixtures'
+BOX34="$(mkbox)" || fatal 'C34 fixtures'
 # The staging protection's substrate. What decides is the index — the paths a commit would actually
 # record — so a name that appears only in the message, or only in the working tree, is not a staging.
 # Three of the nine false refusals measured against the guard this replaces came from exactly there.
@@ -11,7 +11,7 @@ T11="$(mkbox)" || fatal 'C34 fixtures'
 # remains worth driving is the small product below, which proves that.
 if command -v git >/dev/null 2>&1; then
   GHK34="$ROOT/global/hooks/git"
-  T34="$T11/c34"; mkdir -p "$T34"
+  T34="$BOX34/c34"; mkdir -p "$T34"
   NOHOOK34="$T34/nohook"; mkdir -p "$NOHOOK34"
 
   mkrepo34() {  # $1 = fixture name -> a repository with one commit and the guard active
