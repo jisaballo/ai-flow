@@ -258,9 +258,12 @@ fi
 # The doctrine this row enforces: a shared helper takes what it needs as an ARGUMENT; it does not read a
 # value its caller happens to have set. Seven helpers were hoisted into the preamble closing over a global
 # that exactly one section assigns, and nothing went red -- because each had one caller, which assigned
-# first. The failure mode when a second caller appears is SILENT, not loud: every one of the seven is a
-# pipeline whose last stage exits 0 on empty input, so `set -u` kills the first subshell and the caller
-# reads success over nothing. An absence leg built on any of them reports ABSENT and goes green.
+# first. For FIVE of the seven the failure mode when a second caller appears is SILENT, not loud: the
+# leaked name sits anywhere but the pipeline's last stage, so `set -u` kills an inner subshell and the
+# last stage (`tr`, `head`) exits 0 on empty input -- an absence leg built on one of them reports ABSENT
+# and goes green. The other two fail LOUDLY and are named here so the next reader does not generalise the
+# silent shape to every leak: `keyed` interpolates the name into its final grep and `graw` passes it as
+# python3's argument, so in both the dying stage IS the last one and the caller sees a non-zero status.
 #
 # The admission rule that let them in was applied to a caller count produced by a lexical detector, which
 # counted a grep PATTERN STRING as a call. That detector is retired: no lexical pass over bash separates
@@ -271,22 +274,40 @@ fi
 # it stays green is the last place to accept a one-directional check. So the machinery is exercised on a
 # fixture carrying a PLANTED leak before the real verdict is read from it -- an empty answer then means
 # "no leaks", never "the extractor stopped extracting".
+#
+# A shell function ends where its BRACES BALANCE, and never at a line that merely looks like an ending.
+# The two shapes a line-shape test misses are both in the file this parses: `keyed` is a one-liner whose
+# `}` is followed by a trailing comment, and `shapes83` closes on an indented continuation line. Under a
+# line-shape test neither closes, the reader stays open, and every following line -- top-level code
+# included -- is attributed to a helper that does not contain it. Counting depth closes all 50 at their
+# own last line, and `nfun93` below is what makes a future break in this model LOUD rather than silent.
+scan93() { # $1 = preamble file -> `R <fn> <name>` per name read inside a body, `C <fn>` per body closed
+  awk '
+    /^[a-zA-Z_][a-zA-Z0-9_]*\(\)[[:space:]]*\{/ && !d { fn=$0; sub(/\(\).*/,"",fn); d=1; depth=0 }
+    d {
+      line=$0
+      while (match(line, /\$\{?[a-zA-Z_][a-zA-Z0-9_]*/)) {
+        v=substr(line, RSTART, RLENGTH); gsub(/[${]/,"",v)
+        print "R " fn " " v
+        line=substr(line, RSTART+RLENGTH)
+      }
+      t=$0; o=gsub(/\{/,"",t); t=$0; c=gsub(/\}/,"",t)
+      depth += o - c
+      if (depth <= 0) { print "C " fn; fn=""; d=0 }
+    }' "$1"
+}
+
+# How many bodies the parse actually closed. The verdict below is an ABSENCE over the real preamble, so
+# a parse that quietly stopped reading produces the same empty answer as a clean tree: this count is the
+# floor that tells the two apart, and it is compared against the definitions the file declares.
+nfun93() { scan93 "$1" | grep -c '^C ' | tr -d ' '; }
+
 leak93() { # $1 = preamble file, $2 = newline list of section files -> one `fn:VAR` per leak
   local pre="$1" secs="$2" reads
   # Every name READ inside a function body of the preamble, paired with the function that reads it. A
   # helper called only by another helper is still shared layer, so the pairing is per definition and the
   # verdict below is per name: threading a value through a wrapper is a repair, not an evasion.
-  reads="$(awk '
-    /^[a-zA-Z_][a-zA-Z0-9_]*\(\)[[:space:]]*\{/ { fn=$0; sub(/\(\).*/,"",fn); d=1 }
-    d && fn != "" {
-      line=$0
-      while (match(line, /\$\{?[a-zA-Z_][a-zA-Z0-9_]*/)) {
-        v=substr(line, RSTART, RLENGTH); gsub(/[${]/,"",v)
-        print fn ":" v
-        line=substr(line, RSTART+RLENGTH)
-      }
-      if ($0 ~ /^\}/ || ($0 ~ /\}[[:space:]]*$/ && $0 ~ /^[a-zA-Z_][a-zA-Z0-9_]*\(\)/)) { fn=""; d=0 }
-    }' "$pre" | sort -u)"
+  reads="$(scan93 "$pre" | awk '$1 == "R" { print $2 ":" $3 }' | sort -u)"
   printf '%s\n' "$reads" | while IFS=: read -r fn v; do
     [ -n "$v" ] || continue
     # Assigned somewhere in the preamble itself -- as a constant, a local, a loop variable or a read
@@ -303,17 +324,41 @@ leak93() { # $1 = preamble file, $2 = newline list of section files -> one `fn:V
 }
 r11_93=""
 if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
-  # The presence control, on the same machinery the verdict uses: a fixture preamble whose helper closes
-  # over a value only the fixture section assigns. Found here, an empty answer over the real tree means
+  # The presence control, on the same machinery the verdict uses: a fixture preamble whose helpers close
+  # over values only the fixture section assigns. Found here, an empty answer over the real tree means
   # what it says.
+  #
+  # BOTH shapes of each dimension, because one fixture certifies only the path it walks. A one-line body
+  # puts the read on the definition line, where the scan opens and closes in the same step -- it never
+  # enters the continuation, which is the path 33 of the preamble's 50 helpers use. And a section
+  # assignment at column 0 never exercises the leading-whitespace allowance that `$GS` needs. The
+  # multi-line helper reading an INDENTED assignment is `graw`/`$GS` reproduced exactly, which is the one
+  # of the seven understand.md singles out as hardest to see.
   mkdir -p "$T93/leak/lib" "$T93/leak/sections"
-  printf '%s\n' 'planted() { printf "%s" "$PLANT93"; }' > "$T93/leak/lib/preamble.sh"
-  printf '%s\n' 'PLANT93="x"' > "$T93/leak/sections/C01-fixture.sh"
-  if [ "$(leak93 "$T93/leak/lib/preamble.sh" "$T93/leak/sections/C01-fixture.sh")" != "planted:PLANT93" ]; then
-    r11_93=" [the extractor did not find a planted leak: it is not measuring]"
+  { printf '%s\n' 'plantone() { printf "%s" "$PLANT1_93"; }  # a one-liner closing before a comment'
+    printf '%s\n' 'plantmulti() {'
+    printf '%s\n' '  printf "%s" "$PLANT2_93"'
+    printf '%s\n' '}'
+  } > "$T93/leak/lib/preamble.sh"
+  { printf '%s\n' 'PLANT1_93="x"'
+    printf '%s\n' '  PLANT2_93="y"'
+  } > "$T93/leak/sections/C01-fixture.sh"
+  PLANTED93="$(leak93 "$T93/leak/lib/preamble.sh" "$T93/leak/sections/C01-fixture.sh" | tr '\n' ' ')"
+  if [ "$PLANTED93" != "plantmulti:PLANT2_93 plantone:PLANT1_93 " ]; then
+    r11_93=" [the extractor did not find both planted leaks: it is not measuring ($PLANTED93)]"
+  elif [ "$(nfun93 "$T93/leak/lib/preamble.sh")" != 2 ]; then
+    r11_93=" [the fixture parse closed $(nfun93 "$T93/leak/lib/preamble.sh") of 2 bodies]"
   else
-    LEAKS93="$(leak93 "$PRE93" "$CORPUS93")"
-    [ -n "$LEAKS93" ] && r11_93=" [$(printf '%s' "$LEAKS93" | tr '\n' ' ')]"
+    # The floor over the REAL parse. An absence verdict is only worth what the parse behind it is worth:
+    # a model that stopped closing bodies returns the same empty answer as a clean tree.
+    nd11_93="$(grep -cE '^[a-zA-Z_][a-zA-Z0-9_]*\(\)[[:space:]]*\{' "$PRE93" | tr -d ' ')"
+    nc11_93="$(nfun93 "$PRE93")"
+    if [ "$nc11_93" != "$nd11_93" ]; then
+      r11_93=" [the preamble declares $nd11_93 helpers and the scan closed $nc11_93]"
+    else
+      LEAKS93="$(leak93 "$PRE93" "$CORPUS93")"
+      [ -n "$LEAKS93" ] && r11_93=" [$(printf '%s' "$LEAKS93" | tr '\n' ' ')]"
+    fi
   fi
 else
   r11_93=" [no preamble or no corpus to read]"

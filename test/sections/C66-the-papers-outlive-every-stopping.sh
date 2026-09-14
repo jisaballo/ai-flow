@@ -105,7 +105,14 @@ a4_66=""
 # One leg where there were two. `a41` and `item23` were two names for one function and are now one
 # name, `nitem`; kept as two legs they would both be counting a string no file can contain any more --
 # green because their subject had vanished, which is the exact hollow shape this row exists to catch.
-[ "$(suite_src | grep -cE 'nitem [0-9]+ "\$ARCH' | tr -d ' ')" -eq 0 ] \
+#
+# The key is the CHECKLIST, never one section's spelling of the variable holding it. While `a41` existed
+# the helper's name was the type -- it could only read `### After ARCHIVE` -- and the leg inherited that
+# for free. `nitem` reads anything, so the type had to move into the pattern, and a pattern naming only
+# `$ARCH` would police two of the five bindings: C23 and C41 spell it `ARCH23`/`ARCH41`, but C66 uses
+# `ARC66` and C90/C91 use `CHK90`/`CHKL91` -- and those last two are exactly the call sites that moved
+# onto `nitem`, so the merge doubled this leg's population while leaving its key where it was.
+[ "$(suite_src | grep -cE 'nitem [0-9]+ "\$(ARC|CHK)' | tr -d ' ')" -eq 0 ] \
   || a4_66=" [a checklist step is still extracted by its literal number]"
 [ "$(suite_src | grep -cE 'ARC7=.*\^[0-9]' | tr -d ' ')" -eq 0 ] \
   || a4_66="$a4_66 [ARC7 is still bounded by literal step numbers]"

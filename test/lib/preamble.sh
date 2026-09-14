@@ -556,7 +556,6 @@ waved() {  # $1 = the guard script, $2 = label, $3.. = raw payloads -> one verdi
   [ -z "$whyw" ] && ok "$label" || bad "$label ($whyw)"
 }
 
-
 # $1: i case-insensitive, s case-sensitive. $2: extended regex. Paths print relative to $ROOT, which is
 # the form the card cites them in, so neither side needs normalising before they are compared.
 sweep89() {
@@ -686,4 +685,3 @@ near90() { [ -n "$1" ] || { printf '0'; return; }
 nearok90()   { case "${1:-}" in ''|*[!0-9]*) return 1;; esac; [ "$1" -ge 1 ]; }
 
 nearzero90() { case "${1:-}" in ''|*[!0-9]*) return 1;; esac; [ "$1" = 0 ]; }
-

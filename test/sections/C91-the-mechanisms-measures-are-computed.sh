@@ -10,10 +10,10 @@
 # one direction alone is satisfied by a check that fails everything, or by one that fails nothing. Each
 # fixture also asserts that no OTHER rule fails on it, which is what makes "and only it" a measurement.
 #
-# C90's helpers are reused BY NAME -- `sec90`, `near90`, `nearok90`, `nearzero90`, `itm90` -- and not
-# re-declared with a 91 suffix. A concept written out twice is a concept that will be written out
-# differently twice, and the sentence-window helper carries three corrections in its own comment that a
-# copy would not inherit.
+# C90's helpers are reused BY NAME -- `sec90`, `near90`, `nearok90`, `nearzero90` -- and not re-declared
+# with a 91 suffix; the numbered-item extractor is `nitem`, which is the shared preamble's and no longer
+# C90's to lend. A concept written out twice is a concept that will be written out differently twice, and
+# the sentence-window helper carries three corrections in its own comment that a copy would not inherit.
 #
 # Every adjacency pair below was probed against the current documents before it was written, by lifting
 # those helpers by name into a scratchpad -- no repository change, no snapshot. Two of the first drafts came
