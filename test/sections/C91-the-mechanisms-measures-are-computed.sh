@@ -649,7 +649,7 @@ if [ -z "$CHKL91" ]; then
 else
   w91=0; g91=0
   for n91 in $(printf '%s\n' "$CHKL91" | awk '/^[0-9]+\. /{print $0+0}'); do
-    it91="$(itm90 "$n91" "$CHKL91")"
+    it91="$(nitem "$n91" "$CHKL91")"
     [ -n "$it91" ] || { a10_91="$a10_91 [move ${n91} of the checklist did not extract]"; continue; }
     nearok90 "$(near90 "$it91" 'steering|product\.md|decisions-global\.md' 'place it|copy every rule|becomes a section' 200)" \
       || continue

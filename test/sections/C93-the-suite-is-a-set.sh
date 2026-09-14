@@ -111,9 +111,9 @@ fi
 # The 37 names are written out rather than derived from the corpus, and that is the point: derived from
 # the files it judges, this row would assert that whatever is there is what belongs there. This list is
 # the frozen contract from understand.md.
-HELP93='a41 brake cerstep clohead dmove graw hookcall hookraw insent item23 itm90 keyed ledger
-malformed manfact manstate marker89 mbul mkbig mkproj msect near90 nearok90 nearzero90 nlines nstep
-nwords off pair purity_sweep rung sbullet sec90 shapes83 sheet step_no sweep89 vstep waved word83 wraw
+HELP93='brake clohead dmove graw hookcall hookraw insent keyed ledger
+malformed manfact manstate marker89 mbul mkbig mkproj msect near90 nearok90 nearzero90 nitem nlines nstep
+nwords off pair purity_sweep sbullet sec90 shapes83 sheet step_no sweep89 vstep waved word83 wraw
 wguard wti_classify wti_probe wti_tracked_leak'
 r5_93=""
 if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then

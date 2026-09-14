@@ -22,17 +22,17 @@ if [ "$PY3" = 1 ]; then
   # The oldest arm of the promise and the one nothing had ever sent: this rail has no dict check at all,
   # so every one of these is a traceback today. `null` and `true` were in nobody's report — the reach of
   # the hardening is measured from what the code reads, not from what was noticed.
-  waved "a top-level payload that is not an object is waved through in silence" \
+  waved "$GS" "a top-level payload that is not an object is waved through in silence" \
     '["x"]' '"oops"' '7' 'null' 'true'
 
   # A truthy non-object only: a falsy one (`null`, `[]`, `""`, `0`) already survives through `or {}` and
   # must keep surviving. The line is drawn at the type, not at emptiness.
-  waved "a tool_input that is not an object is waved through in silence" \
+  waved "$GS" "a tool_input that is not an object is waved through in silence" \
     '{"tool_input":"oops"}' '{"tool_input":["a"]}' '{"tool_input":7}'
 
   # Truthy non-strings, which reach the first regex and raise there rather than at the read. `true` is
   # in the set because a bool is not a str and nothing else in this file would have noticed.
-  waved "a command that is not a string is waved through in silence" \
+  waved "$GS" "a command that is not a string is waved through in silence" \
     '{"tool_input":{"command":123}}' '{"tool_input":{"command":["git","push"]}}' \
     '{"tool_input":{"command":{"a":1}}}' '{"tool_input":{"command":true}}'
 

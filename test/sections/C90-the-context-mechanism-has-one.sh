@@ -64,8 +64,8 @@ S1_90=""; S2_90=""
 if [ -n "$CHK90" ]; then
   n1_90="$(step_no 'steering update' "$CHK90" 2>/dev/null || true)"
   n2_90="$(step_no 'product\.md write-back' "$CHK90" 2>/dev/null || true)"
-  [ -n "$n1_90" ] && S1_90="$(itm90 "$n1_90" "$CHK90")"
-  [ -n "$n2_90" ] && S2_90="$(itm90 "$n2_90" "$CHK90")"
+  [ -n "$n1_90" ] && S1_90="$(nitem "$n1_90" "$CHK90")"
+  [ -n "$n2_90" ] && S2_90="$(nitem "$n2_90" "$CHK90")"
 fi
 
 # --- the route table, defined once and read twice ------------------------------------------------
@@ -345,7 +345,7 @@ if [ -z "$CHK90" ]; then
 else
   g5_90=""
   n5_90="$(step_no 'decisions-global|global decision' "$CHK90" 2>/dev/null || true)"
-  [ -n "$n5_90" ] && g5_90="$(itm90 "$n5_90" "$CHK90")"
+  [ -n "$n5_90" ] && g5_90="$(nitem "$n5_90" "$CHK90")"
   if [ -z "$g5_90" ]; then
     a5_90="$a5_90 [no checklist move writes the global decision]"
   else

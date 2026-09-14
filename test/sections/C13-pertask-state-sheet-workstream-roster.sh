@@ -363,12 +363,12 @@ if [ -n "$CER" ]; then
     && ok "a single open front has nothing to weigh and nothing to create" \
     || bad "a single open front has nothing to weigh and nothing to create"
 
-  pair 3 'acknowledg' 'sheet|state\.md' "a collision stops the opening until it is acknowledged in the sheet"
-  pair 3 'cannot compare' 'never|not .*clear'  "a front with no declaration reads as cannot-compare, not as clear"
-  pair 4 'publish' 'stop|before anything is created' "opening stops on an unpublished default branch"
-  pair 6 'prune' 'own|owns' "the ceremony prunes the new checkout to the task it owns"
-  pair 6 'BACKLOG|ledger' 'never copied|not copied|stays with|read-only' "the ceremony never copies the ledger into a worktree"
-  pair 6 'copies' 'originals' "the pruning step names what it deletes"
+  pair 3 'acknowledg' 'sheet|state\.md' "a collision stops the opening until it is acknowledged in the sheet" "$CER"
+  pair 3 'cannot compare' 'never|not .*clear'  "a front with no declaration reads as cannot-compare, not as clear" "$CER"
+  pair 4 'publish' 'stop|before anything is created' "opening stops on an unpublished default branch" "$CER"
+  pair 6 'prune' 'own|owns' "the ceremony prunes the new checkout to the task it owns" "$CER"
+  pair 6 'BACKLOG|ledger' 'never copied|not copied|stays with|read-only' "the ceremony never copies the ledger into a worktree" "$CER"
+  pair 6 'copies' 'originals' "the pruning step names what it deletes" "$CER"
 
   # The naming rule. Move 5 settled which tool creates the checkout and the four conditions it must
   # satisfy, and said nothing about the one job the checkout does at a glance — so the name came from
@@ -376,22 +376,22 @@ if [ -n "$CER" ]; then
   # opened: three competing conventions, and four of the six named for a task outlived that task.
   # Each pair reads a DIFFERENT clause on purpose: a pair whose two patterns are fed by one sentence
   # dies only when that sentence goes, and approves any prose that keeps its vocabulary.
-  pair 5 'chosen once|never rewritten' 'mutable label' "the ceremony says what a front is called"
-  pair 5 'subject' 'no task identifier|no task id' "a front's durable name carries its subject and no task id"
+  pair 5 'chosen once|never rewritten' 'mutable label' "the ceremony says what a front is called" "$CER"
+  pair 5 'subject' 'no task identifier|no task id' "a front's durable name carries its subject and no task id" "$CER"
   # The branch is the field the ticket wanted to bundle with the path and the one field that cannot be:
   # it changes with every task in a front's chain, which is why the roster was never keyed on it.
-  pair 5 'never the branch' 'task-scoped' "the naming rule leaves the branch task-scoped"
+  pair 5 'never the branch' 'task-scoped' "the naming rule leaves the branch task-scoped" "$CER"
   # The floor, said out loud. A silence here reads as a missing step rather than as a deliberate one.
-  pair 5 'offers no|offers none' 'roster is the glance' "with no mutable label the roster is the glance"
+  pair 5 'offers no|offers none' 'roster is the glance' "with no mutable label the roster is the glance" "$CER"
   # WHICH two fields are durable is the rule's load-bearing content, and it was deletable with every
   # assertion above green: strike the clause naming them and the sentence still says two fields are
   # chosen once and carry the subject, while no longer saying which two. The roster-row half is the
   # column where a task id was actually found sitting.
-  pair 5 'checkout.s own path' 'name on its roster row' "the durable identity names both of its surfaces"
+  pair 5 'checkout.s own path' 'name on its roster row' "the durable identity names both of its surfaces" "$CER"
   # The forward citation, by NUMBER. The suite already treats an unpinned numeric cross-reference as a
   # defect one section down — a half-renumber leaves a citation pointing at the wrong move while the
   # section title still matches — and this rule mints two such citations, one in each direction.
-  pair 5 'step 8' 'After ARCHIVE' "the label rewrite cites the step that performs it"
+  pair 5 'step 8' 'After ARCHIVE' "the label rewrite cites the step that performs it" "$CER"
 else
   bad "the protocol defines the ceremony that opens a workstream"
   bad "a single open front has nothing to weigh and nothing to create (no section)"

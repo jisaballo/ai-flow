@@ -61,7 +61,7 @@ fi
 if NDEL41="$(step_no "$DEL_ACT" "$CLO41" 2>/dev/null)"; then
   A4_41="$(c41 "$NDEL41")"
 elif NDEL41="$(step_no "$DEL_ACT" "$ARCH41")"; then
-  A4_41="$(a41 "$NDEL41")"
+  A4_41="$(nitem "$NDEL41" "$ARCH41")"
 else
   A4_41=""
 fi

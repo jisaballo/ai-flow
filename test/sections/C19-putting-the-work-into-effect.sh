@@ -100,12 +100,12 @@ fi
 KEY6="$(printf '%s' "$D5" | grep -oE 'commands\.[a-z_]+' | head -1 | cut -d. -f2)"
 if [ -n "$KEY6" ]; then
   ok "the distribution move names the key it reads, not just the map (commands.$KEY6)"
-  keyed "$CMDS6" \
+  keyed "$CMDS6" "$KEY6" \
     && ok "the shipped template documents the same key the move reads" \
     || bad "the shipped template documents the same key the move reads"
   # The doc restates the schema for a human reader — pre-existing, and therefore a second home that can
   # go stale. Pinned to the same key so it cannot.
-  keyed "$(awk '/^```yaml/{f=1;next} /^```/{f=0} f' docs/customization.md)" \
+  keyed "$(awk '/^```yaml/{f=1;next} /^```/{f=0} f' docs/customization.md)" "$KEY6" \
     && ok "the schema the docs show carries the same key" \
     || bad "the schema the docs show carries the same key"
 else

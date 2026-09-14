@@ -102,10 +102,11 @@ fi
 # extractors this row forbids live in the section files now, so a leg reading `test/validate.sh` alone
 # searches forty-two lines that cannot contain one and reports its own blindness as a clean verdict.
 a4_66=""
-[ "$(suite_src | grep -cE 'a41 [0-9]' | tr -d ' ')" -eq 0 ] \
-  || a4_66=" [a41 still extracts a checklist step by its number]"
-[ "$(suite_src | grep -cE 'item23 [0-9]+ "\$ARCH' | tr -d ' ')" -eq 0 ] \
-  || a4_66="$a4_66 [item23 still extracts a checklist step by its number]"
+# One leg where there were two. `a41` and `item23` were two names for one function and are now one
+# name, `nitem`; kept as two legs they would both be counting a string no file can contain any more --
+# green because their subject had vanished, which is the exact hollow shape this row exists to catch.
+[ "$(suite_src | grep -cE 'nitem [0-9]+ "\$ARCH' | tr -d ' ')" -eq 0 ] \
+  || a4_66=" [a checklist step is still extracted by its literal number]"
 [ "$(suite_src | grep -cE 'ARC7=.*\^[0-9]' | tr -d ' ')" -eq 0 ] \
   || a4_66="$a4_66 [ARC7 is still bounded by literal step numbers]"
 [ "$(suite_src | grep -cE 'ARC72.*\^[0-9]' | tr -d ' ')" -eq 0 ] \

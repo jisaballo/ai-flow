@@ -13,7 +13,7 @@ if [ -n "$BLK" ]; then
 
   # Each rung carries its own fact. Order is proven by extraction, not by a presence grep: swapping two
   # rungs' contents leaves every phrase in the block and still fails here.
-  r1="$(rung 1)"; r2="$(rung 2)"; r3="$(rung 3)"; r4="$(rung 4)"
+  r1="$(nitem 1 "$BLK")"; r2="$(nitem 2 "$BLK")"; r3="$(nitem 3 "$BLK")"; r4="$(nitem 4 "$BLK")"
   miss=""
   printf '%s' "$r1" | grep -qi 'branch currently checked out'  || miss="$miss rung1-branch"
   printf '%s' "$r1" | grep -qi 'exactly one'                   || miss="$miss rung1-unique"

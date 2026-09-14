@@ -411,13 +411,8 @@ sheet() {  # $1 = repo, $2 = task dir, $3 = branch line or "-", $4 = phase
   } > "$1/.ai-flow/artifacts/$2/state.md"
 }
 
-# One numbered step, flattened to a single line. What a step must SAY is a property of the step,
-# not of where its prose happens to wrap: matching per physical line made re-wrapping unchanged
-# text load-bearing, and scoped a fact to the whole section when it belongs to one move.
-cerstep() { printf '%s\n' "$CER" | awk -v s="^$1\\\\. " -v e="^$(($1 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' | tr '\n' ' '; }
-
-pair() { # step, pattern A, pattern B, label
-  printf '%s' "$(cerstep "$1")" | grep -qiE "$2" && printf '%s' "$(cerstep "$1")" | grep -qiE "$3" \
+pair() { # step, pattern A, pattern B, label, the text the step is read from
+  printf '%s' "$(nitem "$1" "$5")" | grep -qiE "$2" && printf '%s' "$(nitem "$1" "$5")" | grep -qiE "$3" \
     && ok "$4" || bad "$4"
 }
 
@@ -443,10 +438,6 @@ off() { printf '%s' "$1" | grep -obF "$2" | head -1 | cut -d: -f1; }
 # for every other caller — this is a pipeline whose last stage exits 0 on empty input, so the unbound
 # expansion dies in the first subshell and never reaches the caller.
 clohead() { printf '%s\n' "$2" | grep -E "^$1\. " | head -1; }
-
-# One rung of the numbered ladder, flattened: what a rung must say is a property of the rung, never of
-# where its prose happens to wrap, and never of a neighbouring rung's words.
-rung() { printf '%s\n' "$BLK" | awk -v s="^$1\\\\. " -v e="^$(($1 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' | tr '\n' ' '; }
 
 # A section body, bounded by the next heading of any depth: a fact belongs to the section that governs
 # it, and a file-wide grep finds the first line that happens to match anywhere in a 200-line manual.
@@ -492,10 +483,18 @@ dmove() { printf '%s\n' "$2" | awk -v n="$1" '/^#+ /{cur=-1; next} /^[0-9]+\. /{
 # As a KEY, never as a word: both the template's comment and the doc's list the candidate verbs in
 # prose ("publish, deploy, regenerate"), so a bare word match answered from a neighbouring sentence —
 # renaming the key on the protocol side alone stayed green on the word it happened to pick.
-keyed() { printf '%s' "$1" | grep -qE "(^|[[:space:]#])${KEY6}:"; }
+keyed() { printf '%s' "$1" | grep -qE "(^|[[:space:]#])${2}:"; }  # $1 = haystack, $2 = the key
 
-item23() {  # one numbered item of a section, flattened: what an item must say is a property of that
-            # item, never of a neighbour's words nor of where its prose happens to wrap
+nitem() {  # $1 = the item's number, $2 = the text it is read from
+  # One numbered item of a section, flattened: what an item must say is a property of that item, never
+  # of a neighbour's words nor of where its prose happens to wrap.
+  #
+  # One function under five names was the shape this replaced. cerstep, rung and a41 each closed over a
+  # DIFFERENT global, and that is the whole reason they looked like different functions and could each
+  # be hoisted on its own. Re-parameterised they are this body, so keeping five names would be a defect
+  # introduced by the repair. The text is an argument: a shared helper does not read a value its caller
+  # happens to have set, because when a second caller appears this pipeline's last stage exits 0 on
+  # empty input and the caller reads success over nothing.
   printf '%s\n' "$2" | awk -v s="^$1\\\\. " -v e="^$(($1 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' \
     | tr '\n' ' ' | tr -s ' '
 }
@@ -533,18 +532,20 @@ purity_sweep() { # repo root, subpath -- one `file:line:text` per hit among the 
   return 0
 }
 
-graw() {  # $1 = raw payload -> prints combined output, returns the hook's exit code
-  printf '%s' "$1" | python3 "$GS" 2>&1
+graw() {  # $1 = raw payload, $2 = the guard script -> combined output, the hook's exit code
+  printf '%s' "$1" | python3 "$2" 2>&1
 }
 
 # --- Step 1: a field the rail cannot read is a command it cannot judge ----
 # Each check below drives several payload shapes and reports ONE verdict, naming the shapes that
 # failed. Silence, not merely the absence of a crash: a rail that stands aside with a diagnostic is
 # chatter on every Bash command, and a traceback is named separately so a crash still reads as a crash.
-waved() {  # $1 = label, $2.. = raw payloads -> one verdict for the whole set
-  label="$1"; shift; whyw=""
+waved() {  # $1 = the guard script, $2 = label, $3.. = raw payloads -> one verdict for the set
+  # The script comes FIRST here, against this file's habit of appending the input, because the tail is
+  # variadic: a payload list and a trailing argument cannot both be "the rest of the arguments".
+  gsw="$1"; label="$2"; shift 2; whyw=""
   for p in "$@"; do
-    out="$(graw "$p")"; rc=$?
+    out="$(graw "$p" "$gsw")"; rc=$?
     if [ "$rc" != 0 ] || [ -n "$out" ]; then
       case "$out" in
         *Traceback*) whyw="$whyw [$p -> exit $rc, traceback]" ;;
@@ -555,7 +556,6 @@ waved() {  # $1 = label, $2.. = raw payloads -> one verdict for the whole set
   [ -z "$whyw" ] && ok "$label" || bad "$label ($whyw)"
 }
 
-a41() { printf '%s\n' "$ARCH41" | awk -v s="^$1\\\\. " -v e="^$(($1 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' | tr '\n' ' ' | tr -s ' '; }
 
 # $1: i case-insensitive, s case-sensitive. $2: extended regex. Paths print relative to $ROOT, which is
 # the form the card cites them in, so neither side needs normalising before they are compared.
@@ -687,7 +687,3 @@ nearok90()   { case "${1:-}" in ''|*[!0-9]*) return 1;; esac; [ "$1" -ge 1 ]; }
 
 nearzero90() { case "${1:-}" in ''|*[!0-9]*) return 1;; esac; [ "$1" = 0 ]; }
 
-# One numbered item of the archive checklist, located BY NAME and never by its literal number: this task
-# adds a move to that list, and a reader pinned to a number extracts the neighbour that now sits there.
-itm90() { printf '%s\n' "$2" | awk -v s="^$1\\\\. " -v e="^$(($1 + 1))\\\\. " '$0 ~ e {f=0} $0 ~ s {f=1} f' \
-            | tr '\n' ' ' | tr -s ' '; }

@@ -11,9 +11,9 @@ raw23() { awk -v h="$1" '$0 ~ h {f=1;next} /^```/{c=1-c; next} (c==0 && /^#+ /){
 
 SHEET23="$(sec23 '^### .artifacts/T-XXX/state.md.')"
 LADDER23="$(raw23 '^### Resolving the task')"
-RUNG23="$(item23 4 "$LADDER23")"
+RUNG23="$(nitem 4 "$LADDER23")"
 OPEN23="$(raw23 '^## Opening a Workstream')"
-MOVE23="$(item23 7 "$OPEN23")"
+MOVE23="$(nitem 7 "$OPEN23")"
 ARCH23="$(raw23 '^### After ARCHIVE')"
 CLO23="$(raw23 '^## Closing a Workstream')"
 # The deletion of the papers, located by the ACT and never by a number: a stale number does not fail, it
@@ -22,9 +22,9 @@ CLO23="$(raw23 '^## Closing a Workstream')"
 # claim in either home, so the lookup takes the ceremony first and falls back to the checklist. The probe
 # is silenced and the fallback is not: one of the two must answer, and the failure names the act.
 if NDEL23="$(step_no "$DEL_ACT" "$CLO23" 2>/dev/null)"; then
-  STEP23="$(item23 "$NDEL23" "$CLO23")"
+  STEP23="$(nitem "$NDEL23" "$CLO23")"
 elif NDEL23="$(step_no "$DEL_ACT" "$ARCH23")"; then
-  STEP23="$(item23 "$NDEL23" "$ARCH23")"
+  STEP23="$(nitem "$NDEL23" "$ARCH23")"
 else
   STEP23=""
 fi
@@ -113,7 +113,7 @@ fi
 # change and neither was asserted: the review reproduced it — reverting either left the whole suite
 # green while the document contradicted itself. A correction nothing guards is a correction with a
 # half-life.
-R2_23="$(item23 2 "$LADDER23")"
+R2_23="$(nitem 2 "$LADDER23")"
 if [ -n "$R2_23" ]; then
   printf '%s' "$R2_23" | grep -qiE 'releas' \
     && printf '%s' "$R2_23" | grep -qiE 'alone among|among the sheets' \
