@@ -16,13 +16,17 @@
 # The runner's per-section variable, declared here because it is read across files.
 #
 # The runner assigns it once per iteration of the run, to the path of the section it is about to source;
-# this file and two sections read it. That makes it a cross-file API, and an API nobody declares is one a
-# reader has to discover by grepping the runner -- the same shape a shared helper closing over a caller's
-# global has, arrived at from the other side. Declared rather than renamed: the name was never the defect,
-# and four call sites moved would buy nothing this line does not.
+# this file and three sections read it (C47, C92, and C93's own row about this declaration). That makes it
+# a cross-file API, and an API nobody declares is one a reader has to discover by grepping the runner --
+# the same shape a shared helper closing over a caller's global has, arrived at from the other side.
+# Declared rather than renamed: the name was never the defect, and four call sites moved would buy nothing
+# this line does not.
 #
-# The `-` default is what makes the declaration real rather than decorative: sourced outside a run, or by
-# a section asked for on its own, every reader below still sees a defined name instead of dying on `set -u`.
+# What the `-` default buys is the single home below: the defaulting decision is made here, once, so a
+# reader downstream writes `$SECTION` and not `${SECTION-}` and has nothing to work out. It is NOT what
+# makes this file safe to source standalone -- `$ROOT` is read undefaulted at column 0 further down and
+# would die first -- and it is not what protects the runner's own loop, which binds the name before it
+# sources anything, filter or no filter.
 SECTION="${SECTION-}"
 
 PASS=0
@@ -237,7 +241,7 @@ suite_src() { cat $SUITE_SRC; }
 suite_src_others() {
   local f
   for f in $SUITE_SRC; do
-    [ "$f" = "${SECTION-}" ] || cat "$f"
+    [ "$f" = "$SECTION" ] || cat "$f"
   done
 }
 

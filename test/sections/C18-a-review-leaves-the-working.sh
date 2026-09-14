@@ -4,7 +4,15 @@ RULE_SECTION="Mutation and the Working Copy"
 
 # The rule's own section, bounded at the next heading and fence-aware — the same shape C14 uses for
 # the task-diff definition, and for the same reason: a file-wide grep finds the citations, not the rule.
-RULE="$(awk '/^## Mutation and the Working Copy/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^#+ /){f=0} f' "$VP" | tr '\n' ' ')"
+#
+# Extracted ONCE, in line-preserving form, because this file has two consumers of the region and only one
+# of them wants it flattened: Facts 1a-1f read `$RULE`, Fact 10 reads `rulelines18` five hundred lines
+# below. A second awk stating the same start anchor, fence toggle and terminating-heading rule is two
+# statements of one boundary, and an edit to either would leave the two legs judging different regions.
+RULE_LINES="$(awk '/^## Mutation and the Working Copy/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^#+ /){f=0} f' "$VP")"
+# `printf '%s'` and not `'%s\n'`: an empty region must flatten to the empty string, or every `[ -n "$RULE" ]`
+# below reads a lone space as a region that was found.
+RULE="$(printf '%s' "$RULE_LINES" | tr '\n' ' ')"
 
 # Fact 1a — the invariant itself. Asserted on the section, never on the file: every consumer names the
 # section, so a file-wide grep for the citation stays green after the rule itself is deleted.
@@ -514,7 +522,7 @@ fi
 # coincidence, and a coincidence reported as a second home is a false red that teaches people to ignore
 # the row.
 rulelines18() { # -> the rule's own lines, one per line, long enough to be distinctive
-  awk '/^## Mutation and the Working Copy/{f=1;next} /^```/{c=1-c; if(f) print; next} (c==0 && /^#+ /){f=0} f' "$VP" \
+  printf '%s\n' "$RULE_LINES" \
     | sed 's/^[[:space:]]*[-*][[:space:]]*//; s/\*\*//g; s/`//g' \
     | awk 'NF >= 8'
 }
@@ -522,7 +530,8 @@ copyin18() { # $1 = directory -> every rule line that also appears there
   local dir="$1" ln
   rulelines18 | while IFS= read -r ln; do
     [ -n "$ln" ] || continue
-    grep -rqF "$ln" "$dir" 2>/dev/null && printf '%s\n' "$ln"
+    # `-e`, or a rule line that happens to begin with a dash is read as options rather than as the needle.
+    grep -rqF -e "$ln" "$dir" 2>/dev/null && printf '%s\n' "$ln"
   done
 }
 # The precondition is the rule's own region, and deliberately NOT $RULE_HOMES. That count is a grep of
@@ -541,6 +550,13 @@ if [ "${n18f10:-0}" -ge 1 ]; then
   rulelines18 | head -1 > "$CTL18/planted.md"
   if [ -z "$(copyin18 "$CTL18")" ]; then
     r18f10=" [the extractor did not find a planted copy of the rule: it is not measuring]"
+  elif [ ! -d template ] || [ -z "$(find template -type f 2>/dev/null | head -1)" ]; then
+    # The haystack, asserted before an absence is read out of it. The control above certifies the NEEDLES
+    # and plants into a throwaway sandbox; neither says anything about the directory the verdict is taken
+    # from. `grep -r` on a missing or unreadable path exits 2 with its message discarded, so `copyin18`
+    # returns nothing and this row would go green having searched no file at all -- an absence verdict over
+    # a corpus that was never there, which is the one way this leg can never afford to pass.
+    r18f10=" [no template/ to search: the absence would be read from nothing]"
   else
     FOUND18="$(copyin18 template/ | head -1)"
     [ -n "$FOUND18" ] && r18f10=" [template/ carries a line of the rule: ${FOUND18%% *}...]"

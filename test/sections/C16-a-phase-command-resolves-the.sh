@@ -83,18 +83,36 @@ done
   && ok "the rail points back at the block that owns the ladder" \
   || bad "the rail points back at the block that owns the ladder ($p5)"
 
-# The presence control for the rung detector below. An absence verdict is worth what its extractor is
-# worth, and the cheapest way to make "no skill restates the ladder" green is a pattern that matches
-# nothing at all. The planted line restates rung 3 in a wording the two retired pins would both have
-# missed, so passing this proves the widening rather than the plumbing.
-RCTL16='(declares|names|carries|holds|with|without) no branch|lone sheet|sheet that declares none'
-RCTL16="$RCTL16"'|(exactly|only|just|precisely) one task|a single task|one task only|names one task'
-if printf '%s' 'failing that, the roster answers where it names just one task' | grep -qiE "$RCTL16" \
-   && ! printf '%s' 'the sheet whose claim is the branch this checkout is on' | grep -qiE "$RCTL16"; then
-  ok "the rung detector finds a reworded fallback rung and reports nothing on the ordinary case"
-else
-  bad "the rung detector finds a reworded fallback rung and reports nothing on the ordinary case"
-fi
+# ONE definition of the rung detector, read by the control below and by the verdict inside the loop.
+# This shipped as two byte-identical copies -- a private one for the control, another rebuilt inside the
+# loop for the verdict -- and that is a control certifying a twin of the thing it claims to certify:
+# narrow, typo or break the verdict's copy and the control stays green while every verdict row goes green
+# over a detector that detects nothing. C22 and C93 in this same change each define their detector once
+# and drive both the fixture and the real corpus through it; this is that shape.
+#
+# Rung 2 is bound by its own words. Rung 3 is bound to its SUBJECT as well as its quantity, and must be:
+# `a single task` and `one task only` are ordinary English about scope -- `global/protocols/backlog.md`
+# already writes "nothing that belongs to a single task" with nothing to do with the ladder -- so quantity
+# alone is a negative keyed on prose about something else. Both halves must sit on one line.
+R2_16='(declares|names|carries|holds|with|without) no branch|lone sheet|sheet that declares none'
+R3QTY16='(exactly|only|just|precisely) one task|a single task|one task only|names one task'
+R3SUBJ16='STATE\.md|roster|ledger|shared state'
+rung16() {  # $1 = a document's text -> 0 when some line of it restates a FALLBACK rung of the ladder
+  printf '%s' "$1" | grep -qiE "$R2_16" && return 0
+  printf '%s' "$1" | grep -iE "$R3SUBJ16" | grep -qiE "$R3QTY16"
+}
+
+# The presence control, on the machinery the verdict runs and not beside it. Three cases, because two
+# directions do not cover this leg: a reworded rung must fire, the ordinary case must not, and prose
+# borrowing the pattern's own vocabulary for an unrelated reason must not either. That third is the
+# false-red direction, and a clean case sharing no word with the pattern never tests it.
+RUNGOK16=1
+rung16 'failing that, the roster answers where it names just one task' || RUNGOK16=0
+rung16 'the sheet whose claim is the branch this checkout is on'       && RUNGOK16=0
+rung16 'nothing that belongs to a single task'                         && RUNGOK16=0
+[ "$RUNGOK16" = 1 ] \
+  && ok "the rung detector finds a reworded fallback rung, and fires on neither the ordinary case nor prose that borrows its words" \
+  || bad "the rung detector finds a reworded fallback rung, and fires on neither the ordinary case nor prose that borrows its words"
 
 for s in $PHASE_SKILLS; do
   f="global/skills/$s/SKILL.md"
@@ -127,14 +145,17 @@ for s in $PHASE_SKILLS; do
   # and it walked straight past.
   #
   # Widened to the rungs' CONTENT rather than their spelling, and — because a widening is still lexical —
-  # given the presence control below, which is what the engine's own rule asks of an absence leg. What it
-  # still cannot catch is a rung restated with no word in common with any listed here; that gap is real,
+  # given the presence control above, which is what the engine's own rule asks of an absence leg. What it
+  # still cannot catch is a rung restated with no word in common with any listed there; that gap is real,
   # it is smaller than the one it replaces, and it is written down rather than left for the next reader to
   # discover by being bitten. A structural key exists for the sibling row in C22, where the subject is an
   # enumeration and can be counted; a fallback rung has no such shape.
-  RUNGS16='(declares|names|carries|holds|with|without) no branch|lone sheet|sheet that declares none'
-  RUNGS16="$RUNGS16"'|(exactly|only|just|precisely) one task|a single task|one task only|names one task'
-  if printf '%s' "$c" | grep -qiE "$RUNGS16"; then
+  #
+  # The verdict is gated on the control, as C22's is: a detector that failed its own fixture must not be
+  # allowed to publish four green rows beside the one red row saying its instrument is broken.
+  if [ "$RUNGOK16" != 1 ]; then
+    bad "$s does not restate the ladder (the detector is not measuring)"
+  elif rung16 "$c"; then
     bad "$s does not restate the ladder"
   else
     ok "$s does not restate the ladder"
