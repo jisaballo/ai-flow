@@ -81,6 +81,25 @@ Runs the Verify phase of the ai-flow workflow. Works in any project that has `.a
    step 3's trunk lag takes, and for the same reason — a warning that arrives after the verdict is not a
    warning.
 
+   **The context list is disclosed on the same terms, and it is a separate concept from the table above.**
+   The run names the entries it resolved — key and path — before any auditor starts, so the operator can
+   see what their change is about to be judged against. And **where the list holds no `workspace` entry**,
+   one line says so and says what to declare:
+
+   > No repository-wide rules file. The architecture auditor received none. Declare `workspace:` in the
+   > `steering:` map of `.ai-flow/project.yml` — the convention is a steering file of that name, and any
+   > path may be named; outside `.ai-flow/` the context check does not measure it.
+
+   **Where the list holds one, neither line is written** — nothing is said about an entry that is there,
+   which is what makes the line above mean something when it appears. The pair is one rule in two halves,
+   and the absent half alone is satisfied by a run that writes the line whatever it resolved.
+
+   This is **not** a sixth row of the table above. That table's five outcomes are the *review profile*'s,
+   and the suite counts its rows; a context outcome written into it would make two concepts share one
+   home. The remedy is named inline for the reason the last row of the table names its own: a project
+   that declared nothing and a project that chose the zero read identically from outside, and only one of
+   them was a choice.
+
 8. **Compare the working copy against the copy taken in step 6.** Recompute the path — `SNAP="${TMPDIR:-/tmp}/ai-flow-verify-T-XXX"` — and never rely on having inherited it.
    - **Precondition.** If `"$SNAP/tree.patch"` is missing, the comparison cannot be made: report that the working copy could not be proven as found, name the copy that is absent, and do **not** enter the restore branch. A missing record is never a licence to discard work.
    - **Compare.** `git diff --binary HEAD > "$SNAP/after.patch"`, then `diff -q "$SNAP/tree.patch" "$SNAP/after.patch"`, and the same over `git status --porcelain` and over `git ls-files --others --exclude-standard` with the contents under `"$SNAP/untracked/"`. Byte-exact, or it did not hold. **Those three probes are the whole reach of this comparison**: tracked changes, and untracked files git is not ignoring. A file git **ignores** is outside all three, so *left as found* is a verdict about that reach and never about the whole directory — bytecode, build output and local caches can appear or change under a review and this step will not see them.
@@ -96,7 +115,7 @@ Runs the Verify phase of the ai-flow workflow. Works in any project that has `.a
    - **`proofs`** → each entry carries what the run did (`red` / `green` / `unproven`) and the shape the workflow attached to it from the proposal it belongs to, or `kind: 'unknown'` where the answer could not be attributed to one proposal — its `unattributed` field carries which of the four ways the attribution failed, and the protocol obliges that reason into the report rather than a reason you invent. What each pair means for a finding is the protocol's `Consolidation into verify.md` — read it there, and restate it nowhere, this file included — a mapping is exactly the shape whose second copy reads as a restatement right up to the day the two disagree, and by then neither says which is the rule. The prover's `treeRestored` is its own word and never the verdict — step 8's comparison is.
    - **Presentation to the user**: one line per axis (finding count + worst finding), and the count says how many were adjudicated versus triaged in-phase — a reader who cannot tell the two apart is reading one number for two different guarantees. Business Contract findings in product language — what the product does vs. what the contract says, no file paths. Full detail stays in verify.md, shown on demand.
 
-10. **Write** `.ai-flow/artifacts/T-XXX/verify.md` using the protocol's template, with the workflow findings under `## Review Findings`. Its `**Audited**` line carries the task it resolved and the source it read, plus what step 3 noted — the base, the number of commits on this branch since it, and how far the trunk is ahead of its remote with publishing named as what removes the overlap — or, when no base resolved, that the branch scope was unavailable, and when the trunk is current or no remote trunk resolved, no lag line at all; and the tree verdict from step 8: left as found, or what differed and what was restored; and what step 7 resolved — the review profile and the checklist each axis received. The review's content varies by project, so a report that does not name the checklists it was judged against cannot be checked at all. **What each resolution obliges this report to record is step 7's table, third column, and is not restated here** — every outcome with the line it owes, and the one case that owes nothing. An audit that does not say what it read cannot be checked against what it should have read.
+10. **Write** `.ai-flow/artifacts/T-XXX/verify.md` using the protocol's template, with the workflow findings under `## Review Findings`. Its `**Audited**` line carries the task it resolved and the source it read, plus what step 3 noted — the base, the number of commits on this branch since it, and how far the trunk is ahead of its remote with publishing named as what removes the overlap — or, when no base resolved, that the branch scope was unavailable, and when the trunk is current or no remote trunk resolved, no lag line at all; and the tree verdict from step 8: left as found, or what differed and what was restored; and what step 7 resolved — the context files the review was handed, each by key and path, and the review profile with the checklist each axis received; and where the list held no `workspace` entry, the same line the run wrote, remedy included. The review's content varies by project, so a report that does not name the context files and the checklists it was judged against cannot be checked at all. **What each resolution obliges this report to record is step 7's table, third column, and is not restated here** — every outcome with the line it owes, and the one case that owes nothing. An audit that does not say what it read cannot be checked against what it should have read.
 
 11. **Gate**: if any criterion is ❌ or any finding is HIGH-confirmed → STOP, do NOT proceed to archive. Fix or flag per the protocol's gate rules. ⚠️ partials → flag to user, who decides proceed-or-fix.
 
