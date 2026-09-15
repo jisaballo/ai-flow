@@ -111,6 +111,17 @@ SENTENCES
   printf '0'
 }
 
+# How many lines of a region carry a pattern. The count-in-a-region leg, which thirteen sections each
+# write out as their own three-token pipeline under a name of their own — and in two incompatible
+# argument orders, so a row copied between sections goes green on a swapped call, which still exits 0 and
+# still returns a number. This is the family's home; the thirteen existing copies are pre-existing and
+# are not touched here. Argument order is the majority one: the region first, the pattern second.
+#
+# Case-INSENSITIVE, like every copy it replaces. Where a leg needs the sentence boundary, or a bound on
+# how far two parts may sit apart, `insent` and `near90` are the helpers that give it — this one answers
+# only "the region carries these bytes", and a leg that needs more than that must say so itself.
+nreg() { printf '%s' "$1" | grep -ciE "$2" | tr -d ' '; }
+
 # A usable sandbox, or a named cause and a stopped run. `mktemp -d` failing is a broken environment, not
 # a failing test: the substitution yields an empty string, every fixture path under it collapses to the
 # filesystem root, and the section then scores whatever the greps make of files that were never written.
@@ -572,13 +583,27 @@ waved() {  # $1 = the guard script, $2 = label, $3.. = raw payloads -> one verdi
   [ -z "$whyw" ] && ok "$label" || bad "$label ($whyw)"
 }
 
-# $1: i case-insensitive, s case-sensitive. $2: extended regex. Paths print relative to $ROOT, which is
-# the form the card cites them in, so neither side needs normalising before they are compared.
+# $1: i case-insensitive, s case-sensitive. $2: extended regex. $3: the corpus, defaulting to CORPUS89.
+# Paths print relative to $ROOT, which is the form the card cites them in, so neither side needs
+# normalising before they are compared.
+#
+# The corpus is a PARAMETER rather than a second copy of this pipeline. A caller needing a different
+# reach used to retype the three stages under a new name, which passes C93's ROW 5 on the rename alone:
+# the row forbids a section from DEFINING a preamble-owned name, and a copy called something else is
+# invisible to it. Defaulting the parameter is what keeps every existing call unchanged, including the
+# two whose exact text another section pins.
+#
+# `${3-…}` and never `${3:-…}`: UNSET falls to the default, EMPTY does not. A caller computes its corpus
+# from a command substitution that can legitimately come out empty — `git ls-files` failing, or a filter
+# selecting nothing — and `:-` would quietly run that call over CORPUS89 instead, which is a DIFFERENT
+# reach: it excludes the suite's own sources, the very files a whole-tree caller passed its own corpus
+# to cover. An absence verdict computed over a corpus that cannot hold the survivors is a green row
+# about a question nobody asked.
 sweep89() {
   if [ "$1" = "s" ]; then
-    printf '%s\n' "$CORPUS89" | tr '\n' '\0' | (cd "$ROOT" && xargs -0 grep -lIE -- "$2" 2>/dev/null) | sort -u
+    printf '%s\n' "${3-$CORPUS89}" | tr '\n' '\0' | (cd "$ROOT" && xargs -0 grep -lIE -- "$2" 2>/dev/null) | sort -u
   else
-    printf '%s\n' "$CORPUS89" | tr '\n' '\0' | (cd "$ROOT" && xargs -0 grep -lIiE -- "$2" 2>/dev/null) | sort -u
+    printf '%s\n' "${3-$CORPUS89}" | tr '\n' '\0' | (cd "$ROOT" && xargs -0 grep -lIiE -- "$2" 2>/dev/null) | sort -u
   fi
 }
 
@@ -607,6 +632,13 @@ done
 SELFEX89="$(for f89 in $SUITE_SRC; do printf '%s\n' "${f89#$ROOT/}"; done)"
 ax89="$(printf '%s\n' "$DIM83" | sed -nE "s/^[[:space:]]+key: '([a-z]+)'.*/\\1/p" | paste -sd'|' -)"
 CORPUS89="$(cd "$ROOT" && git ls-files 2>/dev/null | grep -vxF -f <(printf '%s\n' "$SELFEX89"))"
+
+# The whole tracked tree, suite source included. CORPUS89 above excludes the suite, because a HOME is a
+# home of the engine and never of the row that counts it. An ABSENCE leg needs the opposite reach: a
+# retired identifier surviving inside the harness is precisely the case a corpus blind to the harness
+# cannot see, and this task's own sweep found two such sites. Assigned here, beside the corpus it is the
+# counterpart of, for the reason the block header above gives about a helper's inputs.
+CORPUS_ALL89="$(cd "$ROOT" && git ls-files 2>/dev/null)"
 
 # One marker per concept: the rule that recognises a HOME of it, as against a file that merely mentions
 # it. The difference is not cosmetic and two of the six prove it — `**Audited**` unanchored finds three

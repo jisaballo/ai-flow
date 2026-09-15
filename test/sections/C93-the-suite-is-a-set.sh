@@ -112,8 +112,8 @@ fi
 # the files it judges, this row would assert that whatever is there is what belongs there. This list is
 # the frozen contract from understand.md.
 HELP93='brake clohead dmove graw hookcall hookraw insent keyed ledger
-malformed manfact manstate marker89 mbul mkbig mkproj msect near90 nearok90 nearzero90 nitem nlines nstep
-nwords off pair purity_sweep sbullet sec90 shapes83 sheet step_no sweep89 vstep waved word83 wraw
+malformed manfact manstate marker89 mbul mkbig mkproj msect near90 nearok90 nearzero90 nitem nlines nreg
+nstep nwords off pair purity_sweep sbullet sec90 shapes83 sheet step_no sweep89 vstep waved word83 wraw
 wguard wti_classify wti_probe wti_tracked_leak'
 r5_93=""
 if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
