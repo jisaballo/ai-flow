@@ -28,6 +28,7 @@ GST90="docs/getting-started.md"
 RDM90="README.md"
 TPR90="template/.ai-flow/product.md"
 TYM90="template/.ai-flow/project.yml"
+VSK90="global/skills/verify/SKILL.md"
 
 # The fenced block inside a section: what A4 measures for the three homes that quote a skeleton rather
 # than being one.
@@ -53,6 +54,10 @@ USK4_90="$(grep -m1 -F 'product.md` — ALWAYS' "$USK90" 2>/dev/null)"
 # region is the only thing that does.
 TYMS90="$([ -r "$TYM90" ] && awk '/^# Map an area to its steering file/{f=1} f{print} /^steering:/{if(f)exit}' "$TYM90" | tr '\n' ' ' | tr -s ' ')"
 ESL90="$(grep -m1 -i 'steering:. map' "$ESK90" 2>/dev/null)"
+# One line, like the two skill lines above it: what the verify skill hands to the review is resolved in
+# a single sentence of step 7, and a region of the whole step would be answered by the review-profile
+# prose beside it.
+VS7_90="$(grep -m1 -F 'Resolve **`contextPaths`**' "$VSK90" 2>/dev/null)"
 CUSP90="$(sec90 "$CUS90" '^### Product Context')"
 CUSS90="$(sec90 "$CUS90" '^### Steering Files')"
 RDMS90="$(sec90 "$RDM90" '^### Steering Files')"
@@ -81,7 +86,7 @@ fi
 # and every label below carries one -- so the table is a double-quoted multi-line string. No row
 # may contain a double quote, `$` or a backtick; the assertion below counts the rows read, which is
 # what catches a row that a quoting mistake silently swallowed.
-ROUTES90=13
+ROUTES90=14
 ROUTETBL90="understand's product-context section~UPC90~identity|what it is|class~living domain model
 understand's steering section~USF90~nano|cuts~one line per rule
 understand's steering section, its second fact~USF90~map's value~conventional place and not the only one
@@ -94,7 +99,8 @@ the execute skill's steering line~ESL90~re-read|cuts|sections~-
 customization's product section~CUSP90~governs|shaped|read|written|kept~provides business context
 customization's steering section~CUSS90~cut|read|written|kept~-
 the understand skill's product line~USK4_90~class|what the file is~living domain model
-the template's steering comment~TYMS90~value means|shaped|read|written|kept~the map's value|whatever path it names"
+the template's steering comment~TYMS90~value means|shaped|read|written|kept~the map's value|whatever path it names
+the verify skill's context-resolution line~VS7_90~read once|reads it once|read-once~steering\[|falling back to .?\.ai-flow/steering"
 
 # --- E0: every region this block reads extracts ---------------------------------------------------
 # A leg over an empty region draws no verdict, so the emptiness is reported HERE, once, with the region
@@ -119,6 +125,7 @@ for pair90 in \
   "the README's steering section:$RDMS90" \
   "the README's documentation list:$RDMD90" \
   "the template's steering comment:$TYMS90" \
+  "the verify skill's context-resolution line:$VS7_90" \
 ; do
   [ -n "${pair90#*:}" ] || e0_90="$e0_90 [${pair90%%:*} did not extract]"
 done

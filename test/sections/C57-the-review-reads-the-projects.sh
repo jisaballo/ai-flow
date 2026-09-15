@@ -129,10 +129,33 @@ EOF82
   a4_82=""
   [ "$(n82 'ctxArea' "$SEC82")" -ge 1 ]  || a4_82="$a4_82 [security]"
   [ "$(n82 'ctxArea' "$ARC82")" -ge 1 ]  || a4_82="$a4_82 [architecture]"
-  # The half that replaces the harness file: the repository-wide entry reaches architecture and only it.
+  # The half that replaces the harness file: the repository-wide entry reaches architecture, and the
+  # security region is asserted NOT to carry it — "and only it" was a claim in a comment with no leg
+  # under it, and a guard that claims a reach it does not have stops the next reader from looking.
   [ "$(n82 'ctxWorkspace' "$ARC82")" -ge 1 ] || a4_82="$a4_82 [architecture has no repository-wide entry]"
+  [ "$(n82 'ctxWorkspace' "$SEC82")" -eq 0 ] || a4_82="$a4_82 [the repository-wide entry reaches security too]"
   [ -z "$a4_82" ] && ok "A4 the steering file reaches both the security and the architecture auditor" \
                   || bad "A4 the steering file reaches both the security and the architecture auditor (missing:$a4_82)"
+
+  # ---- A9: the retirement of the harness-file default is guarded ------------------------------------
+  # The operator's central decision for T-115 was that the retirement is CLEAN: no silent fallback to a
+  # literal `CLAUDE.md` once the argument goes. Nothing asserted it. A prover reinstated
+  # `${ctxWorkspace || 'CLAUDE.md'}` in full and the whole suite stayed green — A4 above still found the
+  # identifier, because a presence count cannot see a default bolted onto the value it counts.
+  #
+  # The zero-leg that catches reinstatement is NOT here. It was, over this region alone, and the invariant
+  # it guards is file-wide: a default reinstated in any of the other six prompts passed it. `C94 A1` owns
+  # it now, over the whole file, so the invariant has one home. What stays here is the architecture
+  # prompt's POSITIVE shape — that it conditions on the entry, and that the absent case instructs the
+  # auditor in something — which is a different fact and is this region's own.
+  a9_82=""
+  [ -n "$ARC82" ] || a9_82="$a9_82 [the architecture region could not be extracted]"
+  [ "$(n82 'ctxWorkspace \?' "$ARC82")" -ge 1 ] \
+    || a9_82="$a9_82 [the prompt does not condition on the repository-wide entry]"
+  [ "$(n82 'declared no repository-wide|you were given none|never invent a rule' "$ARC82")" -ge 1 ] \
+    || a9_82="$a9_82 [the absent case instructs the auditor in nothing]"
+  [ -z "$a9_82" ] && ok "A9 the architecture prompt conditions on the repository-wide entry and defaults to no file" \
+                  || bad "A9 the architecture prompt conditions on the repository-wide entry and defaults to no file:$a9_82"
 
   # ---- A5: an omission falls to the generic, never to an inferred default --------------------------
   # The pairing is the criterion: the fallback alone is satisfied by prose that ALSO permits inferring a
@@ -208,9 +231,18 @@ EOF82
   # only for the profile that FAILED to resolve: an operator who declared a profile correctly got the same
   # silence as before and learned what judged their change by opening the report afterwards. The prover
   # demonstrated it — tightening this leg to two occurrences of `own output` took the suite to 767/1.
+  #
+  # COUNTED OVER THE PROFILE'S OWN REGION, not over the step. The floor of two was MEASURED against the
+  # two occurrences this concept owns, so a count over the whole step is a floor any neighbouring concept
+  # can feed: T-115 added a third occurrence to step 7 for the context list, and the leg then carried one
+  # unit of slack — the profile could lose one of its two and the row would stay green on a sentence
+  # about something else. `PROF82` starts at the profile's own lead line, which is where this concept
+  # begins and after which the context paragraph does not sit.
+  PROF82="$(printf '%s' "$S7_82" | awk '/\*\*Resolve the review profile\*\*/{f=1} f')"
   b1_82=""
+  [ -n "$PROF82" ] || b1_82="$b1_82 [the review-profile region could not be extracted]"
   [ "$(n82 'profile' "$S7_82")" -ge 1 ] || b1_82="$b1_82 [step 7 never names the profile]"
-  [ "$(printf '%s' "$S7_82" | grep -ciE 'own output' | tr -d ' ')" -ge 2 ] \
+  [ "$(printf '%s' "$PROF82" | grep -ciE 'own output' | tr -d ' ')" -ge 2 ] \
     || b1_82="$b1_82 [only one of the two cases — resolved and unresolved — is spoken in the run's own output]"
   [ "$(n82 'which profile resolved|profile resolved and which checklist' "$S7_82")" -ge 1 ] \
     || b1_82="$b1_82 [the resolved profile is not what step 7 obliges the run to speak]"

@@ -288,8 +288,17 @@ fi
 # to work out from two greens.
 ESKH88="global/skills/execute/SKILL.md"
 TYMH88="template/.ai-flow/project.yml"
+# The VERIFY skill joined the resolvers when it stopped keeping its own `steering[<area>]` lookup and
+# routed to the mechanism instead. It is in the COUNT for the reason the execute skill is — it resolves
+# the entries, so a copy of the rule there is the second home this row says cannot exist, and nothing
+# else would count it. It is out of the route legs below on its own terms: the route itself is
+# `C90`'s fourteenth row, and the negative — that no private resolution stands beside it — is `C94 A2`,
+# which reads the whole of step 7 rather than the one line `C90` extracts. Its third leg would not
+# apply at all: verify names the `steering:` map and never the conventional directory, so a leg
+# demanding one would redden a file for saying nothing wrong.
+VSKH88="global/skills/verify/SKILL.md"
 n6_88=0
-for d88 in "$CTXH88" "$UP88" "$USK88" "$EXP88" "$ESKH88" "$TYMH88"; do
+for d88 in "$CTXH88" "$UP88" "$USK88" "$EXP88" "$ESKH88" "$TYMH88" "$VSKH88"; do
   if ! b88="$(tr '\n' ' ' < "$d88" 2>/dev/null)"; then
     a6_88="$a6_88 [unreadable: $d88]"; continue
   fi
