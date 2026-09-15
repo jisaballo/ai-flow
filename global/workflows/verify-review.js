@@ -40,14 +40,32 @@ const REFUTE = ['high']
 // The list, and the two entries the prompts below name. Read once, here, rather than inside the prompts:
 // an entry looked up where it is used is an entry the next reader of that prompt cannot see is optional.
 const ctxList = Array.isArray(a.contextPaths) ? a.contextPaths : []
-const ctxOf = (k) => (ctxList.find((e) => e && e.key === k) || {}).path || ''
+// ONE membership test, read by both the lookup and the rendering. Written as two predicates first — the
+// lookup required a truthy element, the rendering a truthy key — and the two then disagreed about the
+// same entry: `{ key: 'workspace' }` with no path rendered as a listed entry while the lookup answered
+// empty, so the architecture auditor received a context block naming a workspace entry and, in the same
+// prompt, the sentence saying the project declared none. Defaulting past a boundary with `|| ''` is what
+// let the two drift; the boundary is one function now, and a pathless entry is absent in both channels.
+// The key half also refuses an UNDEFINED lookup: `a.area` can be absent — this file says so three lines
+// below with `a.area || '?'` — and `find` would then match the first entry whose key is undefined, using
+// a path no channel ever disclosed.
+const ctxHas = (e) => !!(e && e.key && e.path)
+const ctxOf = (k) => (k ? (ctxList.find((e) => ctxHas(e) && e.key === k) || {}).path : '') || ''
 const ctxWorkspace = ctxOf('workspace')
 const ctxArea = ctxOf(a.area)
+// Rendered entries are filtered on the same terms `ctxOf` above looks them up on — the same function,
+// so the claim is true by construction rather than by two patterns that happen to agree today. The list
+// crosses into this module from outside — the skill builds it from the operator's `steering:` map — so
+// an entry may be null, keyless or pathless, and reading one undefensively here throws while `ctx` is
+// still being evaluated: at module top level, before DIMENSIONS exists, taking all five auditors down
+// with a stack trace that names a template literal rather than the entry that was malformed.
+// `Array.isArray` guards the container; `ctxHas` guards its elements.
+const ctxShown = ctxList.filter(ctxHas)
 
 const ctx = [
   `Task: ${a.taskId || '(unknown)'} — area: ${a.area || '?'}`,
   `Context files this task was written against:`,
-  (ctxList.length ? ctxList.map((e) => `  - ${e.key}: ${e.path}`).join('\n') : '  (none resolved)'),
+  (ctxShown.length ? ctxShown.map((e) => `  - ${e.key}: ${e.path}`).join('\n') : '  (none resolved)'),
   `Changed files:`,
   (a.changedFiles && a.changedFiles.length ? a.changedFiles.map((f) => `  - ${f}`).join('\n') : '  (none provided)'),
   ``,

@@ -37,7 +37,9 @@ commands:
 # distribute: "..."         # optional — a key UNDER commands: what puts merged work into effect
                             # (publish/deploy/reinstall); absent, the close's distribution move is a
                             # stated no-op
-steering:                   # area -> the rules file the verify phase hands the review
+steering:                   # area -> its rules file; what an entry's value means, who reads it and
+                            # when is in protocols/context.md and nowhere else. `workspace` is reserved:
+                            # the repository-wide rules, handed to the architecture auditor.
   auth: steering/auth.md
 review:                     # optional — what the review auditors look for, per stack
   angular-app:
