@@ -8,22 +8,58 @@
 
 1. **Resolve the task** by the ladder in the backlog protocol (`## State Files` → `### Resolving the task`) — stated there and only there, and a stop rather than a choice if it ends without one — then test the **phase precondition** (same document, `### The phase precondition`), stated there and only there too, so this document names no accepted position and no leg of its own: a run that reaches this file because the command is not installed performs the check itself, which is also what makes the out-of-phase clause in the templates below reachable. Then **re-read** `artifacts/T-XXX/understand.md` (Verifiable Criteria + Expected Behavior) and the **Criteria Coverage table** in plan.md — VERIFY inherits that mapping; do not reconstruct criterion->step from scratch.
 2. **For each criterion**, cite the specific evidence (file:line, test name, or observable behavior) that satisfies it
-3. **Contract check**: diff the current conformance specs against `artifacts/T-XXX/conformance-baseline/manifest.md`. Every frozen row must still exist carrying, unchanged, **every field the Plan protocol's frozen-row table marks *frozen at Conform*** (Plan protocol > `### The frozen row`, which is that list's one home — this step names no field of its own, because a second enumeration here is the double source the table exists to close, and it is this file that grew one). A field the same table marks **completed at the close** is **not** compared: it is recorded when its evidence exists, so finding it filled in is the row behaving, not diverging. Any divergence in a frozen field must have a matching `## Implementation Decisions` entry in understand.md. Divergence without entry -> ❌. **The free-mutation verdict is read rather than compared**: a verdict reading *a targeted mutation is still owed* is a row whose mutation was never discharged, and the audit refuses it -> ❌ until the mutation is performed and the verdict updated. Reading it here is what makes the field something other than an alarm nobody answers.
+3. **Contract check**: diff the current conformance specs against `artifacts/T-XXX/conformance-baseline/manifest.md`. Every frozen row must still exist carrying, unchanged, **every field the Plan protocol's frozen-row table marks *frozen at Conform*** (Plan protocol > `### The frozen row`, which is that list's one home — this step names no field of its own, because a second enumeration here is the double source the table exists to close, and it is this file that grew one). A field the same table marks **completed at the close** is **not** compared: it is recorded when its evidence exists, so finding it filled in is the row behaving, not diverging. Any divergence in a frozen field must have a matching `## Implementation Decisions` entry in understand.md. Divergence without entry -> ❌. **The free-mutation verdict is read rather than compared**, and what this step does with what it reads is the table below. Reading it here is what makes the field something other than an alarm nobody answers.
 
-   **The record is read as a record, and three of its states are what this step answers for.** The
+   **The record is read as a record, and this table is what this step does with each of its states.** The
    freeze leaves an account of what was run against each row and what the suite reported; re-asking that
-   question from scratch is how a record comes to be written and never read.
+   question from scratch is how a record comes to be written and never read. **This is the states' one
+   home** — what a row's state is, whether this phase re-runs its mutation, and what the gate then does
+   are one fact in three columns, and they were briefly two enumerations in this file giving the same
+   state opposite instructions. The fourth column is why: a reader could not tell which states were
+   knowable here and which only after the review.
 
-   - **An absent verdict is refused exactly as one reading *still owed* is** -> ❌. From here the two are
-     the same row: nothing says the mutation was performed. An absence that excused itself would be the
-     cheapest way past this step, and the cheapest way past a gate is the one that gets taken.
-   - **A row that could not be born red, carrying no account of the mutation run when it was authored,
-     is refused** -> ❌. Such a row bought its green from the tree it was written into; without that
-     account nothing distinguishes it from a row whose mutation was believed rather than run.
-   - **A recorded absence is read for its cause, and a `gap` is reported rather than refused.** A
-     criterion no honest assertion reaches is a real hole, and a gate that turned on it would ask its
-     author to prove a negative. The report names it, the audit continues, and the hole stays visible
-     to whoever reads the report — which is the whole of what marking it buys.
+   | Record state | Re-run by this phase? | What the gate does | Knowable at |
+   |---|---|---|---|
+   | verdict **absent** — the record says nothing about that row | yes | reads the re-run | this step |
+   | verdict **unreadable** — present, and does not answer the question asked of it | yes | reads the re-run | this step |
+   | verdict reads **still owed** — the record itself says the mutation was never performed | yes | reads the re-run | this step |
+   | row whose **authorship-mutation account is empty** — born red with nothing owed, or born green with its account never written, which the record does not distinguish | yes | reads the re-run | this step |
+   | row **disputed** — a finding claims it is satisfied by something other than the fact it names | yes | reads the re-run | after the review |
+   | **recorded absence**, read for its `cause` | no — nothing was ever owed | a `gap` is **reported**, never refused | this step |
+
+   **The disposition is decided by the outcome of the re-run, never by the state before it**, and that is
+   what makes the table one rule rather than two reconciled — and what lets row four be selected on a
+   field the record actually carries. An empty authorship account is ambiguous between a row that owed
+   nothing and a row whose mutation was believed rather than run; the frozen row has no field that tells
+   them apart, and this step is forbidden to re-ask what the record answers. It does not have to: both
+   readings are re-run, and a row that owed nothing reddens against its own falsifier and passes. An
+   ambiguity nothing can resolve by reading stops mattering the moment the disposition is the same for
+   both readings. A row in any of the first five states is
+   re-run: that is not a gate event, it is this step acquiring the fact. The gate then reads the result —
+   **reddens** and the verdict is updated and the row does not hold the gate; **stays green** and the leg
+   is hollow, the row holds the gate at ❌, and the report names the leg and the fact its mutation failed
+   to kill. The ❌ was never for the state; it is for the state **surviving its own falsifier**, which is
+   a stronger refusal than the record's word and not a weaker one.
+
+   **This phase mutates nothing by default** — the first five states are the whole of what it re-runs, and
+   a row the record answers for is left alone. And **always**, whatever the record says: every leg this
+   phase's own repair wrote. A leg authored inside the phase that judges it has no independent record to
+   be selected on, so it is never selected out.
+
+   A `gap` is reported rather than refused because a criterion no honest assertion reaches is a real hole,
+   and a gate that turned on it would ask its author to prove a negative. That is the opposite act from
+   refusing a leg whose falsifier stayed green, which is an observed fact — the two are stated together
+   at `### The acceptance rule for a repair leg` and are not the same judgement.
+
+   **The limit this default carries, written down rather than argued away.** Nothing here catches a record
+   that reports a row discharged when nothing was discharged: the selection reads what the record says, so
+   a record that lies selects itself out. What would close it is a **calibrated sample** — re-running the
+   mutation of rows chosen independently of the record, to measure the record against the tree — and that
+   costs a new step, a price this engine has not paid.
+
+   What a leg *owes* is `## What a Mutation Has To Prove` below and none of this changes it: that section
+   states what must have been done to every leg, this table states which legs this phase does it to. Two
+   claims, two moments.
 4. **Reverse audit (diff->plan)**: every hunk in the task diff (see **The Task Diff** below) must trace to a plan step, a criterion, or an Implementation Decision. Orphan hunks -> record under `Gaps Found` as **scope creep** (this is the audited form of the Surgical Changes rule).
 5. **Provenance grep**: the task diff's **added lines** must carry no task/epic IDs (two legs, because the task diff has two: `git diff <merge-base> | grep -E '^\+.*\b[TE]-[0-9]+'` for tracked work, and the same pattern over the files `git ls-files --others --exclude-standard` names, which no diff reaches — the base resolved as **The Task Diff** below defines it) in code, comments, or test names — the rule lives in Execute protocol > Code Comments & Provenance. Hits -> ❌ (fix before archive; provenance belongs in the commit message).
 6. **Skip-marker grep**: the task diff's **added lines** must switch no test off — the rule lives in CLAUDE.md > *Never*: skip or disable tests, and until now nothing anywhere read it. Two legs and one base, exactly as step 5 has them. Unlike step 5 the restriction is **inside the command rather than beside it**: `TESTS` is the subset of the diff's own files that the diff brake's `TEST_RE` (`~/.claude/hooks/diff-size-guard.py`) accepts — one statement of what a test file is, two readers of it — and it is the command's **pathspec**, so the leg cannot read a file it is not entitled to. A restriction stated in prose beside a command that does not carry it is not a second reader of anything; it is an adjective. **The marker set is declared here and only here** — the `/verify` skill names the leg and routes to this line rather than restating it, because a second copy of ten patterns is a set that grows in one reader and not the other:
@@ -165,33 +201,18 @@ never amends a frozen row: amending one is the spec-sync step's act under its ow
 what makes the leg auditable at all — a leg outside the record is a leg nothing can re-run, and nothing
 can report as unproven either.
 
+**The repair's mutations are proven on the same terms as any other, and the proof is not step 8's.** The
+comparison that shows the working copy was left as found is taken before the review and read after it, and
+every repair mutation fires later than that — at the triage branch and at the gate. So each one takes its
+own copy before it is applied and is compared against it after it is taken back, byte-exact, on the terms
+`## Mutation and the Working Copy` already states for every actor the lifecycle appoints. What that
+section obliges is unchanged; what is said here is *when*, because a run whose only comparison predates
+its own mutations reports a tree it has not looked at since.
+
 **A leg whose mutation stays green is not written.** The finding's coverage absence is recorded with the
 cause the Plan protocol's vocabulary gives it, and the criterion the finding sat under is left standing.
 Refusing the leg and refusing the criterion are opposite acts: a falsifier that will not redden is an
 observed fact, while *no honest assertion exists anywhere* is a negative no author can be asked to prove.
-
-### Which legs this phase re-runs
-
-The record frozen before the work began already answers, row by row, what was run against that row and
-what the suite reported. **This phase mutates nothing by default.** It reads that record, and re-runs a
-mutation only where the record cannot be taken at its word:
-
-- **Absent** — the record says nothing about that row.
-- **Unreadable** — the record is present and does not answer the question asked of it.
-- **Still owed** — the record itself says a targeted mutation has not been performed.
-- **Disputed** — a finding claims the row is satisfied by something other than the fact it names.
-
-And **always**, whatever the record says: every leg this phase's own repair wrote. A leg authored inside
-the phase that judges it has no independent record to be selected on, so it is never selected out.
-
-What a leg *owes* is stated above and none of this changes it. The section above states what must have
-been done to every leg; this one states which legs this phase does it to. Two claims, two moments.
-
-**The limit this default carries, written down rather than argued away.** Nothing here catches a record
-that reports a row discharged when nothing was discharged: the selection reads what the record says, so
-a record that lies selects itself out. What would close it is a **calibrated sample** — re-running the
-mutation of rows chosen independently of the record, to measure the record against the tree — and that
-costs a new step, a price this engine has not paid.
 
 ## Status Meanings
 
@@ -270,6 +291,8 @@ Finally, **one prover** — alone, after every auditor and refuter has finished 
 
 What the user reads in chat is **one line per axis**: finding count + the worst finding of that axis. Business Contract findings are phrased in product language (what the product does vs. what the contract says — no file paths). Full detail lives in verify.md and is shown on demand — never pushed.
 
+**A repair the phase made is read out too**, in one line: how many mutations it ran against the legs it wrote or changed, and whether any stayed green. That one is not detail held back for the report, because a leg that survived its own falsifier holds the gate, and a gate the operator learns about only by opening the artifact is a gate that fires after the decision it was meant to inform.
+
 ### When to Skip
 
 - **Quick path** tasks (no formal verify)
@@ -334,6 +357,21 @@ was not moved.
 ### Triaged in-phase (unadjudicated by the review)
 - [MEDIUM finding + fixed / staged / discarded + where the record went (a discard's reason lives under `## Discarded` in `discoveries.md`; name it here, do not restate it), or "None"]
 - [LOW findings, listed as raised and unadjudicated]
+
+### Mutated by this phase's own repair
+- [for each leg this phase's repair wrote or changed: what was mutated, what the suite reported, and that
+  it was reverted — or "No leg was written or changed"]
+
+**This block is the report, and it is not the manifest.** The row appended under
+`### The acceptance rule for a repair leg` is the **record**: it survives the task and is what a later
+audit re-runs from. This block is what the *run* says while the operator is reading it, and the two are
+different artifacts serving different readers — a pointer here in place of the account collapses them and
+leaves the observable unmet, because a record nobody reports is the failure this phase exists to catch,
+relocated one artifact over.
+
+**The block is written on every run that repaired anything**, and says so plainly when nothing was
+written or changed. A block that almost always reads *none* stops being read, and then stops being
+written — so the second of those two outcomes is the one to state, not to omit.
 
 ### Proven (mutation)
 - [finding + the shape the proposal declared (weaken / add-check) + what the run did (red / green /
