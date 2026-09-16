@@ -29,7 +29,7 @@ Runs the Verify phase of the ai-flow workflow. Works in any project that has `.a
      Worktrees share the ref store, so this reads the same from a linked checkout as from the coordinator.
 
 4. **Criterion audit (YOU do this — it needs the full task context, which only this session holds)**: for each criterion, cite evidence (`file:line`, test name, or observable behavior) and mark ✅ / ⚠️ / ❌. Re-run every Verify command from each `plan.md` step (catches cross-step regressions a later step may have introduced). Then two more checks from the protocol:
-   - **Contract check**: diff current conformance specs against `artifacts/T-XXX/conformance-baseline/manifest.md` — every frozen row and every recorded absence keeps the fields marked *frozen at Conform* where the protocol's contract-check step routes, which is the Plan protocol's frozen-row table; that step names no field of its own and neither does this bullet. Divergence without an `## Implementation Decisions` entry → ❌, and a free-mutation verdict still owing a targeted mutation → ❌.
+   - **Contract check**: diff current conformance specs against `artifacts/T-XXX/conformance-baseline/manifest.md` — every frozen row and every recorded absence keeps the fields marked *frozen at Conform* where the protocol's contract-check step routes, which is the Plan protocol's frozen-row table; that step names no field of its own and neither does this bullet. Divergence without an `## Implementation Decisions` entry → ❌. Then **read the record itself, row by row, for the states that step declares** — it is their one home and this bullet names none of them. What this bullet obliges is that they are read rather than re-asked from scratch, that a state it declares refusable holds the gate at ❌, and that one it declares reportable is written into the report and does not.
    - **Reverse audit (diff→plan)**: every hunk in the task diff step 3 gathered traces to a plan step, a criterion, or an Implementation Decision; orphan hunks → `Gaps Found` as scope creep.
    - **Skip-marker grep**: no added line in that diff switches a test off, in a file the diff brake counts as a test. Run it as `~/.claude/ai-flow/protocols/verify.md` states it — **the marker set is declared there and only there**, and restating it here would be a second copy that grows in one reader and not the other. A hit → ❌, naming the file and the line: the gate holds, exactly as it does for a stray task identifier.
 
@@ -114,11 +114,19 @@ Runs the Verify phase of the ai-flow workflow. Works in any project that has `.a
    - **`refuted`** → list briefly under "Dismissed (refuted)" so the audit trail stays transparent.
    - No findings at all → `## Review Findings: None`.
    - **`proofs`** → each entry carries what the run did (`red` / `green` / `unproven`) and the shape the workflow attached to it from the proposal it belongs to, or `kind: 'unknown'` where the answer could not be attributed to one proposal — its `unattributed` field carries which of the four ways the attribution failed, and the protocol obliges that reason into the report rather than a reason you invent. What each pair means for a finding is the protocol's `Consolidation into verify.md` — read it there, and restate it nowhere, this file included — a mapping is exactly the shape whose second copy reads as a restatement right up to the day the two disagree, and by then neither says which is the rule. The prover's `treeRestored` is its own word and never the verdict — step 8's comparison is.
-   - **Presentation to the user**: one line per axis (finding count + worst finding), and the count says how many were adjudicated versus triaged in-phase — a reader who cannot tell the two apart is reading one number for two different guarantees. Business Contract findings in product language — what the product does vs. what the contract says, no file paths. Full detail stays in verify.md, shown on demand.
+   - **Presentation to the user**: one line per axis (finding count + worst finding), plus — where this phase's own repair wrote or changed a leg — one line saying how many mutations it ran and whether any stayed green, since a leg that survived its falsifier is the one thing here that holds the gate. The count says how many were adjudicated versus triaged in-phase — a reader who cannot tell the two apart is reading one number for two different guarantees. Business Contract findings in product language — what the product does vs. what the contract says, no file paths. Full detail stays in verify.md, shown on demand.
 
 10. **Write** `.ai-flow/artifacts/T-XXX/verify.md` using the protocol's template, with the workflow findings under `## Review Findings`. Its `**Audited**` line carries the task it resolved and the source it read, plus what step 3 noted — the base, the number of commits on this branch since it, and how far the trunk is ahead of its remote with publishing named as what removes the overlap — or, when no base resolved, that the branch scope was unavailable, and when the trunk is current or no remote trunk resolved, no lag line at all; and the tree verdict from step 8: left as found, or what differed and what was restored; and what step 7 resolved — the context files the review was handed, each by key and path, and the review profile with the checklist each axis received; and where the list held no `workspace` entry, the same line the run wrote, remedy included. The review's content varies by project, so a report that does not name the context files and the checklists it was judged against cannot be checked at all. **What each resolution obliges this report to record is step 7's table, third column, and is not restated here** — every outcome with the line it owes, and the one case that owes nothing. An audit that does not say what it read cannot be checked against what it should have read.
+    **And where this phase's own repair wrote or changed a leg, the report carries what was mutated against
+    each one and what the suite reported** — the template's `### Mutated by this phase's own repair`, whose
+    terms the protocol states and this step does not restate. The appended manifest row is the record and
+    this block is the report; writing a pointer to the row in place of the account leaves the run's own
+    observable unmet.
 
 11. **Gate**: if any criterion is ❌ or any finding is HIGH-confirmed → STOP, do NOT proceed to archive. Fix or flag per the protocol's gate rules. ⚠️ partials → flag to user, who decides proceed-or-fix.
+    **Fixing here writes legs too.** Any assertion written or changed to clear a ❌ or a confirmed HIGH is
+    accepted only under the protocol's `### The acceptance rule for a repair leg`, which states its terms
+    and is not restated here.
 
 ## Triaging the Unadjudicated
 
@@ -140,7 +148,9 @@ finding whenever it happens to sit outside the diff.
   large. What bounds it is the *action*, not the routing — fix it where the fix is small and traceable in
   the sense Surgical Changes gives those words, and where it is not, stage it **still owned**, with the
   `own ground` stamp and the reason it was not fixed here. It never leaves the task on account of its
-  size, and the reverse audit has nothing untraceable to flag.
+  size, and the reverse audit has nothing untraceable to flag. **Where the fix writes or changes an
+  assertion, that leg is authored here**, and the protocol's `### The acceptance rule for a repair leg`
+  is what accepts it, on the terms it states and this bullet does not restate.
 - **Discard it** — the failure it describes cannot occur: the code was misread, the behavior is intended,
   or something downstream already prevents it. Say which, in one line, and say why the failure cannot
   occur — **not** why the flow cannot reach it, which two of those three cases reach and survive anyway.
