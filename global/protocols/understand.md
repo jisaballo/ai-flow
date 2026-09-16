@@ -291,7 +291,26 @@ Every **Automated** and **Behavioral** criterion in understand.md is written in 
 | Unwanted behavior | IF [condition], THEN the [system] shall [response] | Errors, edge cases, failure paths |
 | Optional feature | WHERE [feature/platform applies], the [system] shall [response] | Config/platform-dependent behavior |
 
-**Gate (before Plan):** a criterion that does not parse as one of the 5 patterns, or whose response/THEN is not observable (nothing to point at — no test, no file:line, no visible behavior), must be reformulated before proceeding to Plan.
+**Every criterion — Automated, Behavioral and Observable alike — also carries two fields, and they are written before any assertion over it exists.** They are what decides which kind it is; the kind is the conclusion, not the input.
+
+`observed:` — how the criterion is observed. One of four:
+
+| Value | The verdict comes from |
+|-------|------------------------|
+| `run` | **executing** the subject and reading what it did or the status it returned — a program the assertion did not write produced the evidence |
+| `compute` | an arithmetic relation between two **derived** quantities: a count against a count, a difference, a set algebra over two extractions. A comparison counts only where both sides are derived |
+| `resolve` | a **referent resolving** — a path exists, a name is bound, a revision names something |
+| `read` | a **pattern matched against the subject's text**. This is the value with no oracle |
+
+**Precedence is `run > compute > resolve > read`, strongest oracle first, and the reason is part of the rule**: a criterion that runs something and *then* reads its output is `run`, because letting the reading speak would file an executed observation under the value that means *no program produced this*.
+
+`falsified-by:` — the change **to the subject** that would make the criterion false, stated in the fact's own terms. A falsifier phrased against the assertion (*the check would go red*) is not one: it describes the instrument rather than the thing measured, so the same author supplies both sides — the single-actor failure this field exists to break.
+
+**The consequence is keyed on the falsifier, never on the value.** Where the falsifier names a change only the criterion's own author would make, there is no second source and nothing could disagree: the criterion is **Observable**. Where it names a change some other actor could make, there is a second source and the criterion is **Automated** or **Behavioral** — the reverse direction, and it is stated because a rule that names only the demotion reads as a one-way door. What Conform emits for each kind is the Plan protocol's (`plan.md` > Conformance Tests), stated there and only there. Where the falsifier cannot be written at all, the gate below is what refuses the criterion — stated there and not here, so the condition has one home.
+
+Two words in this file already carry other senses, one line each. **`read`** here is the value with *no* oracle — the inverse of a fact marked as read from the source, which is the trustworthy case against one taken on assumption. **`observed:`** is this field alone: not *Observable success*, which is the Business Frame's user-visible scenario, and not *Observable*, which is a criterion kind.
+
+**Gate (before Plan):** a criterion that does not parse as one of the 5 patterns, or whose response/THEN is not observable (nothing to point at — no test, no file:line, no visible behavior), or whose `falsified-by:` cannot be written — or is phrased against the assertion rather than against the subject, which is the same condition and not a fourth — must be reformulated before proceeding to Plan.
 
 GIVEN/WHEN/THEN is no longer the criterion format — it moves down to CONFORM as the **test format** (see Plan protocol): each EARS criterion becomes one or more GWT test stubs.
 
@@ -365,10 +384,13 @@ Write `artifacts/T-XXX/understand.md` with:
 - **Edge Cases**: [How to handle edge cases]
 - **Verifiable Criteria** (Automated + Behavioral in EARS — see Criteria Format):
   - **Automated** (tests): [EARS criterion] -> `[spec file]`
+    - `observed:` [run|compute|resolve|read] · `falsified-by:` [the change to the SUBJECT that would make it false]
   - **Observable** (code inspection): [concrete checkable fact]
+    - `observed:` [run|compute|resolve|read] · `falsified-by:` [the change to the SUBJECT — one only this criterion's own author would make, which is what files it here]
   - **Behavioral** (UI/flow tasks only):
     - WHEN [trigger], the [system] shall [response]
     - IF [condition], THEN the [system] shall [response]
+    - `observed:` [run|compute|resolve|read] · `falsified-by:` [the change to the SUBJECT that would make it false]
 
 ## Technical Considerations
 - **Files Affected (verified)**: [files confirmed by reading — path + one line on why each changes]
