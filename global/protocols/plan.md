@@ -119,26 +119,35 @@ Each step declares a `Skills:` line listing the workspace skills whose domain it
 
 ### The free mutation, and the condition it rides on
 
-The red→green pair **discharges a row's mutation only where the owning step's diff touches nothing but the row's named subject.** Otherwise the pair shows the row discriminates between two tree states, and the diff between them carries everything else that step changed — so a targeted mutation is still owed.
+The red→green pair **discharges a row's mutation only where the task's diff touches nothing but the row's named subject.** Otherwise the pair shows the row discriminates between two tree states, and the diff between them carries everything else that changed — so a targeted mutation is still owed.
 
 The condition is a **comparison and not the author's judgement of their own row**: the manifest names the subject, git names the diff, and both sides are already there to be read.
+
+**The window is the task and not the step that owns the row**, and the reason is the same one that governs the exemption in the Execute protocol: a step boundary is a claim a plan makes about itself and can be redrawn by the actor the condition is meant to constrain, while a task boundary is a fact the record already holds. The wider window is also the safe direction — a broader diff is harder to touch nothing but the subject within, so the change can only reduce free discharges, never manufacture one.
+
+**The verdict is not frozen at Conform.** Its evidence is the task's diff, which does not exist yet; what Conform freezes is the **condition**, and the verdict is recorded when it can be determined. Which of the fields below is frozen and which is completed later is marked in the table itself.
 
 ### The frozen row
 
 One row per emitted stub, and one per recorded absence. A **manifest**, not a copy of the spec files: the stub *body* is free to change during Execute, while the fields below are the frozen contract (see Execute protocol > Conformance Contracts Exception).
 
-| Field | What it holds |
-|---|---|
-| spec file | where the stub lives |
-| `it()` description | maps 1:1 to the criterion text |
-| source criterion | the criterion the row was emitted from |
-| assert direction | what must grow, shrink or equal what |
-| falsifier | the criterion's `falsified-by:`, carried verbatim |
-| free-mutation verdict | discharged by the pair, or a targeted mutation still owed |
+**Two lifecycles, marked per field.** *Frozen at Conform* is the contract: it exists before step 1 and the audit refuses it changed without a written decision. *Completed at the close* is a field whose evidence does not exist at Conform — recorded when it can be determined, and therefore **not** divergence when it appears. A field of the second kind frozen as if it were the first freezes a guess, and the audit then demands a decision entry for the row simply doing what it was told.
 
-A **recorded absence** carries the criterion, its `observed:`, its falsifier and its cause. A manifest that is mostly recorded absences is this rule working, not this rule failing.
+| Field | Lifecycle | What it holds |
+|---|---|---|
+| spec file | frozen at Conform | where the stub lives |
+| `it()` description | frozen at Conform | maps 1:1 to the criterion text |
+| source criterion | frozen at Conform | the criterion the row was emitted from, with its `observed:` |
+| assert direction | frozen at Conform | what must grow, shrink or equal what |
+| falsifier | frozen at Conform | the criterion's `falsified-by:`, carried verbatim |
+| free-mutation condition | frozen at Conform | the row's named subject, against which the task's diff is compared |
+| kind disagreement | frozen at Conform | the author's declared bucket where it differs from the falsifier-derived kind, or *none* |
+| authorship mutation run | frozen at Conform | for a row that cannot be born red: what was mutated, what the suite reported, and that it was reverted |
+| free-mutation verdict | **completed at the close** | discharged by the pair, or a targeted mutation still owed |
 
-**This section is the field list's one home.** Anything that needs the list cites this table rather than restating it.
+**A recorded absence is a row of the same table**, carrying the criterion, its `observed:`, its falsifier and its cause — all four frozen at Conform. A manifest that is mostly recorded absences is this rule working, not this rule failing.
+
+**This section is the field list's one home.** Anything that needs the list cites this table rather than restating it — including anything that needs only the *frozen* subset, which is this table's Lifecycle column and not a shorter list kept elsewhere.
 
 ### What this enables
 
