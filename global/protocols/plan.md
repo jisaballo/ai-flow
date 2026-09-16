@@ -108,7 +108,7 @@ Each step declares a `Skills:` line listing the workspace skills whose domain it
 ### How it works
 
 1. **Read** the Verifiable Criteria from `artifacts/T-XXX/understand.md` — they arrive in EARS format (see Understand protocol), each carrying `observed:` and `falsified-by:`. GIVEN/WHEN/THEN is the **test format**: an emitting criterion becomes one or more GWT stubs.
-2. **Emission is keyed on `observed:`, and not on the criterion's kind.** `run`, `compute` and `resolve` emit a row. `read` emits none: it is the value with no oracle, so a stub over it would be written and read by the same actor, and what that detects is a change rather than a fault.
+2. **Emission is keyed on `observed:`, and not on the criterion's kind.** `run`, `compute` and `resolve` emit a row. `read` emits none: it is the value with no oracle, so a stub over it would be written and read by the same actor, and what that detects is a change rather than a fault. **`observed:` decides whether a row is owed; it does not decide that one is written.** A criterion an existing assertion already reaches is owed a row and gets none, because the row exists — that is the `covered` cause below, and it is the only way an emitting value produces no new row. Recording it is what keeps the two apart: a manifest that shows `run` beside `covered` says *asserted elsewhere*, and one that shows `run` beside no row at all is a row someone forgot.
 3. **The stub's body is the real assertion from the first minute.** A body that fails by construction is forbidden — it proves the stub runs, never that it reads its subject. Red at Conform therefore means *bound to the subject*, green after Execute means *the change made it true*, and the pair is a mutation the plan gets for nothing under the condition below.
 4. **The kind Conform keys on is the falsifier-derived one** (Understand protocol > the `falsified-by:` rule). Where the author's declared bucket disagrees with it, Conform proceeds on the derived kind and **records the disagreement** in the manifest: a recorded wrong label is a datum a reviewer can challenge, a silent one is the failure. The declared bucket is advisory for exactly as long as the criteria template keeps asking the author for it.
 5. **A row that cannot be born red pays at authorship instead.** A row green from the start — an invariant, a regression guard — runs its `falsified-by` **once, now**, and the manifest records what was mutated, what the suite reported, and that the mutation was reverted. A falsifier written and never run is a falsifier that was believed.
@@ -146,9 +146,10 @@ One row per emitted stub, and one per recorded absence. A **manifest**, not a co
 | free-mutation condition | frozen at Conform | the row's named subject, against which the task's diff is compared |
 | kind disagreement | frozen at Conform | the author's declared bucket where it differs from the falsifier-derived kind, or *none* |
 | authorship mutation run | frozen at Conform | for a row that cannot be born red: what was mutated, what the suite reported, and that it was reverted |
+| cause | frozen at Conform | for a recorded absence: `inspection`, `gap` or `covered` — why this criterion emitted no row |
 | free-mutation verdict | **completed at the close** | discharged by the pair, or a targeted mutation still owed |
 
-**A recorded absence is a row of the same table**, carrying the criterion, its `observed:`, its falsifier and its cause — all four frozen at Conform. A manifest that is mostly recorded absences is this rule working, not this rule failing.
+**A recorded absence is a row of the same table** — it fills the fields above that apply to it and leaves the rest empty, and this sentence names none of them, because naming them here would be the shorter list the next paragraph forbids. A manifest that is mostly recorded absences is this rule working, not this rule failing.
 
 **This section is the field list's one home.** Anything that needs the list cites this table rather than restating it — including anything that needs only the *frozen* subset, which is this table's Lifecycle column and not a shorter list kept elsewhere.
 

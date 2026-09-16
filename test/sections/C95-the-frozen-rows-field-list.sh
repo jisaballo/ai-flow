@@ -29,10 +29,15 @@ T95="$(mkbox)" || fatal 'C95 fixtures'
 
 # The field names, normalised: markup is stripped from the line before matching, so a table cell reading
 # `it()` description and a sentence reading "it() description" are the same statement of the same field.
-FIELDS95='spec file|it() description|source criterion|assert direction|falsifier|free-mutation verdict'
+# Every field the table carries. Written out rather than parsed from the table, and that is the point:
+# derived from the document it polices, this would assert that whatever is there is what belongs there.
+# A field added to the table and not added here is a field a second home may enumerate invisibly, which
+# is how the first form of this constant came to name 6 of 9 -- dropping exactly the three the same
+# branch had just introduced.
+FIELDS95='spec file|it() description|source criterion|assert direction|falsifier|free-mutation condition|kind disagreement|authorship mutation run|free-mutation verdict|cause'
 
 homes95() { # $1 = root to search -> one path per file that STATES the list
-  find "$1" -name '*.md' 2>/dev/null | sort | while IFS= read -r f95; do
+  find "$1" -name '*.md' 2>>"${FERR95:-/dev/null}" | sort | while IFS= read -r f95; do
     awk -v fields="$FIELDS95" '
       BEGIN { split(fields, F, "|") }
       { line = tolower($0); gsub(/[`*_]/, "", line)
@@ -51,11 +56,15 @@ homes95() { # $1 = root to search -> one path per file that STATES the list
 # that silently emptied is the same green as a corpus that was actually cleaned up, and a `find` whose
 # root was renamed prints nothing and exits 0.
 GLOB95="$ROOT/global"
-nmd95="$(find "$GLOB95" -name '*.md' 2>/dev/null | grep -c . | tr -d ' ')"
-if [ -d "$GLOB95" ] && [ "${nmd95:-0}" -ge 15 ]; then
-  ok "the published markdown corpus is populated"
+# find's ERRORS are kept, not swallowed. A subtree it cannot descend disappears from the corpus AND from
+# the counter at once, so it contributes zero homes -- which is precisely the green ROW 3 awards. A guard
+# whose failure mode is the verdict it protects has to read the status, not only the count.
+FERR95="$T95/find.err"
+nmd95="$(find "$GLOB95" -name '*.md' 2>"$FERR95" | grep -c . | tr -d ' ')"
+if [ -d "$GLOB95" ] && [ "${nmd95:-0}" -ge 15 ] && [ ! -s "$FERR95" ]; then
+  ok "the published markdown corpus is populated and wholly readable"
 else
-  bad "the published markdown corpus is populated (${nmd95:-0} file(s))"
+  bad "the published markdown corpus is populated and wholly readable (${nmd95:-0} file(s)$([ -s "$FERR95" ] && echo "; find could not read: $(tr '\n' ' ' < "$FERR95")"))"
 fi
 
 # ROW 2 -- the counter is shown to MEASURE before any verdict is read from it.
@@ -90,7 +99,7 @@ fi
 #
 # Read only after ROW 1 said the corpus exists and ROW 2 said the counter can speak; guarded on both, so
 # a green here is never the silence of a machine that stopped working.
-if [ "${nmd95:-0}" -ge 15 ] && [ "$FX95" = "a-home.md b-home.md" ]; then
+if [ "${nmd95:-0}" -ge 15 ] && [ ! -s "$FERR95" ] && [ "$FX95" = "a-home.md b-home.md" ]; then
   H95="$(homes95 "$GLOB95")"
   n95="$(printf '%s\n' "$H95" | grep -c . | tr -d ' ')"
   w95="$(printf '%s\n' "$H95" | sed "s|^$ROOT/||" | tr '\n' ' ' | sed 's/ *$//')"
