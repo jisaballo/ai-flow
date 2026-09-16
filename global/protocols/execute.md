@@ -62,7 +62,8 @@ For each step:
      this rule's subject, since it re-asks a question a later step may have changed the answer to.
    - If tests fail -> Intentional change? Fix test. Unexpected? Fix code. (Conformance specs are the exception — see below.)
    - **Bounded Retry**: Max 3 fix attempts for the same test/error. After 3 failures, STOP and escalate to user with: what was tried, what failed, what the likely root cause is. Do not continue iterating blindly.
-   - All tests MUST pass before proceeding
+   - All tests MUST pass before proceeding, **except a row the frozen-row exemption below covers**: not a
+     failure this gate counts, and never Bounded Retry's subject.
 4. **Commit the step.** A step whose Verify command passes is committed where it stands, and the commit
    seeks no approval of its own — the approval for the task's work is given once, at move 1 of the closing
    ceremony (backlog protocol), which owns the gate and states why it sits there. Where the task's level
@@ -73,11 +74,20 @@ For each step:
    missing test is written later:
    - **Atomic**: `type(scope): description`, with the `Co-Authored-By` line. One step, one commit.
    - **Green**: the commit must pass tests. Step 3 above is what proves it, and a step that cannot get
-     there is escalated by its own Bounded Retry rather than committed red.
+     there is escalated by its own Bounded Retry rather than committed red — **except for a row the
+     frozen-row exemption below covers**, which this rule does not count.
 5. **Between steps.** Where the task's sheet declares **Supervised**, show the diff of the step just
    finished and wait for the operator before the next step begins. **This is the gate's one home** — the
    level table states which tasks earn the level and states none of this, and no command may restate it.
    At every other level the loop goes straight back to 1.
+
+### The frozen-row exemption
+
+**A row frozen in `conformance-baseline/manifest.md` does not count as a failing test until the task's last commit.** Conform freezes every row before step 1, so a plan is genuinely red until the work is done. This narrows what the rules above count and redefines nothing: *green* keeps one meaning.
+
+**Both gates reach it** — item 3 and **Green**. Exempt one only and the actor has no admissible branch: the red rows are contracts they may not weaken, and the code that greens them is unwritten.
+
+**Keyed on the record and on the task, never on the step** — the manifest carries no step, and *the step that owns the row* is a claim the gated actor may amend under the Replan Gate.
 
 ### Conformance Contracts Exception
 

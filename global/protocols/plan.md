@@ -77,7 +77,7 @@ Write `artifacts/T-XXX/plan.md` with:
 
 | Criterion (understand.md) | Step | Stub |
 |---------------------------|------|------|
-| [EARS criterion / Observable] | Step N | `[spec file] > [it() description]` — or "— (inspection)" |
+| [EARS criterion / Observable] | Step N | `[spec file] > [it() description]` — or, for a non-emitting criterion, "— (inspection)", "— (gap)" or "— (covered)" |
 ```
 
 ## Criteria Coverage (mandatory)
@@ -107,27 +107,63 @@ Each step declares a `Skills:` line listing the workspace skills whose domain it
 
 ### How it works
 
-1. **Read** the Verifiable Criteria from `artifacts/T-XXX/understand.md` — they arrive in EARS format (see Understand protocol). GIVEN/WHEN/THEN is the **test format**: each EARS criterion becomes one or more GWT stubs.
-2. **For each Automated criterion**: Create a failing test stub in the target spec file
-   - Use `it.todo('...')` or a minimal `it('...', () => { expect(true).toBe(false); })` that clearly fails
-   - Test description maps 1:1 to the criterion text
-3. **For each Behavioral criterion**: Create a failing test that sets up the GIVEN (the EARS state/context), triggers the WHEN, and asserts the THEN (the EARS response)
-4. **Observable criteria** don't generate tests (they're verified by code inspection in Verify phase)
-5. **Run the test suite** — all new stubs MUST fail (red phase of TDD). Sizing an assertion by mutating the thing it guards is governed by the verify protocol's `Mutation and the Working Copy`, stated there and only there — do not reproduce its obligations here.
-6. **Freeze the contracts**: write the baseline manifest to `artifacts/T-XXX/conformance-baseline/manifest.md` — one row per stub: spec file, `it()` description, source criterion, assert direction (what must grow/shrink/equal what). A **manifest**, not a copy of the spec files: the stub *body* is free to change during Execute; the manifest rows are the frozen contract (see Execute protocol > Conformance Contracts Exception).
-7. **Proceed to Execute** — the goal is now "make these tests pass"
+1. **Read** the Verifiable Criteria from `artifacts/T-XXX/understand.md` — they arrive in EARS format (see Understand protocol), each carrying `observed:` and `falsified-by:`. GIVEN/WHEN/THEN is the **test format**: an emitting criterion becomes one or more GWT stubs.
+2. **Emission is keyed on `observed:`, and not on the criterion's kind.** `run`, `compute` and `resolve` emit a row. `read` emits none: it is the value with no oracle, so a stub over it would be written and read by the same actor, and what that detects is a change rather than a fault. **`observed:` decides whether a row is owed; it does not decide that one is written.** A criterion an existing assertion already reaches is owed a row and gets none, because the row exists — that is the `covered` cause below, and it is the only way an emitting value produces no new row. Recording it is what keeps the two apart: a manifest that shows `run` beside `covered` says *asserted elsewhere*, and one that shows `run` beside no row at all is a row someone forgot.
+3. **The stub's body is the real assertion from the first minute.** A body that fails by construction is forbidden — it proves the stub runs, never that it reads its subject. Red at Conform therefore means *bound to the subject*, green after Execute means *the change made it true*, and the pair is a mutation the plan gets for nothing under the condition below.
+4. **The kind Conform keys on is the falsifier-derived one** (Understand protocol > the `falsified-by:` rule). Where the author's declared bucket disagrees with it, Conform proceeds on the derived kind and **records the disagreement** in the manifest: a recorded wrong label is a datum a reviewer can challenge, a silent one is the failure. The declared bucket is advisory for exactly as long as the criteria template keeps asking the author for it.
+5. **A row that cannot be born red pays at authorship instead.** A row green from the start — an invariant, a regression guard — runs its `falsified-by` **once, now**, and the manifest records what was mutated, what the suite reported, and that the mutation was reverted. A falsifier written and never run is a falsifier that was believed.
+6. **A non-emitting criterion is recorded, never silent**, with one of **three** causes, which are not interchangeable:
+   - **inspection** — the `falsified-by:` names a change only the criterion's own author would make. No second source ever existed and nothing was lost.
+   - **gap** — it names a change another actor could make, and **no honest assertion reaches the criterion as written**. A real hole, recorded rather than refused, because a gate turning on *no honest assertion exists* asks the author to prove a negative. *As written* is load-bearing: an assertion that reaches some neighbouring string — a retired spelling, one instance of the class the criterion forbids — has not reached the criterion, and filing such a row as anything but a gap records a coverage the task does not have.
+   - **covered** — an honest assertion reaches it and **something already asserts it**. Neither of the others fits: a gap would be false, and inspection would claim no second source exists when one does.
+7. **Run the test suite** — every emitted stub MUST fail, and each must fail for its own reason rather than by construction. Sizing an assertion by mutating the thing it guards is governed by the verify protocol's `Mutation and the Working Copy`, stated there and only there — do not reproduce its obligations here.
+8. **Freeze the contracts**: write the baseline manifest to `artifacts/T-XXX/conformance-baseline/manifest.md`, whose fields are stated at `### The frozen row` below and nowhere else.
+9. **Proceed to Execute** — the goal is now "make these rows green".
+
+### The free mutation, and the condition it rides on
+
+The red→green pair **discharges a row's mutation only where the task's diff touches nothing but the row's named subject.** Otherwise the pair shows the row discriminates between two tree states, and the diff between them carries everything else that changed — so a targeted mutation is still owed.
+
+The condition is a **comparison and not the author's judgement of their own row**: the manifest names the subject, git names the diff, and both sides are already there to be read.
+
+**The window is the task and not the step that owns the row**, and the reason is the same one that governs the exemption in the Execute protocol: a step boundary is a claim a plan makes about itself and can be redrawn by the actor the condition is meant to constrain, while a task boundary is a fact the record already holds. The wider window is also the safe direction — a broader diff is harder to touch nothing but the subject within, so the change can only reduce free discharges, never manufacture one.
+
+**The verdict is not frozen at Conform.** Its evidence is the task's diff, which does not exist yet; what Conform freezes is the **condition**, and the verdict is recorded when it can be determined. Which of the fields below is frozen and which is completed later is marked in the table itself.
+
+### The frozen row
+
+One row per emitted stub, and one per recorded absence. A **manifest**, not a copy of the spec files: the stub *body* is free to change during Execute, while the fields below are the frozen contract (see Execute protocol > Conformance Contracts Exception).
+
+**Two lifecycles, marked per field.** *Frozen at Conform* is the contract: it exists before step 1 and the audit refuses it changed without a written decision. *Completed at the close* is a field whose evidence does not exist at Conform — recorded when it can be determined, and therefore **not** divergence when it appears. A field of the second kind frozen as if it were the first freezes a guess, and the audit then demands a decision entry for the row simply doing what it was told.
+
+| Field | Lifecycle | What it holds |
+|---|---|---|
+| spec file | frozen at Conform | where the stub lives |
+| `it()` description | frozen at Conform | maps 1:1 to the criterion text |
+| source criterion | frozen at Conform | the criterion the row was emitted from, with its `observed:` |
+| assert direction | frozen at Conform | what must grow, shrink or equal what |
+| falsifier | frozen at Conform | the criterion's `falsified-by:`, carried verbatim |
+| free-mutation condition | frozen at Conform | the row's named subject, against which the task's diff is compared |
+| kind disagreement | frozen at Conform | the author's declared bucket where it differs from the falsifier-derived kind, or *none* |
+| authorship mutation run | frozen at Conform | for a row that cannot be born red: what was mutated, what the suite reported, and that it was reverted |
+| cause | frozen at Conform | for a recorded absence: `inspection`, `gap` or `covered` — why this criterion emitted no row |
+| free-mutation verdict | **completed at the close** | discharged by the pair, or a targeted mutation still owed |
+
+**A recorded absence is a row of the same table** — it fills the fields above that apply to it and leaves the rest empty, and this sentence names none of them, because naming them here would be the shorter list the next paragraph forbids. A manifest that is mostly recorded absences is this rule working, not this rule failing.
+
+**This section is the field list's one home.** Anything that needs the list cites this table rather than restating it — including anything that needs only the *frozen* subset, which is this table's Lifecycle column and not a shorter list kept elsewhere.
 
 ### What this enables
 
-- Execute becomes **goal-directed**: the agent knows it's done when all conformance tests pass
-- Verify phase has **concrete test evidence** for every criterion
+- Execute becomes **goal-directed**: the agent knows it's done when all conformance rows are green
+- Verify phase has **concrete test evidence** for every criterion that could carry any
 - Reduces need for human supervision during Execute — tests are the arbiter
 
 ### When to skip
 
 - Quick path tasks (no understand.md, no conformance tests)
-- Tasks with no Automated or Behavioral criteria (pure config/style changes)
-- When existing tests already cover the criteria (note this in plan.md instead of creating duplicates)
+- Tasks whose every criterion is `observed: read` (pure prose, config or style changes) — the absences are still recorded
+- When existing tests already cover the criteria (note this in plan.md instead of creating duplicates) — this is a non-emitting path like the others, and its rows are recorded with the cause **covered**
 
 ### Template for conformance test stubs
 
@@ -135,20 +171,19 @@ Each step declares a `Skills:` line listing the workspace skills whose domain it
 // Conformance: [what this suite guarantees, in behavior terms]
 
 describe('[Feature/Component]', () => {
-  // Criterion 1: [text from understand.md]
+  // Criterion: [text from understand.md]
   it('should [criterion as test description]', () => {
     // GIVEN: [setup]
+    const subject = [the thing the criterion is about];
     // WHEN: [action]
+    const actual = [observe it];
     // THEN: [expected result]
-    expect(true).toBe(false); // RED — implement in Execute
-  });
-
-  // Criterion 2: [text from understand.md]
-  it('should [criterion as test description]', () => {
-    expect(true).toBe(false); // RED — implement in Execute
+    expect(actual).toBe([what the criterion says it must be]);
   });
 });
 ```
+
+The assertion is the real one before Execute has written a line, so it is red because the subject does not yet satisfy it — never because the body was built to fail.
 
 No task IDs in headers, test names, or comments — the criterion text is the self-contained reference (see Execute protocol > Code Comments & Provenance).
 
