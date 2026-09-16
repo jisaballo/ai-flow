@@ -306,11 +306,11 @@ Every **Automated** and **Behavioral** criterion in understand.md is written in 
 
 `falsified-by:` — the change **to the subject** that would make the criterion false, stated in the fact's own terms. A falsifier phrased against the assertion (*the check would go red*) is not one: it describes the instrument rather than the thing measured, so the same author supplies both sides — the single-actor failure this field exists to break.
 
-**The consequence is keyed on the falsifier, never on the value.** Where the falsifier names a change only the criterion's own author would make, there is no second source and nothing could disagree: the criterion is **Observable** — inspection, and Conform emits no assertion for it. Where it cannot be written at all, the gate below is what refuses the criterion — stated there and not here, so the condition has one home.
+**The consequence is keyed on the falsifier, never on the value.** Where the falsifier names a change only the criterion's own author would make, there is no second source and nothing could disagree: the criterion is **Observable**. Where it names a change some other actor could make, there is a second source and the criterion is **Automated** or **Behavioral** — the reverse direction, and it is stated because a rule that names only the demotion reads as a one-way door. What Conform emits for each kind is the Plan protocol's (`plan.md` > Conformance Tests), stated there and only there. Where the falsifier cannot be written at all, the gate below is what refuses the criterion — stated there and not here, so the condition has one home.
 
 Two words in this file already carry other senses, one line each. **`read`** here is the value with *no* oracle — the inverse of a fact marked as read from the source, which is the trustworthy case against one taken on assumption. **`observed:`** is this field alone: not *Observable success*, which is the Business Frame's user-visible scenario, and not *Observable*, which is a criterion kind.
 
-**Gate (before Plan):** a criterion that does not parse as one of the 5 patterns, or whose response/THEN is not observable (nothing to point at — no test, no file:line, no visible behavior), or whose `falsified-by:` cannot be written, must be reformulated before proceeding to Plan.
+**Gate (before Plan):** a criterion that does not parse as one of the 5 patterns, or whose response/THEN is not observable (nothing to point at — no test, no file:line, no visible behavior), or whose `falsified-by:` cannot be written — or is phrased against the assertion rather than against the subject, which is the same condition and not a fourth — must be reformulated before proceeding to Plan.
 
 GIVEN/WHEN/THEN is no longer the criterion format — it moves down to CONFORM as the **test format** (see Plan protocol): each EARS criterion becomes one or more GWT test stubs.
 
@@ -387,9 +387,10 @@ Write `artifacts/T-XXX/understand.md` with:
     - `observed:` [run|compute|resolve|read] · `falsified-by:` [the change to the SUBJECT that would make it false]
   - **Observable** (code inspection): [concrete checkable fact]
     - `observed:` [run|compute|resolve|read] · `falsified-by:` [the change to the SUBJECT — one only this criterion's own author would make, which is what files it here]
-  - **Behavioral** (UI/flow tasks only) — each carries the same two fields:
+  - **Behavioral** (UI/flow tasks only):
     - WHEN [trigger], the [system] shall [response]
     - IF [condition], THEN the [system] shall [response]
+    - `observed:` [run|compute|resolve|read] · `falsified-by:` [the change to the SUBJECT that would make it false]
 
 ## Technical Considerations
 - **Files Affected (verified)**: [files confirmed by reading — path + one line on why each changes]
