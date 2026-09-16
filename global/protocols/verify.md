@@ -159,8 +159,8 @@ no later gate. A leg believed on the strength of having been written is the very
 closes was paid to find, and the actor who has just read a finding is in the worst position to notice
 they have written one.
 
-The leg's row is **appended to the task's baseline manifest under its own section**, carrying whatever
-the frozen-row table (Plan protocol > `### The frozen row`) asks of it and leaving the rest empty. It
+The leg's row is **recorded in the task's baseline manifest** as the Plan protocol's `### The frozen row`
+states an appended row is recorded — that section owns the shape and this one states none of it. It
 never amends a frozen row: amending one is the spec-sync step's act under its own rule. The append is
 what makes the leg auditable at all — a leg outside the record is a leg nothing can re-run, and nothing
 can report as unproven either.

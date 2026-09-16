@@ -120,9 +120,8 @@ Runs the Verify phase of the ai-flow workflow. Works in any project that has `.a
 
 11. **Gate**: if any criterion is ❌ or any finding is HIGH-confirmed → STOP, do NOT proceed to archive. Fix or flag per the protocol's gate rules. ⚠️ partials → flag to user, who decides proceed-or-fix.
     **Fixing here writes legs too.** Any assertion written or changed to clear a ❌ or a confirmed HIGH is
-    accepted only under the protocol's `### The acceptance rule for a repair leg`, on the same terms the
-    triage branch below carries: the falsifier is run at authorship, the row is appended, and a falsifier
-    that stays green means no leg is written.
+    accepted only under the protocol's `### The acceptance rule for a repair leg`, which states its terms
+    and is not restated here.
 
 ## Triaging the Unadjudicated
 
@@ -146,8 +145,7 @@ finding whenever it happens to sit outside the diff.
   `own ground` stamp and the reason it was not fixed here. It never leaves the task on account of its
   size, and the reverse audit has nothing untraceable to flag. **Where the fix writes or changes an
   assertion, that leg is authored here**, and the protocol's `### The acceptance rule for a repair leg`
-  is what accepts it: run its falsifier now, append its row, and where the falsifier stays green write
-  no leg and record the coverage absence instead.
+  is what accepts it, on the terms it states and this bullet does not restate.
 - **Discard it** — the failure it describes cannot occur: the code was misread, the behavior is intended,
   or something downstream already prevents it. Say which, in one line, and say why the failure cannot
   occur — **not** why the flow cannot reach it, which two of those three cases reach and survive anyway.
