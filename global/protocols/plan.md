@@ -77,7 +77,7 @@ Write `artifacts/T-XXX/plan.md` with:
 
 | Criterion (understand.md) | Step | Stub |
 |---------------------------|------|------|
-| [EARS criterion / Observable] | Step N | `[spec file] > [it() description]` — or "— (inspection)" |
+| [EARS criterion / Observable] | Step N | `[spec file] > [it() description]` — or, for a non-emitting criterion, "— (inspection)", "— (gap)" or "— (covered)" |
 ```
 
 ## Criteria Coverage (mandatory)
@@ -112,7 +112,10 @@ Each step declares a `Skills:` line listing the workspace skills whose domain it
 3. **The stub's body is the real assertion from the first minute.** A body that fails by construction is forbidden — it proves the stub runs, never that it reads its subject. Red at Conform therefore means *bound to the subject*, green after Execute means *the change made it true*, and the pair is a mutation the plan gets for nothing under the condition below.
 4. **The kind Conform keys on is the falsifier-derived one** (Understand protocol > the `falsified-by:` rule). Where the author's declared bucket disagrees with it, Conform proceeds on the derived kind and **records the disagreement** in the manifest: a recorded wrong label is a datum a reviewer can challenge, a silent one is the failure. The declared bucket is advisory for exactly as long as the criteria template keeps asking the author for it.
 5. **A row that cannot be born red pays at authorship instead.** A row green from the start — an invariant, a regression guard — runs its `falsified-by` **once, now**, and the manifest records what was mutated, what the suite reported, and that the mutation was reverted. A falsifier written and never run is a falsifier that was believed.
-6. **A non-emitting criterion is recorded, never silent**, with one of two causes, which are not interchangeable: **inspection**, where the `falsified-by:` names a change only the criterion's own author would make — no second source ever existed and nothing was lost; and **gap**, where it names a change another actor could make and no honest assertion reaches it — a real hole, recorded rather than refused, because a gate turning on *no honest assertion exists* asks the author to prove a negative.
+6. **A non-emitting criterion is recorded, never silent**, with one of **three** causes, which are not interchangeable:
+   - **inspection** — the `falsified-by:` names a change only the criterion's own author would make. No second source ever existed and nothing was lost.
+   - **gap** — it names a change another actor could make, and **no honest assertion reaches the criterion as written**. A real hole, recorded rather than refused, because a gate turning on *no honest assertion exists* asks the author to prove a negative. *As written* is load-bearing: an assertion that reaches some neighbouring string — a retired spelling, one instance of the class the criterion forbids — has not reached the criterion, and filing such a row as anything but a gap records a coverage the task does not have.
+   - **covered** — an honest assertion reaches it and **something already asserts it**. Neither of the others fits: a gap would be false, and inspection would claim no second source exists when one does.
 7. **Run the test suite** — every emitted stub MUST fail, and each must fail for its own reason rather than by construction. Sizing an assertion by mutating the thing it guards is governed by the verify protocol's `Mutation and the Working Copy`, stated there and only there — do not reproduce its obligations here.
 8. **Freeze the contracts**: write the baseline manifest to `artifacts/T-XXX/conformance-baseline/manifest.md`, whose fields are stated at `### The frozen row` below and nowhere else.
 9. **Proceed to Execute** — the goal is now "make these rows green".
@@ -159,7 +162,7 @@ One row per emitted stub, and one per recorded absence. A **manifest**, not a co
 
 - Quick path tasks (no understand.md, no conformance tests)
 - Tasks whose every criterion is `observed: read` (pure prose, config or style changes) — the absences are still recorded
-- When existing tests already cover the criteria (note this in plan.md instead of creating duplicates)
+- When existing tests already cover the criteria (note this in plan.md instead of creating duplicates) — this is a non-emitting path like the others, and its rows are recorded with the cause **covered**
 
 ### Template for conformance test stubs
 
