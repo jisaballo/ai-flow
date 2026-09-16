@@ -384,8 +384,10 @@ Write `artifacts/T-XXX/understand.md` with:
 - **Edge Cases**: [How to handle edge cases]
 - **Verifiable Criteria** (Automated + Behavioral in EARS — see Criteria Format):
   - **Automated** (tests): [EARS criterion] -> `[spec file]`
+    - `observed:` [run|compute|resolve|read] · `falsified-by:` [the change to the SUBJECT that would make it false]
   - **Observable** (code inspection): [concrete checkable fact]
-  - **Behavioral** (UI/flow tasks only):
+    - `observed:` [run|compute|resolve|read] · `falsified-by:` [the change to the SUBJECT — one only this criterion's own author would make, which is what files it here]
+  - **Behavioral** (UI/flow tasks only) — each carries the same two fields:
     - WHEN [trigger], the [system] shall [response]
     - IF [condition], THEN the [system] shall [response]
 
