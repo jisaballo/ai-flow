@@ -60,7 +60,7 @@ GLOB95="$ROOT/global"
 # the counter at once, so it contributes zero homes -- which is precisely the green ROW 3 awards. A guard
 # whose failure mode is the verdict it protects has to read the status, not only the count.
 FERR95="$T95/find.err"
-nmd95="$(find "$GLOB95" -name '*.md' 2>"$FERR95" | grep -c . | tr -d ' ')"
+nmd95="$(md_count "$GLOB95" "$FERR95")"
 if [ -d "$GLOB95" ] && [ "${nmd95:-0}" -ge 15 ] && [ ! -s "$FERR95" ]; then
   ok "the published markdown corpus is populated and wholly readable"
 else

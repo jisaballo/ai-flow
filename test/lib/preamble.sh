@@ -526,6 +526,96 @@ nitem() {  # $1 = the item's number, $2 = the text it is read from
     | tr '\n' ' ' | tr -s ' '
 }
 
+# Which top-level list items of a file -- or of ONE REGION of it -- carry a given reference. The unit is
+# the LIST ITEM, which is structure: a line `N. ` or a column-0 `- ` opens an item and every line after it
+# belongs to that item until the next one opens. The extractor never learns any particular name; it reads
+# whatever cites.
+#
+# A REGION ends at the next heading of its own level or higher, never at the next `###`. Keyed on `###`
+# alone a `## ` region runs past its own end into the following section, and a `#### ` subheading closes a
+# `### ` region that has not ended -- two wrong answers in opposite directions from one pattern.
+#
+# Two functions under two names was the shape this replaced, and they were one commit apart. One took a
+# region heading and keyed an item by its number prefix; the other read the whole file, keyed by NR, and
+# also let a column-0 bullet open an item. Re-parameterised they are this body, so keeping both names
+# would have been a defect introduced by a repair -- the same finding nitem() above records for its own
+# five copies.
+#
+# The key is NR and never the number prefix, because the two openers have to share ONE key space: item
+# `3` and line 3 collide under `sort -u`, so a mixed key answers two different questions with one number.
+# What a caller may read from a key is IDENTITY and COUNT, never the item's ordinal.
+citing_items() { # $1 = file, $2 = region heading or '' for the whole file, $3 = needle -> one key per line
+  awk -v head="$2" -v needle="$3" '
+    BEGIN { if (head != "") { match(head, /^#+/); hlvl = RLENGTH } }
+    head != "" && $0 == head { f = 1; item = ""; next }
+    head != "" && f && match($0, /^#+ /) && RLENGTH - 1 <= hlvl { exit }
+    head == "" || f {
+      if ($0 ~ /^[0-9]+\. / || $0 ~ /^- /) item = NR
+      if (item != "" && index($0, needle) > 0) print item
+    }
+  ' "$1" | sort -u
+}
+
+# The extractor above, shown to MEASURE on planted fixtures before any verdict is read from it. BOTH
+# modes are proven here, in one place, because both are that one body: region-bounded with numbered
+# openers, and whole-file with the two openers mixed. An extractor that found nothing would score every
+# verdict taken over it perfect, and a fixture pair retyped per section is a proof each section owns a
+# copy of -- which is what this helper's own siblings were.
+#
+# The fixture SHAPES are load-bearing and were arrived at by mutation, not by taste. A whole-file fixture
+# that puts its bullets BEHIND a numbered item leaves the bullet opener never load-bearing: dropping that
+# opener from the extractor keeps such a fixture green. The pair below places two column-0 bullets where
+# it is, which is what makes that mutation kill.
+item_extractor_measures() { # $1 = a writable sandbox -> 0 when it measures; prints the diagnostic on 1
+  local d="$1/item-fx" rc rs wc ws
+  mkdir -p "$d" || { printf 'could not plant fixtures under %s' "$d"; return 1; }
+  { printf '%s\n' '### Region Head'
+    printf '%s\n' '1. first'
+    printf '%s\n' '2. second'
+    printf '%s\n' '   - see the widget rule below'
+    printf '%s\n' '   - and again the widget rule below'
+    printf '%s\n' '### Something Else'
+  } > "$d/r-collapsed.md"
+  { printf '%s\n' '### Region Head'
+    printf '%s\n' '1. first, see the widget rule below'
+    printf '%s\n' '2. second'
+    printf '%s\n' '   - also the widget rule below'
+    printf '%s\n' '### Something Else'
+  } > "$d/r-spread.md"
+  { printf '%s\n' '1. first step'
+    printf '%s\n' '2. second step'
+    printf '%s\n' '   - one mention of the widget rule'
+    printf '%s\n' '   - and again the widget rule'
+  } > "$d/w-collapsed.md"
+  { printf '%s\n' '1. first step, see the widget rule'
+    printf '%s\n' '- a bullet that also names the widget rule'
+    printf '%s\n' '- a second bullet naming the widget rule'
+  } > "$d/w-spread.md"
+  rc="$(citing_items "$d/r-collapsed.md" '### Region Head' 'widget rule' | tr '\n' ' ' | sed 's/ *$//')"
+  rs="$(citing_items "$d/r-spread.md"    '### Region Head' 'widget rule' | tr '\n' ' ' | sed 's/ *$//')"
+  wc="$(citing_items "$d/w-collapsed.md" ''                'widget rule' | tr '\n' ' ' | sed 's/ *$//')"
+  ws="$(citing_items "$d/w-spread.md"    ''                'widget rule' | tr '\n' ' ' | sed 's/ *$//')"
+  [ "$rc" = "3" ] && [ "$rs" = "2 3" ] && [ "$wc" = "2" ] && [ "$ws" = "1 2 3" ] && return 0
+  printf "region collapsed='%s' spread='%s' | whole-file collapsed='%s' spread='%s'" "$rc" "$rs" "$wc" "$ws"
+  return 1
+}
+
+# The markdown corpus under a directory, counted with find's ERRORS KEPT rather than swallowed. A subtree
+# find cannot descend disappears from the corpus and from every count taken over it at once -- which is
+# precisely the green a "one home" row awards -- so the error file is the CALLER's to test. Three sections
+# take this measurement and each wraps it in its own guard, because what else must be readable differs
+# per section; what is shared is the pipeline, and that is what lives here.
+md_count() { # $1 = directory, $2 = a writable path for find's stderr -> the count, on stdout
+  find "$1" -name '*.md' 2>"$2" | grep -c . | tr -d ' '
+}
+
+# How many files under a root carry a heading line: the count of a rule's HOMES. Matched WHOLE-LINE and
+# FIXED-STRING, which is what keeps a citation of the heading from counting as a statement of it -- and
+# which is also the limit, recorded where it is read: a second home worded unlike the heading escapes it.
+home_count() { # $1 = the heading line, $2 = root -> the count, on stdout
+  grep -rlxF "$1" --include='*.md' "$2" 2>/dev/null | grep -c . | tr -d ' '
+}
+
 # What ships is what the installer fetches out of version control, which is what git can name: tracked
 # files, plus untracked ones git is not ignoring. A recursive walk of the directory reads more than
 # that. Running the hooks in place leaves Python bytecode under `global/hooks/__pycache__/`, and that

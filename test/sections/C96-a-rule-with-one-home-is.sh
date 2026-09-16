@@ -37,21 +37,10 @@ PLAN96="$PROT96/plan.md"
 # never learns any particular name -- it reads whatever the corpus cites.
 cites96() { grep -rhoE '`### [A-Za-z][^`]*`' "$1" 2>/dev/null | sed 's/^`//;s/`$//' | sort -u; }
 
-# Which top-level numbered items of a region carry a given reference. The unit is the LIST ITEM, which
-# is structure: a line `N. ` opens item N and every line after it belongs to N until the next one.
-citing_items96() { # $1 = file, $2 = region heading, $3 = needle -> one item number per line
-  awk -v head="$2" -v needle="$3" '
-    $0 == head { f = 1; next }
-    f && /^### / { exit }
-    f { if (match($0, /^[0-9]+\. /)) { item = substr($0, 1, RSTART + RLENGTH - 3) }
-        if (item != "" && index($0, needle) > 0) print item }
-  ' "$1" | sort -u
-}
-
 # ROW 1 -- the corpus. Every verdict below is a count, and a count over a corpus that silently emptied
 # is the same number as a corpus that was genuinely clean.
 FERR96="$T96/find.err"
-nmd96="$(find "$PROT96" -name '*.md' 2>"$FERR96" | grep -c . | tr -d ' ')"
+nmd96="$(md_count "$PROT96" "$FERR96")"
 if [ -d "$PROT96" ] && [ "${nmd96:-0}" -ge 6 ] && [ -r "$EXEC96" ] && [ ! -s "$FERR96" ]; then
   ok "the protocol corpus is populated and wholly readable"
 else
@@ -65,31 +54,17 @@ fi
 # a heading that does not exist beside one that does. An extractor that found nothing would score every
 # verdict below perfect.
 mkdir -p "$T96/fx"
-{ printf '%s\n' '### Execute Step Protocol'
-  printf '%s\n' '1. first'
-  printf '%s\n' '2. second'
-  printf '%s\n' '   - see the widget rule below'
-  printf '%s\n' '   - and again the widget rule below'
-  printf '%s\n' '### Something Else'
-} > "$T96/fx/collapsed.md"
-{ printf '%s\n' '### Execute Step Protocol'
-  printf '%s\n' '1. first, see the widget rule below'
-  printf '%s\n' '2. second'
-  printf '%s\n' '   - also the widget rule below'
-  printf '%s\n' '### Something Else'
-} > "$T96/fx/spread.md"
 { printf '%s\n' 'A citation of `### Real Heading` and one of `### Ghost Heading`.'
   printf '%s\n' '### Real Heading'
 } > "$T96/fx/cited.md"
-c96="$(citing_items96 "$T96/fx/collapsed.md" '### Execute Step Protocol' 'widget rule' | tr '\n' ' ' | sed 's/ *$//')"
-s96="$(citing_items96 "$T96/fx/spread.md"    '### Execute Step Protocol' 'widget rule' | tr '\n' ' ' | sed 's/ *$//')"
+IEM96="$(item_extractor_measures "$T96")" && iem96=1 || iem96=0
 g96="$(cites96 "$T96/fx" | tr '\n' ' ' | sed 's/ *$//')"
-if [ "$c96" = "2" ] && [ "$s96" = "1 2" ] && [ "$g96" = "### Ghost Heading ### Real Heading" ]; then
+if [ "$iem96" = 1 ] && [ "$g96" = "### Ghost Heading ### Real Heading" ]; then
   ok "the item extractor tells a collapsed citation from a spread one, and the citation extractor reads names"
 else
-  bad "the item extractor tells a collapsed citation from a spread one, and the citation extractor reads names (collapsed='$c96' spread='$s96' cites='$g96')"
+  bad "the item extractor tells a collapsed citation from a spread one, and the citation extractor reads names (${IEM96} cites='$g96')"
 fi
-MEASURING96=$([ "$c96" = "2" ] && [ "$s96" = "1 2" ] && [ "$g96" = "### Ghost Heading ### Real Heading" ] && echo 1 || echo 0)
+MEASURING96=$([ "$iem96" = 1 ] && [ "$g96" = "### Ghost Heading ### Real Heading" ] && echo 1 || echo 0)
 
 # ROW 3 -- the exemption has ONE home, and TWO DISTINCT items of the step loop reach it.
 #
@@ -98,9 +73,9 @@ MEASURING96=$([ "$c96" = "2" ] && [ "$s96" = "1 2" ] && [ "$g96" = "### Ghost He
 # the review found it rather than the suite.
 r3_96=""
 if [ "${nmd96:-0}" -ge 6 ] && [ "$MEASURING96" = 1 ]; then
-  nh96="$(grep -rlxF '### The frozen-row exemption' --include='*.md' "$PROT96" 2>/dev/null | grep -c . | tr -d ' ')"
+  nh96="$(home_count '### The frozen-row exemption' "$PROT96")"
   [ "${nh96:-0}" = 1 ] || r3_96="$r3_96 [the exemption has ${nh96:-0} homes, not one]"
-  ni96="$(citing_items96 "$EXEC96" '### Execute Step Protocol' 'frozen-row exemption' | grep -c . | tr -d ' ')"
+  ni96="$(citing_items "$EXEC96" '### Execute Step Protocol' 'frozen-row exemption' | grep -c . | tr -d ' ')"
   [ "${ni96:-0}" -ge 2 ] || r3_96="$r3_96 [only ${ni96:-0} item(s) of the step loop reach it; both gates must]"
 else
   r3_96=" [the corpus or the extractors did not answer]"
