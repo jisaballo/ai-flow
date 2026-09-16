@@ -28,6 +28,17 @@ coordinate large teams or big companies. Removing or rewriting what already exis
 - A third source, easy to misclassify: **a human working alone forgets**. Rules that catch that (e.g. the
   Icebox, derived checks) are craft too — but they must be cheap.
 
+**Before the ladder, one question: can this check's subject disagree with it?** A check compares two
+things that exist independently. Where the pattern and the text it reads are written by the same actor
+in the same turn, there is no second source and no discipline supplies one — a mutation proves such a
+leg is keyed on *something*, never that it tests anything. That is a **change detector**, and it is
+named and priced as one, never as a test: its failure mode is *changed*, not *wrong*, so mutation,
+red/green and frozen contracts are all the wrong instruments for it. The question sits before the
+ladder because the ladder prices additions without asking whether the category is checkable at all,
+and a check that cannot fail is not cheap — it is free and worthless. It exists because the standing
+reflex is to answer every incident by adding a check; that reflex is what this question interrupts.
+What it cost to learn, and the alternatives rejected: `decisions-global.md`, 2026-09-15.
+
 **Cost ladder for additions:** a *derived check* (computed from data the flow already has) costs
 ~nothing; a *field* in an existing artifact is cheap; a *new step, gate, or artifact* is expensive and
 must clear a high bar.
