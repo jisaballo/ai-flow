@@ -119,6 +119,10 @@ Runs the Verify phase of the ai-flow workflow. Works in any project that has `.a
 10. **Write** `.ai-flow/artifacts/T-XXX/verify.md` using the protocol's template, with the workflow findings under `## Review Findings`. Its `**Audited**` line carries the task it resolved and the source it read, plus what step 3 noted — the base, the number of commits on this branch since it, and how far the trunk is ahead of its remote with publishing named as what removes the overlap — or, when no base resolved, that the branch scope was unavailable, and when the trunk is current or no remote trunk resolved, no lag line at all; and the tree verdict from step 8: left as found, or what differed and what was restored; and what step 7 resolved — the context files the review was handed, each by key and path, and the review profile with the checklist each axis received; and where the list held no `workspace` entry, the same line the run wrote, remedy included. The review's content varies by project, so a report that does not name the context files and the checklists it was judged against cannot be checked at all. **What each resolution obliges this report to record is step 7's table, third column, and is not restated here** — every outcome with the line it owes, and the one case that owes nothing. An audit that does not say what it read cannot be checked against what it should have read.
 
 11. **Gate**: if any criterion is ❌ or any finding is HIGH-confirmed → STOP, do NOT proceed to archive. Fix or flag per the protocol's gate rules. ⚠️ partials → flag to user, who decides proceed-or-fix.
+    **Fixing here writes legs too.** Any assertion written or changed to clear a ❌ or a confirmed HIGH is
+    accepted only under the protocol's `### The acceptance rule for a repair leg`, on the same terms the
+    triage branch below carries: the falsifier is run at authorship, the row is appended, and a falsifier
+    that stays green means no leg is written.
 
 ## Triaging the Unadjudicated
 
@@ -140,7 +144,10 @@ finding whenever it happens to sit outside the diff.
   large. What bounds it is the *action*, not the routing — fix it where the fix is small and traceable in
   the sense Surgical Changes gives those words, and where it is not, stage it **still owned**, with the
   `own ground` stamp and the reason it was not fixed here. It never leaves the task on account of its
-  size, and the reverse audit has nothing untraceable to flag.
+  size, and the reverse audit has nothing untraceable to flag. **Where the fix writes or changes an
+  assertion, that leg is authored here**, and the protocol's `### The acceptance rule for a repair leg`
+  is what accepts it: run its falsifier now, append its row, and where the falsifier stays green write
+  no leg and record the coverage absence instead.
 - **Discard it** — the failure it describes cannot occur: the code was misread, the behavior is intended,
   or something downstream already prevents it. Say which, in one line, and say why the failure cannot
   occur — **not** why the flow cannot reach it, which two of those three cases reach and survive anyway.

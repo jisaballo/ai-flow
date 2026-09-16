@@ -136,6 +136,48 @@ case-insensitivity is how such a leg most often reaches text its author never co
 Where a row's legs genuinely stand or fall together, one mutation is the honest count and the report says
 which case it is. What is never acceptable is a count that leaves the reader unable to tell the two apart.
 
+### The acceptance rule for a repair leg
+
+**A leg written while repairing a finding is accepted only after its own falsifier has been run against
+the fact that leg names and seen to go red.** The run belongs to the moment the leg is authored and to
+no later gate. A leg believed on the strength of having been written is the very thing the review it
+closes was paid to find, and the actor who has just read a finding is in the worst position to notice
+they have written one.
+
+The leg's row is **appended to the task's baseline manifest under its own section**, carrying whatever
+the frozen-row table (Plan protocol > `### The frozen row`) asks of it and leaving the rest empty. It
+never amends a frozen row: amending one is the spec-sync step's act under its own rule. The append is
+what makes the leg auditable at all — a leg outside the record is a leg nothing can re-run, and nothing
+can report as unproven either.
+
+**A leg whose mutation stays green is not written.** The finding's coverage absence is recorded with the
+cause the Plan protocol's vocabulary gives it, and the criterion the finding sat under is left standing.
+Refusing the leg and refusing the criterion are opposite acts: a falsifier that will not redden is an
+observed fact, while *no honest assertion exists anywhere* is a negative no author can be asked to prove.
+
+### Which legs this phase re-runs
+
+The record frozen before the work began already answers, row by row, what was run against that row and
+what the suite reported. **This phase mutates nothing by default.** It reads that record, and re-runs a
+mutation only where the record cannot be taken at its word:
+
+- **Absent** — the record says nothing about that row.
+- **Unreadable** — the record is present and does not answer the question asked of it.
+- **Still owed** — the record itself says a targeted mutation has not been performed.
+- **Disputed** — a finding claims the row is satisfied by something other than the fact it names.
+
+And **always**, whatever the record says: every leg this phase's own repair wrote. A leg authored inside
+the phase that judges it has no independent record to be selected on, so it is never selected out.
+
+What a leg *owes* is stated above and none of this changes it. The section above states what must have
+been done to every leg; this one states which legs this phase does it to. Two claims, two moments.
+
+**The limit this default carries, written down rather than argued away.** Nothing here catches a record
+that reports a row discharged when nothing was discharged: the selection reads what the record says, so
+a record that lies selects itself out. What would close it is a **calibrated sample** — re-running the
+mutation of rows chosen independently of the record, to measure the record against the tree — and that
+costs a new step, a price this engine has not paid.
+
 ## Status Meanings
 
 - ✅ **Met** — code + test evidence exists
