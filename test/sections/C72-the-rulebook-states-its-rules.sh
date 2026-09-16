@@ -77,8 +77,19 @@ e0_72=""
 # single removed region can return with this row green. What moved is the floor, never the rule -- and
 # the bullet was cut to its minimum BEFORE the number was touched, which is the order that keeps a budget
 # from becoming a formality.
+#
+# RE-DERIVED A SECOND TIME, in the open, on the same order and for the same kind of reason. The green
+# rule gained the frozen-row exemption: Conform now freezes rows whose red is load-bearing, so an N-step
+# plan is genuinely red until step N and the commit rule had to say which failures it counts. That is
+# prose the rulebook did not have and the 11-word slack could not cover. THE CLAUSE WAS CUT FIRST --
+# drafted at 113 words, delivered at 65, with the reasons that did not fit moved to the commit message
+# body where the provenance rule already sends them -- and only then was the number touched. The floor is
+# re-measured on the delivered file at 2,150 and the slack stays 11, so the budget is 2,161. The invariant
+# is unchanged and still holds: the smallest region the freezing task removed is 12 words, and 2,150 + 12
+# exceeds 2,161, so no single removed region can return with this row green. The slack is never widened
+# to fit an addition; the floor moves and the rule does not.
 a1_72=""
-[ "${W72:-0}" -le 2096 ] || a1_72="$a1_72 [the rulebook is $W72 words, over the 2096-word budget]"
+[ "${W72:-0}" -le 2161 ] || a1_72="$a1_72 [the rulebook is $W72 words, over the 2161-word budget]"
 [ -z "$a1_72" ] && ok "A1 the Execute protocol is within its frozen word budget" \
                 || bad "A1 the Execute protocol is within its frozen word budget ($a1_72)"
 

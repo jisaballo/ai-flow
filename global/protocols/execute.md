@@ -73,7 +73,11 @@ For each step:
    missing test is written later:
    - **Atomic**: `type(scope): description`, with the `Co-Authored-By` line. One step, one commit.
    - **Green**: the commit must pass tests. Step 3 above is what proves it, and a step that cannot get
-     there is escalated by its own Bounded Retry rather than committed red.
+     there is escalated by its own Bounded Retry rather than committed red. **A row frozen in
+     `conformance-baseline/manifest.md` does not count against this until the step that owns it** — Conform
+     freezes every row before step 1, so an N-step plan is red until step N. Keyed on the frozen record the
+     audit already reads, never on what a plan claims about its own rows. This narrows what the rule counts
+     and redefines nothing: *green* keeps one meaning.
 5. **Between steps.** Where the task's sheet declares **Supervised**, show the diff of the step just
    finished and wait for the operator before the next step begins. **This is the gate's one home** — the
    level table states which tasks earn the level and states none of this, and no command may restate it.
