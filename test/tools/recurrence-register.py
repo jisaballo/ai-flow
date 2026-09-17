@@ -46,6 +46,7 @@ EXITS for `guard`
 """
 import hashlib
 import importlib.util
+import re
 import os
 import subprocess
 import sys
@@ -124,6 +125,60 @@ def is_engine_doc(path):
     return path.endswith('.md') and (path.startswith(DOC_ROOTS) or path in DOC_FILES)
 
 
+# The suite's own text, as the corpus reaches it: the preamble's helper, and the variable it reads.
+SUITE_SRC_RE = re.compile(r'\bsuite_src(_others)?\b|\$\{?SUITE_SRC\b')
+
+ASSIGN_RE = re.compile(r'^\s*(?:local\s+|export\s+)?([A-Za-z_][A-Za-z0-9_]*)=')
+
+# A matcher with its OPTIONS skipped and its first remaining argument captured. That argument is the
+# PATTERN, and the position is the entire rule -- see `oracle_sites` for why.
+GREP_ARG_RE = re.compile(
+    r'\bgrep\b((?:\s+-{1,2}[A-Za-z0-9-]+)*)\s+'
+    r'(?:"\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?"|\$\{?([A-Za-z_][A-Za-z0-9_]*)\}?(?=[\s;|)]|$))')
+
+
+def oracle_sites(region):
+    """The names in this region that carry the suite's own text into a matcher's PATTERN slot.
+
+    WHY POSITION AND NOT PROVENANCE. Plenty of admissible rows take a value out of the suite's text --
+    counting its markers, enumerating its helpers, deriving a scope. What makes a row unable to fail is
+    using that value as the PATTERN against something else: the suite then judges another file by a
+    string it copied out of itself, so the two sides cannot disagree and the row is green whatever
+    either one says.
+
+    The corpus shows both positions one line apart, which is what makes the discriminator checkable:
+
+        PAT46A="$(suite_src | grep -m1 '...' | ...)"      # from the suite's text
+        printf '%s' "$ROW46" | grep -qiE "$PAT46A"        # PATTERN slot, foreign haystack -> REFUSED
+
+        KEYS89="$(awk '...' $SUITE_SRC)"                  # also from the suite's text
+        printf '%s\n' "$KEYS89" | grep -qxF "$lab89"      # HAYSTACK slot -> admissible, and needed
+
+    A line that feeds `suite_src` in as its own haystack is excluded: the suite matching its own text
+    against itself is self-consistency, not an absent oracle.
+
+    WHAT THIS DOES NOT REACH, and it is the larger half. A suite-derived value consumed by an ABSENCE
+    leg with no floor under it fails open by the same mechanism, and that shape cannot be told apart
+    from admissible counting by reading the code -- `C25`'s TWINBLK25 is the instance, and it is a
+    stated miss rather than an oversight.
+    """
+    derived, hits = set(), []
+    for line in region.split('\n'):
+        m = ASSIGN_RE.match(line)
+        if m and SUITE_SRC_RE.search(line):
+            derived.add(m.group(1))
+    if not derived:
+        return hits
+    for line in region.split('\n'):
+        if SUITE_SRC_RE.search(line):
+            continue
+        for _flags, quoted, bare in GREP_ARG_RE.findall(line):
+            name = quoted or bare
+            if name in derived and name not in hits:
+                hits.append(name)
+    return hits
+
+
 def register(root):
     """Every verdict site of the tree at `root`, with its key, its class and its resolved subjects."""
     funcs = lib_classify.helpers(lib_sites.corpus_files(root))
@@ -156,6 +211,9 @@ def register(root):
             'klass': lib_classify.classify(shallow, funcs),
             'docs': [p for p in paths if is_engine_doc(p)],
             'others': [p for p in paths if not is_engine_doc(p)],
+            # Read off the CHASED region: the assignment that ties a name to `suite_src` is often
+            # several hops from the matcher that spends it, and the one-hop region loses the link.
+            'oracle': oracle_sites(chased),
         })
     return out
 
@@ -203,10 +261,18 @@ def guard(root):
     inherited = {s['key'] for s in base}
     here = register(root)
     new = [s for s in here if s['key'] not in inherited]
-    refused = [s for s in new if s['klass'] == 'read' and s['docs']]
+    refused = [s for s in new if (s['klass'] == 'read' and s['docs']) or s['oracle']]
+    # ONE LINE PER (SITE, SHAPE), never one per site. A site can match both shapes at once, and an
+    # earlier form of this printed only the first -- so the row owning the unprinted shape reported that
+    # no site had it, while such a site was sitting in the tree. Each row must be answerable from the
+    # lines naming its OWN shape, or one row goes green on another row's finding.
     for s in sorted(refused, key=lambda s: (s['section'], s['line'])):
-        print('REFUSE %s:%s md reads %s -- %s'
-              % (s['section'], s['line'], ','.join(s['docs']), s['label']))
+        if s['klass'] == 'read' and s['docs']:
+            print('REFUSE %s:%s md reads %s -- %s'
+                  % (s['section'], s['line'], ','.join(s['docs']), s['label']))
+        if s['oracle']:
+            print('REFUSE %s:%s oracle %s in pattern position -- %s'
+                  % (s['section'], s['line'], ','.join(s['oracle']), s['label']))
     # `sites` is reported so the caller can put a FLOOR under everything else on this line. A register
     # that came back empty -- a renamed corpus, an unreadable section, a glob that matched nothing --
     # produces `new=0 refused=0`, which is byte-identical to a tree that is genuinely clean. Without a

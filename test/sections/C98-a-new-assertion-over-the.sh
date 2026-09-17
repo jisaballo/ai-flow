@@ -116,11 +116,38 @@ fi
 # version of the rule with evidence behind it: 102 of 103 against 288 hand verdicts. The bare subject
 # rule, without the class, has never been measured. The conjunction is the NARROWER of the two and
 # therefore the weaker guard, which is the safe direction for a mechanism with no escape hatch.
-if [ "$rc98" = 1 ]; then
-  REF98="$(printf '%s\n' "$OUT98" | grep '^REFUSE ' | tr '\n' ' ')"
-  bad "no newly added verdict site reads this engine's own documents as text (${REF98})"
-elif [ "$rc98" = 0 ]; then
-  ok "no newly added verdict site reads this engine's own documents as text"
+if [ "$rc98" = 1 ] || [ "$rc98" = 0 ]; then
+  MD98="$(printf '%s\n' "$OUT98" | grep '^REFUSE .* md ' | tr '\n' ' ')"
+  [ -z "$MD98" ] \
+    && ok "no newly added verdict site reads this engine's own documents as text" \
+    || bad "no newly added verdict site reads this engine's own documents as text (${MD98})"
 else
   bad "no newly added verdict site reads this engine's own documents as text (the guard did not answer)"
+fi
+
+# ROW 6 -- NO NEW SITE TAKES THE SUITE'S OWN TEXT INTO A MATCHER'S PATTERN SLOT.
+#
+# The second shape, and it is a separate rule with separate evidence rather than a variant of ROW 5.
+# Taking a value OUT of the suite's text is ordinary and often necessary -- counting its markers,
+# enumerating its helpers, deriving a scope from it. What cannot fail is spending that value as the
+# PATTERN against a different stream: the suite then judges another file by a string it copied out of
+# itself, and the two sides have no way to disagree.
+#
+# Position is the whole discriminator, and the corpus carries both positions one line apart, which is
+# what makes it checkable rather than a matter of taste. The detector was controlled against the tree
+# before the prose-reading purge: it fires there on 5 sites carrying exactly PAT46A and PAT46B -- the
+# two values attested independently as second-order -- and on nothing else, while C60's KEYS89, C62's
+# TPLVARS62, C92's ABOVE92, C93's MACH93 and C25's BLOCK25 all take the suite's text into the HAYSTACK
+# slot and are correctly left alone. Every one of those five is load-bearing and a rule that refused
+# them would be unusable.
+#
+# C25's TWINBLK25 is a STATED MISS: it reaches the same failure through the haystack's shape, which
+# cannot be told from admissible counting by reading the code.
+if [ "$rc98" = 1 ] || [ "$rc98" = 0 ]; then
+  OR98="$(printf '%s\n' "$OUT98" | grep '^REFUSE .* oracle ' | tr '\n' ' ')"
+  [ -z "$OR98" ] \
+    && ok "no newly added verdict site spends the suite's own text as a matcher's pattern" \
+    || bad "no newly added verdict site spends the suite's own text as a matcher's pattern (${OR98})"
+else
+  bad "no newly added verdict site spends the suite's own text as a matcher's pattern (the guard did not answer)"
 fi
