@@ -58,7 +58,9 @@ elif [ "$LOOPS46" -lt 1 ]; then
 elif [ "$BOUND46" -ne "$LOOPS46" ]; then
   bad "the closing ceremony's move count is read, not assumed ($((LOOPS46 - BOUND46)) ceremony loops assume their range)"
 elif [ "$DERIV46" -lt "$LOOPS46" ]; then
-  # Both converted loops must derive their bound from the protocol, not merely avoid the old spelling.
+  # EVERY ceremony loop found must derive its bound, not merely avoid the old spelling. Stated as a
+  # relation against the number of loops rather than as a count of them: a literal here would be a
+  # floor over the size of a corpus this suite can legitimately shrink, and each shrink lowers it.
   bad "the closing ceremony's move count is read, not assumed (a ceremony loop does not derive its bound)"
 else
   ok "the closing ceremony's move count is read, not assumed"
