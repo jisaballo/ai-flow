@@ -36,9 +36,13 @@ corpus93() {
 }
 CORPUS93="$(corpus93)"
 n93="$(printf '%s\n' "$CORPUS93" | grep -c .)"
+# The whole corpus, this block's own file included, so the count below is a RELATION and not a size.
+# A literal floor here is a floor over a corpus the suite may legitimately shrink, and every shrink
+# lowers it again; the relation also catches a filter that removed two files where a floor would not.
+all93="$(find "$SECD93" -maxdepth 1 -name 'C*.sh' 2>/dev/null | grep -c .)"
 
 # ROW 1 -- the corpus itself. Nothing below means anything without it.
-if [ "${n93:-0}" -ge 74 ] && ! printf '%s\n' "$CORPUS93" | grep -q '/C93-'; then
+if [ "${n93:-0}" -ge 1 ] && [ "${n93:-0}" -eq "$((all93 - 1))" ] && ! printf '%s\n' "$CORPUS93" | grep -q '/C93-'; then
   ok "the section corpus is populated and holds every section but this one"
 else
   bad "the section corpus is populated and holds every section but this one (${n93:-0} file(s))"
@@ -116,7 +120,7 @@ malformed manfact manstate marker89 mbul md_count mkbig mkproj msect near90 near
 nstep nwords off pair purity_sweep sbullet sec90 shapes83 sheet step_no sweep89 vstep waved word83 wraw
 wguard wti_classify wti_probe wti_tracked_leak'
 r5_93=""
-if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
+if [ "${n93:-0}" -ge 1 ] && [ -r "$PRE93" ]; then
   for h93 in $HELP93; do
     grep -qE "^${h93}\(\)[[:space:]]*\{" "$PRE93" || r5_93="$r5_93 [$h93 is not defined in the preamble]"
     printf '%s\n' "$CORPUS93" | while IFS= read -r f93; do
@@ -154,7 +158,7 @@ fi
 # used to be a chain every block extended with its neighbours' paths -- and why a filtered run died on a
 # variable the neighbour that never ran would have set.
 r6_93=""
-if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
+if [ "${n93:-0}" -ge 1 ] && [ -r "$PRE93" ]; then
   while IFS= read -r f93; do
     [ -n "$f93" ] || continue
     grep -qE '^[[:space:]]*trap ' "$f93" && r6_93="$r6_93 [$(basename "$f93") installs its own trap]"
@@ -203,7 +207,7 @@ done
 # present in the preamble, and absent from every section, which is the half that would otherwise let a
 # second copy grow back.
 r8_93=""
-if [ -r "$PRE93" ] && [ "${n93:-0}" -ge 74 ]; then
+if [ -r "$PRE93" ] && [ "${n93:-0}" -ge 1 ]; then
   for v93 in now83 stale83 DIM83 k83; do
     grep -qE "^${v93}=" "$PRE93" || r8_93="$r8_93 [\$$v93 is not derived in the shared machinery]"
   done
@@ -240,7 +244,7 @@ fi
 # section. The presence half alone passes over a section that keeps its own copy beside the shared one.
 CONST93='HK GIT PY3 VP VS VW MAN MANTWIN BLG24 S71 PY'
 r10_93=""
-if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
+if [ "${n93:-0}" -ge 1 ] && [ -r "$PRE93" ]; then
   for c93 in $CONST93; do
     grep -qE "^${c93}=" "$PRE93" || r10_93="$r10_93 [\$$c93 is not assigned in the shared machinery]"
     printf '%s\n' "$CORPUS93" | while IFS= read -r f93; do
@@ -323,7 +327,7 @@ leak93() { # $1 = preamble file, $2 = newline list of section files -> one `fn:V
   done | sort -u
 }
 r11_93=""
-if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
+if [ "${n93:-0}" -ge 1 ] && [ -r "$PRE93" ]; then
   # The presence control, on the same machinery the verdict uses: a fixture preamble whose helpers close
   # over values only the fixture section assigns. Found here, an empty answer over the real tree means
   # what it says.
@@ -399,7 +403,7 @@ coll93() { # $1 = newline list of section files -> `NAME: id id ...` per name de
                             END { for (k in c) if (c[k] > 1) print k ":" n[k] }' | sort
 }
 r12_93=""
-if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
+if [ "${n93:-0}" -ge 1 ] && [ -r "$PRE93" ]; then
   # The presence control, on the same machinery the verdict uses. Two fixture sections declaring one name
   # between them: found here, an empty answer over the real corpus means what it says rather than meaning
   # that the extractor stopped extracting.
@@ -458,7 +462,7 @@ undecl93() { # $1 = preamble file, $2 = newline list of section files -> readers
   reads93 "$2"
 }
 r13_93=""
-if [ "${n93:-0}" -ge 74 ] && [ -r "$PRE93" ]; then
+if [ "${n93:-0}" -ge 1 ] && [ -r "$PRE93" ]; then
   mkdir -p "$T93/decl/lib" "$T93/decl/sections"
   printf '%s\n' 'nothing_declared_here() { :; }' > "$T93/decl/lib/preamble.sh"
   printf '%s\n' 'printf "%s" "$SECTION"' > "$T93/decl/sections/C01-fixture.sh"
