@@ -352,6 +352,10 @@ OWN34
   # THE WHOLE suite, not the runner alone. The near-miss shapes this row exists to prove committable
   # live in the section files; staging `test/validate.sh` by itself would stage forty-two lines that
   # cannot hold one, and the row would go on claiming a subject it no longer carries.
+  # Derived from the list the loop below reads, never sized to the corpus as it stood: a literal floor
+  # here is a floor over a corpus this suite may legitimately shrink. The relation is also strictly
+  # stronger than any floor -- it catches a fixture that staged 78 of 79.
+  nsrc34="$(printf '%s\n' $SUITE_SRC | grep -c .)"
   n34=0
   for f34 in $SUITE_SRC; do
     r34="${f34#$ROOT/}"
@@ -363,7 +367,7 @@ OWN34
   out="$(sh34 selfsrc "git commit -m 'the guard and its suite'")"; rc=$?
   # The count is an assertion, not a comment: a fixture that copied nothing would commit clean and this
   # row would report that as a pass -- the vacuous shape it is here to refuse.
-  if [ "$n34" -lt 75 ]; then
+  if [ "$nsrc34" -lt 1 ] || [ "$n34" -ne "$nsrc34" ]; then
     bad "the commit guard's own source and the suite that drives it commit with the guard active (only $n34 suite file(s) staged)"
   elif [ "$rc" = 0 ] && [ "$b34" != "$(head34 selfsrc)" ]; then
     ok "the commit guard's own source and the suite that drives it commit with the guard active"

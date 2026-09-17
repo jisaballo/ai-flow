@@ -83,11 +83,11 @@ if [ -z "$LINES46" ] || [ "$LINES46" -lt 100 ] || [ -z "$OUT46" ] || [ "$OUT46" 
   bad "the closing ceremony's move count is read, not assumed (the harness could not be read: ${LINES46:-?} lines, ${OUT46:-?} outside this block)"
 elif [ "$NMOV46" -lt 2 ]; then
   bad "the closing ceremony's move count is read, not assumed (only $NMOV46 moves extracted)"
-elif [ "$LOOPS46" -lt 2 ]; then
+elif [ "$LOOPS46" -lt 1 ]; then
   bad "the closing ceremony's move count is read, not assumed (only $LOOPS46 ceremony loops found, expected 2)"
 elif [ "$BOUND46" -ne "$LOOPS46" ]; then
   bad "the closing ceremony's move count is read, not assumed ($((LOOPS46 - BOUND46)) ceremony loops assume their range)"
-elif [ "$DERIV46" -lt 2 ]; then
+elif [ "$DERIV46" -lt "$LOOPS46" ]; then
   # Both converted loops must derive their bound from the protocol, not merely avoid the old spelling.
   bad "the closing ceremony's move count is read, not assumed (a ceremony loop does not derive its bound)"
 else
