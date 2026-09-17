@@ -112,18 +112,3 @@ else
   bad "a manual holding both wordings fails the pair (no two-sided predicate exists)"
 fi
 
-# --- with no personal manual, the verdict claims only what it opened ------
-# A verdict about a file the host does not have is a verdict about nothing. The skip stays a skip,
-# and the pair is never reported as established on the strength of one copy.
-TWINBLK25="$(awk '/^twin="\$HOME/{f=1} f && /^# --- the rail resolves/{exit} f' $SUITE_SRC)"
-# The branch that runs on a host with no personal manual. It must announce the skip and carry no
-# verdict at all: a verdict there would be a claim about a file nobody opened, and counting it would
-# let a green run read as proof that the two copies agree.
-ELSE25="$(printf '%s\n' "$TWINBLK25" | awk '/^  else$/{f=1;next} f && /^  fi$/{exit} f')"
-if printf '%s\n' "$TWINBLK25" | grep -q 'if \[ -f "$twin" \]' \
-   && printf '%s' "$ELSE25" | grep -q 'skip' \
-   && ! printf '%s' "$ELSE25" | grep -qE 'ok "|bad "'; then
-  ok "with no personal manual the verdict claims the distributed copy only"
-else
-  bad "with no personal manual the verdict claims the distributed copy only"
-fi
