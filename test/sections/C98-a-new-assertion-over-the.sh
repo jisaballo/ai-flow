@@ -33,11 +33,30 @@
 #   with no floor under it fails open, and that shape is mechanically indistinguishable from admissible
 #   counting. C66's A4 is the live instance and is carried forward by name, not repaired here.
 #
-# THE FIGURES ABOVE ARE A CLAIM ABOUT COVERAGE, AND ROW 5 HOLDS THEM AGAINST THE TREE. So a red on that
-# row is NOT asking for the numbers to be pasted in from the tool's output -- it is asking whether the
-# coverage claim still holds. Four figures in this engine's chain of tasks propagated because they were
-# stated without the revision, the chase depth or the instrument variant they were taken on. Every
-# figure here carries all three, and a figure without its provenance is not a measurement.
+# THE POPULATION THIS GUARD LOOKS AT, recomputed from the tree on every run and held by ROW 7:
+#
+#   REACH (this tree): read=191 md_only=118 mixed=20 source_only=16 blind=37 depth=4
+#
+# `blind` is the count of sites that read SOMETHING this tool could not resolve to a path at all, so it
+# is the share of the read population these rows cannot even classify. It is not the same number as the
+# recall above and must not be read as one.
+#
+# WHAT ROW 7 HOLDS AND WHAT IT DOES NOT. It holds the REACH line and nothing else on this page: the line
+# is prose a person maintains, the figures are computed from the corpus, and the corpus is written by
+# whoever adds a section rather than by this block's author -- so the two sides can disagree, and that is
+# what makes it a check. Add a verdict site and the computation moves while the line stays where it was.
+#
+# The RECALL and PRECISION figures above are NOT held by any row here, and saying so is the point: they
+# were measured against 288 hand verdicts in a ledger that is not tracked in this repository, at a commit
+# most of whose sites no longer exist. No row can recompute them, and a row claiming a reach it does not
+# have is worse than one claiming none, because the next reader stops looking.
+#
+# A RED ON ROW 7 IS NOT AN INSTRUCTION TO PASTE THE NEW NUMBERS IN. The REACH line is a claim about this
+# guard's coverage, so a red asks whether that claim still holds -- and if the blind share has grown, the
+# honest answer may be that it no longer does. Four figures in this engine's recent chain of tasks
+# propagated because they were stated without the revision, the chase depth or the instrument variant
+# they were taken on. Every figure on this page carries all three, and a figure without its provenance
+# is not a measurement; it is a number that will be repeated.
 # =====================================================================================================
 echo ""
 echo "== C98: a new assertion over this engine's own prose cannot be added in silence =="
@@ -151,3 +170,29 @@ if [ "$rc98" = 1 ] || [ "$rc98" = 0 ]; then
 else
   bad "no newly added verdict site spends the suite's own text as a matcher's pattern (the guard did not answer)"
 fi
+
+# ROW 7 -- THE COVERAGE THIS BLOCK DECLARES IS THE COVERAGE IT HAS.
+#
+# Two independently written sides, which is the only reason this is a check and not a change detector:
+# the REACH line in the header is prose a person maintains, and the figures it is compared against are
+# computed from the corpus by the extractor. The third party is the CORPUS -- written by whoever adds a
+# section, not by whoever wrote this block -- so adding a verdict site moves the computation while the
+# line stays put, and editing the line alone moves it the other way. Either direction reddens.
+#
+# No expected value is written into this row. Freezing the number here would make the row assert what
+# the extractor prints, which has one source and would be green forever.
+r7_98=""
+if [ "$PY3" = 1 ]; then
+  HDR98="$(grep -m1 'REACH (this tree):' "$SECTION" | sed 's/.*REACH (this tree):[[:space:]]*//')"
+  CMP98="$(python3 "$TOOL98" reach "$ROOT" 2>&1)"
+  [ -n "$HDR98" ] || r7_98=" [the header declares no REACH line]"
+  [ -n "$CMP98" ] || r7_98="$r7_98 [the extractor reported no figures]"
+  if [ -n "$HDR98" ] && [ -n "$CMP98" ] && [ "$HDR98" != "$CMP98" ]; then
+    r7_98=" [declared '${HDR98}' but the tree gives '${CMP98}']"
+  fi
+else
+  r7_98=" [python3 is unavailable, so the declared coverage was never checked]"
+fi
+[ -z "$r7_98" ] \
+  && ok "the coverage this block declares is the coverage the tree gives it" \
+  || bad "the coverage this block declares is the coverage the tree gives it ($r7_98)"
