@@ -384,14 +384,11 @@ Write `artifacts/T-XXX/understand.md` with:
 - **Expected Behavior**: [Detailed behavior description]
 - **UI/UX Details**: [Specific details: position, style, interactions]
 - **Edge Cases**: [How to handle edge cases]
-- **Verifiable Criteria** — one list, no grouping. Each entry is written in this order:
+- **Verifiable Criteria** — one list, no grouping (which kinds take EARS, and which takes none: see Criteria Format). Each entry is written in this order:
   - [criterion — a concrete, checkable statement]
     - `observed:` [run|compute|resolve|read]
     - `falsified-by:` [the change to the SUBJECT that would make it false]
-    - `kind:` [read off the falsifier — see Criteria Format] -> `[spec file]`, or the recorded absence
-  <!-- The kind is written last: it is the conclusion the two fields above it decide. A criterion
-       whose kind comes out Automated or Behavioral must read as one of the 5 EARS patterns — reword the
-       sentence if it does not; Observable takes none. What the kinds mean is Criteria Format's. -->
+    - `kind:` [read off the falsifier — see Criteria Format]
 
 ## Technical Considerations
 - **Files Affected (verified)**: [files confirmed by reading — path + one line on why each changes]
