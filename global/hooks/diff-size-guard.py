@@ -473,4 +473,10 @@ def main():
     sys.exit(0)
 
 
-main()
+# Guarded so that this file can be IMPORTED as well as run. Without it, `main()` executes at import
+# time: the importer's stdin is read as a hook payload and the process exits through one of the branches
+# above, so no caller can ever reach a function in this file. `base_ref` is the single home of the rule
+# that resolves a remote's default branch -- the conformance harness reads it from here rather than
+# restating it, and pre-push restates it only because a shell hook has no way to import.
+if __name__ == "__main__":
+    main()
