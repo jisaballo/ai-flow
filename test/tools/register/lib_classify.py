@@ -121,7 +121,9 @@ def enclosing(lines, arm, want=3):
 # at all, because a section reaches its subject through a CHAIN -- a region names `$RULE`, `RULE` is
 # assigned from `$RULE_LINES`, and `RULE_LINES` is assigned from `$VP`, which is the path. Stopping at
 # the first assignment files all three as having read nothing. Four hops carries that chain and brings
-# the blind population to 65 of 376; the hops beyond it found nothing further in this corpus.
+# the blind population to 109 of 376; depths 4 and 5 are identical, so the chase is exhausted here rather
+# than merely cut short. All four figures are at `294a89c`, split chase (class at one hop, subject at
+# this depth) -- the variant this tool ships, and the only one they hold for.
 CHASE_DEPTH = 4
 
 # Never chased. `1` is a positional parameter, and the other two are the runner's own bindings rather

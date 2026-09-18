@@ -11,9 +11,11 @@ WHAT IT REFUSES, and the two shapes are separate rules with separate evidence:
 
   md      the site's evidence region resolves a subject that is a `.md` document under this engine's own
           documents, AND the region classifies as `read`. The `read` conjunct is deliberate and is what
-          was measured: over a corpus of 288 hand verdicts the pair agrees with the hand verdict 113
-          times in 114. Dropping it would refuse a site that EXECUTES a script and merely mentions a
-          document path nearby.
+          was measured: over a corpus of 288 hand verdicts the pair refuses 103 and agrees with the
+          hand verdict 102 of those times, the single disagreement being `C13:86` (measured at
+          `294a89c`, split chase, subject resolution at depth 4). Dropping the conjunct would refuse a
+          site that EXECUTES a script and merely mentions a document path nearby. That is PRECISION and
+          not reach: of 237 sites the same hand condemned, this rule refuses 102 and admits 135.
 
   oracle  the site takes a value out of the suite's own text at run time and uses it as the PATTERN of a
           matcher whose haystack is not that stream. The suite then judges another file by a string it
@@ -260,6 +262,13 @@ def guard(root):
         return 3
     inherited = {s['key'] for s in base}
     here = register(root)
+    # The completeness counter, and it is reported for the same reason `sites` is. `lib_sites.WRAPPERS`
+    # is declared by hand, and the only thing that makes hand-declaring it safe is `unregistered()` --
+    # every parameter-claim call the roster does not explain. Enumerating the corpus through the roster
+    # while never asking that question ships the plan-side list with no tree-side counter: an eighth
+    # reporter-shaped wrapper would make every verdict emitted through it invisible to this register, and
+    # therefore to both refusal shapes, with nothing anywhere going red.
+    unreg = lib_sites.unregistered(root)
     new = [s for s in here if s['key'] not in inherited]
     refused = [s for s in new if (s['klass'] == 'read' and s['docs']) or s['oracle']]
     # ONE LINE PER (SITE, SHAPE), never one per site. A site can match both shapes at once, and an
@@ -277,8 +286,8 @@ def guard(root):
     # that came back empty -- a renamed corpus, an unreadable section, a glob that matched nothing --
     # produces `new=0 refused=0`, which is byte-identical to a tree that is genuinely clean. Without a
     # count to test, the two readings of a green guard cannot be told apart.
-    print('sites=%d base=%d new=%d refused=%d'
-          % (len(here), len(base), len(new), len(refused)))
+    print('sites=%d base=%d new=%d refused=%d unreg=%d'
+          % (len(here), len(base), len(new), len(refused), len(unreg)))
     return 1 if refused else 0
 
 

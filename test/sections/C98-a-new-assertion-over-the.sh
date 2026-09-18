@@ -196,3 +196,75 @@ fi
 [ -z "$r7_98" ] \
   && ok "the coverage this block declares is the coverage the tree gives it" \
   || bad "the coverage this block declares is the coverage the tree gives it ($r7_98)"
+
+# ROW 8 -- THE WRAPPER ROSTER EXPLAINS EVERY PRODUCER IN THE CORPUS.
+#
+# `WRAPPERS` in `lib_sites.py` is DECLARED by hand, and the comment that declares it names
+# `unregistered()` as the one thing that makes hand-declaring it safe: every parameter-claim call the
+# roster does not explain is reported rather than silently miscounted. Until this row the driver never
+# asked, so the register shipped the plan-side list with no tree-side counter -- and an eighth
+# reporter-shaped wrapper would have made every verdict emitted through it invisible to the register,
+# hence to ROW 5 and ROW 6, with nothing anywhere going red.
+#
+# The two sides are independently written, which is what makes this a check: the roster is maintained by
+# whoever maintains the instrument, the producers by whoever adds a section. The floor is ZERO because a
+# single unexplained producer is a population these rows cannot see at all.
+r8_98=""
+if [ "$rc98" = 0 ] || [ "$rc98" = 1 ]; then
+  u98="$(printf '%s\n' "$OUT98" | sed -n 's/.*unreg=\([0-9][0-9]*\).*/\1/p' | head -1)"
+  case "${u98:-}" in
+    ''|*[!0-9]*) r8_98=" [the register reported no unexplained-producer count]" ;;
+    *) [ "$u98" -eq 0 ] || r8_98=" [${u98} parameter-claim call(s) no wrapper explains]" ;;
+  esac
+else
+  r8_98=" [the guard did not reach a register]"
+fi
+[ -z "$r8_98" ] \
+  && ok "every verdict producer in the corpus is explained by the wrapper roster" \
+  || bad "every verdict producer in the corpus is explained by the wrapper roster ($r8_98)"
+
+# ROW 9 -- THE ORACLE DISCRIMINATOR STILL TELLS THE TWO POSITIONS APART.
+#
+# ROW 6 above reports what the detector FOUND, and on a clean tree it finds nothing -- by design, since
+# the refused shape was purged from this corpus. So ROW 6 alone cannot distinguish a detector that looked
+# and saw none from one that stopped looking: `SUITE_SRC_RE`, `ASSIGN_RE`, `GREP_ARG_RE` and the
+# derived-name pass could each be emptied and ROW 6 would stay green over a dead discriminator. That was
+# this block's own blind spot, and its only validation was prose describing a hand-run at a tree that no
+# longer exists -- the instrument destroyed while its output survives in prose, which is the defect this
+# whole section was built to stop.
+#
+# The control is the corpus's own pair of positions, one line apart, because position IS the entire rule:
+# a name derived from the suite's text spent as a matcher's PATTERN against a foreign stream is refused,
+# while the same provenance spent as the HAYSTACK is admissible and load-bearing -- C60's KEYS89 is the
+# live instance, and a rule that refused it would be unusable. Exactly one hit, and it is the
+# pattern-slot name: an empty answer means the detector went blind, and two means it fell back to
+# provenance and would refuse the rows this suite cannot do without.
+r9_98=""
+if [ "$PY3" = 1 ]; then
+  H9_98="$(python3 - "$TOOL98" <<'PYEOF' 2>&1
+import importlib.util
+import sys
+sys.dont_write_bytecode = True   # the tool asserts this of itself; loading it must not break the promise
+spec = importlib.util.spec_from_file_location('_recurrence_register', sys.argv[1])
+mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(mod)
+region = '\n'.join((
+    'PATZZ="$(suite_src | grep -m1 marker)"',
+    'KEYZZ="$(suite_src | sed -n 2p)"',
+    'printf "%s" "$ROWZZ" | grep -qE "$PATZZ"',
+    'printf "%s\\n" "$KEYZZ" | grep -qxF "$labzz"',
+))
+print(','.join(mod.oracle_sites(region)))
+PYEOF
+)"
+  case "$H9_98" in
+    PATZZ) : ;;
+    '') r9_98=" [the discriminator named nothing in a region carrying both positions]" ;;
+    *) r9_98=" [the discriminator answered '${H9_98}', not the pattern-slot name alone]" ;;
+  esac
+else
+  r9_98=" [python3 is unavailable, so the discriminator was never exercised]"
+fi
+[ -z "$r9_98" ] \
+  && ok "the oracle discriminator separates the pattern slot from the haystack slot" \
+  || bad "the oracle discriminator separates the pattern slot from the haystack slot ($r9_98)"
