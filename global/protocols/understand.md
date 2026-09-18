@@ -291,7 +291,7 @@ Every **Automated** and **Behavioral** criterion in understand.md is written in 
 | Unwanted behavior | IF [condition], THEN the [system] shall [response] | Errors, edge cases, failure paths |
 | Optional feature | WHERE [feature/platform applies], the [system] shall [response] | Config/platform-dependent behavior |
 
-**Every criterion — Automated, Behavioral and Observable alike — also carries two fields, and they are written before any assertion over it exists.** They are what decides which kind it is; the kind is the conclusion, not the input.
+**Every criterion — Automated, Behavioral and Observable alike — also carries two fields, and they are written before any assertion over it exists.** They are what decides which kind it is; the kind is the conclusion, not the input. **In the artifact the same order holds on the page**: the entry states the criterion, then `observed:` and `falsified-by:`, then the kind — writing the kind first is what lets a falsifier be written to fit a bucket already chosen.
 
 `observed:` — how the criterion is observed. One of four:
 
@@ -384,15 +384,11 @@ Write `artifacts/T-XXX/understand.md` with:
 - **Expected Behavior**: [Detailed behavior description]
 - **UI/UX Details**: [Specific details: position, style, interactions]
 - **Edge Cases**: [How to handle edge cases]
-- **Verifiable Criteria** (Automated + Behavioral in EARS — see Criteria Format):
-  - **Automated** (tests): [EARS criterion] -> `[spec file]`
-    - `observed:` [run|compute|resolve|read] · `falsified-by:` [the change to the SUBJECT that would make it false]
-  - **Observable** (code inspection): [concrete checkable fact]
-    - `observed:` [run|compute|resolve|read] · `falsified-by:` [the change to the SUBJECT — one only this criterion's own author would make, which is what files it here]
-  - **Behavioral** (UI/flow tasks only):
-    - WHEN [trigger], the [system] shall [response]
-    - IF [condition], THEN the [system] shall [response]
-    - `observed:` [run|compute|resolve|read] · `falsified-by:` [the change to the SUBJECT that would make it false]
+- **Verifiable Criteria** — one list, no grouping (which kinds take EARS, and which takes none: see Criteria Format). Each entry is written in this order:
+  - [criterion — a concrete, checkable statement]
+    - `observed:` [run|compute|resolve|read]
+    - `falsified-by:` [the change to the SUBJECT that would make it false]
+    - `kind:` [read off the falsifier — see Criteria Format]
 
 ## Technical Considerations
 - **Files Affected (verified)**: [files confirmed by reading — path + one line on why each changes]
