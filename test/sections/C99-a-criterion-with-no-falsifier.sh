@@ -21,11 +21,12 @@
 # refuses everything, and a block asserting only passes by one that refuses nothing. So A1 asserts that
 # the COMPLETE criterion in the same paper is NOT named, and A2 runs four well-formed papers -- both
 # live region spellings crossed with both live field layouts -- and requires silence on all four. The
-# four shapes are not invented: they were read first-hand off the archived corpus, `- **Verifiable
-# Criteria**:` with the criteria one level in (T-133) against `### Verifiable Criteria` with them at
-# column zero (T-136), and both fields on one sub-bullet split by a middle dot (T-133, T-136) against
-# one sub-bullet per field (T-138). A check keyed on either spelling alone ships reporting clean over
-# half the corpus, and that is what A2 exists to catch.
+# four shapes are not invented: every one of them was read first-hand off the archived understandings
+# this engine has already produced -- `- **Verifiable Criteria**:` with the criteria one level in
+# against `### Verifiable Criteria` with them at column zero, and both fields on one sub-bullet split
+# by a middle dot against one sub-bullet per field. Each spelling and each layout appears in more than
+# one archived paper, so neither is a single author's habit. A check keyed on either spelling alone
+# ships reporting clean over half the corpus, and that is what A2 exists to catch.
 #
 # WHAT IT DOES NOT REACH, stated here because the reader of a green suite stands here too:
 #
@@ -89,8 +90,8 @@ paper99() {
 }
 
 # The two live region spellings, read off the archived corpus rather than invented.
-MK99A='- **Verifiable Criteria**:'   # criteria one level in   (T-133)
-MK99B='### Verifiable Criteria'      # criteria at column zero (T-136)
+MK99A='- **Verifiable Criteria**:'   # criteria one level in
+MK99B='### Verifiable Criteria'      # criteria at column zero
 
 # --- A1: a criterion missing one field is refused, and the refusal names it and the field ----------
 # Both directions, because the two fields are two rules and a check that looks for one of them passes
@@ -138,8 +139,8 @@ a2_99=""
 if [ ! -r "$CHK99" ]; then
   a2_99=" [$CHK99 is not there -- no verdict drawn from an absent check]"
 else
-  # Both fields on ONE sub-bullet, split by a middle dot (T-133, T-136), and one sub-bullet PER field
-  # (T-138). Held as the field block each paper's second criterion carries.
+  # Both fields on ONE sub-bullet, split by a middle dot, against one sub-bullet PER field -- the two
+  # layouts the archived corpus holds. Held as the field block each paper's second criterion carries.
   for sp99 in A B; do
     case "$sp99" in
       A) mk99="$MK99A"; ind99='  ' ;;

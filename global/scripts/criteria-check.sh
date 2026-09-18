@@ -1,10 +1,10 @@
 #!/bin/bash
 # Refuse an understanding whose Verifiable Criteria do not each carry `observed:` and `falsified-by:`.
 #
-# The engine has asked every criterion for both fields in writing since T-131 and T-132, and until this
-# script nothing ever looked: a task reached planning with criteria that said nothing about how they
-# could fail, and nobody found out. This is what turns that rule into an answer. It is the material leg
-# of the plan precondition (protocols/backlog.md), and it runs by hand on the same terms.
+# The Understand protocol has asked every criterion for both fields in writing for several releases, and
+# until this script nothing ever looked: a task reached planning with criteria that said nothing about
+# how they could fail, and nobody found out. This is what turns that rule into an answer. It is the
+# material leg of the plan precondition (protocols/backlog.md), and it runs by hand on the same terms.
 #
 # WHAT IT TESTS IS PRESENCE, NEVER HONESTY. A falsifier phrased against the assertion -- "the check would
 # go red" -- rather than against the subject satisfies this script with the field present. That remains a
