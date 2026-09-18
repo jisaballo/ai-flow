@@ -86,6 +86,13 @@ FILE="$1"
 # sub-bullets exist in 16 of them -- amendment notes under a field, and the criteria of the grouped
 # layout that predates the flat template. A refusal there is a FALSE one, and this mechanism ships with
 # no flag to suppress it, so a false refusal stops a correct author with nothing they can do about it.
+#
+# THE PARSER'S OWN STATUS IS READ, and everything below depends on that. What is read next is the parser's
+# OUTPUT, and an empty output is precisely what a clean paper looks like -- so an awk that died would leave
+# this variable empty and this script would exit 0 over a paper nothing had parsed. That is the one
+# mechanism the engine has for refusing a malformed understanding reporting the malformed understanding
+# clean. The design fails closed on a region it cannot find and on a region holding nothing; failing open
+# on a parse that did not finish is the same hole reached by another road.
 REPORT="$(awk '
 function flush(  b) {
   if (lead == "") return
@@ -140,7 +147,7 @@ END {
     split(miss[i], p, SUBSEP)
     print "MISS" SUBSEP p[1] SUBSEP p[2]
   }
-}' "$FILE")"
+}' "$FILE")" || die "the criteria parser did not finish over $FILE (awk exited $?); nothing is reported clean on a parse that did not run to the end"
 
 case "$REPORT" in
   NOREGION)
