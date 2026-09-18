@@ -127,6 +127,58 @@ else
   [ "$rc99" != 0 ] || a1_99="$a1_99 [a criterion with neither field is reported clean]"
   grep -q "$MISS99 $FOBS99" "$OUT99" || a1_99="$a1_99 [the both-missing refusal does not name ${FOBS99}]"
   grep -q "$MISS99 $FFAL99" "$OUT99" || a1_99="$a1_99 [the both-missing refusal does not name ${FFAL99}]"
+
+  # A criterion whose OWN SENTENCE quotes the field names and carries no field block at all. Read as
+  # part of what is searched, the criterion's text satisfies the fields it never wrote -- and in an
+  # engine whose criteria are routinely ABOUT these two fields, that is the ordinary sentence rather
+  # than a contrived one. The complete criterion above it must still not be named.
+  P99="$BOX99/self-quoting.md"
+  { printf '# Understanding: a fixture\n\n## Requirements Clarification\n\n'
+    printf '%s\n\n' "$MK99A"
+    printf '  - IF the gateway settles a batch ZETAONE, THEN the ledger shall carry one row per batch.\n'
+    printf '    - `%s` run · `%s` a settled batch leaves no ledger row\n\n' "$FOBS99" "$FFAL99"
+    printf '  - IF a criterion ZETATWO carries no `%s`, or no `%s`, THEN it is malformed.\n' "$FOBS99" "$FFAL99"
+    printf '\n## Technical Considerations\n\nNothing further.\n'
+  } > "$P99"
+  rc99="$(run99 "$P99")"
+  [ "$rc99" != 0 ] || a1_99="$a1_99 [a criterion quoting the field names in its own sentence is reported clean]"
+  grep -q 'ZETATWO' "$OUT99" || a1_99="$a1_99 [the self-quoting refusal does not name the criterion]"
+  grep -q "$MISS99 $FOBS99" "$OUT99" || a1_99="$a1_99 [the self-quoting refusal does not name ${FOBS99}]"
+  grep -q "$MISS99 $FFAL99" "$OUT99" || a1_99="$a1_99 [the self-quoting refusal does not name ${FFAL99}]"
+  grep -q 'ZETAONE' "$OUT99" && a1_99="$a1_99 [the self-quoting refusal also names the complete criterion]"
+
+  # A PROSE NOTE inside the region -- which is the shape the template now asks for, so that a note is not
+  # read as a criterion. Read as part of the criterion above it, a note that mentions a field name hands
+  # that criterion the field it never wrote. This task shipped the instruction and the hole together.
+  P99="$BOX99/prose-note.md"
+  { printf '# Understanding: a fixture\n\n## Requirements Clarification\n\n'
+    printf '%s\n\n' "$MK99A"
+    printf '  - WHILE a refund is open ZETATWO, the charge it reverses shall stay readable.\n\n'
+    printf '  **On the fields.** Every criterion states `%s` and `%s` in its own block.\n' "$FOBS99" "$FFAL99"
+    printf '\n## Technical Considerations\n\nNothing further.\n'
+  } > "$P99"
+  rc99="$(run99 "$P99")"
+  [ "$rc99" != 0 ] || a1_99="$a1_99 [a prose note quoting the field names satisfies the criterion above it]"
+  grep -q 'ZETATWO' "$OUT99" || a1_99="$a1_99 [the prose-note refusal does not name the criterion]"
+
+  # THE MASKING CASE, and it is the sharpest of the three. A criterion written one level too deep is a
+  # sub-bullet by the paper's own structure; if its fields are read as the body of the criterion ABOVE,
+  # they satisfy a field that criterion genuinely lacks. The check then reports clean over precisely the
+  # defect it is the sole reader of.
+  P99="$BOX99/deeper-sibling.md"
+  { printf '# Understanding: a fixture\n\n## Requirements Clarification\n\n'
+    printf '%s\n\n' "$MK99A"
+    printf '  - IF the gateway settles a batch ZETAONE, THEN the ledger shall carry one row per batch.\n'
+    printf '    - WHILE a refund is open ZETATWO, the charge it reverses shall stay readable.\n'
+    printf '      - `%s` run\n' "$FOBS99"
+    printf '      - `%s` an open refund makes the charge unreadable\n' "$FFAL99"
+    printf '\n## Technical Considerations\n\nNothing further.\n'
+  } > "$P99"
+  rc99="$(run99 "$P99")"
+  [ "$rc99" != 0 ] || a1_99="$a1_99 [a criterion one level deeper masks the missing fields of the one above it]"
+  grep -q 'ZETAONE' "$OUT99" || a1_99="$a1_99 [the masking refusal does not name the criterion that lacks the fields]"
+  grep -q "$MISS99 $FOBS99" "$OUT99" || a1_99="$a1_99 [the masking refusal does not name ${FOBS99}]"
+  grep -q "$MISS99 $FFAL99" "$OUT99" || a1_99="$a1_99 [the masking refusal does not name ${FFAL99}]"
 fi
 [ -z "$a1_99" ] && ok "A1 a criterion missing either field is refused, and the refusal names the criterion and the field" \
                 || bad "A1 a criterion missing either field is refused, and the refusal names the criterion and the field:$a1_99"
@@ -165,6 +217,30 @@ ${ind99}  - \`kind:\` **Automated**"
   rc99="$(run99 "$P99")"
   [ "$rc99" != 0 ] || a2_99="$a2_99 [under spelling B a criterion with no ${FFAL99} is reported clean]"
   grep -q 'ZETATWO' "$OUT99" || a2_99="$a2_99 [under spelling B the refusal does not name the incomplete criterion]"
+
+  # THE REGION'S END, which no fixture above reached. Under the bullet spelling the region hands back to
+  # its section at the next column-zero bullet; every paper the skeleton builds goes straight from the
+  # criteria to a heading, so that branch ran zero times in this whole block.
+  #
+  # THE SIBLING BULLET MUST CARRY ITS OWN SUB-BULLETS, and that is the whole measurement rather than a
+  # detail of the fixture. A bare sibling is absorbed by the indent rule alone -- it sits shallower than
+  # the criteria and is ignored whether or not the region ever ended -- so a fixture built from one is
+  # green with the terminator deleted and tests nothing. What only the terminator can prevent is the
+  # sibling's OWN children being read at the criteria indent and promoted to criteria of a region that
+  # should already have closed. Its failure direction is the bad one: a FALSE refusal on a well-formed
+  # paper, from a mechanism that ships no flag to suppress it.
+  P99="$BOX99/sibling-after.md"
+  { printf '# Understanding: a fixture\n\n## Requirements Clarification\n\n'
+    printf '%s\n\n' "$MK99A"
+    printf '  - IF the gateway settles a batch ZETAONE, THEN the ledger shall carry one row per batch.\n'
+    printf '    - `%s` run · `%s` a settled batch leaves no ledger row\n\n' "$FOBS99" "$FFAL99"
+    printf -- '- **Unverified Assumptions**: what this fixture puts after the region.\n'
+    printf '  - ZETATHREE, which is an assumption and carries no field because it is not a criterion.\n'
+    printf '\n## Technical Considerations\n\nNothing further.\n'
+  } > "$P99"
+  rc99="$(run99 "$P99")"
+  [ "$rc99" = 0 ] || a2_99="$a2_99 [a sibling section after the criteria list is read as criteria and refused: $(tr '\n' ' ' < "$OUT99")]"
+  grep -q 'ZETATHREE' "$OUT99" && a2_99="$a2_99 [a bullet outside the region is named by the refusal]"
 fi
 [ -z "$a2_99" ] && ok "A2 a well-formed paper passes in either region spelling and either field layout" \
                 || bad "A2 a well-formed paper passes in either region spelling and either field layout:$a2_99"

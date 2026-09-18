@@ -52,43 +52,88 @@ FILE="$1"
 #
 # The region ends at the next markdown heading, and -- for the bullet spelling only -- at the next
 # sibling bullet at column zero, which is where `- **Verifiable Criteria**` hands back to its section.
-# Entries are the list items at the SHALLOWEST indent the region holds, so the sub-bullets carrying the
-# fields are body rather than criteria of their own, under either spelling and without keying on a depth.
+# Entries are the list items at the indent the region's FIRST item line sits at, so the sub-bullets
+# carrying the fields are body rather than criteria of their own, under either spelling and without
+# keying on a depth. The first item fixes it rather than the shallowest seen so far: a running minimum
+# assigns the region's opening lines against an indent it has not met yet, so what a line is read as
+# depends on what comes after it.
+#
+# A CRITERION'S FIELDS ARE READ FROM ITS DIRECT CHILDREN AND FROM NOTHING ELSE -- the item lines at the
+# shallowest indent deeper than its own, inside its own block. Three failures live in the difference,
+# and each was measured rather than reasoned:
+#
+#   The criterion's OWN sentence is not part of what is searched. Read as body, a criterion that merely
+#   NAMES the two fields in its text satisfies them while carrying neither -- and in an engine whose
+#   criteria are frequently about the fields themselves, that is the ordinary sentence, not an exotic one.
+#
+#   Prose inside the region is not part of it either. A note written there as ordinary prose -- which is
+#   what the template asks for, so that a note is not read as a criterion -- would otherwise be appended
+#   to the last criterion above it and hand it any field name the note happens to mention.
+#
+#   A DEEPER DESCENDANT IS NOT A DIRECT CHILD. A criterion accidentally written one level too deep is,
+#   by the paper's own structure, a sub-bullet; read as body it lends its `observed:` and `falsified-by:`
+#   to the criterion above, MASKING a field that criterion genuinely lacks. Reading direct children only
+#   removes the mask: the block is judged on what it carries at its own next level.
+#
+# WHAT THIS DOES NOT DO, since a limit unstated is a limit nobody can act on: the mis-indented criterion
+# is still not COUNTED as a criterion -- markdown offers nothing that tells it from a sub-bullet, and
+# guessing which one the author meant is a judgement about intent this script does not make anywhere
+# else. What changes is that the paper no longer passes: the criterion above it is refused for the
+# fields it really lacks, and the author is stopped at the block that holds the mistake.
+#
+# Refusing every sub-bullet that is not one of the declared fields was the other candidate and it was
+# REJECTED ON MEASUREMENT, not on taste: across the 31 understandings this engine has written, 205 such
+# sub-bullets exist in 16 of them -- amendment notes under a field, and the criteria of the grouped
+# layout that predates the flat template. A refusal there is a FALSE one, and this mechanism ships with
+# no flag to suppress it, so a false refusal stops a correct author with nothing they can do about it.
 REPORT="$(awk '
-function flush(  i) {
+function flush(  b) {
   if (lead == "") return
-  if (body !~ /observed:/)     miss[++n] = lead SUBSEP "observed:"
-  if (body !~ /falsified-by:/) miss[++n] = lead SUBSEP "falsified-by:"
+  b = (kidind == "") ? "" : kid
+  if (b !~ /observed:/)     miss[++n] = lead SUBSEP "observed:"
+  if (b !~ /falsified-by:/) miss[++n] = lead SUBSEP "falsified-by:"
   entries++
-  lead = ""; body = ""
+  lead = ""; kid = ""; kidind = ""
 }
+function endregion() { flush(); inregion = 0; depth = ""; bullet = 0 }
 {
+  # Tabs are admitted as indentation and must therefore be MEASURED as indentation. Counting a tab as
+  # one column puts a tab-indented line at a depth no space-indented sibling can equal.
+  line = $0
+  while (match(line, /^[ ]*\t/)) sub(/\t/, "        ", line)
+
   if (!inregion) {
-    if ($0 ~ /^###[ \t]+Verifiable Criteria/)        { inregion = 1; bullet = 0; found = 1; next }
-    if ($0 ~ /^-[ \t]+\*\*Verifiable Criteria\*\*/)  { inregion = 1; bullet = 1; found = 1; next }
+    if (line ~ /^###[ \t]+Verifiable Criteria/)        { inregion = 1; bullet = 0; found = 1; next }
+    if (line ~ /^-[ \t]+\*\*Verifiable Criteria\*\*/)  { inregion = 1; bullet = 1; found = 1; next }
     next
   }
-  if ($0 ~ /^#{1,6}[ \t]/)          { flush(); inregion = 0; next }
-  if (bullet && $0 ~ /^-[ \t]/)     { flush(); inregion = 0; next }
-  if ($0 ~ /^[ \t]*$/)              { next }
+  if (line ~ /^#{1,6}[ \t]/)          { endregion(); next }
+  if (bullet && line ~ /^-[ \t]/)     { endregion(); next }
+  if (line ~ /^[ \t]*$/)              { next }
 
-  # An item line, and its indent. The shallowest one seen in the region is what a criterion sits at;
-  # anything deeper is the body of the criterion above it, whichever layout wrote it.
-  if (match($0, /^[ \t]*-[ \t]/)) {
-    ind = index($0, "-") - 1
-    if (depth == "" || ind < depth) { depth = ind }
+  # An item line, and its indent. The FIRST item line of the region fixes where a criterion sits; an
+  # item line deeper than that belongs to the criterion above it, and only the SHALLOWEST such level --
+  # the direct children of that criterion -- is what the fields are read from. A line that is neither is
+  # ignored: prose, a continuation, a grandchild. Nothing here is refused for its shape.
+  if (match(line, /^[ \t]*-[ \t]/)) {
+    ind = index(line, "-") - 1
+    if (depth == "") { depth = ind }
     if (ind == depth) {
       flush()
-      lead = $0
+      lead = line
       sub(/^[ \t]*-[ \t]*/, "", lead)
-      body = $0
       next
     }
+    if (ind > depth && lead != "") {
+      # A shallower child than any seen so far replaces what was collected: the deeper lines were
+      # descendants of a child, never children themselves.
+      if (kidind == "" || ind < kidind) { kidind = ind; kid = "" }
+      if (ind == kidind)                { kid = kid " " line }
+    }
   }
-  if (lead != "") body = body " " $0
 }
 END {
-  flush()
+  endregion()
   if (!found)   { print "NOREGION"; exit }
   if (!entries) { print "NOENTRIES"; exit }
   for (i = 1; i <= n; i++) {
