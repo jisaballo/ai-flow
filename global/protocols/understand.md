@@ -291,7 +291,7 @@ Every **Automated** and **Behavioral** criterion in understand.md is written in 
 | Unwanted behavior | IF [condition], THEN the [system] shall [response] | Errors, edge cases, failure paths |
 | Optional feature | WHERE [feature/platform applies], the [system] shall [response] | Config/platform-dependent behavior |
 
-**Every criterion — Automated, Behavioral and Observable alike — also carries two fields, and they are written before any assertion over it exists.** They are what decides which kind it is; the kind is the conclusion, not the input.
+**Every criterion — Automated, Behavioral and Observable alike — also carries two fields, and they are written before any assertion over it exists.** They are what decides which kind it is; the kind is the conclusion, not the input. **In the artifact the same order holds on the page**: the entry states the criterion, then `observed:` and `falsified-by:`, then the kind — writing the kind first is what lets a falsifier be written to fit a bucket already chosen.
 
 `observed:` — how the criterion is observed. One of four:
 
