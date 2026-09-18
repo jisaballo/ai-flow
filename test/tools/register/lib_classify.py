@@ -141,8 +141,7 @@ def assignments(lines, arm, names, depth=CHASE_DEPTH):
 
     The chase stays INSIDE the section file, which is what keeps it honest: the shared fixture builders
     live in the preamble, so no number of hops can reach `mkbox` and file a section under whatever built
-    its sandbox. Resolving against the preamble as well was measured and recovers 8 of 107 -- it is the
-    chain within the file that carries the subject, not the shared setup.
+    its sandbox.
 
     Each name is resolved at most once, so a cycle terminates and a name reached by two paths
     contributes its line once.

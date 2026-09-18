@@ -45,6 +45,13 @@ EXITS for `guard`
     3   the published trunk could not be resolved, so NEW cannot be computed. This is deliberately not
         0: an empty set difference and an unanswerable one are different facts, and reporting the second
         as the first is a guard that certifies whatever it could not look at.
+    4   the guard CRASHED; one CRASHED line on stdout carrying the exception, and the traceback on
+        stderr. Deliberately not 1, for the same reason 3 is not 0 and one door further along: exiting
+        1 makes *the guard did not run* and *the guard found nothing* the same observable, because a
+        caller reads 1 as "at least one refused" and then finds no REFUSE line to name. Three crash
+        paths are reachable without touching this file -- the module-level `import lib_*` above, the
+        `git archive`/`tar` pair in `base_register`, and `exec_module` on the diff-size guard, which is
+        the very trunk path exit 3 certifies.
 """
 import hashlib
 import importlib.util
@@ -53,6 +60,7 @@ import os
 import subprocess
 import sys
 import tempfile
+import traceback
 
 # Set BEFORE the first import below, because importing is what would write the file.
 #
@@ -302,5 +310,21 @@ def main(argv):
     return guard(root)
 
 
+def run(argv):
+    """`main` with its crashes given an exit code of their own.
+
+    The CAUSE is printed, not merely the fact. A red that says the guard did not answer and stops there
+    is a red someone spends an hour reproducing, and reproducing it is the one thing that is cheap here
+    -- the exception is already in hand at the moment it is caught. So the marker carries it and the
+    traceback goes to stderr behind it.
+    """
+    try:
+        return main(argv)
+    except Exception as exc:                                     # noqa: BLE001 -- the point is breadth
+        print('CRASHED the guard raised %s: %s' % (type(exc).__name__, exc))
+        traceback.print_exc()
+        return 4
+
+
 if __name__ == '__main__':
-    sys.exit(main(sys.argv))
+    sys.exit(run(sys.argv))

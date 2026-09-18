@@ -35,7 +35,7 @@
 #
 # THE POPULATION THIS GUARD LOOKS AT, recomputed from the tree on every run and held by ROW 7:
 #
-#   REACH (this tree): read=191 md_only=118 mixed=20 source_only=16 blind=37 depth=4
+#   REACH (this tree): read=192 md_only=118 mixed=20 source_only=17 blind=37 depth=4
 #
 # `blind` is the count of sites that read SOMETHING this tool could not resolve to a path at all, so it
 # is the share of the read population these rows cannot even classify. It is not the same number as the
@@ -268,3 +268,100 @@ fi
 [ -z "$r9_98" ] \
   && ok "the oracle discriminator separates the pattern slot from the haystack slot" \
   || bad "the oracle discriminator separates the pattern slot from the haystack slot ($r9_98)"
+
+# ROW 10 -- THE `.md` REFUSAL PATH, EXERCISED END TO END OVER A FIXTURE TREE.
+#
+# The symmetric hole to the one ROW 9 closes, and it was the larger of the two. ROW 5 is green on a clean
+# tree by design, so it cannot tell a live detector from a dead one: `lib_classify.classify`,
+# `lib_subject.paths` and `is_engine_doc` could each be gutted and every row above would stay green -- a
+# guard with a dead-man's-switch problem, which is this epic's own defect wearing the guard's clothes.
+#
+# THE REAL ENTRY POINT, OVER A FIXTURE TREE, AND NOT THE THREE UNITS CALLED IN ORDER. Reassembling the
+# composition `register()` performs would put a SECOND HOME for that composition here: when `register()`
+# changes the fixture would not, and this row would go green over an arrangement that no longer exists.
+# So the sandbox is a whole small repository -- a trunk, a committed section, three uncommitted ones --
+# and what runs against it is `guard`, the same entry point the suite runs against itself. Nothing is
+# restated, so nothing can drift.
+#
+# THE TWO NEGATIVE ARMS ARE WHY THIS IS A CHECK AND NOT A TRIPWIRE. The conjunction has two halves and
+# each has a planted counter-example: C03 reads a `.md` OUTSIDE the engine's documents (subject fails),
+# and C04 EXECUTES a script while mentioning an engine `.md` nearby (class fails). Both are new, both
+# must be admitted, and `new=4` is asserted so that "exactly one md refusal" cannot be satisfied by a
+# fixture tree that silently lost them. C05 is the fourth and it is not a negative arm: it is refused
+# for the OTHER shape while carrying a document, which is the only shape under which the conjunct's
+# second home is observable at all. See its own comment below.
+B10="$(mkbox)" || fatal 'C98 md-path fixture'
+r10_98=""
+if [ "$PY3" = 1 ]; then
+  $GIT init -q "$B10" >/dev/null 2>&1
+  $GIT -C "$B10" symbolic-ref HEAD refs/heads/main
+  mkdir -p "$B10/test/lib" "$B10/test/sections" "$B10/global/hooks" "$B10/global/protocols" "$B10/notes"
+  DOC10="global/protocols/sample"
+  cp "$ROOT/global/hooks/diff-size-guard.py" "$B10/global/hooks/diff-size-guard.py"
+  printf 'the bounded retry rule is stated here\n' > "$B10/$DOC10.md"
+  printf 'some notes\n' > "$B10/notes/scratch.md"
+  printf '# the fixture corpus needs a preamble to enumerate\n' > "$B10/test/lib/preamble.sh"
+  cat > "$B10/test/sections/C01-inherited.sh" <<'FIX'
+ok "a claim with no subject at all"
+FIX
+  $GIT -C "$B10" add -A >/dev/null 2>&1
+  $GIT -C "$B10" commit -q -m init >/dev/null 2>&1
+  # Written AFTER the commit, so all three are new against the fixture's own published trunk.
+  # THE FIXTURE'S DOCUMENT PATH IS ASSEMBLED, NEVER WRITTEN WHOLE, AND THIS IS NOT EVASION -- IT IS THE
+  # ONLY HONEST FORM AVAILABLE. The subject resolver is textual: it reads a path out of a region and
+  # cannot tell a document this row READS from one this row WRITES INTO A SANDBOX. Written contiguously,
+  # `$DOC10.md` would sit in this row's own region and the guard would refuse ROW 10 for its fixture's
+  # DATA, naming a file that does not exist in this repository at all. That refusal would be true by
+  # shape and false by meaning, and the mechanism has no escape hatch by design -- so the fixture names
+  # its document in two pieces, and the join happens in the sandbox where the claim actually lives.
+  # The blind spot itself is real and is staged rather than patched: a section that builds a fixture
+  # corpus is indistinguishable, to this guard, from one that reads the corpus it builds.
+  { printf 'VP02="$ROOT/%s.md"\n' "$DOC10"
+    printf 'RULE02="$(grep -c %s %s)"\n' "'bounded retry'" '"$VP02"'
+    printf '[ "$RULE02" -ge 1 ] && ok "the protocol states the bounded retry rule" || bad "the protocol states the bounded retry rule"\n'
+  } > "$B10/test/sections/C02-reads-a-protocol.sh"
+  cat > "$B10/test/sections/C03-reads-outside.sh" <<'FIX'
+NP03="$ROOT/notes/scratch.md"
+N03="$(grep -c 'some notes' "$NP03")"
+[ "$N03" -ge 1 ] && ok "the notes file carries its line" || bad "the notes file carries its line"
+FIX
+  # C04's mention of the document must be RESOLVABLE or this arm tests nothing. Written as a bare
+  # `sample.md` it was invisible to the subject resolver, so C04 was admitted for having no subject at
+  # all and the class half of the conjunct went unexercised -- a control that lied about its own
+  # coverage, found by the falsifier below rather than by reading. Same two-piece assembly, same reason.
+  { printf 'O04="$(python3 "$ROOT/global/hooks/diff-size-guard.py" --help 2>&1)"\n'
+    printf 'case "$O04" in *Traceback*) bad "the hook $ROOT/%s.md describes runs clean" ;; *) ok "the hook $ROOT/%s.md describes runs clean" ;; esac\n' "$DOC10" "$DOC10"
+  } > "$B10/test/sections/C04-runs-and-mentions.sh"
+  # C05 -- THE CONJUNCT'S SECOND HOME. The rule is written twice: once in the `refused` set that decides
+  # the exit code, once in the print condition that chooses which line to emit. The set dominates, so
+  # dropping the print's half is unobservable UNLESS a refused site carries a doc while classifying
+  # something other than `read` -- which is exactly a site refused for the ORACLE shape that mentions a
+  # document nearby. C05 is that site, and without it half the rule has no falsifier at all.
+  { printf 'PAT05="$(suite_src | grep -m1 marker)"\n'
+    printf 'O05="$(python3 "$ROOT/global/hooks/diff-size-guard.py" --help 2>&1)"\n'
+    printf 'printf "%%s" "$O05" | grep -qE "$PAT05" && ok "the hook $ROOT/%s.md describes answers" || bad "the hook $ROOT/%s.md describes answers"\n' "$DOC10" "$DOC10"
+  } > "$B10/test/sections/C05-oracle-and-mentions.sh"
+  O10="$(python3 "$TOOL98" guard "$B10" 2>&1)"
+  rc10=$?
+  MD10="$(printf '%s\n' "$O10" | grep -c '^REFUSE .* md ' | tr -d ' ')"
+  NEW10="$(printf '%s\n' "$O10" | sed -n 's/.*new=\([0-9][0-9]*\).*/\1/p' | head -1)"
+  # BOTH COUNTS, because the conjunction is written TWICE in the extractor -- once in the `refused` set
+  # that decides the exit code, once in the print condition that emits the line ROW 5 parses. They are
+  # one rule with two homes, so they can disagree: dropping the `read` half from the set alone refuses a
+  # second site, exits 1 over it, and prints no line naming it -- a refusal nobody can read. Counting
+  # only the lines left that half of the rule unexercised, which a falsifier found and reading did not.
+  REF10="$(printf '%s\n' "$O10" | sed -n 's/.*refused=\([0-9][0-9]*\).*/\1/p' | head -1)"
+  [ "$rc10" = 1 ] || r10_98=" [the guard answered ${rc10} over a tree carrying one prose-reading site]"
+  OR10="$(printf '%s\n' "$O10" | grep -c '^REFUSE .* oracle ' | tr -d ' ')"
+  [ "${NEW10:-0}" = 4 ] || r10_98="$r10_98 [the fixture offered ${NEW10:-no} new site(s), not the 4 planted]"
+  [ "${REF10:-0}" = 2 ] || r10_98="$r10_98 [the guard refused ${REF10:-no} site(s), not the 2 planted]"
+  [ "$MD10" = 1 ] || r10_98="$r10_98 [${MD10} md refusal(s), not exactly 1]"
+  [ "$OR10" = 1 ] || r10_98="$r10_98 [${OR10} oracle refusal(s), not exactly 1]"
+  printf '%s\n' "$O10" | grep -q "^REFUSE C02:.* md reads ${DOC10}\.md " \
+    || r10_98="$r10_98 [no refusal naming C02 and the protocol it reads]"
+else
+  r10_98=" [python3 is unavailable, so the .md refusal path was never exercised]"
+fi
+[ -z "$r10_98" ] \
+  && ok "the md refusal path names the site that reads an engine document and admits the two that do not" \
+  || bad "the md refusal path names the site that reads an engine document and admits the two that do not ($r10_98)"
