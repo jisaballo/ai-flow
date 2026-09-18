@@ -296,7 +296,16 @@ three come from the task's own sheet and its papers, never from what the session
   its own phase takes, and a command one sentence away from listing the levels is how the map grows the
   second copy its own home guard exists to prevent.
 - **The material leg.** A phase that consumes what an earlier one produced checks it is there: `plan`
-  needs `understand.md`; `verify` needs `plan.md` and the Criteria Coverage table inside it, which is
+  needs `understand.md` — **and needs it well formed, which `scripts/criteria-check.sh` is what tests**.
+  A paper that is present and malformed is not the paper this phase consumes, so the leg reads the
+  artifact's Verifiable Criteria and refuses where one carries no `observed:` or no `falsified-by:`,
+  naming the criterion and the field it lacks. **What that check reaches, stated here because this is
+  where the reader of a green precondition stands**: it tests **presence and never honesty** — a
+  falsifier phrased against the assertion rather than against the subject passes it with the field
+  present, and the Understand protocol's own gate is what refuses that. **No flag suppresses its
+  refusal, and the absence is deliberate**: an author who cannot write a falsifier has a criterion that
+  gate already refuses, and an escape hatch readmits what the field exists to stop.
+  `verify` needs `plan.md` and the Criteria Coverage table inside it, which is
   the mapping the audit inherits instead of rebuilding — **except where the level says no artifact was
   produced**: at **Auto** the plan is inline, so `plan` consumes nothing and its leg requires nothing, and
   `verify` is not reached by that path at all. The exemption is the leg's own principle rather than a

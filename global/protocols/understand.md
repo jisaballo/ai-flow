@@ -384,7 +384,7 @@ Write `artifacts/T-XXX/understand.md` with:
 - **Expected Behavior**: [Detailed behavior description]
 - **UI/UX Details**: [Specific details: position, style, interactions]
 - **Edge Cases**: [How to handle edge cases]
-- **Verifiable Criteria** — one list, no grouping (which kinds take EARS, and which takes none: see Criteria Format). Each entry is written in this order:
+- **Verifiable Criteria** — one list, no grouping (which kinds take EARS, and which takes none: see Criteria Format). **Every bullet in this list is read as a criterion**, by the Gate above and by the check the plan precondition runs, so a note that is not a criterion is written as ordinary prose here and never as a bullet — the refusal is otherwise a surprise the author had no way to predict. Each entry is written in this order:
   - [criterion — a concrete, checkable statement]
     - `observed:` [run|compute|resolve|read]
     - `falsified-by:` [the change to the SUBJECT that would make it false]
