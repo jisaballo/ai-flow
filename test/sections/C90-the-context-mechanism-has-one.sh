@@ -451,9 +451,14 @@ for pair90 in \
   # It mentions the convention...
   nearok90 "$(near90 "$reg90" 'steering/' 'convention|where the file|already exists|of that name' 200)" \
     || a8_90="$a8_90 [${lbl90} no longer carries the convention it must qualify]"
-  # ...and it routes for the base instead of stating one.
-  grep -qE "$CITE90" "$path90" \
-    || a8_90="$a8_90 [${lbl90} names the convention and cites no home for the base]"
+  # ...and it routes for the base instead of stating one, BESIDE the convention rather than anywhere in
+  # the document. A whole-file grep was this leg's own defect: three of these five files already carried
+  # `protocols/context.md` at the base commit -- discover.md at its section 5, the verify skill at its
+  # context-resolution step, customization.md three times over -- so for three of the five routes the leg
+  # was green before the sentence it guards was written, and the citation this task added could be
+  # deleted with the row still passing.
+  nearok90 "$(near90 "$reg90" 'steering/' "$CITE90" 240)" \
+    || a8_90="$a8_90 [${lbl90} names the convention and cites no home for the base beside it]"
 done
 [ -z "$a8_90" ] && ok "A8 the base has one home, and every other mention cites it" \
                 || bad "A8 the base has one home, and every other mention cites it:$a8_90"

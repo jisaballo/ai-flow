@@ -92,20 +92,44 @@ normalise() {
   printf '%s' "${out:-/}"
 }
 
-# The `steering:` block, one `key<TAB>value` per entry. ONE parser with two readers below it — the
-# application keys, and the resolution verdict — because a block parsed twice is a block whose two
-# readers can come to disagree about what an entry is.
+# The `steering:` block: the SHAPE OF ITS LEAD, then one entry per line beneath it. ONE parser with
+# three readers below it — the application keys, the resolution verdict, and the lead the verdict
+# reports on — because a block parsed twice is a block whose readers can come to disagree about what an
+# entry is.
 #
-# `steering: {}` is the shipped default and yields nothing: the inline form does not match the lead, so
-# the block is never entered and zero entries is zero verdicts. A key declared with NO value yields an
-# empty value rather than no row, which is what lets the verdict tell it apart from a key that is absent
-# altogether.
-map_entries() {
+# THE LEAD IS CLASSIFIED AND NEVER MERELY MATCHED, and that is the whole reason this function has a
+# shape of its own. An earlier form entered the block on a bare `steering:` alone and turned the scanner
+# OFF for every other spelling, which made two legal, shipped shapes yield zero entries in silence: a
+# lead carrying a trailing comment — the form `docs/customization.md` documents in the very sample it
+# introduces as the one the phase skills read — and a populated flow mapping. Zero entries then read as
+# an empty map, the run exited 0, and every value in it was checked by nothing. That is the defect this
+# verdict exists to end, reproduced one level up, and the fix is not a wider pattern: it is a THIRD
+# answer, `unparsed`, so that *the map was not read* can never again wear the face of *the map is empty*.
+#
+# `steering: {}` is the shipped default and is the one legitimate zero — an EMPTY flow mapping, told
+# apart from a populated one, so the default state most adopters are in stays silent and correct. A key
+# declared with NO value yields an empty value rather than no row, which is what lets the verdict tell it
+# apart from a key that is absent altogether.
+# `return 0` ONLY where there is no file. A `project.yml` that EXISTS and cannot be read is the case
+# this whole verdict was added for -- a declaration nobody could resolve -- and the tolerance carried
+# over from the old key-only reader answered it with the same silence as a project that declares
+# nothing. The two are told apart at their one source, so every reader below inherits the distinction.
+map_scan() {
   local yml="$DATA/project.yml"
-  [ -r "$yml" ] || return 0
+  if [ ! -r "$yml" ]; then
+    [ -e "$yml" ] && printf 'lead\tunreadable\n'
+    return 0
+  fi
   awk '
-    /^steering:[ \t]*$/         { m = 1; next }
-    /^steering:/                { m = 0; next }
+    /^steering:/ {
+      rest = $0
+      sub(/^steering:[ \t]*/, "", rest)
+      sub(/[ \t]*#.*$/, "", rest)
+      sub(/[ \t]+$/, "", rest)
+      if (rest == "")            { print "lead\tblock";    m = 1; next }
+      if (rest ~ /^\{[ \t]*\}$/) { print "lead\tempty";    m = 0; next }
+                                   print "lead\tunparsed"; m = 0; next
+    }
     m && /^[ \t]*#/             { next }
     m && /^[ \t]+[^ \t#][^:]*:/ {
       line = $0
@@ -114,12 +138,18 @@ map_entries() {
       v = line; sub(/^[^:]*:[ \t]*/, "", v)
       sub(/[ \t]+#.*$/, "", v); sub(/[ \t]+$/, "", v)
       gsub(/^["'"'"']|["'"'"']$/, "", v)
-      print k "\t" v
+      print "entry\t" k "\t" v
       next
     }
     m && /^[^ \t]/              { m = 0 }
   ' "$yml"
 }
+
+# The three readers. Each takes its own field out of the one scan above rather than parsing the block
+# again: a second parse is a second opinion about what an entry is, and this block already cost the
+# engine one.
+map_entries() { map_scan | awk -F'\t' '$1 == "entry" { print $2 "\t" $3 }'; }
+map_lead()    { map_scan | awk -F'\t' '$1 == "lead"  { print $2; exit }'; }
 
 # The application keys, and only those: a `steering:` key whose area has a directory of its own under
 # `apps/` or `libs/`. In a single-application project the layer does not exist and the rule below has
@@ -407,6 +437,17 @@ measure() {
 # output, and `reads only .ai-flow/` is the one thing this check's docstring promises about what it names.
 map_verdict() {
   local k v cause cand
+  # The lead first, because a map nothing could read is not a map with no entries. Reported as a FAILING
+  # verdict rather than a note: the whole of this check's promise is that a declaration nobody resolved
+  # cannot pass quietly, and a lead this parser does not take is a declaration nobody resolved.
+  case "$(map_lead)" in
+    unparsed)
+      verdict "steering:<lead>" map-resolves \
+        "the map's lead is neither a block mapping nor an empty flow mapping, so no entry was read at all" ;;
+    unreadable)
+      verdict "steering:<lead>" map-resolves \
+        "the project declares a project.yml that cannot be read, so no entry was read at all" ;;
+  esac
   while IFS="$(printf '\t')" read -r k v; do
     [ -n "$k" ] || continue
     cause=""
@@ -434,7 +475,17 @@ while [ "$i" -lt "${#FILES[@]}" ]; do
   i=$((i + 1))
 done
 
-map_verdict
+# THE MAP VERDICT BELONGS TO THE SURVEY AND NOT TO THE REQUEST FORM. The argument form asks about the
+# files it names; the map is a property of the project, and a run told to look at one file has not been
+# asked about it. Called unconditionally it reached the three archive moves that pass a file by name
+# (`protocols/backlog.md`, the `Verify` of the steering update and the two write-backs) and failed them
+# over a declaration the move never wrote and cannot fix from where it stands — an adopter with one
+# stale entry could land no context file at all. That is a second consequence beyond the one the
+# contract disclosed, and it is not the one the operator accepted.
+#
+# It also keeps the summary honest without a second count: `FAILING` and `scanned` are only ever mixed
+# on the flow where both the files and the map are in scope.
+if [ "${#ARGS[@]}" -eq 0 ]; then map_verdict; fi
 
 say "$scanned file(s) scanned, $FAILING failing"
 [ "$FAILING" -eq 0 ]

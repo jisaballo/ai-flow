@@ -164,7 +164,7 @@ a verdict about the **declaration** and never about the document, so an entry po
 resolves, passes and is measured by nothing, while one that resolves to nothing is named together with the
 file it probably meant. `--report` prints every verdict with the thresholds applied.
 It runs by hand, from CI, and as the `Verify` of the archive moves that write a context
-file — three callers, and the list is exactly the ones something performs.
+file.
 
 **The structure guard.** Changing how this mechanism works is not something another task does in passing.
 *Structure* is this protocol, the classes table, the check, and in any context file the `##` lines, the

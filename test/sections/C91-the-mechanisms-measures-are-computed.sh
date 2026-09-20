@@ -765,6 +765,25 @@ else
   [ "$rc91" != 0 ] || a14_91="$a14_91 [a value naming a directory exits 0]"
   grep -F "$FAILMK91" "$OUT91" | grep -q -- "$MAPRULE91" \
     || a14_91="$a14_91 [a value naming a directory does not fail ${MAPRULE91}]"
+  # BY NAME, because the generic cause catches this fixture anyway: with the directory branch deleted a
+  # directory is still not a regular file, so `[ ! -f ]` fires, the row still FAILs and the exit is still
+  # non-zero. The two assertions above therefore survive the branch's deletion and the third cause the
+  # code and its comment both claim would be reachable by nothing.
+  grep -F "$FAILMK91" "$OUT91" | grep -- "$MAPRULE91" | grep -q -i 'directory' \
+    || a14_91="$a14_91 [a value naming a directory is not told apart from one naming nothing]"
+  # A VALUE AS AN OPERATOR WRITES IT: quoted, with an inline comment and trailing space. The parser
+  # strips all three, and this is the direction that matters -- a regression here turns a CORRECT
+  # declaration red, which is the loudest thing this change can do to an adopter, and every other
+  # fixture in this block writes a bare value that exercises none of it.
+  A14Q91="$BOX91/a14-written-by-hand"; mk91 "$A14Q91"
+  good91 "$A14Q91/.ai-flow/steering/payments.md"
+  printf 'steering:\n  payments: ".ai-flow/steering/payments.md"   # the payment rules\n' \
+    > "$A14Q91/.ai-flow/project.yml"
+  rc91="$(run91 "$A14Q91")"
+  [ "$rc91" = 0 ] \
+    || a14_91="$a14_91 [a quoted value with an inline comment is refused (exit ${rc91}): $(grep -F "$FAILMK91" "$OUT91" | head -1 | tr -s ' ')]"
+  grep -q -F 'steering:payments' "$OUT91" \
+    || a14_91="$a14_91 [the quoted fixture drew no map verdict at all -- its pass is unmeasured]"
   # The clean direction, and the empty map beside it: zero entries is zero verdicts and not a failure.
   # `mk91` writes `steering: {}`, which is the shipped default -- the state most adopters are in.
   A14C91="$BOX91/a14-clean"; mk91 "$A14C91"
@@ -926,7 +945,14 @@ entries91() {  # $1 = the file to lift from
       sub(/^#[ \t]*/, "", line)
       if (line !~ /^[A-Za-z0-9_+.-]+:[ \t]+[^ \t]/) next
       k = line; sub(/:.*$/, "", k)
-      v = line; sub(/^[^:]*:[ \t]*/, "", v); sub(/[ \t].*$/, "", v)
+      # The SAME normalisation the checks own parser applies -- inline comment, trailing space,
+      # surrounding quotes -- and not a truncation at the first space. This extractor stands in for that
+      # parser on the documented surfaces, so where the two disagree the fixture measures a string the
+      # guide does not show, and the whole argument of the row (the check is the oracle) is spent on it.
+      # NO APOSTROPHE BELOW OR ABOVE: this awk program is a single-quoted shell string, so one ends it.
+      v = line; sub(/^[^:]*:[ \t]*/, "", v)
+      sub(/[ \t]+#.*$/, "", v); sub(/[ \t]+$/, "", v)
+      gsub(/^["'"'"']|["'"'"']$/, "", v)
       print k "\t" v
     }
   ' "$1"
@@ -951,7 +977,17 @@ for pair91 in "the distributed guide~docs/customization.md" "the template an ado
     continue
   fi
   A18B91="$BOX91/a18-$(printf '%s' "$lbl91" | tr -cd 'a-z')"; mk91 "$A18B91"
-  printf 'steering:\n' > "$A18B91/.ai-flow/project.yml"
+  # THE SOURCE'S OWN LEAD, carried verbatim where it is a block lead. Writing `steering:` here instead
+  # was this row's own defect: it normalised away the one property of the documented block the check
+  # chokes on, so the row green-lit a document the check would go blind on. A lead that is a FLOW
+  # mapping is not carried -- the template's is `steering: {}` and its examples beneath it are comments,
+  # so carrying it would build a fixture with no entries and assert nothing. The lead shapes themselves
+  # are A19's subject; what this row owes is not to hide them.
+  lead91="$(grep -m1 -E '^steering:' "$src91")"
+  case "$(printf '%s' "$lead91" | sed -e 's/^steering:[ \t]*//' -e 's/[ \t]*#.*$//' -e 's/[ \t]*$//')" in
+    "") printf '%s\n' "$lead91" > "$A18B91/.ai-flow/project.yml" ;;
+    *)  printf 'steering:\n'    > "$A18B91/.ai-flow/project.yml" ;;
+  esac
   printf '%s\n' "$ent91" | while IFS="$(printf '\t')" read -r k91 v91; do
     [ -n "$k91" ] || continue
     printf '  %s: %s\n' "$k91" "$v91" >> "$A18B91/.ai-flow/project.yml"
@@ -973,5 +1009,112 @@ for pair91 in "the distributed guide~docs/customization.md" "the template an ado
 done
 [ -z "$a18_91" ] && ok "A18 every documented map example is a value the check accepts" \
                  || bad "A18 every documented map example is a value the check accepts:$a18_91"
+
+# --- A19: the lead is classified, and one the parser does not take is reported, never read as empty ---
+# A REPAIR LEG, written at the Verify gate of the task that added the map verdict, against a confirmed
+# finding: the parser entered the block on a bare `steering:` alone and switched OFF for every other
+# spelling, so two legal shipped shapes yielded zero entries IN SILENCE -- a lead carrying a trailing
+# comment, which is the form `docs/customization.md` documents in the sample it calls the one the phase
+# skills read, and a populated flow mapping. The run exited 0 and every value in the map was checked by
+# nothing: the defect the verdict exists to end, one level up.
+#
+# FOUR shapes and not two, because the rule has three answers and a leg asserting only the two failures
+# is satisfied by a parser that refuses everything. `{}` is the shipped default and the one legitimate
+# zero; the bare lead is the control that proves the machinery is live on this fixture at all.
+#
+# Each shape carries the SAME non-resolving value, so what varies between the four runs is the lead and
+# nothing else. A fixture that also changed its entries would measure the pair and neither of them.
+a19_91=""
+if [ ! -r "$CHK91" ]; then
+  a19_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
+else
+  for pair91 in \
+    'a lead carrying a trailing comment~steering:                   # area -> its rules file~entry' \
+    'a populated flow mapping~steering: {auth: .ai-flow/steering/nope.md}~lead' \
+    'the shipped empty flow mapping~steering: {}~silent' \
+    'a bare block lead~steering:~entry'; do
+    lbl91="${pair91%%~*}"; rest91="${pair91#*~}"; lead91="${rest91%~*}"; want91="${rest91##*~}"
+    A19B91="$BOX91/a19-$(printf '%s' "$want91$lbl91" | tr -cd 'a-z')"; mk91 "$A19B91"
+    good91 "$A19B91/.ai-flow/steering/payments.md"
+    printf '%s\n  auth: .ai-flow/steering/nope.md\n' "$lead91" > "$A19B91/.ai-flow/project.yml"
+    rc91="$(run91 "$A19B91")"
+    case "$want91" in
+      entry)
+        [ "$rc91" != 0 ] \
+          || a19_91="$a19_91 [${lbl91}: a value that resolves to nothing exits 0 -- the block was not read]"
+        grep -F "$FAILMK91" "$OUT91" | grep -- "$MAPRULE91" | grep -q -F 'auth' \
+          || a19_91="$a19_91 [${lbl91}: no failing verdict names the entry -- zero entries is wearing the face of an empty map]"
+        ;;
+      lead)
+        [ "$rc91" != 0 ] \
+          || a19_91="$a19_91 [${lbl91}: a lead the parser does not take exits 0]"
+        grep -F "$FAILMK91" "$OUT91" | grep -q -- "$MAPRULE91" \
+          || a19_91="$a19_91 [${lbl91}: a lead the parser does not take draws no verdict at all]"
+        ;;
+      silent)
+        [ "$rc91" = 0 ] \
+          || a19_91="$a19_91 [${lbl91}: the one legitimate zero is an error (exit ${rc91})]"
+        grep -F "$FAILMK91" "$OUT91" | grep -q -- "$MAPRULE91" \
+          && a19_91="$a19_91 [${lbl91}: the shipped default draws a failing verdict]"
+        ;;
+    esac
+  done
+fi
+# The fourth state, and the one the old reader had no answer for: a project.yml that EXISTS and cannot
+# be read. Carried over from the key-only reader, the tolerance answered it with the same silence as a
+# project that declares nothing -- one guard standing in for two invariants, and the second of them is
+# the reason this verdict exists at all. Skipped where the runner can read it anyway, because a check
+# that cannot be made to fail is a check that proves nothing about the branch it names.
+if [ -r "$CHK91" ]; then
+  A19U91="$BOX91/a19-unreadable"; mk91 "$A19U91"
+  good91 "$A19U91/.ai-flow/steering/payments.md"
+  printf 'steering:\n  auth: .ai-flow/steering/nope.md\n' > "$A19U91/.ai-flow/project.yml"
+  chmod 000 "$A19U91/.ai-flow/project.yml" 2>/dev/null || true
+  if [ -r "$A19U91/.ai-flow/project.yml" ]; then
+    a19_91="$a19_91 [the unreadable case could not be staged -- this runner reads the file anyway, so the branch is unmeasured]"
+  else
+    rc91="$(run91 "$A19U91")"
+    [ "$rc91" != 0 ] \
+      || a19_91="$a19_91 [a declaration that exists and cannot be read exits 0 -- the silence the verdict was added to end]"
+    grep -F "$FAILMK91" "$OUT91" | grep -q -- "$MAPRULE91" \
+      || a19_91="$a19_91 [an unreadable declaration draws no verdict at all]"
+  fi
+  chmod 644 "$A19U91/.ai-flow/project.yml" 2>/dev/null || true
+fi
+[ -z "$a19_91" ] && ok "A19 a lead the parser does not take is reported, never read as an empty map" \
+                 || bad "A19 a lead the parser does not take is reported, never read as an empty map:$a19_91"
+
+# --- A20: the map verdict is the survey's, and the argument form is still a request ------------------
+# A REPAIR LEG, written at the Verify gate against a confirmed finding. Called unconditionally, the map
+# verdict reached the form that names a file -- which is the form `protocols/backlog.md` prescribes for
+# the three archive moves that write a context file, each worded "on the file". An adopter with one
+# stale entry could then land no context file at all: every one of those moves failed its own Verify
+# over a declaration the move never wrote and cannot fix from where it stands. That is a second
+# consequence beyond the one the task's contract disclosed, and not the one the operator accepted.
+#
+# BOTH directions over ONE fixture, because each alone is satisfied by the wrong check: a verdict that
+# never fires anywhere passes the first, and one that fires everywhere passes the second.
+a20_91=""
+if [ ! -r "$CHK91" ]; then
+  a20_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
+else
+  A20B91="$BOX91/a20"; mk91 "$A20B91"
+  good91 "$A20B91/.ai-flow/steering/payments.md"
+  printf 'steering:\n  auth: .ai-flow/steering/nope.md\n' > "$A20B91/.ai-flow/project.yml"
+  # The request form: the named file is in shape, so the run is clean and says nothing about the map.
+  rc91="$(run91 "$A20B91" .ai-flow/steering/payments.md)"
+  [ "$rc91" = 0 ] \
+    || a20_91="$a20_91 [a run asked about one file in shape fails over a map entry it never touched (exit ${rc91})]"
+  grep -q -- "$MAPRULE91" "$OUT91" \
+    && a20_91="$a20_91 [the request form draws a map verdict -- the argument form is no longer a request]"
+  # The survey form, over the SAME fixture: the entry is still broken and the survey still says so.
+  rc91="$(run91 "$A20B91")"
+  [ "$rc91" != 0 ] \
+    || a20_91="$a20_91 [the survey form does not fail the same broken entry -- the verdict fires nowhere]"
+  grep -F "$FAILMK91" "$OUT91" | grep -q -- "$MAPRULE91" \
+    || a20_91="$a20_91 [the survey form draws no map verdict at all]"
+fi
+[ -z "$a20_91" ] && ok "A20 the map verdict is the survey's, and the argument form is still a request" \
+                 || bad "A20 the map verdict is the survey's, and the argument form is still a request:$a20_91"
 
 rm -rf "$BOX91"

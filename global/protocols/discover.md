@@ -23,7 +23,7 @@ Read configuration and structure — do not guess from the project name. Sources
 | `commands.{test,lint,build}` | `package.json` `scripts`, `nx.json` / `project.json` targets, `Makefile`, `pyproject.toml`, `cargo.toml`, CI config |
 | `area_kind` | Monorepo layout: `apps/`+`libs/` → `app`/`domain`; `packages/` → `package`; single `src/` → leave as the module/service the repo represents |
 | `source_dirs` | Top-level source directories actually present (`apps`, `libs`, `packages`, `src`, …) |
-| `steering` | Usually empty at first — only map an area if a file of the class already exists, conventionally at `.ai-flow/steering/<area>.md`. That is where the file sits, not the form the value takes: the base a value is resolved from is `protocols/context.md` › `## Reading` step 1's, and is not restated here |
+| `steering` | Usually empty at first — only map an area if a file of the class already exists, conventionally at `.ai-flow/steering/<area>.md` — where the file sits, not the form the value takes; the base a value is resolved from is `protocols/context.md` › `## Reading` step 1's, and is not restated here |
 | `review` / `review_profile` | Not derived from a signal — usually absent at first. Propose them in §5 rather than writing them, and never invent a checklist file |
 
 For monorepo command runners (Nx, Turbo, pnpm workspaces), prefer the scoped form with the `{area}` placeholder (e.g. `npx nx test {area}`). For a single-package repo, use the flat command (e.g. `npm test`).

@@ -146,8 +146,7 @@ the `##` marker only. And one verdict per entry of the delivery map: every value
 exists, against the base the mechanism's own `## Reading` step 1 states and against no other — a verdict
 about the declaration and never about the document, so an entry pointing outside `.ai-flow/` resolves,
 passes and is measured by nothing. `--report` prints every file's verdicts with the thresholds applied. It
-runs by hand, from CI, and as the `Verify` of the archive steps that write a context file — three callers,
-and the list is exactly the ones something performs.
+runs by hand, from CI, and as the `Verify` of the archive steps that write a context file.
 
 **The structure guard.** Changing how the mechanism works is not something another task does in passing.
 *Structure* is the protocol, the classes table, the check script, and in any context file the `##` lines,
