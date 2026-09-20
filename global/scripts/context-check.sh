@@ -10,8 +10,15 @@
 # directory plus the two fixed files — and never what a delivery map points at: a map answers which
 # document a task receives, and the honest answer may be a document whose own home refuses these
 # ceilings. Reading the map would measure that document with rules it never accepted, and would miss a
-# steering file nobody declared. The map is read for one thing only: the application keys the
-# no-app-key-in-a-domain-file rule needs.
+# steering file nobody declared.
+#
+# The map is read for two things, and NEITHER of them is a ceiling, so the paragraph above stands
+# unchanged. The application keys the no-app-key-in-a-domain-file rule needs. And, per entry, whether
+# the value RESOLVES — from the checkout root, to a file that exists. That second one is a verdict about
+# the declaration and not about the document: a value pointing outside `.ai-flow/` resolves, passes, and
+# is measured by nothing, because the question asked is existence and never location. It is here rather
+# than in the phases that consume the map for the reason the map went unchecked for so long: a consumer
+# that skips what it cannot open is not a check, it is the silence.
 #
 # Usage: context-check.sh [--report] [file …]
 #        Run from a checkout root. With no argument the set is the steering directory's `*.md` less
@@ -85,20 +92,39 @@ normalise() {
   printf '%s' "${out:-/}"
 }
 
-# The application keys, and only those: a `steering:` key whose area has a directory of its own under
-# `apps/` or `libs/`. In a single-application project the layer does not exist and the rule below has
-# nothing to fire on, which is correct rather than a gap.
-map_keys() {
+# The `steering:` block, one `key<TAB>value` per entry. ONE parser with two readers below it — the
+# application keys, and the resolution verdict — because a block parsed twice is a block whose two
+# readers can come to disagree about what an entry is.
+#
+# `steering: {}` is the shipped default and yields nothing: the inline form does not match the lead, so
+# the block is never entered and zero entries is zero verdicts. A key declared with NO value yields an
+# empty value rather than no row, which is what lets the verdict tell it apart from a key that is absent
+# altogether.
+map_entries() {
   local yml="$DATA/project.yml"
   [ -r "$yml" ] || return 0
   awk '
     /^steering:[ \t]*$/         { m = 1; next }
     /^steering:/                { m = 0; next }
     m && /^[ \t]*#/             { next }
-    m && /^[ \t]+[^ \t#][^:]*:/ { k = $1; sub(/:.*$/, "", k); print k; next }
+    m && /^[ \t]+[^ \t#][^:]*:/ {
+      line = $0
+      sub(/^[ \t]+/, "", line)
+      k = line; sub(/:.*$/, "", k)
+      v = line; sub(/^[^:]*:[ \t]*/, "", v)
+      sub(/[ \t]+#.*$/, "", v); sub(/[ \t]+$/, "", v)
+      gsub(/^["'"'"']|["'"'"']$/, "", v)
+      print k "\t" v
+      next
+    }
     m && /^[^ \t]/              { m = 0 }
   ' "$yml"
 }
+
+# The application keys, and only those: a `steering:` key whose area has a directory of its own under
+# `apps/` or `libs/`. In a single-application project the layer does not exist and the rule below has
+# nothing to fire on, which is correct rather than a gap.
+map_keys() { map_entries | cut -f1; }
 APP_KEYS=""
 for k in $(map_keys); do
   if [ -d "$ROOT/apps/$k" ] || [ -d "$ROOT/libs/$k" ]; then APP_KEYS="$APP_KEYS $k"; fi
@@ -362,6 +388,43 @@ measure() {
   fi
 }
 
+# One verdict per map entry: the value resolves, from the CHECKOUT ROOT, to a file that exists.
+#
+# One base and no fallback. Trying `.ai-flow/` when the root finds nothing would make one string mean two
+# things, and the two readers of it would never meet — which is the defect this verdict exists to end,
+# not one to accommodate. So a value written under the other base does not resolve, and what the check
+# owes the operator instead is a DIAGNOSIS: the file it can see, named beside the value, as a question.
+# That is not the forgiving form wearing a report's clothes — the forgiving form resolves against two
+# bases, this resolves against none and only says what it found.
+#
+# Three causes and not one, because they are three different mistakes and an operator reading `does not
+# resolve` beside an empty value goes looking for a file that was never named.
+#
+# The row is printed through `verdict()` with the ENTRY in the column that otherwise holds a file: a map
+# verdict has no file to be a verdict of, and a second printing path for one rule is the duplication this
+# script's own one-home discipline refuses. A PASSING row names the key alone. The value rides only in a
+# failing row's cause — a passing verdict that echoed the path would put a borrowed document into the
+# output, and `reads only .ai-flow/` is the one thing this check's docstring promises about what it names.
+map_verdict() {
+  local k v cause cand
+  while IFS="$(printf '\t')" read -r k v; do
+    [ -n "$k" ] || continue
+    cause=""
+    if [ -z "$v" ]; then
+      cause="the key is declared with no value"
+    elif [ -d "$ROOT/$v" ]; then
+      cause="'$v' names a directory, not a file"
+    elif [ ! -f "$ROOT/$v" ]; then
+      cause="'$v' does not resolve from the checkout root"
+      cand="$DATA/steering/${v##*/}"
+      [ -f "$cand" ] && cause="$cause; '${cand#"$ROOT"/}' exists -- did you mean that?"
+    fi
+    verdict "steering:$k" map-resolves "$cause"
+  done <<MAPENTRIES
+$(map_entries)
+MAPENTRIES
+}
+
 scanned=0
 i=0
 while [ "$i" -lt "${#FILES[@]}" ]; do
@@ -370,6 +433,8 @@ while [ "$i" -lt "${#FILES[@]}" ]; do
   scanned=$((scanned + 1))
   i=$((i + 1))
 done
+
+map_verdict
 
 say "$scanned file(s) scanned, $FAILING failing"
 [ "$FAILING" -eq 0 ]

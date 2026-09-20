@@ -31,7 +31,9 @@ profile says how a stack is judged, the steering says what an area knows.
 
 ## How the map names a file
 
-The file convention is `steering/<key>.md`, the key being the project's or the domain's own name. Several
+The file convention is `.ai-flow/steering/<key>.md`, the key being the project's or the domain's own name.
+That is **where the file sits**, not the form the map's value takes: a value is a path, and the base it is
+resolved from is stated in `protocols/context.md` › `## Reading` step 1 and nowhere else. Several
 keys may point at one file and the file is read once. One key names one file: the set of files a task
 needs is derived from the keys it touches, not kept as a list by hand — a hand-kept list would load a
 domain into every task of an app whatever the task touched, and go stale each time the app adopted a

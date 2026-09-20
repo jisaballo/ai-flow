@@ -50,8 +50,8 @@ commands:
 # Leave empty if you have no steering files yet.
 steering: {}
   # example:
-  # auth: steering/auth.md
-  # payments: steering/payments.md
+  # auth: .ai-flow/steering/auth.md
+  # payments: .ai-flow/steering/payments.md
 
 # --- Review profiles (optional) ----------------------------------------------
 # What the five review auditors look for, in YOUR stack's vocabulary, added ON TOP

@@ -67,6 +67,19 @@ one nobody keeps.
    convention and not the only place an entry may point, and resolving to the directory instead of to the
    value would silently drop every entry naming something else, with no diagnostic, since a path never
    looked up cannot be reported missing.
+
+   **A value is a path resolved from the repository root, and from no other base.** This sentence is the
+   base's one home; every other mention of the convention cites it rather than saying it again, because a
+   base stated twice is a base that can be corrected in one place and left standing in the other. The
+   convention `.ai-flow/steering/<key>.md` describes **where a file of the class conventionally sits** and
+   never the form the value takes — written as the value, the same string reads as a path from `.ai-flow/`
+   and the two readings never meet: 15 of 15 values in one measured project resolved to nothing, and its
+   steering had plausibly never reached a review. There is deliberately **no second base and no
+   fallback**: one string with two meanings is the wrong-meaning hazard this engine refuses elsewhere, and
+   a value written the other way is a value the check names rather than one the reader guesses at.
+   **What an entry points at is delivered, not shaped**: the map answers which document a task receives,
+   so a value may name a `CLAUDE.md`, a card or a skill, and pointing at one says nothing about what class
+   of file it is or what rules its shape must obey.
 2. **Check before cutting.** A file that passes the check is read by cuts. A file that fails has no cuts
    to trust: it is read whole, the phase says so with its word count, and the repair described under
    Keeping opens. The stated cost is the pressure; nothing else nags.
@@ -88,7 +101,7 @@ one nobody keeps.
    Execute writes it in the task's sheet at each step that read.
 
    ```
-   Context: steering/workspace.md nano (9); sections: Import boundaries | steering/payments.md nano (12); sections: Idempotency, Refund flow | product.md fixed + Rules: checkout (3) | decisions-global.md nano (7); sections: none
+   Context: .ai-flow/steering/workspace.md nano (9); sections: Import boundaries | .ai-flow/steering/payments.md nano (12); sections: Idempotency, Refund flow | product.md fixed + Rules: checkout (3) | decisions-global.md nano (7); sections: none
    ```
 5. **Verify receives the list.** The resolved files travel to the review as one list: the architecture
    auditor reads the workspace file for boundaries and import rules, the security auditor the steering of
@@ -145,9 +158,13 @@ live, never what a delivery map points at, so a document borrowed from outside i
 ceilings its own home refuses and a steering file nobody declared is measured all the same. It returns a
 verdict per file and per rule — nano titles equal to body headings and in the same order, a nano present, each
 nano line and each section within its length, the file within its section count, no app key in a domain
-file's titles, the `##` marker only — and `--report` prints every verdict with the thresholds applied. It
-runs by hand, from CI, from a harness hook, and as the `Verify` of the archive moves that write a context
-file.
+file's titles, the `##` marker only — and one verdict per entry of the delivery map: every value resolves
+to a file that exists, against the base `## Reading` step 1 states and against no other. That last one is
+a verdict about the **declaration** and never about the document, so an entry pointing outside `.ai-flow/`
+resolves, passes and is measured by nothing, while one that resolves to nothing is named together with the
+file it probably meant. `--report` prints every verdict with the thresholds applied.
+It runs by hand, from CI, and as the `Verify` of the archive moves that write a context
+file — three callers, and the list is exactly the ones something performs.
 
 **The structure guard.** Changing how this mechanism works is not something another task does in passing.
 *Structure* is this protocol, the classes table, the check, and in any context file the `##` lines, the

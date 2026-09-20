@@ -38,9 +38,11 @@ commands:
                             # (publish/deploy/reinstall); absent, the close's distribution move is a
                             # stated no-op
 steering:                   # area -> its rules file; what an entry's value means, who reads it and
-                            # when is in protocols/context.md and nowhere else. `workspace` is reserved:
+                            # when is in protocols/context.md and nowhere else, including the base a
+                            # value is resolved from. The convention is `.ai-flow/steering/<key>.md` --
+                            # where the file sits, not the form the value takes. `workspace` is reserved:
                             # the repository-wide rules, handed to the architecture auditor.
-  auth: steering/auth.md
+  auth: .ai-flow/steering/auth.md
 review:                     # optional — what the review auditors look for, per stack
   angular-app:
     security: .claude/skills/review/SKILL.md
