@@ -35,7 +35,7 @@
 #
 # THE POPULATION THIS GUARD LOOKS AT, recomputed from the tree on every run and held by ROW 7:
 #
-#   REACH (this tree): read=193 md_only=118 mixed=20 source_only=18 blind=37 depth=4
+#   REACH (this tree): read=190 md_only=115 mixed=20 source_only=18 blind=37 depth=4
 #
 # `blind` is the count of sites that read SOMETHING this tool could not resolve to a path at all, so it
 # is the share of the read population these rows cannot even classify. It is not the same number as the
