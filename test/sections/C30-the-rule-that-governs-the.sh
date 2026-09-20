@@ -2,7 +2,7 @@ echo "== C30: the rule that governs the engine is versioned and loads itself =="
 # The defect pinned here: the governing test lived inside a path the repository ignores, so no
 # gitignore-respecting search reached it and nothing in the flow read it. Its home is now the file every
 # session in this project loads on its own, which is what satisfies its read trigger without a step.
-MAN30="CLAUDE.md"
+MAN30="AGENTS.md"
 NG30="multi-agent portability"
 
 # The whole test, not a summary of it: each key is a distinct load-bearing part. The verdict names the
@@ -11,15 +11,12 @@ NG30="multi-agent portability"
 if [ -f "$MAN30" ]; then
   miss30=""
   for k in \
-    "before proposing ANY change to the engine" \
-    "demanding requirements discipline" \
-    "Rigor is kept" \
-    "Weight is cut" \
-    "working alone forgets" \
-    "Cost ladder" \
-    "derived check" \
-    "enterprise coordination" \
-    "multi-agent portability"
+    "before proposing any change to the engine" \
+    "Quality is the objective" \
+    "Cost and speed are the budgets" \
+    "The discipline is the method" \
+    "must outlive whoever is running it" \
+    "Coordination is not an end in itself"
   do
     grep -qF "$k" "$MAN30" || miss30="$miss30 [$k]"
   done
@@ -38,7 +35,7 @@ fi
 # This file is excluded from the search, and the exclusion is the assertion. Naming the thesis in order
 # to look for it puts it in a versioned file, so without this the guard passes on its own text — green
 # from the moment it is written and forever after, whatever the project's manual says.
-n30="$($GIT grep -lF "demanding requirements discipline" -- . 2>/dev/null \
+n30="$($GIT grep -lF "maintained and scaled over time" -- . 2>/dev/null \
         | grep -vxF -f <(for f30 in $SUITE_SRC; do printf '%s\n' "${f30#$ROOT/}"; done) | wc -l | tr -d ' ')"
 case "${n30:-0}" in
   0) bad "the governing test is reachable by a versioned search (no versioned file carries the thesis)" ;;
@@ -74,10 +71,11 @@ cit30="$($GIT grep -nF "$NG30" -- "$MAN30" README.md 2>/dev/null | grep -cF "dec
   && ok "no refusal defers its reason to the unversioned decision log" \
   || bad "no refusal defers its reason to the unversioned decision log ($cit30 line(s) cite it)"
 
-# The positive half. A refusal stated without its reason is the one that gets re-argued a year later, so
-# both public files have to carry it — asked of each separately, because one carrying it is not the two.
+# The positive half. A refusal stated without its reason is the one that gets re-argued a year later.
+# Asked of the front door alone: the manual states direction and routes its reasons elsewhere, so a
+# refusal argued at length there would be the copy that ages, which is the thing that manual refuses.
 why30r=""
-for f in "$MAN30" README.md; do
+for f in README.md; do
   if [ -f "$f" ]; then
     grep -qF "dilute" "$f" || why30r="$why30r [$f]"
   else
