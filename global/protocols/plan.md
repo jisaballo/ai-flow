@@ -103,7 +103,7 @@ Each step declares a `Skills:` line listing the workspace skills whose domain it
 
 ## Conformance Tests (Post-Plan, Pre-Execute)
 
-**After the plan is approved and before Execute begins**, generate conformance test stubs from the Verifiable Criteria in understand.md.
+**After the plan is approved and before Execute begins** (see `protocols/lifecycle.md` > `## Autonomy Levels` for which autonomy levels this gate applies to and what Conform's close discloses to the operator), generate conformance test stubs from the Verifiable Criteria in understand.md.
 
 ### How it works
 
