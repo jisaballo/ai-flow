@@ -296,9 +296,12 @@ END {
 }'
 
 FAILING=0
-verdict() {  # $1 = file as displayed; $2 = rule; $3 = the cause, empty when the rule holds; $4 = its threshold
-  local rel="$1" rule="$2" cause="${3:-}" limit="${4:-}" mark="ok" line
-  if [ -n "$cause" ]; then mark="$FAIL_MARK"; FAILING=$((FAILING + 1)); fi
+verdict() {  # $1 = file as displayed; $2 = rule; $3 = the cause, empty when the rule holds; $4 = its
+             # threshold; $5 = "na" when the rule was not evaluated -- $3 then carries why, not a failure
+  local rel="$1" rule="$2" cause="${3:-}" limit="${4:-}" na="${5:-}" mark="ok" line
+  if [ "$na" = na ]; then mark="n/a"
+  elif [ -n "$cause" ]; then mark="$FAIL_MARK"; FAILING=$((FAILING + 1))
+  fi
   line="$(printf '%-40s %-17s %-4s' "$rel" "$rule" "$mark")"
   if [ "$REPORT" = 1 ] && [ -n "$limit" ]; then line="$line  ($limit)"; fi
   if [ -n "$cause" ]; then line="$line  $cause"; fi
@@ -306,9 +309,19 @@ verdict() {  # $1 = file as displayed; $2 = rule; $3 = the cause, empty when the
 }
 
 measure() {
-  local f="$1" rel="$2" base="${f##*/}"
-  local facts h1=0 nano=0 l rest i n cause k
+  local f="$1" rel="$2"
+  local facts h1=0 nano=0 l rest i n cause k class
   local sec_words=() sec_title=() nano_len=() nano_title=()
+
+  # The class a file belongs to is resolved HERE, once, from its normalised path -- never from its
+  # basename, which a file in the steering directory can borrow from either fixed file. Every
+  # class-dependent rule below reads this result and derives its own class nowhere else.
+  case "$rel" in
+    .ai-flow/product.md)          class=product ;;
+    .ai-flow/decisions-global.md) class=decisions ;;
+    .ai-flow/steering/*)          class=steering ;;
+    *)                             class=other ;;
+  esac
 
   facts="$(awk "$AWK_READ" "$f")" || { say "unreadable: $rel"; FAILING=$((FAILING + 1)); return; }
   while IFS= read -r l; do
@@ -341,26 +354,36 @@ measure() {
       done
     fi
     verdict "$rel" nano-order "$cause"
+  else
+    verdict "$rel" nano-order "there is no index to measure" "" na
   fi
 
   # A nano line is a LOGICAL bullet, its indented continuations included. Measuring physical lines makes
   # the ceiling a function of the file's wrap width, so the same index passes at 100 columns and fails
   # at 80.
-  cause=""
-  i=0
-  while [ "$i" -lt "${#nano_len[@]}" ]; do
-    if [ "${nano_len[$i]}" -gt "$NANO_LINE_MAX" ]; then
-      cause="index line $((i + 1)) runs ${nano_len[$i]} characters"
-      break
-    fi
-    i=$((i + 1))
-  done
-  verdict "$rel" nano-line-length "$cause" "limit $NANO_LINE_MAX characters"
+  if [ "$nano" = 1 ]; then
+    cause=""
+    i=0
+    while [ "$i" -lt "${#nano_len[@]}" ]; do
+      if [ "${nano_len[$i]}" -gt "$NANO_LINE_MAX" ]; then
+        cause="index line $((i + 1)) runs ${nano_len[$i]} characters"
+        break
+      fi
+      i=$((i + 1))
+    done
+    verdict "$rel" nano-line-length "$cause" "limit $NANO_LINE_MAX characters"
+  else
+    verdict "$rel" nano-line-length "there is no index to measure" "limit $NANO_LINE_MAX characters" na
+  fi
 
-  # The decision log is exempt from this rule ALONE, and the exemption is silence rather than a pass: a
-  # decision's alternatives are the content that keeps it from being re-argued, so there is no verdict
-  # to draw. Every other rule still answers for it.
-  if [ "$base" != "decisions-global.md" ]; then
+  # The decision log is exempt from this rule ALONE: a decision's alternatives are the content that keeps
+  # it from being re-argued, so there is no verdict to draw. Every other rule still answers for it. The
+  # exemption is `n/a`, carrying that reason, rather than silence -- silence is the same lie a passing
+  # verdict would tell, told the other way: a reader could not tell the exemption from a rule the check
+  # forgot to ask.
+  if [ "$class" = decisions ]; then
+    verdict "$rel" section-length "this file is a record from end to end" "limit $SECTION_WORD_MAX words" na
+  else
     cause=""
     i=0
     while [ "$i" -lt "${#sec_words[@]}" ]; do
@@ -377,18 +400,19 @@ measure() {
   # that is a RECORD of a growing enumeration is not a topic: its number only ever rises, and no repair
   # this mechanism offers can lower it, so a ceiling over records is a ceiling nothing can ever meet.
   # `Rules: <key> — <topic>` is where `product.md` grows by design, so those sections do not count while
-  # its fixed part does. The exemption is keyed on the CLASS and not on the title prefix: the marker rule
-  # offers that title form to any class needing groups, so keyed on the title alone a steering file of
-  # twenty `Rules:` sections would be uncountable -- a drawer, invisible to the one rule whose job is
-  # catching a file that has become one. The decision log is records end to end — one `##` per decision, with no retirement
-  # route anywhere in the mechanism — so the rule does not apply to it at all, and the exemption is
-  # SILENCE rather than a passing verdict, on the same terms as the section length above: an `ok` would
-  # claim a rule was applied and held when it was never asked.
-  if [ "$base" != "decisions-global.md" ]; then
+  # its fixed part does. The exemption is keyed on the CLASS resolved above and not on the title prefix:
+  # the marker rule offers that title form to any class needing groups, so keyed on the title alone a
+  # steering file of twenty `Rules:` sections would be uncountable -- a drawer, invisible to the one rule
+  # whose job is catching a file that has become one. The decision log is records end to end — one `##`
+  # per decision, with no retirement route anywhere in the mechanism — so the rule does not apply to it
+  # at all, and the exemption is `n/a`, on the same terms as the section length above.
+  if [ "$class" = decisions ]; then
+    verdict "$rel" section-count "this file is a record from end to end" "limit $SECTION_MAX sections" na
+  else
     n=0
     i=0
     while [ "$i" -lt "${#sec_title[@]}" ]; do
-      case "$base:${sec_title[$i]}" in product.md:Rules:*) ;; *) n=$((n + 1)) ;; esac
+      case "$class:${sec_title[$i]}" in product:Rules:*) ;; *) n=$((n + 1)) ;; esac
       i=$((i + 1))
     done
     cause=""
@@ -397,26 +421,27 @@ measure() {
   fi
 
   # A title that needs an application's name belongs in that application's file. The rule is the domain
-  # layer's: an application's own file may name itself, and neither fixed file is a domain file — for
-  # them the rule holds and says so.
-  cause=""
-  case "$rel" in
-    .ai-flow/steering/*)
-      for k in $APP_KEYS; do
-        owns_this_file "$k" "$f" && continue
-        i=0
-        while [ "$i" -lt "${#sec_title[@]}" ]; do
-          if title_names_app "${sec_title[$i]}" "$k"; then
-            cause="the title '${sec_title[$i]}' names the application '$k'"
-            break
-          fi
-          i=$((i + 1))
-        done
-        [ -n "$cause" ] && break
+  # layer's and polices steering files alone -- an application's own file may name itself there, and it
+  # holds and says so. Neither fixed file is a domain file, so the rule was never asked of them: `n/a`,
+  # not the vacuous `ok` a rule that never ran must not print.
+  if [ "$class" = steering ]; then
+    cause=""
+    for k in $APP_KEYS; do
+      owns_this_file "$k" "$f" && continue
+      i=0
+      while [ "$i" -lt "${#sec_title[@]}" ]; do
+        if title_names_app "${sec_title[$i]}" "$k"; then
+          cause="the title '${sec_title[$i]}' names the application '$k'"
+          break
+        fi
+        i=$((i + 1))
       done
-      ;;
-  esac
-  verdict "$rel" app-key "$cause"
+      [ -n "$cause" ] && break
+    done
+    verdict "$rel" app-key "$cause"
+  else
+    verdict "$rel" app-key "the domain-layer rule only polices steering files" "" na
+  fi
 
   # One `#` is the title; every section boundary below it is `##`, which is what lets one command read
   # every class. A `###` inside a section is content and is not a boundary.

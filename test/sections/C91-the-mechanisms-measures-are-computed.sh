@@ -121,6 +121,12 @@ DEC
   printf 'steering: {}\n' > "$1/.ai-flow/project.yml"
 }
 
+# na91 reads the mark and the cause for one file/rule pair out of the check's output, field-split rather
+# than column-matched -- the report's padding is a presentation detail no leg should depend on.
+na91() {  # $1 = rel path, $2 = rule; prints "<mark>|<cause>" on stdout
+  awk -v f="$1" -v r="$2" '$1==f && $2==r { m=$3; $1=$2=$3=""; sub(/^ +/, ""); printf "%s|%s", m, $0; exit }' "$OUT91"
+}
+
 # --- A1: the check answers each of the seven rules in both directions -----------------------------
 a1_91=""
 if [ ! -r "$CHK91" ]; then
@@ -303,17 +309,28 @@ else
   # And the neighbour that is in shape is not blamed for it.
   grep -F 'payments.md' "$OUT91" | grep -q -F "$FAILMK91" \
     && a3_91="$a3_91 [a file in shape is reported as failing beside a file that is not]"
+  # An absent index means nano-order and nano-line-length were never asked, not that they held: both
+  # answer n/a with a cause, never the silent line or the vacuous pass the mechanism used to print.
+  mark91="$(na91 .ai-flow/steering/broken.md nano-order)"
+  [ "${mark91%%|*}" = "n/a" ] \
+    || a3_91="$a3_91 [broken.md's nano-order reads '${mark91%%|*}', not n/a]"
+  [ -n "${mark91#*|}" ] || a3_91="$a3_91 [broken.md's nano-order n/a carries no cause]"
+  mark91="$(na91 .ai-flow/steering/broken.md nano-line-length)"
+  [ "${mark91%%|*}" = "n/a" ] \
+    || a3_91="$a3_91 [broken.md's nano-line-length reads '${mark91%%|*}', not n/a]"
+  [ -n "${mark91#*|}" ] || a3_91="$a3_91 [broken.md's nano-line-length n/a carries no cause]"
 fi
 [ -z "$a3_91" ] && ok "A3 a failure exits non-zero and names the file and the rule" \
                 || bad "A3 a failure exits non-zero and names the file and the rule:$a3_91"
 
-# --- A4: the decision log is measured on five rules and not seven ---------------------------------
-# REVERSED AT THE VERIFY GATE (D11, recorded in understand.md > Implementation Decisions). This row was
-# frozen asserting the log IS measured on `section-count`; that rule was found unmeetable by construction
-# for this class -- every `##` here is one decision, the class has no retirement route, so the ceiling can
-# only ever be crossed -- and the count now bounds TOPIC sections only. The log is therefore exempt from
-# two rules, and both exemptions are the same shape: SILENCE, not a passing verdict, because a verdict of
-# `ok` would claim a rule was applied and held when it was never asked.
+# --- A4: the decision log answers n/a on two rules, and never silence or a pass -------------------
+# REVERSED AT THE VERIFY GATE (D11, recorded in understand.md > Implementation Decisions) and
+# RE-POINTED: the log is unmeetable by construction on `section-length` and `section-count` -- every `##`
+# here is one decision, the class has no retirement route, so the ceiling can only ever be crossed. Both
+# exemptions were frozen as SILENCE; a verdict of `ok` would have claimed the rule was applied and held
+# when it was never asked, but silence is the same lie told the other way -- a reader cannot tell the
+# exemption from a rule the check forgot to ask. Both now get a verdict of their own: `n/a`, carrying
+# the reason on the same line.
 #
 # The exemptions need their opposing legs or they exempt everything: a steering file carrying the SAME
 # oversized body must still fail `section-length`, a file of the same section count must still fail
@@ -331,10 +348,14 @@ else
   printf '%s\n' "$long91" >> "$A4BOX91/.ai-flow/decisions-global.md"
   rc91="$(run91 "$A4BOX91" .ai-flow/decisions-global.md)"
   [ "$rc91" = 0 ] || a4_91="$a4_91 [the decision log is held to the section length (exit ${rc91})]"
-  grep -q -- 'section-length' "$OUT91" \
-    && a4_91="$a4_91 [the decision log is given a section-length verdict it is exempt from]"
-  grep -q -- 'section-count' "$OUT91" \
-    && a4_91="$a4_91 [the decision log is given a section-count verdict it is exempt from]"
+  mark91="$(na91 .ai-flow/decisions-global.md section-length)"
+  [ "${mark91%%|*}" = "n/a" ] \
+    || a4_91="$a4_91 [the decision log's section-length reads '${mark91%%|*}', not n/a]"
+  [ -n "${mark91#*|}" ] || a4_91="$a4_91 [the decision log's section-length n/a carries no cause]"
+  mark91="$(na91 .ai-flow/decisions-global.md section-count)"
+  [ "${mark91%%|*}" = "n/a" ] \
+    || a4_91="$a4_91 [the decision log's section-count reads '${mark91%%|*}', not n/a]"
+  [ -n "${mark91#*|}" ] || a4_91="$a4_91 [the decision log's section-count n/a carries no cause]"
   for r91 in nano-present nano-order nano-line-length app-key marker; do
     grep -q -- "$r91" "$OUT91" || a4_91="$a4_91 [the decision log is not measured on ${r91}]"
   done
@@ -357,8 +378,9 @@ else
   rc91="$(run91 "$A4C91" .ai-flow/decisions-global.md)"
   [ "$rc91" = 0 ] \
     || a4_91="$a4_91 [a decision log of $((SECCNT91 + 1)) decisions is out of shape (exit ${rc91}): $(grep -F "$FAILMK91" "$OUT91" | head -2 | tr '\n' ' ')]"
-  grep -q -- 'section-count' "$OUT91" \
-    && a4_91="$a4_91 [the growing decision log is given a section-count verdict]"
+  mark91="$(na91 .ai-flow/decisions-global.md section-count)"
+  [ "${mark91%%|*}" = "n/a" ] \
+    || a4_91="$a4_91 [the growing decision log's section-count reads '${mark91%%|*}', not n/a]"
   good91 "$A4BOX91/.ai-flow/steering/payments.md"
   printf '%s\n' "$long91" >> "$A4BOX91/.ai-flow/steering/payments.md"
   rc91="$(run91 "$A4BOX91" .ai-flow/steering/payments.md)"
@@ -372,8 +394,8 @@ else
   rc91="$(run91 "$A4BOX91" .ai-flow/decisions-global.md)"
   [ "$rc91" != 0 ] || a4_91="$a4_91 [the decision log is exempt from the nano line length too]"
 fi
-[ -z "$a4_91" ] && ok "A4 the decision log is measured on five rules and not seven" \
-                || bad "A4 the decision log is measured on five rules and not seven:$a4_91"
+[ -z "$a4_91" ] && ok "A4 the decision log answers n/a on two rules, and never silence or a pass" \
+                || bad "A4 the decision log answers n/a on two rules, and never silence or a pass:$a4_91"
 
 # --- A12: the count bounds topics, and a record section is not a topic ----------------------------
 # D11. `section-count` exists to catch a file that has become a drawer -- too many TOPICS. A class whose
@@ -1188,6 +1210,12 @@ else
     || a21_91="$a21_91 [product.md fails with an app key declared, though it lies outside .ai-flow/steering/ (exit ${rc91})]"
   grep -F "$FAILMK91" "$OUT91" | grep -q -- 'app-key' \
     && a21_91="$a21_91 [product.md draws an app-key FAIL though the two-fixed-files guard should skip it entirely]"
+  # Skipped, not held: the rule was never asked of a fixed file, so it answers n/a with a cause rather
+  # than the vacuous ok that made this boundary indistinguishable from the rule actually holding.
+  mark91="$(na91 .ai-flow/product.md app-key)"
+  [ "${mark91%%|*}" = "n/a" ] \
+    || a21_91="$a21_91 [product.md's app-key reads '${mark91%%|*}', not n/a]"
+  [ -n "${mark91#*|}" ] || a21_91="$a21_91 [product.md's app-key n/a carries no cause]"
 
   # (e) the corollary's own corollary: two keys aliased to the SAME file are both owners of it --
   # ownership is per key that resolves to the file, not a single-alias special case leg (c) alone tried.
@@ -1214,5 +1242,134 @@ else
 fi
 [ -z "$a21_91" ] && ok "A21 the app-key exemption is per key and its value, not the whole file or its name" \
                  || bad "A21 the app-key exemption is per key and its value, not the whole file or its name:$a21_91"
+
+# --- A22: a file's class comes from where it lives, not from its basename -------------------------
+# The decision log's exemptions are keyed on its basename (`decisions-global.md`) while `app-key`
+# is keyed on the STEERING path prefix -- two different questions asked of the same file, and they part
+# where a file borrows the log's basename but lives in the steering directory. That file is a steering
+# file: it must answer `section-length` and `section-count` like any other, not inherit the log's silence
+# turned n/a.
+a22_91=""
+if [ ! -r "$CHK91" ]; then
+  a22_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
+else
+  A22BOX91="$BOX91/a22"; mk91 "$A22BOX91"
+  F22A91="$A22BOX91/.ai-flow/steering/decisions-global.md"
+  long91="$(awk -v n=$((SECMAX91 + 20)) 'BEGIN{while(++i<=n)printf "word "}')"
+  i91=1; nano91=""; body91=""
+  while [ "$i91" -le $((SECCNT91 + 1)) ]; do
+    nano91="$nano91- **Decision $i91** — decided.
+"
+    body91="$body91
+## Decision $i91
+
+$long91
+"
+    i91=$((i91 + 1))
+  done
+  printf '# Steering Decisions\n\n## Nano\n\n%s%s' "$nano91" "$body91" > "$F22A91"
+  rc91="$(run91 "$A22BOX91" .ai-flow/steering/decisions-global.md)"
+  [ "$rc91" != 0 ] \
+    || a22_91="$a22_91 [a steering-directory file named decisions-global.md exits 0 despite $((SECCNT91 + 1)) oversized sections -- classed by basename, not path]"
+  grep -F "$FAILMK91" "$OUT91" | grep -q -- 'section-length' \
+    || a22_91="$a22_91 [the steering-directory decisions-global.md does not fail section-length]"
+  grep -F "$FAILMK91" "$OUT91" | grep -q -- 'section-count' \
+    || a22_91="$a22_91 [the steering-directory decisions-global.md does not fail section-count]"
+fi
+[ -z "$a22_91" ] && ok "A22 a file's class comes from where it lives, not from its basename" \
+                 || bad "A22 a file's class comes from where it lives, not from its basename:$a22_91"
+
+# --- A23: the growing-part exemption is the product class's, not the name 'product.md' -------------
+# `## The marker` offers `Rules: <key> — <topic>` as the general way any class expresses groups,
+# but only the PRODUCT class's `Rules:` sections are exempt from `section-count` -- exactly the class
+# A22 tests the other exemption against. Keyed on the basename alone, a steering file that borrows the
+# name `product.md` inherits the exemption it was never meant to have; keyed on the class, it does not.
+# The opposing leg is the boundary that must not move: the SAME shape at the real product file's own
+# path must still pass, or the fix has only relocated the drawer rather than closed it.
+a23_91=""
+if [ ! -r "$CHK91" ]; then
+  a23_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
+else
+  A23BOX91="$BOX91/a23"; mk91 "$A23BOX91"
+  i91=1; nano91=""; body91=""
+  while [ "$i91" -le $((SECCNT91 + 1)) ]; do
+    nano91="$nano91- **Rules: drawer — group $i91** — a group of its own.
+"
+    body91="$body91
+## Rules: drawer — group $i91
+
+A group of its own.
+"
+    i91=$((i91 + 1))
+  done
+  F23A91="$A23BOX91/.ai-flow/steering/product.md"
+  printf '# Drawer\n\n## Nano\n\n%s%s' "$nano91" "$body91" > "$F23A91"
+  rc91="$(run91 "$A23BOX91" .ai-flow/steering/product.md)"
+  [ "$rc91" != 0 ] \
+    || a23_91="$a23_91 [a steering-directory file named product.md with $((SECCNT91 + 1)) 'Rules:' sections exits 0 -- the exemption follows the name, not the class]"
+  grep -F "$FAILMK91" "$OUT91" | grep -q -- 'section-count' \
+    || a23_91="$a23_91 [the steering-directory product.md does not fail section-count]"
+
+  # The boundary: the identical shape at the real product file's own path stays exempt and clean.
+  F23B91="$A23BOX91/.ai-flow/product.md"
+  printf '# Drawer\n\n## Nano\n\n%s%s' "$nano91" "$body91" > "$F23B91"
+  rc91="$(run91 "$A23BOX91" .ai-flow/product.md)"
+  [ "$rc91" = 0 ] \
+    || a23_91="$a23_91 [the real product file with the same $((SECCNT91 + 1)) 'Rules:' sections is out of shape (exit ${rc91}): $(grep -F "$FAILMK91" "$OUT91" | head -2 | tr '\n' ' ')]"
+fi
+[ -z "$a23_91" ] && ok "A23 the growing-part exemption is the product class's, not the name 'product.md'" \
+                 || bad "A23 the growing-part exemption is the product class's, not the name 'product.md':$a23_91"
+
+# --- A24: the mandate's two prose homes state the n/a remedy and keep its reason, not silence ------
+# VC #6 and VC #7 read the '## Writing' section of each home -- the same heading A9 already extracts a
+# region from, for a different clause of it. The retired wording paired "expressed" with "silence" to
+# declare the exemption; the new wording never uses "expressed" at all, so that co-occurrence is the
+# retired shape and its absence is the fix.
+a24_91=""
+W91P="$(sec90 "$CTXP91" '^## Writing')"
+W91D="$(sec90 "$CTXD91" '^## Writing')"
+if [ -z "$W91P" ] || [ -z "$W91D" ]; then
+  a24_91=" [the Writing section did not extract from one of the two homes -- no verdict drawn from an empty region]"
+else
+  for pair91 in "the protocol~$W91P" "the definition~$W91D"; do
+    lbl91="${pair91%%~*}"; reg91="${pair91#*~}"
+    nearok90 "$(near90 "$reg91" 'n/a' 'passing verdict' 80)" \
+      || a24_91="$a24_91 [${lbl91} does not state the n/a remedy beside a passing verdict]"
+    printf '%s\n' "$reg91" | tr '\n' ' ' | grep -qF 'a rule was applied and held when it was never asked' \
+      || a24_91="$a24_91 [${lbl91} lost the mandate's stated reason]"
+    nearzero90 "$(near90 "$reg91" 'expressed' 'silence' 40)" \
+      || a24_91="$a24_91 [${lbl91} still mandates silence, expressed rather than n/a]"
+  done
+fi
+[ -z "$a24_91" ] && ok "A24 the mandate's two prose homes state the n/a remedy and keep its reason, not silence" \
+                 || bad "A24 the mandate's two prose homes state the n/a remedy and keep its reason, not silence:$a24_91"
+
+# --- A25: a file in none of the three fixed classes is still measured, app-key alone answering n/a -
+# The argument form accepts any readable file under the data directory (A6), and such a file is neither
+# product, decisions nor steering -- the residual 'other' class. section-length and section-count hold
+# for it exactly as before (no retirement route, no growing part); only app-key, steering's alone,
+# answers n/a. A class dispatch collapsed onto three arms instead of four would either exempt this file
+# from the two counted rules or still ask app-key of it.
+a25_91=""
+if [ ! -r "$CHK91" ]; then
+  a25_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
+else
+  A25BOX91="$BOX91/a25"; mk91 "$A25BOX91"
+  good91 "$A25BOX91/.ai-flow/notes.md"
+  rc91="$(run91 "$A25BOX91" .ai-flow/notes.md)"
+  [ "$rc91" = 0 ] || a25_91="$a25_91 [a file outside the three classes, in shape, does not exit 0 (exit ${rc91})]"
+  mark91="$(na91 .ai-flow/notes.md section-length)"
+  [ "${mark91%%|*}" = "ok" ] \
+    || a25_91="$a25_91 [notes.md's section-length reads '${mark91%%|*}', not the ordinary ok]"
+  mark91="$(na91 .ai-flow/notes.md section-count)"
+  [ "${mark91%%|*}" = "ok" ] \
+    || a25_91="$a25_91 [notes.md's section-count reads '${mark91%%|*}', not the ordinary ok]"
+  mark91="$(na91 .ai-flow/notes.md app-key)"
+  [ "${mark91%%|*}" = "n/a" ] \
+    || a25_91="$a25_91 [notes.md's app-key reads '${mark91%%|*}', not n/a]"
+  [ -n "${mark91#*|}" ] || a25_91="$a25_91 [notes.md's app-key n/a carries no cause]"
+fi
+[ -z "$a25_91" ] && ok "A25 a file in none of the three fixed classes is still measured, app-key alone answering n/a" \
+                 || bad "A25 a file in none of the three fixed classes is still measured, app-key alone answering n/a:$a25_91"
 
 rm -rf "$BOX91"

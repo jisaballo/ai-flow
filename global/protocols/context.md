@@ -146,9 +146,11 @@ ceiling over records is a ceiling nothing can meet, and a check nobody can satis
 teaches everyone to route around it. So the count skips the record sections and bounds the rest. Two
 classes have them: `product.md`, whose `Rules:` sections are its growing part while its fixed part is
 counted, and `decisions-global.md`, which is records end to end and to which the rule therefore does not
-apply at all. That exemption is expressed as **silence** and not as a passing verdict, on the same terms
-as the section length above — a verdict of `ok` would claim a rule was applied and held when it was never
-asked.
+apply at all. That exemption, and the section length's above it, answer `n/a` rather than a passing
+verdict — a verdict of `ok` would claim a rule was applied and held when it was never asked, and silence
+would hide the exemption from a reader as surely as a false `ok` would. Both classes are resolved from
+where the file lives, never from its basename: a file that borrows the reserved name from inside the
+steering directory is a steering file and keeps neither exemption.
 
 ## Keeping
 
