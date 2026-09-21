@@ -307,13 +307,14 @@ fi
 [ -z "$a3_91" ] && ok "A3 a failure exits non-zero and names the file and the rule" \
                 || bad "A3 a failure exits non-zero and names the file and the rule:$a3_91"
 
-# --- A4: the decision log is measured on five rules and not seven ---------------------------------
-# REVERSED AT THE VERIFY GATE (D11, recorded in understand.md > Implementation Decisions). This row was
-# frozen asserting the log IS measured on `section-count`; that rule was found unmeetable by construction
-# for this class -- every `##` here is one decision, the class has no retirement route, so the ceiling can
-# only ever be crossed -- and the count now bounds TOPIC sections only. The log is therefore exempt from
-# two rules, and both exemptions are the same shape: SILENCE, not a passing verdict, because a verdict of
-# `ok` would claim a rule was applied and held when it was never asked.
+# --- A4: the decision log answers n/a on two rules, and never silence or a pass -------------------
+# REVERSED AT THE VERIFY GATE (D11, recorded in understand.md > Implementation Decisions) and RE-POINTED
+# BY T-154: the log is unmeetable by construction on `section-length` and `section-count` -- every `##`
+# here is one decision, the class has no retirement route, so the ceiling can only ever be crossed. Both
+# exemptions were frozen as SILENCE; a verdict of `ok` would have claimed the rule was applied and held
+# when it was never asked, but silence is the same lie told the other way -- a reader cannot tell the
+# exemption from a rule the check forgot to ask. T-154 gives both a verdict of their own: `n/a`, carrying
+# the reason on the same line.
 #
 # The exemptions need their opposing legs or they exempt everything: a steering file carrying the SAME
 # oversized body must still fail `section-length`, a file of the same section count must still fail
@@ -322,6 +323,12 @@ fi
 #
 # The rule list below is the five that remain, `app-key` included. It was four when this row asserted six,
 # which is the shape the coverage axis flagged: a leg whose own title counts higher than its assertions.
+#
+# n/a91 reads the mark and the cause for one file/rule pair out of the check's output, field-split rather
+# than column-matched -- the report's padding is a presentation detail no leg should depend on.
+n/a91() {  # $1 = rel path, $2 = rule; prints "<mark>|<cause>" on stdout
+  awk -v f="$1" -v r="$2" '$1==f && $2==r { m=$3; $1=$2=$3=""; sub(/^ +/, ""); printf "%s|%s", m, $0; exit }' "$OUT91"
+}
 a4_91=""
 if [ ! -r "$CHK91" ]; then
   a4_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
@@ -331,10 +338,14 @@ else
   printf '%s\n' "$long91" >> "$A4BOX91/.ai-flow/decisions-global.md"
   rc91="$(run91 "$A4BOX91" .ai-flow/decisions-global.md)"
   [ "$rc91" = 0 ] || a4_91="$a4_91 [the decision log is held to the section length (exit ${rc91})]"
-  grep -q -- 'section-length' "$OUT91" \
-    && a4_91="$a4_91 [the decision log is given a section-length verdict it is exempt from]"
-  grep -q -- 'section-count' "$OUT91" \
-    && a4_91="$a4_91 [the decision log is given a section-count verdict it is exempt from]"
+  na91="$(n/a91 .ai-flow/decisions-global.md section-length)"
+  [ "${na91%%|*}" = "n/a" ] \
+    || a4_91="$a4_91 [the decision log's section-length reads '${na91%%|*}', not n/a]"
+  [ -n "${na91#*|}" ] || a4_91="$a4_91 [the decision log's section-length n/a carries no cause]"
+  na91="$(n/a91 .ai-flow/decisions-global.md section-count)"
+  [ "${na91%%|*}" = "n/a" ] \
+    || a4_91="$a4_91 [the decision log's section-count reads '${na91%%|*}', not n/a]"
+  [ -n "${na91#*|}" ] || a4_91="$a4_91 [the decision log's section-count n/a carries no cause]"
   for r91 in nano-present nano-order nano-line-length app-key marker; do
     grep -q -- "$r91" "$OUT91" || a4_91="$a4_91 [the decision log is not measured on ${r91}]"
   done
@@ -357,8 +368,9 @@ else
   rc91="$(run91 "$A4C91" .ai-flow/decisions-global.md)"
   [ "$rc91" = 0 ] \
     || a4_91="$a4_91 [a decision log of $((SECCNT91 + 1)) decisions is out of shape (exit ${rc91}): $(grep -F "$FAILMK91" "$OUT91" | head -2 | tr '\n' ' ')]"
-  grep -q -- 'section-count' "$OUT91" \
-    && a4_91="$a4_91 [the growing decision log is given a section-count verdict]"
+  na91="$(n/a91 .ai-flow/decisions-global.md section-count)"
+  [ "${na91%%|*}" = "n/a" ] \
+    || a4_91="$a4_91 [the growing decision log's section-count reads '${na91%%|*}', not n/a]"
   good91 "$A4BOX91/.ai-flow/steering/payments.md"
   printf '%s\n' "$long91" >> "$A4BOX91/.ai-flow/steering/payments.md"
   rc91="$(run91 "$A4BOX91" .ai-flow/steering/payments.md)"
@@ -372,8 +384,8 @@ else
   rc91="$(run91 "$A4BOX91" .ai-flow/decisions-global.md)"
   [ "$rc91" != 0 ] || a4_91="$a4_91 [the decision log is exempt from the nano line length too]"
 fi
-[ -z "$a4_91" ] && ok "A4 the decision log is measured on five rules and not seven" \
-                || bad "A4 the decision log is measured on five rules and not seven:$a4_91"
+[ -z "$a4_91" ] && ok "A4 the decision log answers n/a on two rules, and never silence or a pass" \
+                || bad "A4 the decision log answers n/a on two rules, and never silence or a pass:$a4_91"
 
 # --- A12: the count bounds topics, and a record section is not a topic ----------------------------
 # D11. `section-count` exists to catch a file that has become a drawer -- too many TOPICS. A class whose
@@ -1214,5 +1226,82 @@ else
 fi
 [ -z "$a21_91" ] && ok "A21 the app-key exemption is per key and its value, not the whole file or its name" \
                  || bad "A21 the app-key exemption is per key and its value, not the whole file or its name:$a21_91"
+
+# --- A22: a file's class comes from where it lives, not from its basename -------------------------
+# T-154. The decision log's exemptions are keyed on its basename (`decisions-global.md`) while `app-key`
+# is keyed on the STEERING path prefix -- two different questions asked of the same file, and they part
+# where a file borrows the log's basename but lives in the steering directory. That file is a steering
+# file: it must answer `section-length` and `section-count` like any other, not inherit the log's silence
+# turned n/a.
+a22_91=""
+if [ ! -r "$CHK91" ]; then
+  a22_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
+else
+  A22BOX91="$BOX91/a22"; mk91 "$A22BOX91"
+  F22A91="$A22BOX91/.ai-flow/steering/decisions-global.md"
+  long91="$(awk -v n=$((SECMAX91 + 20)) 'BEGIN{while(++i<=n)printf "word "}')"
+  i91=1; nano91=""; body91=""
+  while [ "$i91" -le $((SECCNT91 + 1)) ]; do
+    nano91="$nano91- **Decision $i91** — decided.
+"
+    body91="$body91
+## Decision $i91
+
+$long91
+"
+    i91=$((i91 + 1))
+  done
+  printf '# Steering Decisions\n\n## Nano\n\n%s%s' "$nano91" "$body91" > "$F22A91"
+  rc91="$(run91 "$A22BOX91" .ai-flow/steering/decisions-global.md)"
+  [ "$rc91" != 0 ] \
+    || a22_91="$a22_91 [a steering-directory file named decisions-global.md exits 0 despite $((SECCNT91 + 1)) oversized sections -- classed by basename, not path]"
+  grep -F "$FAILMK91" "$OUT91" | grep -q -- 'section-length' \
+    || a22_91="$a22_91 [the steering-directory decisions-global.md does not fail section-length]"
+  grep -F "$FAILMK91" "$OUT91" | grep -q -- 'section-count' \
+    || a22_91="$a22_91 [the steering-directory decisions-global.md does not fail section-count]"
+fi
+[ -z "$a22_91" ] && ok "A22 a file's class comes from where it lives, not from its basename" \
+                 || bad "A22 a file's class comes from where it lives, not from its basename:$a22_91"
+
+# --- A23: the growing-part exemption is the product class's, not the name 'product.md' -------------
+# T-154. `## The marker` offers `Rules: <key> — <topic>` as the general way any class expresses groups,
+# but only the PRODUCT class's `Rules:` sections are exempt from `section-count` -- exactly the class
+# A22 tests the other exemption against. Keyed on the basename alone, a steering file that borrows the
+# name `product.md` inherits the exemption it was never meant to have; keyed on the class, it does not.
+# The opposing leg is the boundary that must not move: the SAME shape at the real product file's own
+# path must still pass, or the fix has only relocated the drawer rather than closed it.
+a23_91=""
+if [ ! -r "$CHK91" ]; then
+  a23_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
+else
+  A23BOX91="$BOX91/a23"; mk91 "$A23BOX91"
+  i91=1; nano91=""; body91=""
+  while [ "$i91" -le $((SECCNT91 + 1)) ]; do
+    nano91="$nano91- **Rules: drawer — group $i91** — a group of its own.
+"
+    body91="$body91
+## Rules: drawer — group $i91
+
+A group of its own.
+"
+    i91=$((i91 + 1))
+  done
+  F23A91="$A23BOX91/.ai-flow/steering/product.md"
+  printf '# Drawer\n\n## Nano\n\n%s%s' "$nano91" "$body91" > "$F23A91"
+  rc91="$(run91 "$A23BOX91" .ai-flow/steering/product.md)"
+  [ "$rc91" != 0 ] \
+    || a23_91="$a23_91 [a steering-directory file named product.md with $((SECCNT91 + 1)) 'Rules:' sections exits 0 -- the exemption follows the name, not the class]"
+  grep -F "$FAILMK91" "$OUT91" | grep -q -- 'section-count' \
+    || a23_91="$a23_91 [the steering-directory product.md does not fail section-count]"
+
+  # The boundary: the identical shape at the real product file's own path stays exempt and clean.
+  F23B91="$A23BOX91/.ai-flow/product.md"
+  printf '# Drawer\n\n## Nano\n\n%s%s' "$nano91" "$body91" > "$F23B91"
+  rc91="$(run91 "$A23BOX91" .ai-flow/product.md)"
+  [ "$rc91" = 0 ] \
+    || a23_91="$a23_91 [the real product file with the same $((SECCNT91 + 1)) 'Rules:' sections is out of shape (exit ${rc91}): $(grep -F "$FAILMK91" "$OUT91" | head -2 | tr '\n' ' ')]"
+fi
+[ -z "$a23_91" ] && ok "A23 the growing-part exemption is the product class's, not the name 'product.md'" \
+                 || bad "A23 the growing-part exemption is the product class's, not the name 'product.md':$a23_91"
 
 rm -rf "$BOX91"
