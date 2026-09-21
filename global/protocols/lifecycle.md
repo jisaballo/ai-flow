@@ -219,7 +219,7 @@ The level is classified at activation; the user confirms or adjusts it.
 | **Supervised** | Schema changes, new domain or library, **>5 files**, **architectural decisions** | All gates + step-by-step approval during Execute; what that boundary obliges is stated with the loop it governs, in the Execute protocol |
 
 **The gates each level runs:**
-- **Guided**: understand → plan (user approves), plan → conform (automatic), conform → execute (user approves the plan), execute → spec sync (automatic), execute → verify (automatic), verify → archive (user approves)
+- **Guided**: understand → plan (user approves), plan → conform (user approves the plan), conform → execute (automatic — Conform's close reports the generated stubs to the operator as a disclosure, never a second gate), execute → spec sync (automatic), execute → verify (automatic), verify → archive (user approves)
 - **Auto**: plan inline → conform/execute (automatic), verify via tests → auto-commit → user validates post-commit
 - **Supervised**: same as Guided, plus the user approving each execute step individually
 
