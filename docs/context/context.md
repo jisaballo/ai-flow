@@ -131,8 +131,12 @@ an enumeration the mechanism itself grows — one per decision, one per group of
 use and by nothing the writer did wrong, and no repair stated here can lower it: a ceiling over records is
 a ceiling nothing can meet. So the count skips the record sections and bounds the rest. `product.md`'s
 `Rules:` sections are its growing part and are skipped while its fixed part is counted;
-`decisions-global.md` is records end to end, so the rule does not apply to it at all — expressed as
-silence, not as a passing verdict, on the same terms as the section length.
+`decisions-global.md` is records end to end, so the rule does not apply to it at all — and, on the same
+terms as the section length, it answers `n/a` rather than a passing verdict: a verdict of `ok` would claim
+a rule was applied and held when it was never asked, and silence would hide the exemption from a reader as
+surely as a false `ok` would. Both classes are resolved from where the file lives, never from its
+basename: a file that borrows the reserved name from inside the steering directory is a steering file and
+keeps neither exemption.
 
 ## Keeping
 
