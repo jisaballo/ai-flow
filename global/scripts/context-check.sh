@@ -153,19 +153,25 @@ map_lead()    { map_scan | awk -F'\t' '$1 == "lead"  { print $2; exit }'; }
 
 # The application keys, and only those: a `steering:` key whose area has a directory of its own under
 # `apps/` or `libs/`. In a single-application project the layer does not exist and the rule below has
-# nothing to fire on, which is correct rather than a gap.
-map_keys() { map_entries | cut -f1; }
+# nothing to fire on, which is correct rather than a gap. Read once into APP_MAP -- the same "one scan"
+# discipline the block above states -- so ownership below reads its own key's value out of this capture
+# rather than asking map_entries again per key per file.
+APP_MAP="$(map_entries)"
 APP_KEYS=""
-for k in $(map_keys); do
+while IFS="$(printf '\t')" read -r k v; do
+  [ -n "$k" ] || continue
   if [ -d "$ROOT/apps/$k" ] || [ -d "$ROOT/libs/$k" ]; then APP_KEYS="$APP_KEYS $k"; fi
-done
+done <<MAPENTRIES
+$APP_MAP
+MAPENTRIES
 
 # Ownership is by VALUE and never by name: key $1 owns file $2 when its map entry, resolved from the
 # checkout root, IS that file -- so an alias (two keys pointing at the same file) owns it together, and
-# a key merely sharing the file's basename with no map entry to match owns nothing.
+# a key merely sharing the file's basename with no map entry to match owns nothing. Reads $APP_MAP,
+# captured once above, rather than re-scanning the map per key per file.
 owns_this_file() {
   local k="$1" f="$2" v
-  v="$(map_entries | awk -F'\t' -v key="$k" '$1 == key { print $2; exit }')"
+  v="$(printf '%s\n' "$APP_MAP" | awk -F'\t' -v key="$k" '$1 == key { print $2; exit }')"
   [ -n "$v" ] || return 1
   [ "$(normalise "$ROOT/$v")" = "$f" ]
 }

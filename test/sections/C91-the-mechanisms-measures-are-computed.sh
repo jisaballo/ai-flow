@@ -1122,7 +1122,9 @@ fi
 # declared key used to skip the WHOLE file, so a title naming a DIFFERENT application still printed
 # `ok`. Leg (c) is the fix's own corollary: a key aliased to a differently-named file is a real owner
 # of it now, not a coincidence the old basename comparison happened to reject. Leg (d) is the boundary
-# that must not move -- the two fixed files never enter the `.ai-flow/steering/*` branch at all.
+# that must not move -- the two fixed files never enter the `.ai-flow/steering/*` branch at all. Leg
+# (e) is the corollary's own corollary: two keys aliased to the SAME file are both owners of it, not
+# just the one leg (c) happened to try.
 a21_91=""
 if [ ! -r "$CHK91" ]; then
   a21_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
@@ -1143,6 +1145,7 @@ else
     || a21_91="$a21_91 [an apps-backed key's own file naming a different application exits 0]"
   grep -F "$FAILMK91" "$OUT91" | grep -- 'app-key' | grep -q -F 'resident-mobile' \
     || a21_91="$a21_91 [the failing app-key line does not name the foreign application 'resident-mobile']"
+  a21_91="$a21_91$(only91 app-key)"
 
   # (b) libs-backed: the same shape, but the file's own key (auth) is backed only by libs/, never apps/.
   A21B91="$BOX91/a21-libs-own"; mk91 "$A21B91"
@@ -1159,6 +1162,7 @@ else
     || a21_91="$a21_91 [a libs-backed key's own file naming a different application exits 0]"
   grep -F "$FAILMK91" "$OUT91" | grep -- 'app-key' | grep -q -F 'gate-manager' \
     || a21_91="$a21_91 [the failing app-key line does not name the foreign application 'gate-manager']"
+  a21_91="$a21_91$(only91 app-key)"
 
   # (c) the corollary: an aliased key -- its map value resolves to a file whose basename is NOT its own
   # name -- owns that file, and naming itself in the title passes rather than failing on a coincidence.
@@ -1184,6 +1188,29 @@ else
     || a21_91="$a21_91 [product.md fails with an app key declared, though it lies outside .ai-flow/steering/ (exit ${rc91})]"
   grep -F "$FAILMK91" "$OUT91" | grep -q -- 'app-key' \
     && a21_91="$a21_91 [product.md draws an app-key FAIL though the two-fixed-files guard should skip it entirely]"
+
+  # (e) the corollary's own corollary: two keys aliased to the SAME file are both owners of it --
+  # ownership is per key that resolves to the file, not a single-alias special case leg (c) alone tried.
+  A21E91="$BOX91/a21-alias-both"; mk91 "$A21E91"
+  mkdir -p "$A21E91/apps/checkout" "$A21E91/apps/billing"
+  printf 'steering:\n  checkout: .ai-flow/steering/payments.md\n  billing: .ai-flow/steering/payments.md\n' \
+    > "$A21E91/.ai-flow/project.yml"
+  good91 "$A21E91/.ai-flow/steering/payments.md"
+  sed -e 's/^- \*\*Refund flow\*\*/- **Refund flow in checkout**/' \
+      -e 's/^## Refund flow$/## Refund flow in checkout/' \
+      "$A21E91/.ai-flow/steering/payments.md" > "$A21E91/.ai-flow/steering/payments.md.t" \
+    && mv "$A21E91/.ai-flow/steering/payments.md.t" "$A21E91/.ai-flow/steering/payments.md"
+  rc91="$(run91 "$A21E91" .ai-flow/steering/payments.md)"
+  [ "$rc91" = 0 ] \
+    || a21_91="$a21_91 [the first of two keys aliased to the same file fails naming itself (exit ${rc91})]"
+
+  sed -e 's/^- \*\*Refund flow in checkout\*\*/- **Refund flow in billing**/' \
+      -e 's/^## Refund flow in checkout$/## Refund flow in billing/' \
+      "$A21E91/.ai-flow/steering/payments.md" > "$A21E91/.ai-flow/steering/payments.md.t" \
+    && mv "$A21E91/.ai-flow/steering/payments.md.t" "$A21E91/.ai-flow/steering/payments.md"
+  rc91="$(run91 "$A21E91" .ai-flow/steering/payments.md)"
+  [ "$rc91" = 0 ] \
+    || a21_91="$a21_91 [the second of two keys aliased to the same file fails naming itself (exit ${rc91})]"
 fi
 [ -z "$a21_91" ] && ok "A21 the app-key exemption is per key and its value, not the whole file or its name" \
                  || bad "A21 the app-key exemption is per key and its value, not the whole file or its name:$a21_91"
