@@ -92,7 +92,7 @@ values.
    task's sheet at each step that read.
 
    ```
-   Context: steering/workspace.md nano (9); sections: Import boundaries | steering/payments.md nano (12); sections: Idempotency, Refund flow | product.md fixed + Rules: checkout (3) | decisions-global.md nano (7); sections: none
+   Context: .ai-flow/steering/workspace.md nano (9); sections: Import boundaries | .ai-flow/steering/payments.md nano (12); sections: Idempotency, Refund flow | product.md fixed + Rules: checkout (3) | decisions-global.md nano (7); sections: none
    ```
 5. **Verify receives the list.** The resolved files travel to the review workflow as one list. The
    architecture auditor reads the workspace file for boundaries and import rules; the security auditor
@@ -142,8 +142,11 @@ live, never what a delivery map points at, so a document borrowed from outside i
 ceilings its own home refuses and a steering file nobody declared is measured all the same. A verdict per
 file and per rule: nano titles equal to body headings, in order; a nano present; each nano line within its length;
 each section within its length; the file within its section count; no app key in a domain file's titles;
-the `##` marker only. `--report` prints every file's verdicts with the thresholds applied. It runs by hand,
-from CI, from any harness's hook, and as the `Verify` of the archive steps that write a context file.
+the `##` marker only. And one verdict per entry of the delivery map: every value resolves to a file that
+exists, against the base the mechanism's own `## Reading` step 1 states and against no other — a verdict
+about the declaration and never about the document, so an entry pointing outside `.ai-flow/` resolves,
+passes and is measured by nothing. `--report` prints every file's verdicts with the thresholds applied. It
+runs by hand, from CI, and as the `Verify` of the archive steps that write a context file.
 
 **The structure guard.** Changing how the mechanism works is not something another task does in passing.
 *Structure* is the protocol, the classes table, the check script, and in any context file the `##` lines,

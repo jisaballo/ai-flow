@@ -9,9 +9,9 @@ them, and the moment it is written.
 
 | Layer | Holds | Loaded for | File | Map key |
 |---|---|---|---|---|
-| Workspace | What every task in the repository must respect: import boundaries, conventions, stack, architecture | Every task | `steering/workspace.md` | `workspace`, reserved |
-| App | What only one app needs: its surface, its flows, its twists on shared topics | A task whose area is that app | `steering/<app>.md` | The app's name |
-| Domain | What every consumer of the domain needs | A task touching the domain | `steering/<domain>.md` | The domain's name |
+| Workspace | What every task in the repository must respect: import boundaries, conventions, stack, architecture | Every task | `.ai-flow/steering/workspace.md` | `workspace`, reserved |
+| App | What only one app needs: its surface, its flows, its twists on shared topics | A task whose area is that app | `.ai-flow/steering/<app>.md` | The app's name |
+| Domain | What every consumer of the domain needs | A task touching the domain | `.ai-flow/steering/<domain>.md` | The domain's name |
 
 `workspace` is a **reserved key** in the `steering:` map of `project.yml` — never an area, on the same
 terms as `default:` inside `review_profile:`. A project that declares no workspace entry is told so in one
@@ -31,7 +31,9 @@ profile says how a stack is judged, the steering says what an area knows.
 
 ## How the map names a file
 
-The file convention is `steering/<key>.md`, the key being the project's or the domain's own name. Several
+The file convention is `.ai-flow/steering/<key>.md` — **where the file sits**, not the form the map's
+value takes: a value is a path, and the base it is resolved from is stated in `protocols/context.md` ›
+`## Reading` step 1 and nowhere else. The key is the project's or the domain's own name. Several
 keys may point at one file and the file is read once. One key names one file: the set of files a task
 needs is derived from the keys it touches, not kept as a list by hand — a hand-kept list would load a
 domain into every task of an app whatever the task touched, and go stale each time the app adopted a

@@ -401,3 +401,64 @@ else
 fi
 [ -z "$a6_90" ] && ok "A6 the adopter surface routes, and the template declares its reserved key" \
                 || bad "A6 the adopter surface routes, and the template declares its reserved key:$a6_90"
+
+# --- A8: the base has one home, and every other mention cites it ----------------------------------
+# Generated in the Conform phase of the same task. RED at the freeze: no document states the base at all,
+# which is the defect -- a value whose base is left to the reader is a value each reader resolves
+# differently.
+#
+# Both directions, because each alone is satisfied by the wrong tree. "Exactly one home" alone is met by
+# a tree where the base is stated nowhere: zero is not one, so the count catches that -- but a count is
+# only a count, and the five routes below are what make the single home a home rather than an orphan.
+# Each route is read in its OWN region and asked for a citation, not for the base: a route that restates
+# the base is the second home this rule exists to prevent, and it would satisfy a leg that only counted
+# mentions.
+a8_90=""
+# The base, keyed on what it asserts and not on a wording: a resolution, and the root it resolves from,
+# inside one clause. `home_count` walks the tree for the heading; this is a claim about a sentence, so
+# the corpus is the protocol set plus the adopter surface, computed the same way A7's is.
+if ! git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+  a8_90=" [the tree is not a repository -- the corpus cannot be computed and no verdict is drawn]"
+else
+  BASEHOMES90=""
+  for f90 in $(git -C "$ROOT" ls-files 'global/*.md' 'docs/*.md' 'template/*' 'README.md' | grep -v '^test/'); do
+    [ -r "$f90" ] || continue
+    reg90="$(tr '\n' ' ' < "$f90" | tr -s ' ')"
+    nearok90 "$(near90 "$reg90" 'resolved from|resolves from' 'repository root|checkout root' 80)" \
+      && BASEHOMES90="$BASEHOMES90 $f90"
+  done
+  n8_90="$(printf '%s' "$BASEHOMES90" | wc -w | tr -d ' ')"
+  [ "$n8_90" = 1 ] \
+    || a8_90="$a8_90 [the base is stated in ${n8_90} documents, not one:${BASEHOMES90:- none}]"
+  printf '%s' "$BASEHOMES90" | grep -qF "$CTX90" \
+    || a8_90="$a8_90 [the one home is not the mechanism's own protocol]"
+fi
+# The five other mentions: each cites the home rather than restating the base. A citation is the home's
+# own path, which is what a reader follows; the ERE is the path with its dot escaped.
+CITE90='protocols/context\.md'
+for pair90 in \
+  "the steering class document:docs/context/steering.md" \
+  "discover's steering field:global/protocols/discover.md" \
+  "the discover skill's steering step:global/skills/discover/SKILL.md" \
+  "the verify skill's absence line:global/skills/verify/SKILL.md" \
+  "customization's steering block:docs/customization.md"; do
+  lbl90="${pair90%%:*}"; path90="${pair90#*:}"
+  if [ ! -r "$path90" ]; then
+    a8_90="$a8_90 [${lbl90}: ${path90} is unreadable]"
+    continue
+  fi
+  reg90="$(tr '\n' ' ' < "$path90" | tr -s ' ')"
+  # It mentions the convention...
+  nearok90 "$(near90 "$reg90" 'steering/' 'convention|where the file|already exists|of that name' 200)" \
+    || a8_90="$a8_90 [${lbl90} no longer carries the convention it must qualify]"
+  # ...and it routes for the base instead of stating one, BESIDE the convention rather than anywhere in
+  # the document. A whole-file grep was this leg's own defect: three of these five files already carried
+  # `protocols/context.md` at the base commit -- discover.md at its section 5, the verify skill at its
+  # context-resolution step, customization.md three times over -- so for three of the five routes the leg
+  # was green before the sentence it guards was written, and the citation this task added could be
+  # deleted with the row still passing.
+  nearok90 "$(near90 "$reg90" 'steering/' "$CITE90" 240)" \
+    || a8_90="$a8_90 [${lbl90} names the convention and cites no home for the base beside it]"
+done
+[ -z "$a8_90" ] && ok "A8 the base has one home, and every other mention cites it" \
+                || bad "A8 the base has one home, and every other mention cites it:$a8_90"

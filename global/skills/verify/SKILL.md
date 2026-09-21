@@ -87,7 +87,9 @@ Runs the Verify phase of the ai-flow workflow. Works in any project that has `.a
    one line says so and says what to declare:
 
    > No repository-wide rules file. The architecture auditor received none. Declare `workspace:` in the
-   > `steering:` map of `.ai-flow/project.yml` — the convention is a steering file of that name, and any
+   > `steering:` map of `.ai-flow/project.yml` — the convention is a steering file of that name, which
+   > conventionally sits at `.ai-flow/steering/workspace.md`; the value itself is a path, resolved from the
+   > base `protocols/context.md` › `## Reading` step 1 states and from no other. Any
    > path may be named, **the `CLAUDE.md` this project already keeps included**; outside `.ai-flow/` the
    > context check does not measure it.
 
