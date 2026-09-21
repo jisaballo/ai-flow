@@ -166,7 +166,7 @@ A topic of its own.
                         done
                         printf '# Payments\n\n## Nano\n\n%s%s' "$nano91" "$body91" > "$f91" ;;
       app-key)          mkdir -p "$d91/apps/checkout"
-                        printf 'steering:\n  checkout: .ai-flow/steering/payments.md\n  payments: .ai-flow/steering/payments.md\n' \
+                        printf 'steering:\n  checkout: .ai-flow/steering/checkout.md\n' \
                           > "$d91/.ai-flow/project.yml"
                         sed -e 's/^- \*\*Refund flow\*\*/- **Refund flow in checkout**/' \
                             -e 's/^## Refund flow$/## Refund flow in checkout/' "$f91" > "$f91.t" \
@@ -218,7 +218,7 @@ A topic of its own.
   A1K91="$BOX91/a1-app-meta"; mk91 "$A1K91"; F1K91="$A1K91/.ai-flow/steering/payments.md"
   good91 "$F1K91"
   mkdir -p "$A1K91/apps/c++"
-  printf 'steering:\n  payments: .ai-flow/steering/payments.md\n  c++: .ai-flow/steering/payments.md\n' > "$A1K91/.ai-flow/project.yml"
+  printf 'steering:\n  c++: .ai-flow/steering/c++.md\n' > "$A1K91/.ai-flow/project.yml"
   sed -e 's/^- \*\*Refund flow\*\*/- **Refund flow in c++**/' \
       -e 's/^## Refund flow$/## Refund flow in c++/' "$F1K91" > "$F1K91.t" && mv "$F1K91.t" "$F1K91"
   rc91="$(run91 "$A1K91" .ai-flow/steering/payments.md)"
@@ -1116,5 +1116,76 @@ else
 fi
 [ -z "$a20_91" ] && ok "A20 the map verdict is the survey's, and the argument form is still a request" \
                  || bad "A20 the map verdict is the survey's, and the argument form is still a request:$a20_91"
+
+# --- A21: the app-key exemption is per key and its value, not the whole file or its name ----------
+# Legs (a) and (b) are the bug's own two reproductions: a domain file whose OWN basename is a
+# declared key used to skip the WHOLE file, so a title naming a DIFFERENT application still printed
+# `ok`. Leg (c) is the fix's own corollary: a key aliased to a differently-named file is a real owner
+# of it now, not a coincidence the old basename comparison happened to reject. Leg (d) is the boundary
+# that must not move -- the two fixed files never enter the `.ai-flow/steering/*` branch at all.
+a21_91=""
+if [ ! -r "$CHK91" ]; then
+  a21_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
+else
+  # (a) apps-backed: the file's own basename (gate-manager) is a declared, apps-backed key, and its
+  # title names a DIFFERENT declared key (resident-mobile) -- the whole-file skip used to swallow this.
+  A21A91="$BOX91/a21-apps-own"; mk91 "$A21A91"
+  mkdir -p "$A21A91/apps/gate-manager" "$A21A91/apps/resident-mobile"
+  printf 'steering:\n  gate-manager: .ai-flow/steering/gate-manager.md\n  resident-mobile: .ai-flow/steering/resident-mobile.md\n' \
+    > "$A21A91/.ai-flow/project.yml"
+  good91 "$A21A91/.ai-flow/steering/gate-manager.md"
+  sed -e 's/^- \*\*Refund flow\*\*/- **Password Writes (resident-mobile)**/' \
+      -e 's/^## Refund flow$/## Password Writes (resident-mobile)/' \
+      "$A21A91/.ai-flow/steering/gate-manager.md" > "$A21A91/.ai-flow/steering/gate-manager.md.t" \
+    && mv "$A21A91/.ai-flow/steering/gate-manager.md.t" "$A21A91/.ai-flow/steering/gate-manager.md"
+  rc91="$(run91 "$A21A91" .ai-flow/steering/gate-manager.md)"
+  [ "$rc91" != 0 ] \
+    || a21_91="$a21_91 [an apps-backed key's own file naming a different application exits 0]"
+  grep -F "$FAILMK91" "$OUT91" | grep -- 'app-key' | grep -q -F 'resident-mobile' \
+    || a21_91="$a21_91 [the failing app-key line does not name the foreign application 'resident-mobile']"
+
+  # (b) libs-backed: the same shape, but the file's own key (auth) is backed only by libs/, never apps/.
+  A21B91="$BOX91/a21-libs-own"; mk91 "$A21B91"
+  mkdir -p "$A21B91/libs/auth" "$A21B91/apps/gate-manager"
+  printf 'steering:\n  auth: .ai-flow/steering/auth.md\n  gate-manager: .ai-flow/steering/gate-manager.md\n' \
+    > "$A21B91/.ai-flow/project.yml"
+  good91 "$A21B91/.ai-flow/steering/auth.md"
+  sed -e 's/^- \*\*Refund flow\*\*/- **Phone-Based Auth (gate-manager)**/' \
+      -e 's/^## Refund flow$/## Phone-Based Auth (gate-manager)/' \
+      "$A21B91/.ai-flow/steering/auth.md" > "$A21B91/.ai-flow/steering/auth.md.t" \
+    && mv "$A21B91/.ai-flow/steering/auth.md.t" "$A21B91/.ai-flow/steering/auth.md"
+  rc91="$(run91 "$A21B91" .ai-flow/steering/auth.md)"
+  [ "$rc91" != 0 ] \
+    || a21_91="$a21_91 [a libs-backed key's own file naming a different application exits 0]"
+  grep -F "$FAILMK91" "$OUT91" | grep -- 'app-key' | grep -q -F 'gate-manager' \
+    || a21_91="$a21_91 [the failing app-key line does not name the foreign application 'gate-manager']"
+
+  # (c) the corollary: an aliased key -- its map value resolves to a file whose basename is NOT its own
+  # name -- owns that file, and naming itself in the title passes rather than failing on a coincidence.
+  A21C91="$BOX91/a21-alias"; mk91 "$A21C91"
+  mkdir -p "$A21C91/apps/checkout"
+  printf 'steering:\n  checkout: .ai-flow/steering/payments.md\n' > "$A21C91/.ai-flow/project.yml"
+  good91 "$A21C91/.ai-flow/steering/payments.md"
+  sed -e 's/^- \*\*Refund flow\*\*/- **Refund flow in checkout**/' \
+      -e 's/^## Refund flow$/## Refund flow in checkout/' \
+      "$A21C91/.ai-flow/steering/payments.md" > "$A21C91/.ai-flow/steering/payments.md.t" \
+    && mv "$A21C91/.ai-flow/steering/payments.md.t" "$A21C91/.ai-flow/steering/payments.md"
+  rc91="$(run91 "$A21C91" .ai-flow/steering/payments.md)"
+  [ "$rc91" = 0 ] \
+    || a21_91="$a21_91 [an aliased key's own file naming itself fails (exit ${rc91}): $(grep -F "$FAILMK91" "$OUT91" | grep -- 'app-key' | head -1 | tr -s ' ')]"
+
+  # (d) the boundary: the two fixed files never enter the `.ai-flow/steering/*` branch, whatever the
+  # project's app keys are -- `mk91`'s own product.md already carries 'checkout' in a section title.
+  A21D91="$BOX91/a21-fixed-untouched"; mk91 "$A21D91"
+  mkdir -p "$A21D91/apps/checkout"
+  printf 'steering:\n  checkout: .ai-flow/steering/payments.md\n' > "$A21D91/.ai-flow/project.yml"
+  rc91="$(run91 "$A21D91" .ai-flow/product.md)"
+  [ "$rc91" = 0 ] \
+    || a21_91="$a21_91 [product.md fails with an app key declared, though it lies outside .ai-flow/steering/ (exit ${rc91})]"
+  grep -F "$FAILMK91" "$OUT91" | grep -q -- 'app-key' \
+    && a21_91="$a21_91 [product.md draws an app-key FAIL though the two-fixed-files guard should skip it entirely]"
+fi
+[ -z "$a21_91" ] && ok "A21 the app-key exemption is per key and its value, not the whole file or its name" \
+                 || bad "A21 the app-key exemption is per key and its value, not the whole file or its name:$a21_91"
 
 rm -rf "$BOX91"

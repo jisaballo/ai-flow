@@ -160,11 +160,14 @@ for k in $(map_keys); do
   if [ -d "$ROOT/apps/$k" ] || [ -d "$ROOT/libs/$k" ]; then APP_KEYS="$APP_KEYS $k"; fi
 done
 
-in_list() {
-  local needle="$1" x
-  shift
-  for x in "$@"; do [ "$x" = "$needle" ] && return 0; done
-  return 1
+# Ownership is by VALUE and never by name: key $1 owns file $2 when its map entry, resolved from the
+# checkout root, IS that file -- so an alias (two keys pointing at the same file) owns it together, and
+# a key merely sharing the file's basename with no map entry to match owns nothing.
+owns_this_file() {
+  local k="$1" f="$2" v
+  v="$(map_entries | awk -F'\t' -v key="$k" '$1 == key { print $2; exit }')"
+  [ -n "$v" ] || return 1
+  [ "$(normalise "$ROOT/$v")" = "$f" ]
 }
 
 # A title names an application when the key stands as a word in it. Padded and bounded on both sides,
@@ -298,7 +301,7 @@ verdict() {  # $1 = file as displayed; $2 = rule; $3 = the cause, empty when the
 
 measure() {
   local f="$1" rel="$2" base="${f##*/}"
-  local facts h1=0 nano=0 l rest i n cause own k
+  local facts h1=0 nano=0 l rest i n cause k
   local sec_words=() sec_title=() nano_len=() nano_title=()
 
   facts="$(awk "$AWK_READ" "$f")" || { say "unreadable: $rel"; FAILING=$((FAILING + 1)); return; }
@@ -393,20 +396,18 @@ measure() {
   cause=""
   case "$rel" in
     .ai-flow/steering/*)
-      own="${base%.md}"
-      if ! in_list "$own" $APP_KEYS; then
-        for k in $APP_KEYS; do
-          i=0
-          while [ "$i" -lt "${#sec_title[@]}" ]; do
-            if title_names_app "${sec_title[$i]}" "$k"; then
-              cause="the title '${sec_title[$i]}' names the application '$k'"
-              break
-            fi
-            i=$((i + 1))
-          done
-          [ -n "$cause" ] && break
+      for k in $APP_KEYS; do
+        owns_this_file "$k" "$f" && continue
+        i=0
+        while [ "$i" -lt "${#sec_title[@]}" ]; do
+          if title_names_app "${sec_title[$i]}" "$k"; then
+            cause="the title '${sec_title[$i]}' names the application '$k'"
+            break
+          fi
+          i=$((i + 1))
         done
-      fi
+        [ -n "$cause" ] && break
+      done
       ;;
   esac
   verdict "$rel" app-key "$cause"
