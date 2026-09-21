@@ -93,7 +93,7 @@ fi
 # and every label below carries one -- so the table is a double-quoted multi-line string. No row
 # may contain a double quote, `$` or a backtick; the assertion below counts the rows read, which is
 # what catches a row that a quoting mistake silently swallowed.
-ROUTES90=16
+ROUTES90=18
 ROUTETBL90="understand's product-context section~UPC90~identity|what it is|class~living domain model
 understand's steering section~USF90~nano|cuts~one line per rule
 understand's steering section, its second fact~USF90~map's value~conventional place and not the only one
@@ -108,7 +108,9 @@ customization's steering section~CUSS90~cut|read|written|kept~-
 the understand skill's product line~USK4_90~class|what the file is~living domain model
 the template's steering comment~TYMS90~value means|shaped|read|written|kept~the map's value|whatever path it names
 the verify skill's context-resolution line~VS7_90~read once|reads it once|read-once~steering\[|falling back to .?\.ai-flow/steering
-plan's conformance-tests section~PHW90~resolve|steering|product\.md|decisions-global\.md~-
+plan's conformance-tests section, its steering fact~PHW90~steering~-
+plan's conformance-tests section, its product fact~PHW90~product\.md~-
+plan's conformance-tests section, its decisions fact~PHW90~decisions-global\.md~-
 the plan skill's conform step~PS5_90~resolve|context\.md~-"
 
 # --- E0: every region this block reads extracts ---------------------------------------------------
