@@ -308,12 +308,12 @@ fi
                 || bad "A3 a failure exits non-zero and names the file and the rule:$a3_91"
 
 # --- A4: the decision log answers n/a on two rules, and never silence or a pass -------------------
-# REVERSED AT THE VERIFY GATE (D11, recorded in understand.md > Implementation Decisions) and RE-POINTED
-# BY T-154: the log is unmeetable by construction on `section-length` and `section-count` -- every `##`
+# REVERSED AT THE VERIFY GATE (D11, recorded in understand.md > Implementation Decisions) and
+# RE-POINTED: the log is unmeetable by construction on `section-length` and `section-count` -- every `##`
 # here is one decision, the class has no retirement route, so the ceiling can only ever be crossed. Both
 # exemptions were frozen as SILENCE; a verdict of `ok` would have claimed the rule was applied and held
 # when it was never asked, but silence is the same lie told the other way -- a reader cannot tell the
-# exemption from a rule the check forgot to ask. T-154 gives both a verdict of their own: `n/a`, carrying
+# exemption from a rule the check forgot to ask. Both now get a verdict of their own: `n/a`, carrying
 # the reason on the same line.
 #
 # The exemptions need their opposing legs or they exempt everything: a steering file carrying the SAME
@@ -1228,7 +1228,7 @@ fi
                  || bad "A21 the app-key exemption is per key and its value, not the whole file or its name:$a21_91"
 
 # --- A22: a file's class comes from where it lives, not from its basename -------------------------
-# T-154. The decision log's exemptions are keyed on its basename (`decisions-global.md`) while `app-key`
+# The decision log's exemptions are keyed on its basename (`decisions-global.md`) while `app-key`
 # is keyed on the STEERING path prefix -- two different questions asked of the same file, and they part
 # where a file borrows the log's basename but lives in the steering directory. That file is a steering
 # file: it must answer `section-length` and `section-count` like any other, not inherit the log's silence
@@ -1264,7 +1264,7 @@ fi
                  || bad "A22 a file's class comes from where it lives, not from its basename:$a22_91"
 
 # --- A23: the growing-part exemption is the product class's, not the name 'product.md' -------------
-# T-154. `## The marker` offers `Rules: <key> — <topic>` as the general way any class expresses groups,
+# `## The marker` offers `Rules: <key> — <topic>` as the general way any class expresses groups,
 # but only the PRODUCT class's `Rules:` sections are exempt from `section-count` -- exactly the class
 # A22 tests the other exemption against. Keyed on the basename alone, a steering file that borrows the
 # name `product.md` inherits the exemption it was never meant to have; keyed on the class, it does not.
