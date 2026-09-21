@@ -107,6 +107,11 @@ Each step declares a `Skills:` line listing the workspace skills whose domain it
 
 ### How it works
 
+**Before step 1 runs, resolve context.** Resolve the task's affected `steering:` entries and the fixed
+parts of `product.md` and `decisions-global.md`, by the cuts `protocols/context.md` > `## Reading`
+defines — the rule owns the set, the cuts and the read-once rule, and this paragraph restates none of
+it.
+
 1. **Read** the Verifiable Criteria from `artifacts/T-XXX/understand.md` — they arrive in EARS format (see Understand protocol), each carrying `observed:` and `falsified-by:`. GIVEN/WHEN/THEN is the **test format**: an emitting criterion becomes one or more GWT stubs.
 2. **Emission is keyed on `observed:`, and not on the criterion's kind.** `run`, `compute` and `resolve` emit a row. `read` emits none: it is the value with no oracle, so a stub over it would be written and read by the same actor, and what that detects is a change rather than a fault. **`observed:` decides whether a row is owed; it does not decide that one is written.** A criterion an existing assertion already reaches is owed a row and gets none, because the row exists — that is the `covered` cause below, and it is the only way an emitting value produces no new row. Recording it is what keeps the two apart: a manifest that shows `run` beside `covered` says *asserted elsewhere*, and one that shows `run` beside no row at all is a row someone forgot.
 3. **The stub's body is the real assertion from the first minute.** A body that fails by construction is forbidden — it proves the stub runs, never that it reads its subject. Red at Conform therefore means *bound to the subject*, green after Execute means *the change made it true*, and the pair is a mutation the plan gets for nothing under the condition below.
