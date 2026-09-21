@@ -98,7 +98,8 @@ one nobody keeps.
 4. **Write the aggregate line — the reading step's completion criterion.** Every file with its nano line
    count, every section loaded by title; a file whose nano matched nothing still appears with its count,
    so a skipped read and an empty match never read alike. Understand writes it in `understand.md`;
-   Execute writes it in the task's sheet at each step that read.
+   Execute writes it in the task's sheet at each step that read; Conform writes it in its own manifest,
+   `artifacts/T-XXX/conformance-baseline/manifest.md`.
 
    ```
    Context: .ai-flow/steering/workspace.md nano (9); sections: Import boundaries | .ai-flow/steering/payments.md nano (12); sections: Idempotency, Refund flow | product.md fixed + Rules: checkout (3) | decisions-global.md nano (7); sections: none

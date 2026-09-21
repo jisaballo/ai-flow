@@ -29,6 +29,7 @@ RDM90="README.md"
 TPR90="template/.ai-flow/product.md"
 TYM90="template/.ai-flow/project.yml"
 VSK90="global/skills/verify/SKILL.md"
+PSK90="global/skills/plan/SKILL.md"
 
 # The fenced block inside a section: what A4 measures for the three homes that quote a skeleton rather
 # than being one.
@@ -58,6 +59,12 @@ ESL90="$(grep -m1 -i 'steering:. map' "$ESK90" 2>/dev/null)"
 # a single sentence of step 7, and a region of the whole step would be answered by the review-profile
 # prose beside it.
 VS7_90="$(grep -m1 -F 'Resolve **`contextPaths`**' "$VSK90" 2>/dev/null)"
+# Conform's own two surfaces, on the same split as Execute's pair above: the protocol's own numbered step
+# (PHW90, beside ESF90) and the skill's one-line mirror of it (PS5_90, beside ESL90). The protocol side is
+# a whole section because the item is a numbered move inside it, the way ESF90 is; the skill side is one
+# grepped line because a skill's citation is one clause, the way ESL90 and VS7_90 already are.
+PHW90="$(sec90 "$PLN90" '^### How it works')"
+PS5_90="$(grep -m1 -F 'Resolve context first' "$PSK90" 2>/dev/null)"
 CUSP90="$(sec90 "$CUS90" '^### Product Context')"
 CUSS90="$(sec90 "$CUS90" '^### Steering Files')"
 RDMS90="$(sec90 "$RDM90" '^### Steering Files')"
@@ -86,7 +93,7 @@ fi
 # and every label below carries one -- so the table is a double-quoted multi-line string. No row
 # may contain a double quote, `$` or a backtick; the assertion below counts the rows read, which is
 # what catches a row that a quoting mistake silently swallowed.
-ROUTES90=14
+ROUTES90=18
 ROUTETBL90="understand's product-context section~UPC90~identity|what it is|class~living domain model
 understand's steering section~USF90~nano|cuts~one line per rule
 understand's steering section, its second fact~USF90~map's value~conventional place and not the only one
@@ -100,11 +107,15 @@ customization's product section~CUSP90~governs|shaped|read|written|kept~provides
 customization's steering section~CUSS90~cut|read|written|kept~-
 the understand skill's product line~USK4_90~class|what the file is~living domain model
 the template's steering comment~TYMS90~value means|shaped|read|written|kept~the map's value|whatever path it names
-the verify skill's context-resolution line~VS7_90~read once|reads it once|read-once~steering\[|falling back to .?\.ai-flow/steering"
+the verify skill's context-resolution line~VS7_90~read once|reads it once|read-once~steering\[|falling back to .?\.ai-flow/steering
+plan's conformance-tests section, its steering fact~PHW90~steering~-
+plan's conformance-tests section, its product fact~PHW90~product\.md~-
+plan's conformance-tests section, its decisions fact~PHW90~decisions-global\.md~-
+the plan skill's conform step~PS5_90~resolve|context\.md~-"
 
 # --- E0: every region this block reads extracts ---------------------------------------------------
 # A leg over an empty region draws no verdict, so the emptiness is reported HERE, once, with the region
-# named. Eighteen regions across three steps: at the freeze all but a few are absent by construction.
+# named. Twenty regions across three steps: at the freeze all but a few are absent by construction.
 e0_90=""
 for pair90 in \
   "the mechanism's home:$CTXB90" \
@@ -126,6 +137,8 @@ for pair90 in \
   "the README's documentation list:$RDMD90" \
   "the template's steering comment:$TYMS90" \
   "the verify skill's context-resolution line:$VS7_90" \
+  "plan's conformance-tests section:$PHW90" \
+  "the plan skill's conform step:$PS5_90" \
 ; do
   [ -n "${pair90#*:}" ] || e0_90="$e0_90 [${pair90%%:*} did not extract]"
 done
@@ -205,6 +218,7 @@ else
     'monorepo is the general case~degenerate' \
     'Everything known about one topic~one heading' \
     'nano~index of pointers' \
+    'Conform writes it~own manifest' \
   ; do
     nearok90 "$(near90 "$CTXB90" "${claim90%%~*}" "${claim90#*~}" 200)" \
       || a1_90="$a1_90 [the home does not bind '${claim90%%~*}' to '${claim90#*~}']"
