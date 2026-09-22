@@ -9,7 +9,7 @@ when it loads one and states only its own use of it: that Understand drafts the 
 
 | Class | What it is | What it answers |
 |---|---|---|
-| `steering/<key>.md` | What a task must respect and the code cannot show: rules, patterns and pitfalls, in three layers — the workspace one every task loads, an app's own, a domain's own | What this area knows |
+| `.ai-flow/steering/<key>.md` | What a task must respect and the code cannot show: rules, patterns and pitfalls, in three layers — the workspace one every task loads, an app's own, a domain's own | What this area knows |
 | `product.md` | The business model in the business's language: the product, its users and roles, its applications, its core flows, its terms, and its business rules grouped by key | Who the roles are, what a term means, and which rule governs |
 | `decisions-global.md` | Decisions that cross tasks, each with the context and the alternatives that keep it from being re-argued | What was already settled, and why |
 
@@ -171,8 +171,9 @@ file.
 
 **Reachable.** A steering-directory file earns its shape verdicts by living in `.ai-flow/steering/`; it
 earns a *reading* by being reached. Reached is a map entry naming it, or a **pointer line** — a literal
-relative path to the file, matched verbatim, inside a file that is itself reached — one hop and no
-further: a file reached only through a pointer cannot itself extend reachability to a third file. The
+path to the file, resolved from the same base `## Reading` step 1 states and from no other, matched
+verbatim, inside a file that is itself reached — one hop and no further: a file reached only through a
+pointer cannot itself extend reachability to a third file. The
 check reports every steering-directory file outside that set as failing, under the rule `reachable`, in
 the same run as the shape rules above; the two fixed classes never carry it, being reached by
 construction. Where `project.yml` is absent or unreadable, the verdict is `n/a` with the cause stated —
