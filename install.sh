@@ -243,6 +243,13 @@ install_engine() {
   done
   echo "  [ok] Operating documents installed to ~/.claude/ai-flow/docs"
   sweep_dir "$HOME/.claude/ai-flow/docs" "$DOCS"
+
+  # The engine's own operating instructions, fetched last and unconditionally: every project on the
+  # machine used to inherit this file's predecessor for free the moment ai-flow was installed anywhere
+  # (T-163). Placed after the protocols/docs fetches above so a fixture built around "the first file
+  # this function fetches is a protocol" (C21, C48) keeps meaning what it already asserts.
+  fetch_file "global/CLAUDE.md" "$HOME/.claude/ai-flow/AGENTS.md"
+  echo "  [ok] Engine instructions installed to ~/.claude/ai-flow/AGENTS.md"
 }
 
 # Project data: fresh install only — the only thing that lives in the project
@@ -419,18 +426,6 @@ install_tooling() {
   merge_hooks
 }
 
-# Global CLAUDE.md — install only if absent (never clobbered)
-install_global_claude() {
-  local global_claude="$HOME/.claude/CLAUDE.md"
-  if [ ! -f "$global_claude" ]; then
-    mkdir -p "$HOME/.claude"
-    fetch_file "global/CLAUDE.md" "$global_claude"
-    echo "  [ok] Global CLAUDE.md installed"
-  else
-    echo "  [info] Global CLAUDE.md exists — merge ai-flow rules manually if needed"
-  fi
-}
-
 # --- Subcommands ---
 
 cmd_init() {
@@ -442,9 +437,6 @@ cmd_init() {
   install_engine
   install_project_claude
   install_worktree_entry
-
-  read -p "  Install/refresh global CLAUDE.md? [Y/n] " -n 1 -r; echo
-  [[ ! $REPLY =~ ^[Nn]$ ]] && install_global_claude || echo "  [skip] Global CLAUDE.md"
 
   read -p "  Install ai-flow global tooling (skills, verify workflow, hooks)? [Y/n] " -n 1 -r; echo
   if [[ ! $REPLY =~ ^[Nn]$ ]]; then
