@@ -1553,6 +1553,56 @@ HUB3
   mark91="$(na91 ".ai-flow/steering/hub3.md" reachable)"
   [ "${mark91%%|*}" = "ok" ] \
     || a26_91="$a26_91 [hub3.md, its own map key, reads '${mark91%%|*}', not reachable]"
+  # The match is BOUNDED (IB-126): a hub naming a candidate's full path, present and correct, still does
+  # not credit it when the path is immediately extended into a longer, unrelated filename -- a backup
+  # (`.bak`) or a superseded copy (`-old`). Distinguished from A26B91's bare-sibling case above: there the
+  # path is in the WRONG form and absent in full; here the full, correct path IS present, and what
+  # disqualifies it is what comes immediately after it.
+  A26K91="$BOX91/a26-backup-suffix"; mk91 "$A26K91"
+  good91 "$A26K91/.ai-flow/steering/leaf.md"
+  cat > "$A26K91/.ai-flow/steering/hub4.md" <<'HUB4'
+# Hub Four
+
+## Nano
+
+- **Elsewhere** — a stale copy of the leaf file sits at .ai-flow/steering/leaf.md.bak.
+
+## Elsewhere
+
+A stale copy of the leaf file sits at .ai-flow/steering/leaf.md.bak, kept around by mistake.
+HUB4
+  printf 'steering:\n  hub4: .ai-flow/steering/hub4.md\n' > "$A26K91/.ai-flow/project.yml"
+  rc91="$(run91 "$A26K91")"
+  mark91="$(na91 ".ai-flow/steering/leaf.md" reachable)"
+  [ "${mark91%%|*}" = "$FAILMK91" ] \
+    || a26_91="$a26_91 [leaf.md, named only by hub4.md's own backup filename (…leaf.md.bak), reads '${mark91%%|*}', not failing]"
+  mark91="$(na91 ".ai-flow/steering/hub4.md" reachable)"
+  [ "${mark91%%|*}" = "ok" ] \
+    || a26_91="$a26_91 [hub4.md, its own map key, reads '${mark91%%|*}', not reachable]"
+  # The other shape IB-126 names: a suffix with no dot at all. Caught by the plain one-character boundary
+  # check alone -- no lookahead needed -- so it is its own fixture rather than folded into the one above,
+  # since the two exercise different sides of the boundary rule.
+  A26S91="$BOX91/a26-superseded-suffix"; mk91 "$A26S91"
+  good91 "$A26S91/.ai-flow/steering/leaf.md"
+  cat > "$A26S91/.ai-flow/steering/hub5.md" <<'HUB5'
+# Hub Five
+
+## Nano
+
+- **Elsewhere** — the superseded leaf copy sits at .ai-flow/steering/leaf.md-old.
+
+## Elsewhere
+
+The superseded leaf copy sits at .ai-flow/steering/leaf.md-old, left behind by the migration.
+HUB5
+  printf 'steering:\n  hub5: .ai-flow/steering/hub5.md\n' > "$A26S91/.ai-flow/project.yml"
+  rc91="$(run91 "$A26S91")"
+  mark91="$(na91 ".ai-flow/steering/leaf.md" reachable)"
+  [ "${mark91%%|*}" = "$FAILMK91" ] \
+    || a26_91="$a26_91 [leaf.md, named only by hub5.md's own superseded filename (…leaf.md-old), reads '${mark91%%|*}', not failing]"
+  mark91="$(na91 ".ai-flow/steering/hub5.md" reachable)"
+  [ "${mark91%%|*}" = "ok" ] \
+    || a26_91="$a26_91 [hub5.md, its own map key, reads '${mark91%%|*}', not reachable]"
 fi
 [ -z "$a26_91" ] && ok "A26 a steering file is legitimate only when reached -- a map entry, or a one-hop pointer" \
                  || bad "A26 a steering file is legitimate only when reached -- a map entry, or a one-hop pointer:$a26_91"
