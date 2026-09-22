@@ -2,7 +2,8 @@
 
 ## Personal Preferences
 
-<!-- Customize this section for your workflow -->
+<!-- This file is fetched fresh by the installer on every `init` and `update` — an edit made here does
+     not survive the next update. Customize your workflow in your own project's CLAUDE.md instead. -->
 
 - All generated code, comments, commit messages, and documentation must be in **English**
 <!-- - User communicates in [language] — respond in [language] when conversational, English for technical output -->

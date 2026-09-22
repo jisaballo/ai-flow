@@ -1,5 +1,8 @@
 # CLAUDE.md
 
+Read `~/.claude/ai-flow/AGENTS.md` and follow it — that file carries the ai-flow engine's own
+operating instructions, refreshed by the installer on every update.
+
 ## Project Overview
 
 <!-- Describe your project in 1-2 lines -->
