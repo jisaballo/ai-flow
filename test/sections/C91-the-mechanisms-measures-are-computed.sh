@@ -1403,8 +1403,9 @@ fi
 
 # --- A26: a steering file is legitimate only when it is reached -- a map entry, or a one-hop pointer ---
 # No allowlist replaces the old `pencil-design.md` hardcode: legitimacy is
-# DERIVED. A pointer line is a literal relative path to the target, matched verbatim (never built into a
-# pattern -- `hooks.md`'s "text the operator wrote must never become a pattern"); a file it names is
+# DERIVED. A pointer line is a literal path to the target, resolved from the same base `## Reading` step 1
+# states and from no other, matched verbatim (never built into a pattern -- `hooks.md`'s "text the
+# operator wrote must never become a pattern"); a file it names is
 # reached through exactly ONE hop, so a file reached only by a pointer cannot itself extend reachability
 # to a third file. Evaluated only in the default survey (no `run91` arguments), the same terms map_verdict
 # already keys on, because reachability is a property of the directory and not of one named file.
