@@ -169,6 +169,17 @@ file it probably meant. `--report` prints every verdict with the thresholds appl
 It runs by hand, from CI, and as the `Verify` of the archive moves that write a context
 file.
 
+**Reachable.** A steering-directory file earns its shape verdicts by living in `.ai-flow/steering/`; it
+earns a *reading* by being reached. Reached is a map entry naming it, or a **pointer line** — a literal
+relative path to the file, matched verbatim, inside a file that is itself reached — one hop and no
+further: a file reached only through a pointer cannot itself extend reachability to a third file. The
+check reports every steering-directory file outside that set as failing, under the rule `reachable`, in
+the same run as the shape rules above; the two fixed classes never carry it, being reached by
+construction. Where `project.yml` is absent or unreadable, the verdict is `n/a` with the cause stated —
+never silence, never a pass asked of nothing. No filename is exempted by name: a file this rule does not
+reach is a defect to correct, in the file itself or in what should reach it, never a case to carry a
+configured allowance for.
+
 **The structure guard.** Changing how this mechanism works is not something another task does in passing.
 *Structure* is this protocol, the classes table, the check, and in any context file the `##` lines, the
 nano block and the order of sections. *Content* is a rule added or corrected inside a section, and it

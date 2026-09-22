@@ -241,6 +241,11 @@ fi
 # The set is the steering directory plus the two fixed files, and the MAP is not its input. Both
 # directions of that: a steering file the map never declares is measured, and a map entry pointing outside
 # the data directory is not.
+#
+# T-153 retired this leg's third fixture: `pencil-design.md` was created here solely to prove it sat
+# OUTSIDE the scanned set, on the strength of the hardcode this task deletes. An unmapped steering file
+# not being reached at all is no longer a legitimate shape -- A26 is where that filename's old exemption
+# is replaced by the reachability rule, over neutral names so no leg depends on this one again.
 a2_91=""
 if [ ! -r "$CHK91" ]; then
   a2_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
@@ -248,16 +253,21 @@ else
   A2BOX91="$BOX91/a2"; mk91 "$A2BOX91"
   good91 "$A2BOX91/.ai-flow/steering/payments.md"
   good91 "$A2BOX91/.ai-flow/steering/undeclared.md"
-  good91 "$A2BOX91/.ai-flow/steering/pencil-design.md"
   mkdir -p "$A2BOX91/docs"; good91 "$A2BOX91/docs/borrowed.md"
   printf 'steering:\n  payments: .ai-flow/steering/payments.md\n  verify: docs/borrowed.md\n' \
     > "$A2BOX91/.ai-flow/project.yml"
   rc91="$(run91 "$A2BOX91")"
-  [ "$rc91" = 0 ] || a2_91="$a2_91 [the default run over files in shape exits ${rc91}]"
+  # T-153: measured is not the same as passed. undeclared.md is scanned (below) and now correctly fails
+  # the reachable rule -- reached by nothing -- so the run is no longer clean; payments.md, which the map
+  # declares, stays clean beside it.
+  [ "$rc91" != 0 ] || a2_91="$a2_91 [an unmapped, unpointed steering file in the default set exits 0]"
   for want91 in 'steering/payments.md' 'steering/undeclared.md' 'product.md' 'decisions-global.md'; do
     grep -q -F "$want91" "$OUT91" || a2_91="$a2_91 [the default set does not reach ${want91}]"
   done
-  grep -q -F 'pencil-design' "$OUT91" && a2_91="$a2_91 [pencil-design.md is measured]"
+  grep -F "$FAILMK91" "$OUT91" | grep -- 'reachable' | grep -q -F 'undeclared.md' \
+    || a2_91="$a2_91 [undeclared.md, unmapped and unpointed, does not fail reachable]"
+  grep -F "$FAILMK91" "$OUT91" | grep -- 'reachable' | grep -q -F 'payments.md' \
+    && a2_91="$a2_91 [payments.md, which the map declares, fails reachable too]"
   grep -q -F 'borrowed.md'   "$OUT91" && a2_91="$a2_91 [a map value outside .ai-flow/ is measured]"
   # Both entries RESOLVE and neither is measured. Added in the Conform phase of the task that gives the
   # check a verdict over the map, and it is what makes the two lines above mean what they say: without
@@ -273,8 +283,7 @@ else
   grep -F "$FAILMK91" "$OUT91" | grep -q -- 'map-resolves' \
     && a2_91="$a2_91 [an entry that resolves is reported failing -- the exemption is refused, not passed]"
   # Once each, read off the count the check prints rather than off the verdict lines, of which there are
-  # seven per file by construction. Four files live under `.ai-flow/`; `pencil-design.md` is not one of the
-  # set, so three is the whole claim -- two steering files plus the two fixed ones is four.
+  # several per file by construction. Two steering files plus the two fixed ones is four.
   grep -q -F '4 file(s) scanned' "$OUT91" \
     || a2_91="$a2_91 [the default set is not four files scanned once each: $(grep -F 'scanned' "$OUT91" | head -1)]"
   # An empty steering directory is zero steering files and not an error; an absent one likewise.
@@ -302,6 +311,10 @@ else
   awk '!/^## Nano$/ && !/^- \*\*(Idempotency|Refund flow)\*\*/' "$A3BOX91/.ai-flow/steering/broken.md" \
     > "$A3BOX91/.ai-flow/steering/broken.t" \
     && mv "$A3BOX91/.ai-flow/steering/broken.t" "$A3BOX91/.ai-flow/steering/broken.md"
+  # T-153: payments.md is the "neighbour in shape" this leg's own claim is about, so it is mapped -- the
+  # unrelated reachable rule must not be what makes it fail here. broken.md stays unmapped; it already
+  # fails on its own terms and reachable failing beside that is not this leg's concern.
+  printf 'steering:\n  payments: .ai-flow/steering/payments.md\n' > "$A3BOX91/.ai-flow/project.yml"
   rc91="$(run91 "$A3BOX91")"
   [ "$rc91" != 0 ] || a3_91="$a3_91 [a run holding a failing file exits 0]"
   grep -F 'broken.md' "$OUT91" | grep -F "$FAILMK91" | grep -q -- 'nano-present' \
@@ -508,6 +521,8 @@ if [ ! -r "$CHK91" ]; then
 else
   A5BOX91="$BOX91/a5"; mk91 "$A5BOX91"
   good91 "$A5BOX91/.ai-flow/steering/payments.md"
+  # T-153: mapped, so "files in shape" below still means exit 0 -- reachable is not this leg's subject.
+  printf 'steering:\n  payments: .ai-flow/steering/payments.md\n' > "$A5BOX91/.ai-flow/project.yml"
   rc91="$(run91 "$A5BOX91" --report)"
   [ "$rc91" = 0 ] || a5_91="$a5_91 [--report over files in shape exits ${rc91}]"
   for r91 in $RULES91; do
@@ -814,8 +829,11 @@ else
   rc91="$(run91 "$A14C91")"
   [ "$rc91" = 0 ] || a14_91="$a14_91 [a map whose every value resolves exits ${rc91}]"
   grep -q -- "$MAPRULE91" "$OUT91" || a14_91="$a14_91 [no verdict for ${MAPRULE91} on a map that resolves]"
+  # T-153: no steering file here -- this fixture's claim is about map_verdict() over zero entries, not
+  # about a file's reachability, and an unmapped file under `steering: {}` now correctly fails a
+  # different rule (reachable) that would falsify "the shipped empty map is an error" for the wrong
+  # reason. mk91's own empty steering/ directory is enough to exercise the claim.
   A14M91="$BOX91/a14-empty"; mk91 "$A14M91"
-  good91 "$A14M91/.ai-flow/steering/payments.md"
   rc91="$(run91 "$A14M91")"
   [ "$rc91" = 0 ] || a14_91="$a14_91 [the shipped empty map is an error (exit ${rc91})]"
   grep -F "$FAILMK91" "$OUT91" | grep -q -- "$MAPRULE91" \
@@ -1056,8 +1074,11 @@ else
     'the shipped empty flow mapping~steering: {}~silent' \
     'a bare block lead~steering:~entry'; do
     lbl91="${pair91%%~*}"; rest91="${pair91#*~}"; lead91="${rest91%~*}"; want91="${rest91##*~}"
+    # T-153: no steering file -- none of the four cases below asserts on one, map_verdict() reads only
+    # project.yml, and an unmapped file under the "silent" case's `steering: {}` would now fail the
+    # unrelated reachable rule, falsifying "the one legitimate zero is [not] an error" for the wrong
+    # reason.
     A19B91="$BOX91/a19-$(printf '%s' "$want91$lbl91" | tr -cd 'a-z')"; mk91 "$A19B91"
-    good91 "$A19B91/.ai-flow/steering/payments.md"
     printf '%s\n  auth: .ai-flow/steering/nope.md\n' "$lead91" > "$A19B91/.ai-flow/project.yml"
     rc91="$(run91 "$A19B91")"
     case "$want91" in
@@ -1371,5 +1392,124 @@ else
 fi
 [ -z "$a25_91" ] && ok "A25 a file in none of the three fixed classes is still measured, app-key alone answering n/a" \
                  || bad "A25 a file in none of the three fixed classes is still measured, app-key alone answering n/a:$a25_91"
+
+# --- A26: a steering file is legitimate only when it is reached -- a map entry, or a one-hop pointer ---
+# T-153 (D1-D2 of its plan). No allowlist replaces the old `pencil-design.md` hardcode: legitimacy is
+# DERIVED. A pointer line is a literal relative path to the target, matched verbatim (never built into a
+# pattern -- `hooks.md`'s "text the operator wrote must never become a pattern"); a file it names is
+# reached through exactly ONE hop, so a file reached only by a pointer cannot itself extend reachability
+# to a third file. Evaluated only in the default survey (no `run91` arguments), the same terms map_verdict
+# already keys on, because reachability is a property of the directory and not of one named file.
+a26_91=""
+if [ ! -r "$CHK91" ]; then
+  a26_91=" [$CHK91 is not there -- no verdict drawn from an absent check]"
+else
+  A26BOX91="$BOX91/a26"; mk91 "$A26BOX91"
+  # declared    -- its own map key.
+  # hub         -- its own map key, and its body's Elsewhere section names leaf and both by their paths.
+  # leaf        -- no key; reached only by hub's pointer, one hop from a map-declared file.
+  # both        -- its own map key AND named by hub's pointer -- one row, not two, ok either way.
+  # mid         -- no key; reached only by hub2's pointer (one hop, ok).
+  # far         -- no key; named only by mid's pointer -- a SECOND hop from hub2, so NOT reached.
+  # orphan      -- no key, named by nothing.
+  good91 "$A26BOX91/.ai-flow/steering/declared.md"
+  good91 "$A26BOX91/.ai-flow/steering/leaf.md"
+  good91 "$A26BOX91/.ai-flow/steering/both.md"
+  good91 "$A26BOX91/.ai-flow/steering/far.md"
+  good91 "$A26BOX91/.ai-flow/steering/orphan.md"
+  cat > "$A26BOX91/.ai-flow/steering/hub.md" <<'HUB'
+# Hub
+
+## Nano
+
+- **Elsewhere** — the leaf and both files live at .ai-flow/steering/leaf.md and .ai-flow/steering/both.md.
+
+## Elsewhere
+
+Reached at .ai-flow/steering/leaf.md and at .ai-flow/steering/both.md.
+HUB
+  cat > "$A26BOX91/.ai-flow/steering/hub2.md" <<'HUB2'
+# Hub Two
+
+## Nano
+
+- **Elsewhere** — the mid file lives at .ai-flow/steering/mid.md.
+
+## Elsewhere
+
+Reached at .ai-flow/steering/mid.md.
+HUB2
+  # mid points onward at far -- the second hop the rule must refuse to follow. Built in shape from
+  # scratch, like hub/hub2, rather than by appending onto good91's two-topic shape -- an appended
+  # section with no nano line of its own would fail nano-order for a reason this leg does not name.
+  cat > "$A26BOX91/.ai-flow/steering/mid.md" <<'MID'
+# Mid
+
+## Nano
+
+- **Elsewhere** — the far file, unreached by this rule, sits at .ai-flow/steering/far.md.
+
+## Elsewhere
+
+The far file, unreached by this rule, sits at .ai-flow/steering/far.md.
+MID
+  printf 'steering:\n  declared: .ai-flow/steering/declared.md\n  hub: .ai-flow/steering/hub.md\n  hub2: .ai-flow/steering/hub2.md\n  both: .ai-flow/steering/both.md\n' \
+    > "$A26BOX91/.ai-flow/project.yml"
+  rc91="$(run91 "$A26BOX91")"
+  [ "$rc91" != 0 ] || a26_91="$a26_91 [an orphaned steering file is present and the run still exits 0]"
+  for want91 in declared.md hub.md hub2.md leaf.md both.md mid.md far.md orphan.md; do
+    mark91="$(na91 ".ai-flow/steering/$want91" reachable)"
+    case "$want91" in
+      declared.md|hub.md|hub2.md|leaf.md|both.md|mid.md)
+        [ "${mark91%%|*}" = "ok" ] \
+          || a26_91="$a26_91 [$want91 should be reachable, reads '${mark91%%|*}']" ;;
+      far.md|orphan.md)
+        [ "${mark91%%|*}" = "$FAILMK91" ] \
+          || a26_91="$a26_91 [$want91 should be unreached (a two-hop or a true orphan), reads '${mark91%%|*}']" ;;
+    esac
+  done
+  # Scoped to steering/ paths: the fixed classes carry a `reachable` verdict too (n/a, checked below),
+  # and a loose count over the whole output would count both and call it a stray double-count.
+  grep -cE -- '^\.ai-flow/steering/\S+ +reachable ' "$OUT91" | grep -qx 8 \
+    || a26_91="$a26_91 [not exactly one reachable verdict per steering file: $(grep -cE -- '^\.ai-flow/steering/\S+ +reachable ' "$OUT91")]"
+  # The fixed classes are always reachable by construction -- n/a, never a rule that happens to pass.
+  for fx91 in product.md decisions-global.md; do
+    mark91="$(na91 ".ai-flow/$fx91" reachable)"
+    [ "${mark91%%|*}" = "n/a" ] \
+      || a26_91="$a26_91 [$fx91's reachable rule reads '${mark91%%|*}', not n/a]"
+    [ -n "${mark91#*|}" ] || a26_91="$a26_91 [$fx91's reachable n/a carries no cause]"
+  done
+  # WHERE project.yml is absent, the verdict is n/a with cause -- never silence, never a bare ok (D5).
+  A26N91="$BOX91/a26-no-yml"; mkdir -p "$A26N91/.ai-flow/steering"
+  good91 "$A26N91/.ai-flow/steering/orphan.md"
+  rc91="$(run91 "$A26N91")"
+  mark91="$(na91 ".ai-flow/steering/orphan.md" reachable)"
+  [ "${mark91%%|*}" = "n/a" ] \
+    || a26_91="$a26_91 [with no project.yml, a steering file's reachable rule reads '${mark91%%|*}', not n/a]"
+  [ -n "${mark91#*|}" ] \
+    || a26_91="$a26_91 [with no project.yml, the reachable n/a carries no cause]"
+  # The derivation replaces the hardcode; it does not grow a second copy of it. A behavioural pass above
+  # cannot tell "reachability derived" from "the exemption kept the old name and gained a rule beside it"
+  # -- only reading the script's own text can, which is what VC3 (T-153) asks for independently.
+  grep -q -F 'pencil-design.md' "$ROOT/$CHK91" \
+    && a26_91="$a26_91 [$CHK91 still contains the literal 'pencil-design.md']"
+fi
+[ -z "$a26_91" ] && ok "A26 a steering file is legitimate only when reached -- a map entry, or a one-hop pointer" \
+                 || bad "A26 a steering file is legitimate only when reached -- a map entry, or a one-hop pointer:$a26_91"
+
+# --- A27: no per-file steering allowlist key exists anywhere in the shipped engine ------------------
+# D3 of T-153's plan (RULING 1, escalated to the operator at Understand): reachability is DERIVED, never
+# declared, so no key of any shape replaces the hardcode this task deletes. Swept once over the five
+# places understand.md names, on the repository's own text rather than on a sandbox fixture -- a key
+# added to any one of them is what this leg exists to catch, and the sweep is the only route there is.
+a27_91=""
+for loc91 in "$ROOT/global/scripts/context-check.sh" "$ROOT/global/hooks/context-structure-guard.py" \
+             "$ROOT/global/protocols/context.md" "$ROOT/template/.ai-flow/project.yml" \
+             "$ROOT/global/skills/discover/SKILL.md"; do
+  [ -r "$loc91" ] || { a27_91="$a27_91 [${loc91#"$ROOT"/} is not readable]"; continue; }
+  grep -qi -- 'steering_exclu' "$loc91" && a27_91="$a27_91 [${loc91#"$ROOT"/} declares a steering-exclusion key]"
+done
+[ -z "$a27_91" ] && ok "A27 no per-file steering allowlist key exists anywhere in the shipped engine" \
+                 || bad "A27 no per-file steering allowlist key exists anywhere in the shipped engine:$a27_91"
 
 rm -rf "$BOX91"
