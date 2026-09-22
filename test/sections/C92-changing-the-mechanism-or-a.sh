@@ -439,8 +439,8 @@ else
     [ -z "$out92" ] || r4_92="$r4_92 [$np92 drew output where the rail must be silent]"
   done
   # And the refusing side must cover EVERY member of the judged set -- only one was ever exercised.
-  # T-153 deleted `STEERING_EXCLUDED`, so `pencil-design.md` moves here from the list above: it is now
-  # judged like any other top-level steering file, on the path's shape alone, unconditionally.
+  # `STEERING_EXCLUDED` is gone, so `pencil-design.md` moves here from the list above: it is now judged
+  # like any other top-level steering file, on the path's shape alone, unconditionally.
   printf '# Product\n\n## Nano\n\n- **Alpha** - x\n\n## Alpha\n\nrule\n' > "$P92/.ai-flow/product.md"
   out92="$(hookcall "$GUARD92" "$P92" "$P92/.ai-flow/product.md" Edit ',"old_string":"## Alpha","new_string":"## Beta\n\nb\n\n## Alpha"')"; rc92=$?
   [ "$rc92" = 2 ] || r4_92="$r4_92 [product.md, a member of the judged set, exits $rc92 and is not judged]"
@@ -448,8 +448,8 @@ else
   out92="$(hookcall "$GUARD92" "$P92" "$P92/.ai-flow/steering/pencil-design.md" Edit ",$STRUCT92")"; rc92=$?
   [ "$rc92" = 2 ] \
     || r4_92="$r4_92 [.ai-flow/steering/pencil-design.md, no longer exempt, exits $rc92 and is not judged]"
-  # VC3 (T-153), independently of the behavioural rows above: the literal itself, and the tuple that
-  # carried it, are gone from the guard's own text -- not renamed, not joined by a second copy.
+  # Independently of the behavioural rows above: the literal itself, and the tuple that carried it, are
+  # gone from the guard's own text -- not renamed, not joined by a second copy.
   grep -q -F 'pencil-design.md' "$GUARD92" && r4_92="$r4_92 [$GUARD92 still contains the literal 'pencil-design.md']"
   grep -q -F 'STEERING_EXCLUDED' "$GUARD92" && r4_92="$r4_92 [$GUARD92 still declares STEERING_EXCLUDED]"
   [ -z "$r4_92" ] && ok "R4 the judged set has a negative control" \

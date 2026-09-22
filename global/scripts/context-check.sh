@@ -503,10 +503,8 @@ $(map_entries)
 MAPENTRIES
 }
 
-# `reachable`: a steering-directory file is legitimate only when the map reaches it, or a pointer line
-# inside a file the map reaches does -- derived, never declared (protocols/context.md > Keeping >
-# Reachable). No project.yml key replaces the hardcode this rule retires; a file it does not reach is a
-# defect to correct, never a case to configure an allowance for.
+# `reachable`: the rule this measures is protocols/context.md > Keeping > Reachable, and is not restated
+# here.
 #
 # STEERING_MAPPED: every map value that resolves, from the checkout root, to a file under this project's
 # steering directory -- read once, on the same "one scan" discipline APP_MAP already keeps.
@@ -527,14 +525,13 @@ is_steering_mapped() {  # $1 = normalised absolute path
 # One hop, and the text matched is the OPERATOR'S -- a relative path, never built into a pattern (the
 # hazard hooks.md names: text the operator wrote must never become a pattern). `grep -F` treats it as a
 # literal string, so a path holding a regex metacharacter is still matched rather than refused or missed.
-is_pointer_reached() {  # $1 = candidate's normalised absolute path; $2 = candidate's path relative to ROOT
+is_pointer_reached() {  # $1 = candidate's path relative to ROOT
   local hub
   [ -d "$DATA/steering" ] || return 1
   for hub in "$DATA"/steering/*.md; do
     [ -e "$hub" ] || continue
-    [ "$(normalise "$hub")" = "$1" ] && continue
     is_steering_mapped "$(normalise "$hub")" || continue
-    grep -qF -- "$2" "$hub" && return 0
+    grep -qF -- "$1" "$hub" && return 0
   done
   return 1
 }
@@ -544,16 +541,23 @@ reachable_verdict() {  # $1 = file as displayed (rel); $2 = its normalised absol
     verdict "$1" reachable "reached by construction, not a steering-directory file" "" na
     return
   fi
-  if [ ! -r "$DATA/project.yml" ]; then
-    verdict "$1" reachable "no project.yml, so reachability cannot be derived" "" na
-    return
-  fi
-  if [ "$(map_lead)" = unparsed ]; then
-    verdict "$1" reachable \
-      "the map's lead is neither a block mapping nor an empty flow mapping, so reachability cannot be derived" "" na
-    return
-  fi
-  if is_steering_mapped "$2" || is_pointer_reached "$2" "$1"; then
+  # The map's own validity has one classifier, map_lead(), and this asks it rather than re-testing
+  # readability on its own: a second test here previously called an unreadable-but-present project.yml
+  # "no project.yml", which map_verdict()'s own case below already tells apart.
+  case "$(map_lead)" in
+    '')
+      verdict "$1" reachable "no project.yml, so reachability cannot be derived" "" na
+      return ;;
+    unreadable)
+      verdict "$1" reachable \
+        "the project declares a project.yml that cannot be read, so reachability cannot be derived" "" na
+      return ;;
+    unparsed)
+      verdict "$1" reachable \
+        "the map's lead is neither a block mapping nor an empty flow mapping, so reachability cannot be derived" "" na
+      return ;;
+  esac
+  if is_steering_mapped "$2" || is_pointer_reached "$1"; then
     verdict "$1" reachable ""
   else
     verdict "$1" reachable "no steering: map entry names it and no reachable file points at it"
