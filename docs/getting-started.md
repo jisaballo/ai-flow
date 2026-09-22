@@ -42,26 +42,25 @@ npx ai-flow@1.0.0 update           # or whichever version you last had working
 cat ~/.claude/ai-flow/version      # confirm what is now in place
 ```
 
-The installer takes two subcommands: `init` (default — new or existing project, interactive; creates the project's `.ai-flow/` data skeleton and installs the engine) and `update` (unattended — refreshes the engine in `~/.claude`: protocols, skills, the verify workflow, hooks, the ceremony scripts, and the ralph runner; it never writes into a project). A bare path is treated as `init` for back-compat.
+The installer takes two subcommands: `init` (default — new or existing project, interactive; creates the project's `.ai-flow/` data skeleton and installs the engine) and `update` (unattended — refreshes the engine in `~/.claude`: the engine's own operating instructions, protocols, skills, the verify workflow, hooks, the ceremony scripts, and the ralph runner; it never writes into a project). A bare path is treated as `init` for back-compat.
 
 This creates:
 - `.ai-flow/` directory with the project's own data files — the phase protocols are not among them; they install centrally into `~/.claude` and are shared by every project
 - `CLAUDE.md` template (if none exists)
 
-### 2. Set up global instructions
+### 2. The engine's own operating instructions
 
-Copy the global CLAUDE.md to your Claude Code config:
+Nothing to do here for a fresh project: `install.sh init` already installed the engine's operating
+instructions to `~/.claude/ai-flow/AGENTS.md` (refreshed again on every `update`), and step 1 above
+already scaffolded your project's `CLAUDE.md` with one plain, harness-agnostic line pointing at it —
+the plug:
 
-```bash
-mkdir -p ~/.claude
-cp /tmp/ai-flow/global/CLAUDE.md ~/.claude/CLAUDE.md
+```
+Read `~/.claude/ai-flow/AGENTS.md` and follow it.
 ```
 
-If you already have a `~/.claude/CLAUDE.md`, merge the ai-flow sections into it. The key sections are:
-- `## Workflow: .ai-flow` (the entire section)
-- `## Action Boundaries`
-- `## Working Rules`
-- `## Core Principles`
+**Adopting ai-flow into a project that already has its own `CLAUDE.md`** is the one case the installer
+never touches automatically — paste that same line into it by hand.
 
 ### 3. (Optional) Install the global tooling
 

@@ -351,19 +351,18 @@ The default commit format is `type(scope): description`. It is stated in the com
 
 When onboarding team members:
 
-1. They run `./install.sh init` in the shared project (creates the `.ai-flow/` data skeleton; the engine — protocols, skills, workflow, hooks — installs into their `~/.claude`)
-2. They customize the `## Personal Preferences` section of their `~/.claude/CLAUDE.md`
+1. They run `./install.sh init` in the shared project (creates the `.ai-flow/` data skeleton; the engine — its own operating instructions, protocols, skills, workflow, hooks — installs into their `~/.claude`)
+2. Their project's own `CLAUDE.md` already carries the plug pointing at `~/.claude/ai-flow/AGENTS.md` if `install.sh init` scaffolded it fresh; if the project already had its own `CLAUDE.md`, they paste that same line into it by hand
 3. Steering files, product.md, `project.yml`, and project CLAUDE.md are shared via git
 
-To pull framework improvements on any device later, run `./install.sh update` (unattended): it refreshes the engine in `~/.claude` — protocols, skills, the verify workflow, hooks, the ceremony scripts, and the ralph runner — and writes no project file. It makes exactly one change outside `~/.claude`: it points git's `core.hooksPath` at `~/.claude/hooks/git` so the two git guards run in every repository on the machine. An existing global hook path is reported and left untouched. Undo with `git config --global --unset core.hooksPath`.
+To pull framework improvements on any device later, run `./install.sh update` (unattended): it refreshes the engine in `~/.claude` — its own operating instructions, protocols, skills, the verify workflow, hooks, the ceremony scripts, and the ralph runner — and writes no project file. It makes exactly one change outside `~/.claude`: it points git's `core.hooksPath` at `~/.claude/hooks/git` so the two git guards run in every repository on the machine. An existing global hook path is reported and left untouched. Undo with `git config --global --unset core.hooksPath`.
 
 **What's shared** (committed to repo):
 - `.ai-flow/product.md` — product context
 - `.ai-flow/steering/` — domain rules
-- `CLAUDE.md` — project configuration
+- `CLAUDE.md` — project configuration, including the plug
 
 **What's personal** (in `~/.claude/`):
-- `CLAUDE.md` — framework rules + personal preferences
 - Language, response style, custom commands
 
 **What's ephemeral** (gitignored or not committed):
