@@ -1527,6 +1527,31 @@ MID
   # independently.
   grep -q -F 'pencil-design.md' "$ROOT/$CHK91" \
     && a26_91="$a26_91 [$CHK91 still contains the literal 'pencil-design.md']"
+  # A pointer's path is resolved from the same base a map value is (## Reading step 1), never from the
+  # hub that carries it -- so a hub naming a sibling by its BARE FILENAME, with no `.ai-flow/steering/`
+  # prefix, is a different string from the one `is_pointer_reached()` matches verbatim and does not reach
+  # it. Distinguished from an orphan: this file IS named, in the wrong form (T-158).
+  A26B91="$BOX91/a26-bare-sibling"; mk91 "$A26B91"
+  good91 "$A26B91/.ai-flow/steering/bare.md"
+  cat > "$A26B91/.ai-flow/steering/hub3.md" <<'HUB3'
+# Hub Three
+
+## Nano
+
+- **Elsewhere** — the bare file lives at bare.md.
+
+## Elsewhere
+
+Reached at bare.md.
+HUB3
+  printf 'steering:\n  hub3: .ai-flow/steering/hub3.md\n' > "$A26B91/.ai-flow/project.yml"
+  rc91="$(run91 "$A26B91")"
+  mark91="$(na91 ".ai-flow/steering/bare.md" reachable)"
+  [ "${mark91%%|*}" = "$FAILMK91" ] \
+    || a26_91="$a26_91 [bare.md, named by hub3.md's bare filename only, reads '${mark91%%|*}', not failing]"
+  mark91="$(na91 ".ai-flow/steering/hub3.md" reachable)"
+  [ "${mark91%%|*}" = "ok" ] \
+    || a26_91="$a26_91 [hub3.md, its own map key, reads '${mark91%%|*}', not reachable]"
 fi
 [ -z "$a26_91" ] && ok "A26 a steering file is legitimate only when reached -- a map entry, or a one-hop pointer" \
                  || bad "A26 a steering file is legitimate only when reached -- a map entry, or a one-hop pointer:$a26_91"
