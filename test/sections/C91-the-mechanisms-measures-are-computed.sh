@@ -1603,6 +1603,123 @@ HUB5
   mark91="$(na91 ".ai-flow/steering/hub5.md" reachable)"
   [ "${mark91%%|*}" = "ok" ] \
     || a26_91="$a26_91 [hub5.md, its own map key, reads '${mark91%%|*}', not reachable]"
+  # The boundary a full path CAN carry with nothing on one side at all: opening a line, or closing one --
+  # the placement understand.md's Edge Cases names as needing no neighbour character to still pass. Two
+  # SEPARATE boxes, each with the path named only at its one edge -- a single hub naming both edges would
+  # let either placement alone carry the mark, and a bug in only one side would hide behind the other.
+  A26L91="$BOX91/a26-line-start"; mk91 "$A26L91"
+  good91 "$A26L91/.ai-flow/steering/leaf.md"
+  cat > "$A26L91/.ai-flow/steering/hub6.md" <<'HUB6'
+# Hub Six
+
+## Nano
+
+- **Elsewhere** — the leaf file opens a line below with nothing before it.
+
+## Elsewhere
+
+.ai-flow/steering/leaf.md opens this line with nothing before it.
+HUB6
+  printf 'steering:\n  hub6: .ai-flow/steering/hub6.md\n' > "$A26L91/.ai-flow/project.yml"
+  rc91="$(run91 "$A26L91")"
+  mark91="$(na91 ".ai-flow/steering/leaf.md" reachable)"
+  [ "${mark91%%|*}" = "ok" ] \
+    || a26_91="$a26_91 [leaf.md, named at a bare line start in hub6.md, reads '${mark91%%|*}', not reachable]"
+  mark91="$(na91 ".ai-flow/steering/hub6.md" reachable)"
+  [ "${mark91%%|*}" = "ok" ] \
+    || a26_91="$a26_91 [hub6.md, its own map key, reads '${mark91%%|*}', not reachable]"
+  A26E91="$BOX91/a26-line-end"; mk91 "$A26E91"
+  good91 "$A26E91/.ai-flow/steering/leaf.md"
+  cat > "$A26E91/.ai-flow/steering/hub6b.md" <<'HUB6B'
+# Hub Six B
+
+## Nano
+
+- **Elsewhere** — the leaf file closes a line below with nothing after it.
+
+## Elsewhere
+
+The line below it closes at .ai-flow/steering/leaf.md
+HUB6B
+  printf 'steering:\n  hub6b: .ai-flow/steering/hub6b.md\n' > "$A26E91/.ai-flow/project.yml"
+  rc91="$(run91 "$A26E91")"
+  mark91="$(na91 ".ai-flow/steering/leaf.md" reachable)"
+  [ "${mark91%%|*}" = "ok" ] \
+    || a26_91="$a26_91 [leaf.md, named at a bare line end in hub6b.md, reads '${mark91%%|*}', not reachable]"
+  mark91="$(na91 ".ai-flow/steering/hub6b.md" reachable)"
+  [ "${mark91%%|*}" = "ok" ] \
+    || a26_91="$a26_91 [hub6b.md, its own map key, reads '${mark91%%|*}', not reachable]"
+  # The symmetric side of the same boundary rule: a full path immediately PRECEDED by another path/word
+  # character (a longer token the path is only the tail of) must fail the same way a suffixed one does.
+  A26W91="$BOX91/a26-left-boundary"; mk91 "$A26W91"
+  good91 "$A26W91/.ai-flow/steering/leaf.md"
+  cat > "$A26W91/.ai-flow/steering/hub7.md" <<'HUB7'
+# Hub Seven
+
+## Nano
+
+- **Elsewhere** — a renamed copy sits at renamed.ai-flow/steering/leaf.md, not the real one.
+
+## Elsewhere
+
+A renamed copy sits at renamed.ai-flow/steering/leaf.md, not the real one.
+HUB7
+  printf 'steering:\n  hub7: .ai-flow/steering/hub7.md\n' > "$A26W91/.ai-flow/project.yml"
+  rc91="$(run91 "$A26W91")"
+  mark91="$(na91 ".ai-flow/steering/leaf.md" reachable)"
+  [ "${mark91%%|*}" = "$FAILMK91" ] \
+    || a26_91="$a26_91 [leaf.md, named only as the tail of hub7.md's renamed.ai-flow..., reads '${mark91%%|*}', not failing]"
+  mark91="$(na91 ".ai-flow/steering/hub7.md" reachable)"
+  [ "${mark91%%|*}" = "ok" ] \
+    || a26_91="$a26_91 [hub7.md, its own map key, reads '${mark91%%|*}', not reachable]"
+  # A rejected occurrence must not stop the scan: a later, valid occurrence of the same path on the same
+  # line still reaches the candidate. Exercises the scan's own advance-and-retry rather than a first-match
+  # short-circuit.
+  A26R91="$BOX91/a26-retry-loop"; mk91 "$A26R91"
+  good91 "$A26R91/.ai-flow/steering/leaf.md"
+  cat > "$A26R91/.ai-flow/steering/hub8.md" <<'HUB8'
+# Hub Eight
+
+## Nano
+
+- **Elsewhere** — a backup and the real file both get mentioned below.
+
+## Elsewhere
+
+A stale backup sits at .ai-flow/steering/leaf.md.bak, but the file is reached at .ai-flow/steering/leaf.md as documented.
+HUB8
+  printf 'steering:\n  hub8: .ai-flow/steering/hub8.md\n' > "$A26R91/.ai-flow/project.yml"
+  rc91="$(run91 "$A26R91")"
+  mark91="$(na91 ".ai-flow/steering/leaf.md" reachable)"
+  [ "${mark91%%|*}" = "ok" ] \
+    || a26_91="$a26_91 [leaf.md, named once disqualified and once plainly on the same line in hub8.md, reads '${mark91%%|*}', not reachable]"
+  mark91="$(na91 ".ai-flow/steering/hub8.md" reachable)"
+  [ "${mark91%%|*}" = "ok" ] \
+    || a26_91="$a26_91 [hub8.md, its own map key, reads '${mark91%%|*}', not reachable]"
+  # The trailing-dot lookahead is the FULL boundary class (D2), not alnum/underscore alone: a path
+  # extended past its trailing dot into `/legacy` is exactly the "extended into a longer name" shape the
+  # `.bak`/`-old` fixtures already cover from the other two sides.
+  A26D91="$BOX91/a26-dot-extended"; mk91 "$A26D91"
+  good91 "$A26D91/.ai-flow/steering/leaf.md"
+  cat > "$A26D91/.ai-flow/steering/hub9.md" <<'HUB9'
+# Hub Nine
+
+## Nano
+
+- **Elsewhere** — the file was reorganized to .ai-flow/steering/leaf.md./legacy, moved recently.
+
+## Elsewhere
+
+The file was reorganized to .ai-flow/steering/leaf.md./legacy, moved recently.
+HUB9
+  printf 'steering:\n  hub9: .ai-flow/steering/hub9.md\n' > "$A26D91/.ai-flow/project.yml"
+  rc91="$(run91 "$A26D91")"
+  mark91="$(na91 ".ai-flow/steering/leaf.md" reachable)"
+  [ "${mark91%%|*}" = "$FAILMK91" ] \
+    || a26_91="$a26_91 [leaf.md, named only by hub9.md's dot-extended .../legacy path, reads '${mark91%%|*}', not failing]"
+  mark91="$(na91 ".ai-flow/steering/hub9.md" reachable)"
+  [ "${mark91%%|*}" = "ok" ] \
+    || a26_91="$a26_91 [hub9.md, its own map key, reads '${mark91%%|*}', not reachable]"
 fi
 [ -z "$a26_91" ] && ok "A26 a steering file is legitimate only when reached -- a map entry, or a one-hop pointer" \
                  || bad "A26 a steering file is legitimate only when reached -- a map entry, or a one-hop pointer:$a26_91"

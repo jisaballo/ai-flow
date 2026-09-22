@@ -544,7 +544,7 @@ path_bounded_match() {  # $1 = the literal path; $2 = the file to search
         after2  = substr(line, pos + tl + 1, 1)
         if (before  !~ /[A-Za-z0-9._\/-]/ \
             && after1 !~ /[A-Za-z0-9_\/-]/ \
-            && !(after1 == "." && after2 ~ /[A-Za-z0-9_]/)) { found = 1; exit }
+            && !(after1 == "." && after2 ~ /[A-Za-z0-9._\/-]/)) { found = 1; exit }
         start = pos + 1
       }
     }
