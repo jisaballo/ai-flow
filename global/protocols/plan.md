@@ -196,7 +196,7 @@ No task IDs in headers, test names, or comments — the criterion text is the se
 
 ## Constraints
 
-- **Max 3 steps per plan** — if more are needed, the task should be split into smaller tasks
+- **Max 3 steps per plan** — if more are needed, the task should be split into smaller tasks. **The cap is a context budget, not a matter of taste**: a plan is worked in one sitting, so a fourth step is paid for with the context the first three have already spent, and every step after it is planned against a context that has degraded. Splitting buys a fresh sitting; raising the cap buys nothing and spends the same budget worse. The reason is stated here because a constraint that gives only its consequence is the one relaxed by whoever finds three inconvenient.
 - Each step should be independently verifiable (tests pass after each step, not just at the end)
 - **Vertical slices over horizontal layers** — prefer steps that cut through all of the project's layers to deliver one observable behavior end-to-end, rather than steps that build a single layer in isolation. A wrong assumption surfaces at the first slice, not after the UI step. Only split by layer when a slice genuinely exceeds the diff guardrail.
 - **Risk-first ordering** — order the steps so the assumption most likely to break is tested first, subject to the dependencies between them, so the Replan Gate fires before the work is written rather than after. This orders the slices and does not displace the shape rule above it: a plan slices vertically, then orders by risk.
