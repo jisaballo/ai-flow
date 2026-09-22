@@ -522,16 +522,45 @@ is_steering_mapped() {  # $1 = normalised absolute path
   printf '%s\n' "$STEERING_MAPPED" | grep -qxF -- "$1"
 }
 
+# A path token is bounded, never merely found. `title_names_app()` above bounds a bare key the same way
+# on purpose; a path cannot reuse its class outright, because `.`, `/` and `-` are legitimate PARTS of a
+# path where they are noise around a key. So the boundary set widens to match, with one refinement: a
+# single trailing `.` is still a legitimate right edge (ordinary end-of-sentence prose, as the `hub.md`
+# fixture pins with `...both.md.`) unless the character right after THAT dot is itself in the set -- which
+# is what a hub naming its own backup (`....md.bak`) or superseded copy (`....md-old`) looks like, the
+# false `reachable: ok` this bounds. Reads the operator's text -- the candidate's own path -- through
+# `index()`, a literal substring search and never a pattern (the hazard hooks.md names).
+path_bounded_match() {  # $1 = the literal path; $2 = the file to search
+  awk -v t="$1" '
+    BEGIN { tl = length(t) }
+    tl == 0 { next }
+    {
+      line = $0
+      start = 1
+      while ((i = index(substr(line, start), t)) > 0) {
+        pos = start + i - 1
+        before  = (pos > 1) ? substr(line, pos - 1, 1) : ""
+        after1  = substr(line, pos + tl, 1)
+        after2  = substr(line, pos + tl + 1, 1)
+        if (before  !~ /[A-Za-z0-9._\/-]/ \
+            && after1 !~ /[A-Za-z0-9_\/-]/ \
+            && !(after1 == "." && after2 ~ /[A-Za-z0-9._\/-]/)) { found = 1; exit }
+        start = pos + 1
+      }
+    }
+    END { exit(found ? 0 : 1) }
+  ' "$2"
+}
+
 # One hop, and the text matched is the OPERATOR'S -- a relative path, never built into a pattern (the
-# hazard hooks.md names: text the operator wrote must never become a pattern). `grep -F` treats it as a
-# literal string, so a path holding a regex metacharacter is still matched rather than refused or missed.
+# hazard hooks.md names: text the operator wrote must never become a pattern).
 is_pointer_reached() {  # $1 = candidate's path relative to ROOT
   local hub
   [ -d "$DATA/steering" ] || return 1
   for hub in "$DATA"/steering/*.md; do
     [ -e "$hub" ] || continue
     is_steering_mapped "$(normalise "$hub")" || continue
-    grep -qF -- "$1" "$hub" && return 0
+    path_bounded_match "$1" "$hub" && return 0
   done
   return 1
 }
