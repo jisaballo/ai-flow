@@ -43,8 +43,13 @@ A steering file the map **does not name** is checked all the same. The map answe
 receives; shape belongs to where the file lives. An undeclared file is delivered to nobody and still holds
 rules somebody wrote, and a file nothing measures is the drawer everything ends up in.
 
-`pencil-design.md` is reached by the design-session rule and is outside the map; nothing in the mechanism
-applies to it and the check does not read it.
+A file the map does not name may still be reached by a **pointer line** inside a file the map does name
+— a literal relative path, matched verbatim, one hop only (`protocols/context.md` › `## Keeping` ›
+Reachable). A file reached by neither route is reported failing under the rule `reachable`; no filename
+is exempted by name. `pencil-design.md` was once such an exemption, hardcoded in the generic core by this
+operator's own private `CLAUDE.md`; the hardcode is deleted as an anomaly, not parameterised, and an
+adopting project holding that file either makes it legitimate the way any other keyless file is made
+legitimate, or corrects the file's own placement — this mechanism has no opinion on which.
 
 ## When it is written
 
