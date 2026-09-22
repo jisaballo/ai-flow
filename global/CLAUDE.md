@@ -162,7 +162,7 @@ predates this routing keeps the old list until they merge it by hand.
 - **Detect composite tasks** — propose splitting tasks that mix multiple concerns into independent backlog tasks (not subtasks) before planning
 - **Ask contextual questions** — gather all necessary context to produce polished code
 - **Update the task's state sheet** (`artifacts/T-XXX/state.md`) with step progress during execution
-- **Max 3 steps per plan** — split larger work into sub-plans
+- **Max 3 steps per plan** — the cap and the reason for it are stated by `protocols/plan.md` > `## Constraints`; this manual routes and states neither
 - **Test validation REQUIRED** in Execute phase (TDD compliance)
 
 ## Core Principles

@@ -79,10 +79,11 @@ the sheet and the roster row always do.
 
 **Purpose**: Create a concrete, verifiable execution plan.
 
-**Constraints**:
-- Maximum 3 steps (if more are needed, the task should be split)
-- Every step must have a `Verify` command and `Done` criteria
-- Steps must be independently verifiable
+**Constraints**: stated by `protocols/plan.md` — the plan's own constraints in its `## Constraints`
+section, and the obligation that every step carry a `Verify` command and `Done` criteria at that
+protocol's opening. This map states neither: a constraint restated here drifts from the one that is
+read when a plan is actually written, which is what happened to the 3-step cap the moment its reason
+was written down.
 
 **Output**: `artifacts/T-XXX/plan.md`
 
