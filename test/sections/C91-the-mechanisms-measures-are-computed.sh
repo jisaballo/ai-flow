@@ -1530,7 +1530,7 @@ MID
   # A pointer's path is resolved from the same base a map value is (## Reading step 1), never from the
   # hub that carries it -- so a hub naming a sibling by its BARE FILENAME, with no `.ai-flow/steering/`
   # prefix, is a different string from the one `is_pointer_reached()` matches verbatim and does not reach
-  # it. Distinguished from an orphan: this file IS named, in the wrong form (T-158).
+  # it. Distinguished from an orphan: this file IS named, in the wrong form.
   A26B91="$BOX91/a26-bare-sibling"; mk91 "$A26B91"
   good91 "$A26B91/.ai-flow/steering/bare.md"
   cat > "$A26B91/.ai-flow/steering/hub3.md" <<'HUB3'
