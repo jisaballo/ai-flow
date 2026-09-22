@@ -35,9 +35,10 @@ STRUCTURE_RE = re.compile(r'(?i)^\s*structure\s*:\s*context\s*$')
 
 # The measure's own default set, and for the measure's own reason: WHERE THE FILES LIVE. A delivery map
 # is not consulted, so a document borrowed from elsewhere is not judged by ceilings its home refuses and
-# a steering file nobody declared is judged all the same.
+# a steering file nobody declared is judged all the same -- unconditionally: no filename is exempted by
+# name here either, on the same terms context-check.sh's own default set now keeps (protocols/context.md
+# > Keeping > Reachable).
 DATA_FILES = ('product.md', 'decisions-global.md')
-STEERING_EXCLUDED = ('pencil-design.md',)
 
 
 def task_sheet(root: Path, cwd: Path):
@@ -261,8 +262,7 @@ def main():
         parts = inner.split(os.sep)
         if len(parts) == 1 and inner in DATA_FILES:
             is_context = True
-        elif len(parts) == 2 and parts[0] == 'steering' \
-                and parts[1].endswith('.md') and parts[1] not in STEERING_EXCLUDED:
+        elif len(parts) == 2 and parts[0] == 'steering' and parts[1].endswith('.md'):
             is_context = True
 
     if not is_mechanism and not is_context:

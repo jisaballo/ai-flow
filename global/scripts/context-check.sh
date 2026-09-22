@@ -21,9 +21,9 @@
 # that skips what it cannot open is not a check, it is the silence.
 #
 # Usage: context-check.sh [--report] [file …]
-#        Run from a checkout root. With no argument the set is the steering directory's `*.md` less
-#        `pencil-design.md`, plus `product.md` and `decisions-global.md`, once each. `--report` prints
-#        the threshold each verdict applied.
+#        Run from a checkout root. With no argument the set is the steering directory's `*.md`, plus
+#        `product.md` and `decisions-global.md`, once each. `--report` prints the threshold each verdict
+#        applied.
 #
 # `set -e` is deliberately absent. This is a mechanism that COLLECTS verdicts: dying at the first
 # non-zero would report the first failing file and stay silent about every one after it, which is the
@@ -48,7 +48,7 @@ usage() {
 usage: context-check.sh [--report] [file ...]
 
   Run from a checkout root; reads only that checkout's .ai-flow/.
-  With no argument the set is the steering directory's *.md (less pencil-design.md)
+  With no argument the set is the steering directory's *.md
   plus product.md and decisions-global.md, once each.
 
   --report   print the threshold each verdict applied
@@ -209,7 +209,6 @@ if [ "${#ARGS[@]}" -eq 0 ]; then
   if [ -d "$DATA/steering" ]; then
     for f in "$DATA"/steering/*.md; do
       [ -e "$f" ] || continue
-      case "${f##*/}" in pencil-design.md) continue ;; esac
       add_file "$f"
     done
   fi
@@ -448,6 +447,12 @@ measure() {
   if [ "$h1" = 1 ]; then verdict "$rel" marker ""
   else                   verdict "$rel" marker "the file carries $h1 top-level headings, not one"
   fi
+
+  # reachable -- a directory-wide property, so it is asked only of the default survey, on the same terms
+  # map_verdict already keys on. The argument form asks about the files it names, never about the map.
+  if [ "${#ARGS[@]}" -eq 0 ]; then
+    reachable_verdict "$rel" "$f" "$class"
+  fi
 }
 
 # One verdict per map entry: the value resolves, from the CHECKOUT ROOT, to a file that exists.
@@ -496,6 +501,67 @@ map_verdict() {
   done <<MAPENTRIES
 $(map_entries)
 MAPENTRIES
+}
+
+# `reachable`: the rule this measures is protocols/context.md > Keeping > Reachable, and is not restated
+# here.
+#
+# STEERING_MAPPED: every map value that resolves, from the checkout root, to a file under this project's
+# steering directory -- read once, on the same "one scan" discipline APP_MAP already keeps.
+STEERING_MAPPED=""
+while IFS="$(printf '\t')" read -r k v; do
+  [ -n "$k" ] || continue
+  cand="$(normalise "$ROOT/$v")"
+  case "$cand" in "$DATA"/steering/*) STEERING_MAPPED="$STEERING_MAPPED
+$cand" ;; esac
+done <<MAPENTRIES
+$APP_MAP
+MAPENTRIES
+
+is_steering_mapped() {  # $1 = normalised absolute path
+  printf '%s\n' "$STEERING_MAPPED" | grep -qxF -- "$1"
+}
+
+# One hop, and the text matched is the OPERATOR'S -- a relative path, never built into a pattern (the
+# hazard hooks.md names: text the operator wrote must never become a pattern). `grep -F` treats it as a
+# literal string, so a path holding a regex metacharacter is still matched rather than refused or missed.
+is_pointer_reached() {  # $1 = candidate's path relative to ROOT
+  local hub
+  [ -d "$DATA/steering" ] || return 1
+  for hub in "$DATA"/steering/*.md; do
+    [ -e "$hub" ] || continue
+    is_steering_mapped "$(normalise "$hub")" || continue
+    grep -qF -- "$1" "$hub" && return 0
+  done
+  return 1
+}
+
+reachable_verdict() {  # $1 = file as displayed (rel); $2 = its normalised absolute path; $3 = its class
+  if [ "$3" != steering ]; then
+    verdict "$1" reachable "reached by construction, not a steering-directory file" "" na
+    return
+  fi
+  # The map's own validity has one classifier, map_lead(), and this asks it rather than re-testing
+  # readability on its own: a second test here previously called an unreadable-but-present project.yml
+  # "no project.yml", which map_verdict()'s own case below already tells apart.
+  case "$(map_lead)" in
+    '')
+      verdict "$1" reachable "no project.yml, so reachability cannot be derived" "" na
+      return ;;
+    unreadable)
+      verdict "$1" reachable \
+        "the project declares a project.yml that cannot be read, so reachability cannot be derived" "" na
+      return ;;
+    unparsed)
+      verdict "$1" reachable \
+        "the map's lead is neither a block mapping nor an empty flow mapping, so reachability cannot be derived" "" na
+      return ;;
+  esac
+  if is_steering_mapped "$2" || is_pointer_reached "$1"; then
+    verdict "$1" reachable ""
+  else
+    verdict "$1" reachable "no steering: map entry names it and no reachable file points at it"
+  fi
 }
 
 scanned=0

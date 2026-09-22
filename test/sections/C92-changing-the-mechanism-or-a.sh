@@ -423,11 +423,11 @@ else
   # R4 -- the negative control the block had none of. The failure direction here is OVER-refusal, which
   # does not go quiet: it blocks ordinary writes in every adopting project during every task that has
   # declared nothing -- including the writes the guard's own refusal text promises are allowed.
-  # Falsification: widening DATA_FILES, or deleting the STEERING_EXCLUDED clause, must turn this red.
+  # Falsification: widening DATA_FILES must turn this red.
   r4_92=""
   mkdir -p "$P92/.ai-flow/steering/sub" "$P92/template/.ai-flow" "$P92/docs/context"
   for np92 in ".ai-flow/BACKLOG.md" ".ai-flow/STATE.md" ".ai-flow/artifacts/T-XXX/notes.md" \
-              ".ai-flow/steering/pencil-design.md" ".ai-flow/steering/sub/x.md" \
+              ".ai-flow/steering/sub/x.md" \
               "template/.ai-flow/decisions-global.md" "docs/context/context.md" "app.txt"; do
     # The body must be one the structural edit ACTUALLY applies to. Written as 'x' first, every control
     # here exited 0 because `old_string` matched nothing -- the guard's own "the tool refuses this edit
@@ -438,10 +438,20 @@ else
     [ "$rc92" = 0 ] || r4_92="$r4_92 [$np92 is judged (exit $rc92) and is not this rail's]"
     [ -z "$out92" ] || r4_92="$r4_92 [$np92 drew output where the rail must be silent]"
   done
-  # And the refusing side must cover BOTH members of the judged set -- only one was ever exercised.
+  # And the refusing side must cover EVERY member of the judged set -- only one was ever exercised.
+  # `STEERING_EXCLUDED` is gone, so `pencil-design.md` moves here from the list above: it is now judged
+  # like any other top-level steering file, on the path's shape alone, unconditionally.
   printf '# Product\n\n## Nano\n\n- **Alpha** - x\n\n## Alpha\n\nrule\n' > "$P92/.ai-flow/product.md"
   out92="$(hookcall "$GUARD92" "$P92" "$P92/.ai-flow/product.md" Edit ',"old_string":"## Alpha","new_string":"## Beta\n\nb\n\n## Alpha"')"; rc92=$?
-  [ "$rc92" = 2 ] || r4_92="$r4_92 [product.md, the other member of the judged set, exits $rc92 and is not judged]"
+  [ "$rc92" = 2 ] || r4_92="$r4_92 [product.md, a member of the judged set, exits $rc92 and is not judged]"
+  setdg92_at "$P92/.ai-flow/steering/pencil-design.md"
+  out92="$(hookcall "$GUARD92" "$P92" "$P92/.ai-flow/steering/pencil-design.md" Edit ",$STRUCT92")"; rc92=$?
+  [ "$rc92" = 2 ] \
+    || r4_92="$r4_92 [.ai-flow/steering/pencil-design.md, no longer exempt, exits $rc92 and is not judged]"
+  # Independently of the behavioural rows above: the literal itself, and the tuple that carried it, are
+  # gone from the guard's own text -- not renamed, not joined by a second copy.
+  grep -q -F 'pencil-design.md' "$GUARD92" && r4_92="$r4_92 [$GUARD92 still contains the literal 'pencil-design.md']"
+  grep -q -F 'STEERING_EXCLUDED' "$GUARD92" && r4_92="$r4_92 [$GUARD92 still declares STEERING_EXCLUDED]"
   [ -z "$r4_92" ] && ok "R4 the judged set has a negative control" \
                   || bad "R4 the judged set has a negative control ($r4_92)"
 

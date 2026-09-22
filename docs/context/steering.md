@@ -43,8 +43,8 @@ A steering file the map **does not name** is checked all the same. The map answe
 receives; shape belongs to where the file lives. An undeclared file is delivered to nobody and still holds
 rules somebody wrote, and a file nothing measures is the drawer everything ends up in.
 
-`pencil-design.md` is reached by the design-session rule and is outside the map; nothing in the mechanism
-applies to it and the check does not read it.
+How a file the map does not name can still earn a reading is `protocols/context.md` › `## Keeping` ›
+Reachable, and is not restated here; no filename is exempted by name.
 
 ## When it is written
 
