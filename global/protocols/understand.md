@@ -44,12 +44,12 @@ From a **linked worktree** the Scope Contract is not local: the ledger stays wit
 Exception: if the task's own files contradict an assumption in the Scope Contract, flag it to the user — re-scoping investigation is then allowed. A wrong contract is a Replan signal, not a reason to stay blind.
 
 **The backstop**: where the task's own `brief.md` exists (the Brief read step below), also read the epic's
-Execution Order for a line struck later than the brief's own last Sightings entry that names this task as
-affected, with no matching entry already in the brief's own log — Verify protocol > Sibling impact check is
-the primary path that keeps the two in step, and this is what catches a miss in it rather than the
-mechanism itself. A struck line naming this task with a matching log entry is not a miss. No `brief.md`, or
-no struck line naming this task since its brief's last entry, is nothing to catch — this is a check for a
-gap, not a scan that must find one.
+Execution Order for every struck line whose "affected:" field names this task, and check each against the
+brief's own Sightings log for an entry sourced from that same closing task — Verify protocol > Sibling
+impact check is the primary path that keeps the two in step, and this is what catches a miss in it rather
+than the mechanism itself. A struck line naming this task with a matching log entry is not a miss. No
+`brief.md`, or no struck line's "affected:" field naming this task, is nothing to catch — this is a check
+for a gap, not a scan that must find one.
 
 ## Automatic Task Split
 
