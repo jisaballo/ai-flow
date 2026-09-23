@@ -75,6 +75,7 @@ if ! T55="$(mkbox)" || [ ! -d "$T55" ]; then
   bad "A8 with no python3 the note speaks rather than falling silent (no sandbox: mktemp -d failed)"
   bad "A9 the size rule names three causes and the third's remedy is not a prune (no sandbox: mktemp -d failed)"
   bad "A10 no document states a line budget for the ledger (no sandbox: mktemp -d failed)"
+  bad "A11 the hook's own note text drops the retired EXECUTION-ORDERS destination (no sandbox: mktemp -d failed)"
 elif [ ! -r "$GRD55" ] || [ ! -s "$GRD55" ] || [ ! -r "$BLG55" ] || [ ! -s "$BLG55" ]; then
   bad "A1 a backlog over its word budget is noted, not refused (the guard or the protocol is unreadable)"
   bad "A2 the firm note states both the measurement and the threshold (the guard or the protocol is unreadable)"
@@ -86,6 +87,7 @@ elif [ ! -r "$GRD55" ] || [ ! -s "$GRD55" ] || [ ! -r "$BLG55" ] || [ ! -s "$BLG
   bad "A8 with no python3 the note speaks rather than falling silent (the guard or the protocol is unreadable)"
   bad "A9 the size rule names three causes and the third's remedy is not a prune (the guard or the protocol is unreadable)"
   bad "A10 no document states a line budget for the ledger (the guard or the protocol is unreadable)"
+  bad "A11 the hook's own note text drops the retired EXECUTION-ORDERS destination (the guard or the protocol is unreadable)"
   rm -rf "$T55"
 else
 
@@ -443,4 +445,19 @@ assert chr(34) in t and chr(92) in t and chr(10) in t, "the escaper dropped what
   [ "$(g55 'lines \(budget')" -eq 0 ]             || c10_55="$c10_55 [the guard still reports the ledger in lines]"
   [ -z "$c10_55" ] && ok "A10 no document states a line budget for the ledger" \
                    || bad "A10 no document states a line budget for the ledger:$c10_55"
+
+  # --- A11 — the hook's OWN emitted note text, not the protocol prose A9 reads
+  # A9 above reads backlog.md's prose (SZB55); this reads what the hook itself puts on stdout, the literal
+  # message an operator sees. The two can drift independently — T-167 trimmed the hook's own cause list to
+  # drop the retired epic-close destination, and until this row nothing in the suite read the hook's
+  # emitted string at all (T-167's own conformance-baseline manifest disclosed this as an open gap).
+  P55N="$T55/n"; mk55 "$P55N" ros55 8001
+  o55="$(run55 "$P55N" "$UPS55")"
+  c11_55=""
+  case "$o55" in *"closed epic rows -> archive/EPICS.md"*) : ;; \
+    *) c11_55="$c11_55 [the note no longer names archive/EPICS.md as the closed-epic-row destination]" ;; esac
+  case "$o55" in *EXECUTION-ORDERS*) \
+    c11_55="$c11_55 [the note still promises an archive/EXECUTION-ORDERS.md destination, retired by T-167]" ;; esac
+  [ -z "$c11_55" ] && ok "A11 the hook's own note text drops the retired EXECUTION-ORDERS destination" \
+                   || bad "A11 the hook's own note text drops the retired EXECUTION-ORDERS destination:$c11_55"
 fi
