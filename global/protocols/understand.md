@@ -43,6 +43,14 @@ From a **linked worktree** the Scope Contract is not local: the ledger stays wit
 
 Exception: if the task's own files contradict an assumption in the Scope Contract, flag it to the user — re-scoping investigation is then allowed. A wrong contract is a Replan signal, not a reason to stay blind.
 
+**The backstop**: where the task's own `brief.md` exists (the Brief read step below), also read the epic's
+Execution Order for a line struck later than the brief's own last Sightings entry that names this task as
+affected, with no matching entry already in the brief's own log — Verify protocol > Sibling impact check is
+the primary path that keeps the two in step, and this is what catches a miss in it rather than the
+mechanism itself. A struck line naming this task with a matching log entry is not a miss. No `brief.md`, or
+no struck line naming this task since its brief's last entry, is nothing to catch — this is a check for a
+gap, not a scan that must find one.
+
 ## Automatic Task Split
 
 **BEFORE asking questions**, analyze if the task mixes multiple concerns:
@@ -152,7 +160,9 @@ Then exactly one of two outcomes:
   pending work, precisely what a written reason had killed. **Sightings live in that same file under a
   single `## Sightings` section, one `###` per entry met** — not as `##` headings of their own, for the
   same reason discards are not: that consumer would republish a sighting as a finding this task never
-  made.
+  made. **A finding whose ground is an open sibling task's own captured `brief.md` stages the same way** —
+  under `## Sightings`, naming the sibling, not under a `##` heading of its own — since it is a sighting
+  against a sibling's captured context and not a finding this task owns or defers to the Icebox.
 
 **Where a staged finding goes next is the write-back at this task's close** — `Icebox write-back`, step 4
 of the single-task archive checklist (see Backlog protocol). It publishes what the task found and did not
@@ -187,6 +197,14 @@ than trust it — a brief that turns out stale is not a defect in the brief, it 
 job. A task with no `brief.md` (a row captured before this layout shipped, or migrated only as a row) is
 never read as an error: its absence is read exactly as an absent `## Icebox` section is read below — zero
 found, not broken.
+
+**Absorbed close**: where the brief exists and its own Sightings log shows the task narrowed to nothing, or
+falsified — whether the log entry came from the write-back's Sibling publication or from the backstop above
+catching a miss — this phase stops here. No Business Frame is drafted, no `understand.md` is written, and
+the task closes as **absorbed**: the unchanged Closing a Workstream ceremony (Backlog protocol), where move
+1's approval covers the decision to absorb rather than a diff, move 3's merge acts on a branch with nothing
+to merge, and the archive records "absorbed" and the reason in place of a commit sha. A brief whose log
+holds neither verb continues into the scoping pass exactly as before.
 
 **Icebox scan (always, inline)** — a step of that same pass, run once it holds the candidate areas and
 before the unknowns are written. It reads **only the summary lines** in the ledger's `## Icebox`, one per
