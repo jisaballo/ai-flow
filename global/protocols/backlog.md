@@ -259,20 +259,20 @@ investigation never moves into it.
 
 ### `artifacts/E-XXX/epic.md` — the epic's Scope Contract and Execution Order
 
-Written once investigation produces the epic (see Epic Scope Contract below). It holds what an inline
-BACKLOG.md block held until now: the frozen Scope Contract and the Execution Order, as a numbered list. A
-front in a linked worktree reads it read-only from the main checkout, exactly as it read BACKLOG.md's own
-block before this file existed (see Understand protocol > Epic-Scoped Understanding).
+Written once investigation produces the epic, whose three required fields are Epic Scope Contract's own
+below and are not restated here. It holds what an inline BACKLOG.md block held until now: the frozen
+Scope Contract and the Execution Order, as a numbered list. A front in a linked worktree reads it
+read-only from the main checkout, exactly as it read BACKLOG.md's own block before this file existed (see
+Understand protocol > Epic-Scoped Understanding).
 
 ```markdown
 # E-XXX — [epic name]
 
 ## Scope Contract
 
-- **Goal**: one sentence — what done looks like for the epic.
-- **Planned Tasks**: the task list produced by the investigation (baseline for the Growth Budget).
-- **Non-Goals**: explicit exclusions the investigation saw, plus the standing ones ("Do NOT refactor
-  adjacent code", "Do NOT fix pre-existing issues found along the way").
+- **Goal**: ...
+- **Planned Tasks**: ...
+- **Non-Goals**: ...
 
 ## Execution Order
 
