@@ -56,7 +56,8 @@ already scaffolded your project's `CLAUDE.md` with one plain, harness-agnostic l
 the plug:
 
 ```
-Read `~/.claude/ai-flow/AGENTS.md` and follow it.
+Read `~/.claude/ai-flow/AGENTS.md` and follow it — that file carries the ai-flow engine's own
+operating instructions, refreshed by the installer on every update.
 ```
 
 **Adopting ai-flow into a project that already has its own `CLAUDE.md`** is the one case the installer
