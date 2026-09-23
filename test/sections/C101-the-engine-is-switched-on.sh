@@ -1,7 +1,7 @@
 echo "== C101: the engine is switched on only where a project asks for it =="
-# Generated in the Conform phase from understand.md's Verifiable Criteria (T-163). Every row is
-# functional -- it runs the real installer against a sandboxed HOME and target -- because the claims
-# are about what the installer DOES, not about which lines its source happens to contain today.
+# Generated in the Conform phase from understand.md's Verifiable Criteria. Every row is functional --
+# it runs the real installer against a sandboxed HOME and target -- because the claims are about what
+# the installer DOES, not about which lines its source happens to contain today.
 
 # A1/A2/A4a -- one sandboxed `init`, the accept path on its first prompt (before this task that prompt
 # offers the old global manual; after it, the prompt offers the tooling install and the old prompt is
@@ -69,4 +69,18 @@ if [ -f "$TH104/.claude/ai-flow/AGENTS.md" ] && ! grep -q 'STALE-SENTINEL-T163' 
   ok "A4b the engine's operating-instructions file is refreshed on update, not left stale"
 else
   bad "A4b update left ~/.claude/ai-flow/AGENTS.md stale or missing"
+fi
+
+# A5 -- the heading alone (guarded by C47) says nothing about its body: the body must stop inviting an
+# in-place edit of a file the installer now overwrites every update, and point customization at the
+# project's own file instead. Read from the INSTALLED copy the A1/A2/A4a sandbox above already produced,
+# never from the repo's own source -- a new site reading this engine's own documents as text has no
+# independent oracle and is refused outright (C98).
+PP101="$(awk '/^## Personal Preferences$/{f=1;next} /^## /{f=0} f' "$TH101/.claude/ai-flow/AGENTS.md")"
+if printf '%s' "$PP101" | grep -qi 'Customize this section for your workflow'; then
+  bad "A5 the installed engine instructions still invite an in-place edit of the shipped file"
+elif ! printf '%s' "$PP101" | grep -qi 'own project'; then
+  bad "A5 the installed engine instructions do not point customization at the project's own file"
+else
+  ok "A5 the installed engine instructions point customization at the project's own file, not an in-place edit"
 fi
