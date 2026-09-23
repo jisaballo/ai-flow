@@ -245,9 +245,9 @@ install_engine() {
   sweep_dir "$HOME/.claude/ai-flow/docs" "$DOCS"
 
   # The engine's own operating instructions, fetched last and unconditionally: every project on the
-  # machine used to inherit this file's predecessor for free the moment ai-flow was installed anywhere
-  # (T-163). Placed after the protocols/docs fetches above so a fixture built around "the first file
-  # this function fetches is a protocol" (C21, C48) keeps meaning what it already asserts.
+  # machine used to inherit this file's predecessor for free the moment ai-flow was installed anywhere.
+  # Placed after the protocols/docs fetches above so a fixture built around "the first file this
+  # function fetches is a protocol" (C21, C48) keeps meaning what it already asserts.
   fetch_file "global/CLAUDE.md" "$HOME/.claude/ai-flow/AGENTS.md"
   echo "  [ok] Engine instructions installed to ~/.claude/ai-flow/AGENTS.md"
 }
