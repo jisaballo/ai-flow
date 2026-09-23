@@ -1189,14 +1189,20 @@ someone noticed.
    An epic whose `epic.md` carries **no numbered order list** — the Scope Contract requires Goal, Planned
    Tasks and Non-Goals, never an order — has nothing to strike, and the step **says so** rather than
    reading as an edit somebody forgot.
+   **The same edit also (re)writes that epic's `## Resume from here`** with this close's own next action —
+   never a step of its own, on the same "one edit, several levels" idiom the paragraph above already names
+   for the row, the order line and the epic's status together.
 7. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
 8. Leave the workstream row to move 9 of `## Closing a Workstream`, its sole owner: the row is removed
    only when the front has no next task, and a front continuing its chain keeps its row with the task
    field advanced (coordinator only — other open fronts keep theirs). **The same act rewrites the front's
    mutable label** where its tool offers one, to the task the row now names — this is the only statement
    of the continuing case, so a label left to an act of its own is a label nobody would ever rewrite, and
-   the front would go on announcing a task that closed here. Where the tool offers none there is nothing
-   to rewrite and the row is the whole of it (see move 5 of `## Opening a Workstream`). The task's
+   the front would go on announcing a task that closed here. **On the coordinator's own row, the same write
+   also updates the Epic column** where the task it now names belongs to a different epic than the one
+   just closed — switching epics is this act, never a step of its own (see `Epic` under `STATE.md — the
+   roster` above). Where the tool offers none there is nothing to rewrite and the row is the whole of it
+   (see move 5 of `## Opening a Workstream`). The task's
    `state.md` is still here: it goes with `artifacts/T-XXX/` at move 7 of the ceremony, after this
    checklist has finished. The relation a reader needs is *later*, not *later by N* — a distance written
    out here is wrong the next time the ceremony gains a move, and nothing would notice.
