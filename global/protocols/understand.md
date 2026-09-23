@@ -29,7 +29,7 @@ Holes in the frame become the FIRST round of questions — before any technical 
 
 ## Epic-Scoped Understanding
 
-From an epic's **second task onward**, do NOT relaunch broad Explore agents. Read the epic's Scope Contract (its Execution Order block in BACKLOG.md) plus the task's understand.md if it was created upfront at epic planning; investigation is limited to the task's own files. Anything noticed outside them goes through Discovery Triage — it does NOT widen this task's investigation.
+From an epic's **second task onward**, do NOT relaunch broad Explore agents. Read the epic's Scope Contract (`artifacts/E-XXX/epic.md`) plus the task's understand.md if it was created upfront at epic planning; investigation is limited to the task's own files. Anything noticed outside them goes through Discovery Triage — it does NOT widen this task's investigation.
 
 **The Icebox scan is exempt from the second of the two restrictions above** — the limit to the task's own
 files — and still runs in full. It buys no licence over the first: the cap on broad Explore agents stands
@@ -39,7 +39,7 @@ ever surface. The exemption is written here rather than left to
 inference because second-and-later tasks are the majority: a scan that quietly stopped running on them
 would die exactly where this epic's own evidence says it is needed.
 
-From a **linked worktree** the Scope Contract is not local: the ledger stays with the coordinator, so locate the main checkout with git's own worktree listing (`git worktree list` — the main worktree is its first entry, the same anchor the guardrail hooks resolve) and read its `BACKLOG.md` read-only — never copy it in, and never write there. A copy would go stale against a contract the coordinator can amend; the read does not. If the main checkout or its `BACKLOG.md` cannot be reached, say so and stop: an unreadable contract is a blocked Understand, never an absent constraint.
+From a **linked worktree** the Scope Contract is not local: the ledger stays with the coordinator, so locate the main checkout with git's own worktree listing (`git worktree list` — the main worktree is its first entry, the same anchor the guardrail hooks resolve) and read its `artifacts/E-XXX/epic.md` read-only — never copy it in, and never write there. A copy would go stale against a contract the coordinator can amend; the read does not. If the main checkout or its `artifacts/E-XXX/epic.md` cannot be reached, say so and stop: an unreadable contract is a blocked Understand, never an absent constraint.
 
 Exception: if the task's own files contradict an assumption in the Scope Contract, flag it to the user — re-scoping investigation is then allowed. A wrong contract is a Replan signal, not a reason to stay blind.
 
