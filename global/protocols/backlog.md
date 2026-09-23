@@ -63,6 +63,16 @@ created it, and this column is the only thing that says what that was. And the a
 in the coordinator, which has nothing else to learn the front's tool from. The coordinator's own row has
 nothing to name — nothing created it.
 
+**Epic**, on the coordinator's own row, names the epic it is actively driving — every other open epic is
+paused by definition, and pausing one costs nothing to declare: no second row, no separate flag, nothing
+elsewhere in this file to keep in step with it. No new column: the table already carries one, and a front's
+own row already uses it to name the epic its own task belongs to — the coordinator's row is the same
+column read for the same fact, one epic at a time. Activating a task of a different epic switches the
+column, as the same write that advances the Task field (step 8 of the After ARCHIVE checklist, below) —
+never a step of its own. What makes pausing an epic costless is `epic.md`'s own `## Resume from here`,
+rewritten at every task close of that epic (see `artifacts/E-XXX/epic.md` below); resuming a paused
+epic is `### Resolving the task`'s own extension, below.
+
 ```markdown
 # Session State
 
@@ -263,7 +273,10 @@ Written once investigation produces the epic, whose three required fields are Ep
 below and are not restated here. It holds what an inline BACKLOG.md block held until now: the frozen
 Scope Contract and the Execution Order, as a numbered list. A front in a linked worktree reads it
 read-only from the main checkout, exactly as it read BACKLOG.md's own block before this file existed (see
-Understand protocol > Epic-Scoped Understanding).
+Understand protocol > Epic-Scoped Understanding). **`## Resume from here`** is the epic's own cross-session
+handoff: rewritten at every task close of this epic, in the same edit that already strikes that task's
+Execution Order line (After ARCHIVE checklist, step 6, below) — never a separate step, and never a place
+that goes stale between closes.
 
 ```markdown
 # E-XXX — [epic name]
@@ -278,6 +291,10 @@ Understand protocol > Epic-Scoped Understanding).
 
 1. T-XXX — one line of what it does
 2. T-YYY — one line of what it does
+
+## Resume from here
+
+- next action: ...
 ```
 
 An epic whose investigation produced no numbered order yet — the Scope Contract requires Goal, Planned
@@ -327,6 +344,26 @@ contradict it. Two or more sheets and this case falls straight to rung 3.
    checkout does not own, and the one that closes a task deletes what it archived from every checkout
    that holds it. A rung crediting the opening alone reads as though the situation could only be born
    at creation, and the one that actually produces it is a front taking on its next task.
+
+#### Resuming a paused epic
+
+The ladder above answers which *task* a checkout is on. This answers which *task of a paused epic* the
+coordinator resumes — a separate question, since the roster's `Epic` column names the epic being driven
+and every other open epic is paused (see `STATE.md — the roster` above), and pausing one stores nothing
+about where it was left: both tiers below are derived at read time, against the epic's own `epic.md`, never
+read from a stored pointer.
+
+- **A task named in the epic's own Execution Order whose `artifacts/T-XXX/state.md` still declares
+  `released-branch:`** is resumed first. Real paused work in flight — a claim released when a checkout
+  moved on to something else, papers and branch both still standing (rung 2 above) — outranks the epic's
+  own stated next action, because it is further along than a plan can say it is.
+- **Failing that, whatever the epic's own `## Resume from here` names as the next action.**
+
+`continua`/`continue`, invoked with no epic named: with more than one epic open it lists every open epic
+and asks which to resume — never a silent choice among them, never a bare refusal. With exactly one open
+it resumes that epic directly, on the same terms rung 3 above answers a shared state naming exactly one
+task: there is no decision to make over a single option, so asking over it answers nothing a silent
+resume would not.
 
 ### The phase precondition
 
