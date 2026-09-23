@@ -710,6 +710,16 @@ When archiving a task, **always** generate `.ai-flow/archive/T-XXX/summary.md`:
 - **Epic:** [E-XXX if applicable, or "none"]
 ```
 
+**A task closing absorbed** has no diff and no commit, so the template's `Commit(s):` and `Files modified:`
+fields have nothing to hold — the absorbed variant drops both and states the reason in their place:
+```markdown
+# T-XXX: [Title]
+- **Completed:** [date]
+- **Absorbed:** [the reason, from the brief's own Sightings log — what narrowed it to nothing, or falsified it]
+- **Key decisions:** [1-2 lines]
+- **Epic:** [E-XXX if applicable, or "none"]
+```
+
 This provides single-file context recovery without reading multiple artifacts.
 
 ## Handling Composite Tasks in Backlog
@@ -932,7 +942,10 @@ was written when the merge was the last thing that could fail.
    was worked in one, the task's own commits on the trunk where it was worked in the coordinator.
    Nothing merges without it and nothing is published without it. This is the ceremony's only approval,
    and it is the same approval either way — a second gated move would force a reader to work out which
-   of the two was theirs, in the coordinator as much as in a front.
+   of the two was theirs, in the coordinator as much as in a front. **A task closing absorbed** (Understand
+   protocol > the brief-reading step) has no diff for this move to cover: the approval instead covers the
+   decision to absorb it — that its own brief's Sightings log narrowed it to nothing, or falsified it — and
+   nothing else changes about this move.
 
 2. **The coordinator collects the task's papers.** `artifacts/T-XXX/` is written in the checkout where
    the task is worked and lives outside version control, so it does not travel with the branch and the
@@ -954,7 +967,9 @@ was written when the merge was the last thing that could fail.
    the only thing that knows the current one. If it cannot complete, the ceremony stops
    here: the front stays open and the record is not written, because a task recorded as done that is not
    in the trunk is a lie in the record. The papers are already safe — that is what collecting first
-   bought.
+   bought. **A task closing absorbed** has nothing on its branch to merge — the move runs and reports
+   nothing to land, rather than being skipped: a merge that never ran and a merge with an empty diff read
+   identically to a later checklist unless this move says which one happened.
 
 4. **The record is written, and only here.** What this move runs is the single-task archive checklist
    below, plus the epic-completion checklist when the epic ends with this task. A quick task has no papers
@@ -1061,22 +1076,35 @@ someone noticed.
 1. **Steering update**: did the task teach or modify a domain rule? -> place it and land it as `protocols/context.md` states, which owns where a lesson goes and what one edit must carry. `~/.claude/ai-flow/scripts/context-check.sh` on the file is this move's `Verify`. No new rule learned -> skip.
 2. **product.md write-back**: copy every rule from understand.md's `New business rules minted` into product.md, under the key each belongs to, with provenance — and sharpen a term where the task sharpened one. Which key a business rule belongs to, and the shape of its line, are `protocols/context.md`'s. `~/.claude/ai-flow/scripts/context-check.sh` on the file is this move's `Verify`. None minted -> skip.
 3. **Global decision write-back**: every Decision Register entry the plan marked `(global)` becomes a section of `decisions-global.md` in that file's format — context, decision, alternatives with the reason each was rejected. A decision that reaches no further than this task is not copied here. `~/.claude/ai-flow/scripts/context-check.sh` on the file is this move's `Verify`. None marked -> skip.
-4. **Icebox write-back**: publish what this task found and did not own, and amend what it touched.
-   Two halves, and **both are shown to the operator — nothing is written until they approve**. That is
-   the whole repair: the shared list grew unowned because entries reached it while nobody was reading.
-   **Additions** are the findings staged under their own `##` headings in
+4. **Icebox write-back**: publish what this task found and did not own, amend what it touched, and publish
+   what it saw affect a sibling. Three outputs, and **all are shown to the operator — nothing is written
+   until they approve**. That is the whole repair: the shared list grew unowned because entries reached it
+   while nobody was reading. **Additions** are the findings staged under their own `##` headings in
    `artifacts/T-XXX/discoveries.md`; the `## Discarded` section is not read here, and a discard's reason
    dies with the papers, which is the trade the routing test already states out loud. The `## Sightings`
-   section is not read here either, and for a different reason: it is the other half's input, not a
+   section is not read here either, and for a different reason: it is the other two outputs' input, not a
    finding, and read at this level it would be republished as pending work the task never found.
-   **Amendments** are the entries this task touched: each sighting staged under `## Sightings` is published
-   by appending it to that entry's own log, the index line is then **regenerated from the body within its
-   budget** — rewritten, never appended to — and an entry this task fixed, or whose sighting `falsified` it
-   or `narrowed` it to nothing, is **retired**, with the reason it died written into its
-   body. Retiring is the cheapest reaping there is — the only reader who can kill an entry for nothing is
-   the one who already has the context loaded. This move is the **only** act that admits an entry to
-   `## Icebox`; nothing staged reaches it on its own, and nothing reaches it while work is in flight. The
-   epic-close sweep writes here too, but only to take out what it promotes or retires.
+   **Amendments** are the Icebox entries this task touched: each sighting staged under `## Sightings` and
+   naming an `IB-XXX` entry is published by appending it to that entry's own log, the index line is then
+   **regenerated from the body within its budget** — rewritten, never appended to — and an entry this task
+   fixed, or whose sighting `falsified` it or `narrowed` it to nothing, is **retired**, with the reason it
+   died written into its body. Retiring is the cheapest reaping there is — the only reader who can kill an
+   entry for nothing is the one who already has the context loaded. This move is the **only** act that
+   admits an entry to `## Icebox`; nothing staged reaches it on its own, and nothing reaches it while work
+   is in flight. The epic-close sweep writes here too, but only to take out what it promotes or retires.
+   **Sibling publication** is the third output: at publication, each staged sighting naming an open sibling
+   is re-resolved against BACKLOG.md's Ready/Active table first — where it no longer resolves open, because
+   the sibling closed or archived since Verify staged it, nothing is written for it (no `brief.md` is
+   resurrected, its archive is never touched, and it is never re-routed to `## Icebox`), and the close's own
+   Archive Summary names which sighting(s) were dropped and why. Where it still resolves open, each sighting
+   staged under `## Sightings` and naming it instead of an Icebox entry is published by appending it to that sibling's own
+   `artifacts/T-YYY/brief.md` `## Sightings` log — never to `## Icebox`, and never minting an `IB-XXX`
+   identifier. Where the sibling has no `brief.md` yet (Verify protocol > Sibling impact check, its brief-
+   less case), this move creates one first: first line `# T-YYY — ` followed by the sibling's own row in
+   BACKLOG.md's Ready/Active table (the business statement Task Entry Format already asks every row to
+   lead with), verbatim, then the sighting appended under `## Sightings` below it. A
+   sibling no close's sighting ever touches still gets no `brief.md` from this move — creation happens only
+   at the moment a sighting is about to be written onto it.
 
    An admitted addition becomes `icebox/IB-XXX.md`. The body is the essay the task already wrote,
    **moved verbatim, not authored again** — an essay re-authored at the close is re-authored by whoever
@@ -1115,6 +1143,12 @@ someone noticed.
    row wrote the record, removed the row and left the task listed as pending in its own epic's plan, each
    struck by hand afterwards. The struck line takes the form the archived orders already use:
    `` ~~**T-XXX**~~ — **done** (`sha`): one line of what shipped. See `archive/T-XXX/summary.md`. ``
+   Where move 4's Sibling publication published one or more sightings this close, the same struck line
+   names them: `` ~~**T-XXX**~~ — **done** (`sha`): one line of what shipped (affected: T-YYY[, T-ZZZ]).
+   See `archive/T-XXX/summary.md`. `` A close with no published sighting leaves the struck line exactly as
+   it already reads, with no empty "affected:" field. **A task closing absorbed** strikes the same line
+   with no commit to name: `` ~~**T-XXX**~~ — **absorbed**: [the reason, from the brief's own Sightings
+   log]. See `archive/T-XXX/summary.md`. `` — never a sha, since nothing was committed.
    An epic whose `epic.md` carries **no numbered order list** — the Scope Contract requires Goal, Planned
    Tasks and Non-Goals, never an order — has nothing to strike, and the step **says so** rather than
    reading as an edit somebody forgot.
