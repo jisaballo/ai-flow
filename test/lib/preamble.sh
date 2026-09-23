@@ -211,7 +211,7 @@ VP="global/protocols/verify.md"
 VS="global/skills/verify/SKILL.md"
 VW="global/workflows/verify-review.js"
 MAN="global/CLAUDE.md"
-MANTWIN="${HOME:-}/.claude/CLAUDE.md"   # guarded: the suite runs under set -u and the twin is optional
+MANTWIN="${HOME:-}/.claude/ai-flow/AGENTS.md"   # guarded: the suite runs under set -u and the twin is optional
 BLG24="global/protocols/backlog.md"
 S71='[[:space:]]+'
 
@@ -474,10 +474,10 @@ msect() { awk -v h="$2" '$0 ~ h {f=1;next} (f && /^#+ /){exit} f' "$1"; }
 # property of the bullet, never of where its prose wraps or of the neighbouring bullet's words.
 mbul() { msect "$1" "$2" | awk -v s="$3" '/^- /{ if(f) exit; f=($0 ~ s) } f' | tr -s ' \n' '  '; }
 
-# One fact, checked identically in both copies. The live twin carries the user's own language and
-# sections, so every fact below is matched by what it says and never by the text around it. The remedy
-# names the hand-merge because nothing distributes this file: the installer writes it only when absent
-# and the drift guard excludes it as user-owned (global/hooks/drift-check.sh).
+# One fact, checked identically in both copies. The live twin is the INSTALLED engine manual
+# (~/.claude/ai-flow/AGENTS.md), refreshed unconditionally by the installer on every `init` and `update`
+# — so a mismatch here means the install is stale, and the remedy is to re-run the installer, never a
+# hand-merge.
 # Initialised HERE, beside the helper that writes it, and not in the one section that reports it. A
 # counter a shared helper increments but only C17 declares dies under `set -u` the moment any OTHER
 # caller reaches the skip branch -- `bash test/validate.sh C47` on a host with no live twin, which is a
@@ -490,9 +490,9 @@ manfact() {
   # manual the reader may not own — and on a host without one it turns the documented skip into a failure.
   if [ -f "$MANTWIN" ]; then
     "$fn" "$MANTWIN" && ok "the live twin: $what" \
-      || bad "the live twin: $what (port the edit by hand — nothing distributes ~/.claude/CLAUDE.md)"
+      || bad "the live twin: $what (re-run the installer — it refreshes ~/.claude/ai-flow/AGENTS.md unconditionally)"
   else
-    echo "  [skip] live CLAUDE.md twin absent — the shipped copy carries the fact"
+    echo "  [skip] installed AGENTS.md twin absent — the shipped copy carries the fact"
     C17_SKIPPED=$((C17_SKIPPED+1))
   fi
 }

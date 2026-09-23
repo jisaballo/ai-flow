@@ -145,7 +145,7 @@ AI_FLOW_EXCLUSIVE="protocols ralph scripts docs"
 # Map each engine file in the clone's HEAD to its installed location
 installed_path() {
   case "$1" in
-    global/CLAUDE.md) echo "" ;;                                  # user-owned, never compared
+    global/CLAUDE.md) echo "$HOME/.claude/ai-flow/AGENTS.md" ;;   # refreshed unconditionally, same as protocols/docs
     docs/customization.md) echo "$HOME/.claude/ai-flow/docs/customization.md" ;;
     docs/*) echo "" ;;                                            # read before anything is installed
     global/hooks/settings.hooks.json|global/hooks/README.md) echo "" ;;

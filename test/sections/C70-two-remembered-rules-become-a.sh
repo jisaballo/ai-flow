@@ -407,8 +407,9 @@ printf '%s' "$FC70" | grep -qiE 'switch(ing)? .{0,12}off|disabl|skip' \
   || bad "the frozen-contract list names switching a stub off"
 
 # O4 -- the prose stops carrying the two rules alone. Each home must name the mechanism that now
-# enforces it, and each must state which installs the route reaches: the manual is installed only when
-# absent and excluded by the drift guard, so a route that implies it is distributed is a false promise.
+# enforces it, and each must state which installs the route reaches: the manual is now refreshed
+# unconditionally on every init and update and drift-compared like any other engine file, so a route
+# that says it reaches every install is now a true promise, not a false one.
 ACB70="$(awk '/^### Artifact Check Before Create/{f=1;next} f&&/^### /{exit} f' "$MAN70")"
 NVR70="$(awk '/^### Never \(hard stops\)/,/^## /{print}' "$MAN70")"
 o4_70=""
@@ -416,7 +417,7 @@ printf '%s' "$ACB70" | grep -qF 'artifact-write-guard' || o4_70="$o4_70 [the Art
 printf '%s' "$ACB70" | grep -qF 'state.md' || o4_70="$o4_70 [it does not say what the rail leaves to the habit]"
 printf '%s' "$NVR70" | grep -qiE 'verify|audit' || o4_70="$o4_70 [the skip-tests bullet routes nowhere]"
 printf '%s' "$NVR70" | grep -qF 'artifact-write-guard' || o4_70="$o4_70 [the overwrite bullet routes nowhere]"
-printf '%s' "$ACB70$NVR70" | grep -qiE 'new install|installed only when absent|absent' \
+printf '%s' "$ACB70$NVR70" | tr -s ' \n' '  ' | grep -qiE 'manual now reaches every install|every adopter|refreshed (on both|unconditionally)' \
   || o4_70="$o4_70 [neither route states which installs it reaches]"
 [ -z "$o4_70" ] && ok "O4 the manual routes both rules to their mechanisms and states which installs it reaches" \
                 || bad "O4 the manual routes both rules to their mechanisms and states which installs it reaches ($o4_70)"

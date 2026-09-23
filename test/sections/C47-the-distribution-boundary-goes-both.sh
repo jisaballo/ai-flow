@@ -259,7 +259,7 @@ if [ -f "$MANTWIN" ]; then
   MISS47="$(missing_leads47 "$MAN" "$MANTWIN")"
   [ -z "$MISS47" ] || k47="$k47 $MISS47"
   [ -z "$k47" ] && ok "every rule the shipped manual declares reached the live twin" \
-                || bad "every rule the shipped manual declares reached the live twin (port the edit by hand — nothing distributes ~/.claude/CLAUDE.md):$k47"
+                || bad "every rule the shipped manual declares reached the live twin (re-run the installer — it refreshes ~/.claude/ai-flow/AGENTS.md unconditionally):$k47"
 else
   echo "  [skip] no personal manual on this host — the shipped copy carries the rules"
 fi
