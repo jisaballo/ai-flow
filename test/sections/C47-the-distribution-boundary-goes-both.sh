@@ -206,7 +206,7 @@ fi
 # replace with their own is exempt, by name.
 leads47() {  # $1 = manual -> one rule lead per line
   awk '
-    /^## / { own = ($0 ~ /Personal Preferences/) }
+    /^## / { own = ($0 ~ /Engine Defaults/) }
     !own && /^- \*\*/ { line = $0; sub(/^- \*\*/, "", line); sub(/\*\*.*$/, "", line); print line }
   ' "$1"
 }
@@ -259,7 +259,7 @@ if [ -f "$MANTWIN" ]; then
   MISS47="$(missing_leads47 "$MAN" "$MANTWIN")"
   [ -z "$MISS47" ] || k47="$k47 $MISS47"
   [ -z "$k47" ] && ok "every rule the shipped manual declares reached the live twin" \
-                || bad "every rule the shipped manual declares reached the live twin (port the edit by hand — nothing distributes ~/.claude/CLAUDE.md):$k47"
+                || bad "every rule the shipped manual declares reached the live twin (re-run the installer — it refreshes ~/.claude/ai-flow/AGENTS.md unconditionally):$k47"
 else
   echo "  [skip] no personal manual on this host — the shipped copy carries the rules"
 fi
@@ -272,7 +272,7 @@ python3 - "$T47/man-with-own.md" <<'PY47'
 import sys
 p = sys.argv[1]
 s = open(p).read()
-s = s.replace("## Personal Preferences\n", "## Personal Preferences\n\n- **A rule of my own**: never distributed\n", 1)
+s = s.replace("## Engine Defaults\n", "## Engine Defaults\n\n- **A rule of my own**: never distributed\n", 1)
 open(p, "w").write(s)
 PY47
 printf '%s\n' "$(leads47 "$T47/man-with-own.md")" | grep -qxF 'A rule of my own' \

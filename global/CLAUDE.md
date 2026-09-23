@@ -1,11 +1,12 @@
 # ai-flow — Global Instructions
 
-## Personal Preferences
+## Engine Defaults
 
-<!-- Customize this section for your workflow -->
+<!-- The installer refreshes this file on every `init` and `update` — an edit made here does not
+     survive. A preference that holds across every project belongs in your own `~/.claude/CLAUDE.md`;
+     a project-specific one belongs in that project's own CLAUDE.md. -->
 
 - All generated code, comments, commit messages, and documentation must be in **English**
-<!-- - User communicates in [language] — respond in [language] when conversational, English for technical output -->
 
 ## Workflow: .ai-flow
 
@@ -77,10 +78,10 @@ every turn of every project, so a copy kept here is the engine's most expensive 
 
 ### Commit Protocol
 
-**This manual states no commit rule of its own — it routes.** Nothing distributes this file: the
-installer writes it only when absent and the drift guard excludes it as user-owned, so a rule kept here
-drifts against the copy the phases actually read, silently and for as long as nobody diffs the two. Each
-fact below therefore lives with the mechanism that performs it:
+**This manual states no commit rule of its own — it routes.** One home per rule: the phase protocols
+below are the copy that performs each fact, so a rule kept here as well is a second copy that drifts
+against them, silently and for as long as nobody diffs the two. Each fact below therefore lives with the
+mechanism that performs it:
 
 - **When a commit happens, and the single approval that covers the task's work** — `protocols/backlog.md`,
   `## Closing a Workstream`: the preamble states the gate, move 1 is the approval.
@@ -113,8 +114,8 @@ declare — a replan amends the plan artifact too. Two gaps are the habit's alon
 steps above stay: **`state.md` is outside the rail** (every phase writes it at every close, and a rail
 over the most-written file is the one that gets routed around), and the rail is **invisible to the
 shell** — a heredoc or `>` reaches all five files with no tool call for it to see. Note also that this
-manual reaches **new installs only**: it is installed when absent and never compared, so an existing
-adopter gains the rail and not this paragraph.
+manual now reaches **every adopter**: it is refreshed on both `init` and `update`, never only installed
+once, so an existing adopter gains this paragraph exactly as a new one does.
 
 ### Context Management
 
@@ -125,8 +126,8 @@ adopter gains the rail and not this paragraph.
 
 **The two tiers that govern doing the work are stated by the phase that does it** —
 `protocols/execute.md` > `## Deviation Rules During Execution`, their one home: what may be changed
-without asking, and what needs approval first. Nothing distributes this file, so a copy kept here would
-drift against the one the phases actually read.
+without asking, and what needs approval first. One home per rule: that protocol is the copy that performs
+it, so a copy kept here would only drift against it.
 
 ### Never (hard stops)
 
@@ -149,9 +150,10 @@ rule to nowhere is worse than a rule with no second home to drift against.
 The four protocol routes above reach every install, because protocols are distributed. **The two git
 guards reach it only where `core.hooksPath` points at the installed hooks** — the installer leaves an
 existing global hook path untouched, and a repository may acknowledge the gap — and where it does not,
-the bullet's rule stands on its own. **This manual is
-not** — it is written only when absent and excluded by the drift guard — so an adopter whose copy
-predates this routing keeps the old list until they merge it by hand.
+the bullet's rule stands on its own. **This manual now
+reaches every install too** — it is refreshed unconditionally on every `init` and `update`, and the drift
+guard compares it like any other engine file — so an adopter whose copy predates this routing is
+overwritten with the current list on their next `update`, not left to merge it by hand.
 
 ## Working Rules
 

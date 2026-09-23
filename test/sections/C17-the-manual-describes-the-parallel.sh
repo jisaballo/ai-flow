@@ -77,7 +77,7 @@ mf_commit_gate() {
     && return 1
   # WHY the rule cannot live here, kept with the route. Without it the section reads as a plain index and
   # the next editor puts a rule back for convenience, which is how it got here the first time.
-  printf '%s' "$s" | grep -qiE 'nothing distributes|never updates|not distributed|only when absent' || return 1
+  printf '%s' "$s" | grep -qiE 'one home per rule|second copy .{0,20}drifts' || return 1
   return 0
 }
 manfact mf_commit_gate "the manual routes each commit fact to its owner, states none itself, and says why"
