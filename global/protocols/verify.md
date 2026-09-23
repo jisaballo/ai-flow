@@ -84,9 +84,8 @@
     asks every row to lead with) — and judge it against **The Task Diff** below. Where judged affected,
     stage a sighting under `discoveries.md`'s existing `## Sightings` section, as a `###` heading naming
     the sibling task (its own ID) beside any `###` heading naming an Icebox entry already staged there, on
-    the same closed vocabulary a Sightings log already uses (`confirmed`/`re-priced`/`narrowed`/`falsified`/`deferred`
-    — `backlog.md`'s Icebox owns the vocabulary). No open sibling, or none judged affected -> skip, and say
-    so.
+    the same closed vocabulary a Sightings log already uses — `backlog.md`'s Icebox owns the vocabulary and
+    states none of it here. No open sibling, or none judged affected -> skip, and say so.
 
 ## The Task Diff
 

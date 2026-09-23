@@ -1092,12 +1092,17 @@ someone noticed.
    entry for nothing is the one who already has the context loaded. This move is the **only** act that
    admits an entry to `## Icebox`; nothing staged reaches it on its own, and nothing reaches it while work
    is in flight. The epic-close sweep writes here too, but only to take out what it promotes or retires.
-   **Sibling publication** is the third output: each sighting staged under `## Sightings` and naming an
-   open sibling task instead of an Icebox entry is published by appending it to that sibling's own
+   **Sibling publication** is the third output: at publication, each staged sighting naming an open sibling
+   is re-resolved against BACKLOG.md's Ready/Active table first — where it no longer resolves open, because
+   the sibling closed or archived since Verify staged it, nothing is written for it (no `brief.md` is
+   resurrected, its archive is never touched, and it is never re-routed to `## Icebox`), and the close's own
+   Archive Summary names which sighting(s) were dropped and why. Where it still resolves open, each sighting
+   staged under `## Sightings` and naming it instead of an Icebox entry is published by appending it to that sibling's own
    `artifacts/T-YYY/brief.md` `## Sightings` log — never to `## Icebox`, and never minting an `IB-XXX`
    identifier. Where the sibling has no `brief.md` yet (Verify protocol > Sibling impact check, its brief-
    less case), this move creates one first: first line `# T-YYY — ` followed by the sibling's own row in
-   BACKLOG.md's Ready/Active table, verbatim, then the sighting appended under `## Sightings` below it. A
+   BACKLOG.md's Ready/Active table (the business statement Task Entry Format already asks every row to
+   lead with), verbatim, then the sighting appended under `## Sightings` below it. A
    sibling no close's sighting ever touches still gets no `brief.md` from this move — creation happens only
    at the moment a sighting is about to be written onto it.
 

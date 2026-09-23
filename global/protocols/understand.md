@@ -201,10 +201,9 @@ found, not broken.
 **Absorbed close**: where the brief exists and its own Sightings log shows the task narrowed to nothing, or
 falsified — whether the log entry came from the write-back's Sibling publication or from the backstop above
 catching a miss — this phase stops here. No Business Frame is drafted, no `understand.md` is written, and
-the task closes as **absorbed**: the unchanged Closing a Workstream ceremony (Backlog protocol), where move
-1's approval covers the decision to absorb rather than a diff, move 3's merge acts on a branch with nothing
-to merge, and the archive records "absorbed" and the reason in place of a commit sha. A brief whose log
-holds neither verb continues into the scoping pass exactly as before.
+the task closes as **absorbed**: the unchanged Closing a Workstream ceremony (Backlog protocol > Closing a
+Workstream), including its move 1, move 3 and Archive Summary absorbed variants — none restated here. A
+brief whose log holds neither verb continues into the scoping pass exactly as before.
 
 **Icebox scan (always, inline)** — a step of that same pass, run once it holds the candidate areas and
 before the unknowns are written. It reads **only the summary lines** in the ledger's `## Icebox`, one per
