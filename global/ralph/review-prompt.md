@@ -10,21 +10,23 @@ Never attempt to write files, edit code, or run any git command that mutates sta
 
 - Branch under review: `{{BRANCH}}` · base: `{{BASE}}`
 - Commits: `git log {{BASE}}..{{BRANCH}} --oneline` (only `[auto][afk]` subjects)
-- Task specs: each commit subject ends with `(T-XXX)` → find that row in
-  `.ai-flow/BACKLOG.md`; if the row is gone, fall back to `.ai-flow/archive/T-XXX/summary.md`.
+- Task specs: each commit subject ends with `(T-XXX)` → find that row in `.ai-flow/BACKLOG.md`. Where
+  the row is a pointer, its full spec is `.ai-flow/artifacts/T-XXX/brief.md` — read that instead of
+  auditing the row's text alone. If the row is gone, fall back to `.ai-flow/archive/T-XXX/summary.md`.
 - Parked tasks: today's `.ai-flow/afk-run-*.md` notes and `[afk-parked]` rows in BACKLOG.md.
 
 ## Audit — per commit, in order
 
 1. **Reverse audit (diff → spec)**: read `git show <sha>`. Every hunk must trace to
-   the task's row text. Hunks the row does not describe = scope creep → verdict REVIEW
-   (name the orphan hunks). "Improvements" to adjacent code count as scope creep.
+   the task's spec (the brief where the row is a pointer, else the row's text — see Inputs). Hunks the
+   spec does not describe = scope creep → verdict REVIEW (name the orphan hunks). "Improvements" to
+   adjacent code count as scope creep.
 2. **Assertions check**: `git diff {{BASE}}...{{BRANCH}} -- '*.spec.ts'`. Deleted or
    modified lines inside EXISTING tests = verdict REVERT (the executor's hardest rail),
    UNLESS the change is purely an import/formatting line — say so explicitly. Added
    tests are welcome.
 3. **Row hygiene**: the commit message references the right T-XXX; the work matches
-   what the row scoped (not more, not less — a justified "less" documented by the
+   what the spec scoped (not more, not less — a justified "less" documented by the
    executor's scope note is fine, quote it).
 4. **Verdict**: exactly one of `MERGE-READY` / `REVIEW` / `REVERT` + a one-line reason.
    When uncertain, choose REVIEW — never round up to MERGE-READY.

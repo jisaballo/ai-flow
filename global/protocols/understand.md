@@ -180,6 +180,14 @@ What is Understand's own is the ground it resolves against: the **candidate area
 
 **Scoping pass (always, inline):** before deciding how to investigate, locate the entry points of the affected behavior (grep, read the obvious files) and produce a candidate list of affected areas. This pass SIZES the investigation — it is not the investigation itself.
 
+**Brief read (always, inline, where one exists)** — before the scoping pass reads code, it reads
+`artifacts/T-XXX/brief.md`, where the task has one. The brief is **dated evidence, never settled truth**:
+it is what CAPTURE found, at capture time, and this phase's own job is to measure the ground again rather
+than trust it — a brief that turns out stale is not a defect in the brief, it is this phase doing its
+job. A task with no `brief.md` (a row captured before this layout shipped, or migrated only as a row) is
+never read as an error: its absence is read exactly as an absent `## Icebox` section is read below — zero
+found, not broken.
+
 **Icebox scan (always, inline)** — a step of that same pass, run once it holds the candidate areas and
 before the unknowns are written. It reads **only the summary lines** in the ledger's `## Icebox`, one per
 entry, and **loads a body only where an entry's statement touches this task's ground** — the file is

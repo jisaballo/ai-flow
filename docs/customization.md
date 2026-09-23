@@ -366,6 +366,6 @@ To pull framework improvements on any device later, run `./install.sh update` (u
 - Language, response style, custom commands
 
 **What's ephemeral** (gitignored or not committed):
-- `.ai-flow/artifacts/` — active work (consider gitignoring)
+- `.ai-flow/artifacts/` — captured-but-not-yet-active and in-progress work (consider gitignoring)
 - `.ai-flow/STATE.md` — the roster of open workstreams (consider gitignoring)
 - `.ai-flow/archive/` — completed work (commit or gitignore, your choice)

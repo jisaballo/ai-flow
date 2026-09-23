@@ -17,7 +17,7 @@ All task management lives in `.ai-flow/`. No external todo files.
 | `BACKLOG.md` | All tasks with status and priority (includes Epics section) |
 | `STATE.md` | Workstream roster: one row per open front — written by the coordinator, only at ceremonies |
 | `decisions-global.md` | Workflow/system decisions (not task-specific) |
-| `artifacts/T-XXX/` | Task artifacts organized by task ID (state.md, understand.md, plan.md, verify.md, discoveries.md) |
+| `artifacts/T-XXX/` | Task artifacts organized by task ID (brief.md born at capture, then state.md, understand.md, plan.md, verify.md, discoveries.md) |
 | `archive/T-XXX/` | Completed tasks with all artifacts, decisions, and summary.md |
 | `icebox/` | One parked discovery per file (`IB-XXX.md`) — the body each `## Icebox` index line is regenerated from; retired entries move to `archive/icebox/`, keeping the reason they died |
 | `product.md` | Product context: users, roles, apps, core business flows (read at start of new epics) |
@@ -113,7 +113,7 @@ refusal names the file and the remedy: read it, then amend it with `Edit`. There
 declare — a replan amends the plan artifact too. Two gaps are the habit's alone, and they are why the
 steps above stay: **`state.md` is outside the rail** (every phase writes it at every close, and a rail
 over the most-written file is the one that gets routed around), and the rail is **invisible to the
-shell** — a heredoc or `>` reaches all five files with no tool call for it to see. Note also that this
+shell** — a heredoc or `>` reaches all six files with no tool call for it to see. Note also that this
 manual now reaches **every adopter**: it is refreshed on both `init` and `update`, never only installed
 once, so an existing adopter gains this paragraph exactly as a new one does.
 

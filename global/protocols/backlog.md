@@ -86,6 +86,31 @@ Cross-workstream context only — nothing that belongs to a single task.
 |------|-------------|--------|
 ```
 
+### `artifacts/T-XXX/brief.md` — the task's captured context
+
+Written at capture, before activation and before a sheet exists — a captured-but-not-yet-active task has
+a brief and no `state.md`; the sheet is born only at `## Opening a Workstream` below. It holds what
+CAPTURE found: the business statement as its own first line, and a growing `## Sightings` log for
+whatever a later encounter learns about it, on the same closed vocabulary an Icebox entry's body uses
+(see Icebox below, which owns the verbs) — the shape this file borrows rather than invents, being
+neither a phase artifact nor one of `protocols/context.md`'s three governed classes.
+
+```markdown
+# T-XXX — [the business statement, verbatim — the line the row is regenerated from]
+
+## Sightings
+
+YYYY-MM-DD — T-YYY — narrowed — what this encounter learned, in one line
+```
+
+The BACKLOG.md row for a captured task is a **pointer regenerated from this file's first line, never
+authored beside it** (see Task Entry Format below) — the same trade the ledger already made for an
+Icebox entry's index line and its body. Promoting an Icebox entry to a task carries the entry's body into
+this file verbatim, at birth, and the entry retires as `promoted → T-XXX` (see Icebox below).
+
+A row captured before this layout shipped has no `brief.md` — its detail, if any, still lives in the row
+itself, and migrating it is a later task's own, not this one's.
+
 ### `artifacts/T-XXX/state.md` — the task's sheet
 
 Written by whoever works the task, in the checkout where it is worked. It travels with the task's
@@ -450,9 +475,10 @@ wrong from each front's second task onward, for whoever reads the roster rather 
 
 ## Task Entry Format (business-first)
 
-A task entry leads with behavior, in product language; technical detail is an annex:
+A task's entry leads with behavior, in product language; technical detail is an annex — and both are
+authored into `artifacts/T-XXX/brief.md` (see State Files), never into the BACKLOG.md row:
 
-- **Line 1 — the business statement**: which role, what changes or breaks for them, why it matters. Readable by someone who never opens the code.
+- **Line 1 — the business statement**: which role, what changes or breaks for them, why it matters. Readable by someone who never opens the code. This is the line the BACKLOG.md row is **regenerated from**, not written beside.
 - **Technical annex (optional, below)**: file:line evidence, suspected causes, skills. Welcome — but never the opening line.
 
 A capture that cannot state its business line yet is captured with what is known; the gap is closed in Understand (Business Frame), never silently guessed.
@@ -465,7 +491,7 @@ BACKLOG.md must contain **only pending work**. Everything closed lives in `archi
 - **Soft cap 8,000 words, and a firmer one at 15,000.** Counted in **words**, because the unit that used to be counted could not see what grows: one entry is one line however long it is, so this ledger reached **27% of a 300-line cap while holding 10,118 words** — three times the prose that cap assumed. Lines stopped discriminating the moment an entry became an essay, which the business-first entry format above makes it. Words rather than estimated tokens because words are the unit this document already budgets prose in (the 25-word index line below) and because a word count is a fact its reader can check by hand, where an estimate invites arguing about the estimator instead of about the excess. The two numbers are anchored outside this engine rather than picked: of six comparable systems surveyed, **none guards the size of a shared file at all**, and the only one that proposes such a guard proposes it non-blocking — 8,000 words is about the 8k tokens BMAD sizes one unit of reading at, 15,000 about the 20k Kiro targets for a heavy operation, and the `AGENTS.md` convention's 32 KiB technical maximum sits between them while this ledger was already at 61.6 KiB.
   - **Over it, the engine says so and does not refuse.** The `Stop` guard reports once per session per threshold and lets the turn close — with one exception, stated because an invariant that silently does not hold is read as a broken mechanism rather than an unreachable one: what suppresses the repeat is the record of a *delivery*, so a note carried out beside a blocking report is never marked and returns at the next close, until a run carries it alone. It used to block, and blocking was wrong twice over: it fired while a requirement was being handed over, so the entry that paid was the one being written, and it re-fired on every turn close after that because it could not tell a re-delivered stop from a first one.
   - **Name the cause before acting: there are three causes, and only two of them have a remedy that removes anything.** Closed content duplicated here — move it to `archive/`. Or a `## Icebox` grown long, which is **pending** work and belongs in neither `archive/` nor a deletion — sweep it, promoting or retiring entries. Until the write-back began admitting at a close, the first was the only cause, which is why the remedy used to be stated alone; a reader handed that remedy alone against the second cause finds nothing to move and concludes the measurement was wrong.
-  - **Or open task rows written as essays, and that one has no prune.** Measured on this engine's own ledger the day the budget was set: `## Ready` was **7,234 of 10,118 words — 71%**, against a rule that named the two causes above and neither of them it. Nothing may be moved and nothing may be deleted: an open row is pending work, and its detail has nowhere else to live, because `artifacts/T-XXX/` admits only active tasks (see the invariants). So the remedy is **not a prune** — it is the ledger-split decision parked in `## Backlog (candidate, not yet prioritized)`, a file-per-task layout that needs an index or a CLI first. Written down because a breach whose largest cause has no remedy would otherwise send its reader looking for closed content that is not there, and a report pointing at the wrong remedy is one its reader learns to ignore.
+  - **Or open task rows written as essays, and that one has no prune.** Measured on this engine's own ledger the day the budget was set: `## Ready` was **7,234 of 10,118 words — 71%**, against a rule that named the two causes above and neither of them it. Nothing already an essay may be moved and nothing may be deleted: an open row that predates the brief layout is pending work, and until it is migrated its detail has nowhere else to live. So the remedy for a row already this shape is **still not a prune** — a row captured from here on does not reach this shape at all, because its detail is authored into `artifacts/T-XXX/brief.md` and the row is only ever a pointer regenerated from it (see State Files, Task Entry Format). What was the unshipped half of the ledger-split decision is shipped: the file-per-task layout is `brief.md`, and what is left is migrating rows an older capture already wrote as essays into it — a later task's own. Written down because a breach whose largest cause has no remedy would otherwise send its reader looking for closed content that is not there, and a report pointing at the wrong remedy is one its reader learns to ignore.
 - **Session-close changelog entries** (`> YYYY-MM-DD — ...`) go to `archive/CHANGELOG.md` (newest first) — that file is the **only** home, written **once**, at close time. BACKLOG.md keeps a **copy** (condensing is fine) of the **3 most recent** as session continuity; when adding a new one, the oldest of the 3 is **deleted from BACKLOG.md, NOT moved anywhere** — it is already in `archive/CHANGELOG.md`.
   - ⚠️ Reading "rotate the oldest out" as "append it to `archive/CHANGELOG.md`" produces duplicate pairs (a short BACKLOG copy prepended above the already-archived long entry). Rotation is a **delete**, never a write to the archive.
   - Several entries with the **same task/epic ID are legitimate** when they record distinct lifecycle events (`opened` / `activated + split` / `re-audited` / `closed` / `visual reverted`). Same ID alone is NOT a duplicate — only same ID **and** same date **and** one text a condensation of the other.
@@ -596,6 +622,14 @@ third one. A promotion act written into the move would have to mint a T-ID, choo
 row in `## Ready`: the second door's work rebuilt inside a move that already has the operator in the room.
 Stated with its reason because the sentence this replaces claimed the write-back as a door and the move
 never defined the act.
+
+**Promotion carries the entry's body, not just its number.** Whichever door fires, `brief.md`'s first
+line is `# T-XXX — ` followed by the entry's own index-line statement — the line the row is regenerated
+from, satisfying `brief.md`'s own first-line contract — and the entry's body follows below it,
+**verbatim**: the same "moved verbatim, never authored again" trade the write-back already makes for an
+entry's own index line. The entry retires with the reason `promoted → T-XXX`, on the same terms
+`### Icebox (discoveries)` above already states for a retirement (the body stays at
+`archive/icebox/IB-XXX.md`, keeping the reason it ended).
 
 **On epic completion**, generate `.ai-flow/archive/E-XXX-[slug].md`:
 ```markdown
@@ -1081,12 +1115,14 @@ When a shipped task turns out to violate business intent (the code was right; th
 
 ### Invariants (always true)
 
-- `artifacts/` contains **only** `T-XXX/` folders for **active or in-progress** tasks — never completed
-  ones, and this holds in **every checkout**, not only the coordinator's. A copy left behind in a front
-  is what puts two claims on one branch (see State Files). **A task whose close halted is in flight**,
-  and its folder is the invariant holding rather than breaking: the deletion is the ceremony's move 7,
-  so a close stopped at the distribution or the publish leaves the papers standing on purpose — they are
-  where the halt is written down, and what they say is that this task is not finished
+- `artifacts/` contains **only** `T-XXX/` folders for **active, in-progress, or captured-but-not-yet-active**
+  tasks — never completed ones, and this holds in **every checkout**, not only the coordinator's. A copy
+  left behind in a front is what puts two claims on one branch (see State Files). **A task whose close
+  halted is in flight**, and its folder is the invariant holding rather than breaking: the deletion is
+  the ceremony's move 7, so a close stopped at the distribution or the publish leaves the papers
+  standing on purpose — they are where the halt is written down, and what they say is that this task is
+  not finished. **A folder holding only `brief.md`, with no `state.md`, is a captured task and not a
+  violation** — it gains `state.md` at `## Opening a Workstream`, never before
 - No root-level files in `artifacts/` (no templates, no loose files)
 - No empty directories anywhere in `.ai-flow/`
 - BACKLOG.md Done section is **transient** — tasks stay there only until archived, not permanently
@@ -1106,7 +1142,8 @@ When a shipped task turns out to violate business intent (the code was right; th
 ├── steering/               # Domain rules and pitfalls (loaded per-task)
 ├── artifacts/              # ONLY open task folders
 │   └── T-XXX/              # One folder per open task
-│       └── state.md        # That task's phase, step, autonomy and decisions
+│       ├── brief.md        # Born at capture: the business statement + a Sightings log
+│       └── state.md        # Born at activation: that task's phase, step, autonomy and decisions
 ├── icebox/                 # One parked discovery per file
 │   └── IB-XXX.md           # The body its `## Icebox` line is regenerated from
 └── archive/                # Completed work

@@ -31,7 +31,9 @@ CAPTURE → PRIORITIZE → ACTIVATE → UNDERSTAND → PLAN → CONFORM → EXEC
 **Purpose**: Record a task idea before it's lost.
 
 **Input**: A description from the user
-**Output**: New row in BACKLOG.md with a T-XXX ID
+**Output**: `artifacts/T-XXX/brief.md`, holding the description as its business statement, plus the
+BACKLOG.md row regenerated from that statement's first line (backlog protocol > State Files, Task Entry
+Format)
 
 No analysis happens here — just capture. The description can be rough.
 
