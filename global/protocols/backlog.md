@@ -239,6 +239,50 @@ checkout is still that checkout's own task, and the resolution below answers wit
 Two tasks open in one checkout is what makes this reachable — a paused task beside the one now being
 worked. That is allowed and unchanged; what the paused one gives up is the claim, never its papers.
 
+### `artifacts/E-XXX/brief.md` — the epic's founding investigation
+
+Written at the epic's creation, mandatory and unconditional — even an epic opened with no prior
+investigation gets one, never a placeholder. It mirrors `artifacts/T-XXX/brief.md`'s own contract above:
+the epic's business statement as its own first line, and a growing `## Sightings` log for whatever a later
+encounter learns about it, on the same closed vocabulary an Icebox entry's body uses.
+
+```markdown
+# E-XXX — [the epic's business statement, verbatim]
+
+## Sightings
+
+YYYY-MM-DD — T-YYY — narrowed — what this encounter learned, in one line
+```
+
+The BACKLOG.md Epics table row stays the pointer it already is (ID, Name, Tasks, Status) — the founding
+investigation never moves into it.
+
+### `artifacts/E-XXX/epic.md` — the epic's Scope Contract and Execution Order
+
+Written once investigation produces the epic (see Epic Scope Contract below). It holds what an inline
+BACKLOG.md block held until now: the frozen Scope Contract and the Execution Order, as a numbered list. A
+front in a linked worktree reads it read-only from the main checkout, exactly as it read BACKLOG.md's own
+block before this file existed (see Understand protocol > Epic-Scoped Understanding).
+
+```markdown
+# E-XXX — [epic name]
+
+## Scope Contract
+
+- **Goal**: one sentence — what done looks like for the epic.
+- **Planned Tasks**: the task list produced by the investigation (baseline for the Growth Budget).
+- **Non-Goals**: explicit exclusions the investigation saw, plus the standing ones ("Do NOT refactor
+  adjacent code", "Do NOT fix pre-existing issues found along the way").
+
+## Execution Order
+
+1. T-XXX — one line of what it does
+2. T-YYY — one line of what it does
+```
+
+An epic whose investigation produced no numbered order yet — the Scope Contract requires Goal, Planned
+Tasks and Non-Goals, never an order — still gets an `epic.md`, with an empty `## Execution Order` section.
+
 ### Resolving the task
 
 **The `branch:` line is how a checkout recognises its own task.** A working copy can hold several
@@ -496,7 +540,6 @@ BACKLOG.md must contain **only pending work**. Everything closed lives in `archi
   - ⚠️ Reading "rotate the oldest out" as "append it to `archive/CHANGELOG.md`" produces duplicate pairs (a short BACKLOG copy prepended above the already-archived long entry). Rotation is a **delete**, never a write to the archive.
   - Several entries with the **same task/epic ID are legitimate** when they record distinct lifecycle events (`opened` / `activated + split` / `re-audited` / `closed` / `visual reverted`). Same ID alone is NOT a duplicate — only same ID **and** same date **and** one text a condensation of the other.
 - **Closed epics**: the row moves verbatim to `archive/EPICS.md` (index) — never fatten the row in BACKLOG.md with a close summary; that narrative belongs in `archive/E-XXX-[slug].md`.
-- **Execution Order blocks**: only for epics with pending tasks. On epic close, move the block verbatim to `archive/EXECUTION-ORDERS.md`.
 - **Dependencies table**: only rows where BOTH epics still have pending work.
 
 ## Epics (Lightweight Task Grouping)
@@ -518,12 +561,13 @@ Epics group related tasks under a shared goal. They are tracked in a dedicated s
 - Status: `backlog`, `active`, `done`
 - Tasks can optionally reference their epic in BACKLOG.md (column or note)
 - Epics are informational grouping — they do NOT change task lifecycle or create hierarchy
-- When all tasks in an epic are done, mark epic as `done` and apply the Size Budget moves (row -> `archive/EPICS.md`, Execution Order block -> `archive/EXECUTION-ORDERS.md`)
+- When all tasks in an epic are done, mark epic as `done` and apply the Size Budget move (row -> `archive/EPICS.md`) plus the epic-folder archival (`artifacts/E-XXX/` -> `archive/E-XXX/`, see After Epic completion)
 - The Epics section in BACKLOG.md lists ONLY epics with pending tasks
 
 ### Epic Scope Contract (MANDATORY at epic creation)
 
-When investigation produces an epic, its Execution Order block MUST include:
+When investigation produces an epic, write `artifacts/E-XXX/epic.md` (see State Files above), whose
+`## Scope Contract` MUST include:
 
 - **Goal**: one sentence — what done looks like for the epic.
 - **Planned Tasks**: the task list produced by the investigation (this count is the baseline for the Growth Budget).
@@ -1050,9 +1094,9 @@ someone noticed.
    either directory is absent this move creates it** — the installer's data skeleton runs on a fresh
    install alone, so every project that adopted the engine earlier arrives at its first write-back with
    nothing there. **The same for the ledger's `## Icebox` heading**, which the shipped BACKLOG.md does not
-   carry: it is created below `## Epics`, after any Execution Order block. A fresh install is the mirror of
-   the case above — it arrives with both directories and no section to write into — and a heading two
-   readers place in two positions is a section neither of them can cite.
+   carry: it is created below `## Epics`. A fresh install is the mirror of the case above — it arrives with
+   both directories and no section to write into — and a heading two readers place in two positions is a
+   section neither of them can cite.
 
    Nothing staged and nothing touched -> skip, and say which of the two halves was empty. It is not a
    prompt offering two empty lists.
@@ -1063,15 +1107,15 @@ someone noticed.
    position that satisfies it renumbers the steps beneath, and the citations move with them.
 5. Generate `archive/T-XXX/summary.md` (see Archive Summary template)
 6. **Remove task from BACKLOG.md** (move from Done to nowhere — it's in the archive now). **The same act
-   strikes the task's line in its epic's Execution Order block**, and moves the epic's status from
-   `backlog` to `active` where it still reads the former — one edit, three levels, the idiom this checklist already uses for a
-   steering rule and its nano and for an Icebox entry and its index line. The row leaving the pending
-   list and the order line being struck are two readings of one fact, and a rule that needs a step of
-   its own carries its own way of being skipped: three closes in a row wrote the record, removed the row
-   and left the task listed as pending in its own epic's plan, each struck by hand afterwards. The struck
-   line takes the form the archived orders already use:
+   strikes the task's line in its epic's Execution Order**, now `epic.md`'s own checklist, and moves the
+   epic's status from `backlog` to `active` in BACKLOG.md's Epics table where it still reads the former — one edit, three
+   levels, the idiom this checklist already uses for a steering rule and its nano and for an Icebox entry
+   and its index line. The row leaving the pending list and the order line being struck are two readings of
+   one fact, and a rule that needs a step of its own carries its own way of being skipped: three closes in a
+   row wrote the record, removed the row and left the task listed as pending in its own epic's plan, each
+   struck by hand afterwards. The struck line takes the form the archived orders already use:
    `` ~~**T-XXX**~~ — **done** (`sha`): one line of what shipped. See `archive/T-XXX/summary.md`. ``
-   An epic whose block carries **no numbered order list** — the Scope Contract requires Goal, Planned
+   An epic whose `epic.md` carries **no numbered order list** — the Scope Contract requires Goal, Planned
    Tasks and Non-Goals, never an order — has nothing to strike, and the step **says so** rather than
    reading as an edit somebody forgot.
 7. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
@@ -1108,21 +1152,27 @@ When a shipped task turns out to violate business intent (the code was right; th
    or the publish leaves exactly this folder behind, and a sweep cannot tell the three apart. Naming all three is the whole of the move: a diagnosis offering
    two sends the operator to re-run a checklist that already ran.
 4. Remove all epic tasks from BACKLOG.md Done section
-5. Move the epic row to `archive/EPICS.md` + its Execution Order block to `archive/EXECUTION-ORDERS.md` (Size Budget)
-6. **Verify** the roster holds no row for a front of this epic — move 9 of `## Closing a Workstream` is
+5. Move the epic row to `archive/EPICS.md` (Size Budget)
+6. **Archive the epic's own folder**: move `artifacts/E-XXX/` to `archive/E-XXX/` verbatim — `brief.md` and
+   `epic.md` travel together, exactly as `artifacts/T-XXX/` moves to `archive/T-XXX/` at move 7 of
+   `## Closing a Workstream`. **Verify** afterward that no `artifacts/E-XXX/` folder of this epic remains,
+   the same check the sweep above runs over a task's own folder, now over the epic's.
+7. **Verify** the roster holds no row for a front of this epic — move 9 of `## Closing a Workstream` is
    the only remover, and by now it has run for each of them. A row still there names a front that is
    still open: name it and stop, rather than removing it here (rows of fronts outside the epic stay).
 
 ### Invariants (always true)
 
 - `artifacts/` contains **only** `T-XXX/` folders for **active, in-progress, or captured-but-not-yet-active**
-  tasks — never completed ones, and this holds in **every checkout**, not only the coordinator's. A copy
-  left behind in a front is what puts two claims on one branch (see State Files). **A task whose close
-  halted is in flight**, and its folder is the invariant holding rather than breaking: the deletion is
-  the ceremony's move 7, so a close stopped at the distribution or the publish leaves the papers
-  standing on purpose — they are where the halt is written down, and what they say is that this task is
-  not finished. **A folder holding only `brief.md`, with no `state.md`, is a captured task and not a
-  violation** — it gains `state.md` at `## Opening a Workstream`, never before
+  tasks, and `E-XXX/` folders for **open** epics — never completed ones, and this holds in **every
+  checkout**, not only the coordinator's. A copy left behind in a front is what puts two claims on one
+  branch (see State Files). **A task whose close halted is in flight**, and its folder is the invariant
+  holding rather than breaking: the deletion is the ceremony's move 7, so a close stopped at the
+  distribution or the publish leaves the papers standing on purpose — they are where the halt is written
+  down, and what they say is that this task is not finished. **A folder holding only `brief.md`, with no
+  `state.md`, is a captured task and not a violation** — it gains `state.md` at `## Opening a Workstream`,
+  never before. An `E-XXX/` folder still in `artifacts/` after that epic's own close is a violation on the
+  same terms as a task's — After Epic completion's own archival step is what clears it.
 - No root-level files in `artifacts/` (no templates, no loose files)
 - No empty directories anywhere in `.ai-flow/`
 - BACKLOG.md Done section is **transient** — tasks stay there only until archived, not permanently
@@ -1140,17 +1190,21 @@ When a shipped task turns out to violate business intent (the code was right; th
 ├── decisions-global.md
 ├── product.md              # Product context (users, roles, flows)
 ├── steering/               # Domain rules and pitfalls (loaded per-task)
-├── artifacts/              # ONLY open task folders
-│   └── T-XXX/              # One folder per open task
-│       ├── brief.md        # Born at capture: the business statement + a Sightings log
-│       └── state.md        # Born at activation: that task's phase, step, autonomy and decisions
+├── artifacts/              # ONLY open task and open epic folders
+│   ├── T-XXX/              # One folder per open task
+│   │   ├── brief.md        # Born at capture: the business statement + a Sightings log
+│   │   └── state.md        # Born at activation: that task's phase, step, autonomy and decisions
+│   └── E-XXX/              # One folder per open epic
+│       ├── brief.md        # Born at creation, mandatory: the epic's founding investigation
+│       └── epic.md         # Born at creation: the frozen Scope Contract + the Execution Order
 ├── icebox/                 # One parked discovery per file
 │   └── IB-XXX.md           # The body its `## Icebox` line is regenerated from
 └── archive/                # Completed work
     ├── CHANGELOG.md        # Session-close entries (newest first)
     ├── EPICS.md            # Closed epics index (rows moved from BACKLOG.md)
-    ├── EXECUTION-ORDERS.md # Execution Order blocks of closed epics
+    ├── EXECUTION-ORDERS.md # Legacy: Execution Order blocks of epics closed before epic.md — no longer written
     ├── T-XXX/summary.md
+    ├── E-XXX/              # An epic's folder (brief.md + epic.md), archived verbatim on close
     ├── E-XXX-slug.md
     └── icebox/IB-XXX.md    # Retired entries — the number is never reused
 ```
