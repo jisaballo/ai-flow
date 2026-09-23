@@ -77,6 +77,16 @@
 8. **Write** `artifacts/T-XXX/verify.md` with the audit table
 9. **If any ❌ exists** -> STOP, do not proceed to archive. Fix or flag to user.
 10. **If any ⚠️ exists** -> flag to user with what's missing. User decides: proceed to archive or fix first.
+11. **Sibling impact check**, once nothing above blocks archive: read the task's own epic's Execution
+    Order (`artifacts/E-XXX/epic.md`) for every OTHER unstruck line — each names an OPEN sibling task in
+    the same epic. For each one, read `artifacts/T-YYY/brief.md`'s first line — or, where the sibling has
+    none, its own row in BACKLOG.md's Ready/Active table (the business statement Task Entry Format already
+    asks every row to lead with) — and judge it against **The Task Diff** below. Where judged affected,
+    stage a sighting under `discoveries.md`'s existing `## Sightings` section, as a `###` heading naming
+    the sibling task (its own ID) beside any `###` heading naming an Icebox entry already staged there, on
+    the same closed vocabulary a Sightings log already uses (`confirmed`/`re-priced`/`narrowed`/`falsified`/`deferred`
+    — `backlog.md`'s Icebox owns the vocabulary). No open sibling, or none judged affected -> skip, and say
+    so.
 
 ## The Task Diff
 
