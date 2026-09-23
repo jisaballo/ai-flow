@@ -92,8 +92,8 @@ Written at capture, before activation and before a sheet exists — a captured-b
 a brief and no `state.md`; the sheet is born only at `## Opening a Workstream` below. It holds what
 CAPTURE found: the business statement as its own first line, and a growing `## Sightings` log for
 whatever a later encounter learns about it, on the same closed vocabulary an Icebox entry's body uses
-(`confirmed`, `re-priced`, `narrowed`, `falsified`, `deferred`) — the shape this file borrows rather than
-invents, being neither a phase artifact nor one of `protocols/context.md`'s three governed classes.
+(see Icebox below, which owns the verbs) — the shape this file borrows rather than invents, being
+neither a phase artifact nor one of `protocols/context.md`'s three governed classes.
 
 ```markdown
 # T-XXX — [the business statement, verbatim — the line the row is regenerated from]
@@ -623,11 +623,13 @@ row in `## Ready`: the second door's work rebuilt inside a move that already has
 Stated with its reason because the sentence this replaces claimed the write-back as a door and the move
 never defined the act.
 
-**Promotion carries the entry's body, not just its number.** Whichever door fires, the body moves
-**verbatim** into the new task's `artifacts/T-XXX/brief.md` at birth — the same "moved verbatim, never
-authored again" trade the write-back already makes for an entry's own index line — and the entry retires
-with the reason `promoted → T-XXX`, on the same terms `## Icebox (discoveries)` above already states for
-a retirement (the body stays at `archive/icebox/IB-XXX.md`, keeping the reason it ended).
+**Promotion carries the entry's body, not just its number.** Whichever door fires, `brief.md`'s first
+line is `# T-XXX — ` followed by the entry's own index-line statement — the line the row is regenerated
+from, satisfying `brief.md`'s own first-line contract — and the entry's body follows below it,
+**verbatim**: the same "moved verbatim, never authored again" trade the write-back already makes for an
+entry's own index line. The entry retires with the reason `promoted → T-XXX`, on the same terms
+`### Icebox (discoveries)` above already states for a retirement (the body stays at
+`archive/icebox/IB-XXX.md`, keeping the reason it ended).
 
 **On epic completion**, generate `.ai-flow/archive/E-XXX-[slug].md`:
 ```markdown
