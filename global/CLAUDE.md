@@ -1,12 +1,12 @@
 # ai-flow — Global Instructions
 
-## Personal Preferences
+## Engine Defaults
 
-<!-- This file is fetched fresh by the installer on every `init` and `update` — an edit made here does
-     not survive the next update. Customize your workflow in your own project's CLAUDE.md instead. -->
+<!-- The installer refreshes this file on every `init` and `update` — an edit made here does not
+     survive. A preference that holds across every project belongs in your own `~/.claude/CLAUDE.md`;
+     a project-specific one belongs in that project's own CLAUDE.md. -->
 
 - All generated code, comments, commit messages, and documentation must be in **English**
-<!-- - User communicates in [language] — respond in [language] when conversational, English for technical output -->
 
 ## Workflow: .ai-flow
 

@@ -72,15 +72,18 @@ else
 fi
 
 # A5 -- the heading alone (guarded by C47) says nothing about its body: the body must stop inviting an
-# in-place edit of a file the installer now overwrites every update, and point customization at the
-# project's own file instead. Read from the INSTALLED copy the A1/A2/A4a sandbox above already produced,
-# never from the repo's own source -- a new site reading this engine's own documents as text has no
-# independent oracle and is refused outright (C98).
-PP101="$(awk '/^## Personal Preferences$/{f=1;next} /^## /{f=0} f' "$TH101/.claude/ai-flow/AGENTS.md")"
+# in-place edit of a file the installer now overwrites every update, and route a cross-project
+# preference to the operator's own global file and a project-specific one to that project's own file.
+# Read from the INSTALLED copy the A1/A2/A4a sandbox above already produced, never from the repo's own
+# source -- a new site reading this engine's own documents as text has no independent oracle and is
+# refused outright (C98).
+PP101="$(awk '/^## Engine Defaults$/{f=1;next} /^## /{f=0} f' "$TH101/.claude/ai-flow/AGENTS.md")"
 if printf '%s' "$PP101" | grep -qi 'Customize this section for your workflow'; then
   bad "A5 the installed engine instructions still invite an in-place edit of the shipped file"
-elif ! printf '%s' "$PP101" | grep -qi 'own project'; then
-  bad "A5 the installed engine instructions do not point customization at the project's own file"
+elif ! printf '%s' "$PP101" | grep -qi '~/\.claude/CLAUDE\.md'; then
+  bad "A5 the installed engine instructions do not route a cross-project preference to the operator's own global file"
+elif ! printf '%s' "$PP101" | grep -qi "project'"'s own'; then
+  bad "A5 the installed engine instructions do not route a project-specific preference to that project's own file"
 else
-  ok "A5 the installed engine instructions point customization at the project's own file, not an in-place edit"
+  ok "A5 the installed engine instructions route each preference to its own home, and invite no in-place edit"
 fi

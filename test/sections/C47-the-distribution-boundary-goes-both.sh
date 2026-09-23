@@ -206,7 +206,7 @@ fi
 # replace with their own is exempt, by name.
 leads47() {  # $1 = manual -> one rule lead per line
   awk '
-    /^## / { own = ($0 ~ /Personal Preferences/) }
+    /^## / { own = ($0 ~ /Engine Defaults/) }
     !own && /^- \*\*/ { line = $0; sub(/^- \*\*/, "", line); sub(/\*\*.*$/, "", line); print line }
   ' "$1"
 }
@@ -272,7 +272,7 @@ python3 - "$T47/man-with-own.md" <<'PY47'
 import sys
 p = sys.argv[1]
 s = open(p).read()
-s = s.replace("## Personal Preferences\n", "## Personal Preferences\n\n- **A rule of my own**: never distributed\n", 1)
+s = s.replace("## Engine Defaults\n", "## Engine Defaults\n\n- **A rule of my own**: never distributed\n", 1)
 open(p, "w").write(s)
 PY47
 printf '%s\n' "$(leads47 "$T47/man-with-own.md")" | grep -qxF 'A rule of my own' \
