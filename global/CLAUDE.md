@@ -18,6 +18,7 @@ All task management lives in `.ai-flow/`. No external todo files.
 | `STATE.md` | Workstream roster: one row per open front — written by the coordinator, only at ceremonies |
 | `decisions-global.md` | Workflow/system decisions (not task-specific) |
 | `artifacts/T-XXX/` | Task artifacts organized by task ID (brief.md born at capture, then state.md, understand.md, plan.md, verify.md, discoveries.md) |
+| `artifacts/E-XXX/` | Epic artifacts organized by epic ID (brief.md born at creation, mandatory; epic.md holds the frozen Scope Contract + Execution Order) |
 | `archive/T-XXX/` | Completed tasks with all artifacts, decisions, and summary.md |
 | `icebox/` | One parked discovery per file (`IB-XXX.md`) — the body each `## Icebox` index line is regenerated from; retired entries move to `archive/icebox/`, keeping the reason they died |
 | `product.md` | Product context: users, roles, apps, core business flows (read at start of new epics) |
