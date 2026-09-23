@@ -8,7 +8,7 @@ dedicated `afk/*` branch. Your memory is the repo: `.ai-flow/BACKLOG.md` and
 
 1. Read `.ai-flow/BACKLOG.md` and the last 5 commits (`git log --oneline -5`).
 2. Find backlog rows tagged `[afk]`. A row is tagged ONLY when its Task cell **starts** with the literal `[afk]` (i.e. `| T-XXX | [afk] ...`). Mentions of `[afk]` elsewhere in a row's prose (inside backticks, descriptions of the tag itself) do NOT count. If no tagged row exists → print exactly `NO_AFK_TASKS` and stop.
-3. Pick ONE row (the simplest remaining). Its text is the FULL spec — do not widen scope, do not "improve" adjacent code. Every changed line must trace to the row.
+3. Pick ONE row (the simplest remaining). Follow it to `.ai-flow/artifacts/T-XXX/brief.md` — where one exists, the brief, not the row's own text, is the FULL spec; where none exists (a row predating that layout), the row's text is. Either way, do not widen scope, do not "improve" adjacent code. Every changed line must trace to it.
 4. Plan inline (Auto level), then implement exactly what the row describes.
 5. Validate: run the affected tests (the `commands.test` from `.ai-flow/project.yml`, scoped to the touched files, or the touched areas' suites if several files changed) and the project's lint command (`commands.lint`) for touched projects. Everything must be green.
 6. Stage the changed files EXPLICITLY by path (never `git add .` / `-A`), then commit:

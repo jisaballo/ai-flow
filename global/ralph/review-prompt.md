@@ -10,8 +10,9 @@ Never attempt to write files, edit code, or run any git command that mutates sta
 
 - Branch under review: `{{BRANCH}}` · base: `{{BASE}}`
 - Commits: `git log {{BASE}}..{{BRANCH}} --oneline` (only `[auto][afk]` subjects)
-- Task specs: each commit subject ends with `(T-XXX)` → find that row in
-  `.ai-flow/BACKLOG.md`; if the row is gone, fall back to `.ai-flow/archive/T-XXX/summary.md`.
+- Task specs: each commit subject ends with `(T-XXX)` → find that row in `.ai-flow/BACKLOG.md`. Where
+  the row is a pointer, its full spec is `.ai-flow/artifacts/T-XXX/brief.md` — read that instead of
+  auditing the row's text alone. If the row is gone, fall back to `.ai-flow/archive/T-XXX/summary.md`.
 - Parked tasks: today's `.ai-flow/afk-run-*.md` notes and `[afk-parked]` rows in BACKLOG.md.
 
 ## Audit — per commit, in order
