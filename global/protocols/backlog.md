@@ -572,6 +572,20 @@ next action: ...` line rewritten at every task close of that epic (see `artifact
 never an accreting essay; a closed-front recap that carries no lesson is discarded outright. Once every
 entry is placed, delete `## Notes` — its replacement already lives in the epic's own papers.
 
+**A `BACKLOG.md` row with no `artifacts/T-XXX/brief.md`.** Skip a row a close has already given a brief
+to — never overwrite it. For a row still written as an essay: split it on the rule Task Entry Format
+already states, below — the bold lead sentence becomes `brief.md`'s own first line, the remainder becomes
+its technical annex, and the `BACKLOG.md` row is regenerated as the pointer Task Entry Format defines,
+never authored beside the file it now points to.
+
+**An open epic's inline Scope Contract and Execution Order.** Where `BACKLOG.md`'s `## Epics` section
+still carries a Goal/Planned Tasks/Non-Goals block and a numbered Execution Order inline, move both into
+`artifacts/E-XXX/epic.md` verbatim — `## Scope Contract`, and `## Execution Order` as the same numbered
+list (see `artifacts/E-XXX/epic.md` above) — pointing each regenerated Execution Order line at the task's
+own `archive/T-XXX/summary.md` where one exists, and holding every regenerated line to the same 25-word
+ceiling `index-line-budget-guard.py` already enforces. `BACKLOG.md`'s own Epics table row stays the
+pointer it already is (ID, Name, Tasks, Status) once the inline block is gone.
+
 ## Task Entry Format (business-first)
 
 A task's entry leads with behavior, in product language; technical detail is an annex — and both are
