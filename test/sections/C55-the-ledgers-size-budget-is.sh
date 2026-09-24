@@ -38,6 +38,10 @@ ros55() {
 }
 # The one thing the roster invariant forbids, placed in the notes.
 vio55() { ros55; printf '\n## Notes\n\n**Epic E-007 CLOSED 2026-07-30.** Sealed: `archive/E-007.md`.\n'; }
+# A ## Notes heading carrying neither vio55's CLOSED marker nor an archive/ citation — the heading is
+# retired from the SHIPPED template, but a hand-written one is not newly refused (Option A: this guard's
+# own code stays untouched).
+oknotes55() { ros55; printf '\n## Notes\n\nCross-workstream context only — nothing that belongs to a single task.\n'; }
 log55() { i=0; while [ "$i" -lt "$1" ]; do printf '> 2026-0%s-01 session close\n' "$((i+1))"; i=$((i+1)); done; }
 # A project whose ledger holds the given roster and EXACTLY the given word count, heading included. The
 # heading is two words to `wc -w` — `#` and `Backlog` — so the filler is short by two. Counted rather than
@@ -76,6 +80,7 @@ if ! T55="$(mkbox)" || [ ! -d "$T55" ]; then
   bad "A9 the size rule names three causes and the third's remedy is not a prune (no sandbox: mktemp -d failed)"
   bad "A10 no document states a line budget for the ledger (no sandbox: mktemp -d failed)"
   bad "A11 the hook's own note text drops the retired EXECUTION-ORDERS destination (no sandbox: mktemp -d failed)"
+  bad "A12 a bare ## Notes heading with no CLOSED marker or archive/ citation passes clean (no sandbox: mktemp -d failed)"
 elif [ ! -r "$GRD55" ] || [ ! -s "$GRD55" ] || [ ! -r "$BLG55" ] || [ ! -s "$BLG55" ]; then
   bad "A1 a backlog over its word budget is noted, not refused (the guard or the protocol is unreadable)"
   bad "A2 the firm note states both the measurement and the threshold (the guard or the protocol is unreadable)"
@@ -88,6 +93,7 @@ elif [ ! -r "$GRD55" ] || [ ! -s "$GRD55" ] || [ ! -r "$BLG55" ] || [ ! -s "$BLG
   bad "A9 the size rule names three causes and the third's remedy is not a prune (the guard or the protocol is unreadable)"
   bad "A10 no document states a line budget for the ledger (the guard or the protocol is unreadable)"
   bad "A11 the hook's own note text drops the retired EXECUTION-ORDERS destination (the guard or the protocol is unreadable)"
+  bad "A12 a bare ## Notes heading with no CLOSED marker or archive/ citation passes clean (the guard or the protocol is unreadable)"
   rm -rf "$T55"
 else
 
@@ -460,4 +466,18 @@ assert chr(34) in t and chr(92) in t and chr(10) in t, "the escaper dropped what
     c11_55="$c11_55 [the note still promises an archive/EXECUTION-ORDERS.md destination, retired by T-167]" ;; esac
   [ -z "$c11_55" ] && ok "A11 the hook's own note text drops the retired EXECUTION-ORDERS destination" \
                    || bad "A11 the hook's own note text drops the retired EXECUTION-ORDERS destination:$c11_55"
+
+  # --- A12 — a bare ## Notes heading passes clean, unchanged guard code (Option A) --------------------
+  # The heading is retired from the SHIPPED template; the operator's ruling (Option A) is that this
+  # guard's own code stays untouched, so a ## Notes heading someone still writes by hand keeps passing
+  # exactly as it does today. oknotes55 is vio55 with its closed-work signal removed — the same shape,
+  # missing the one thing the count in the guard's own extraction (n above) keys on.
+  P55N2="$T55/n2"; mk55 "$P55N2" oknotes55 100
+  o55="$(run55 "$P55N2" "$STOP55")"; rc55=$?
+  e55="$(cat "$T55/err")"
+  c12_55=""
+  [ "$rc55" = 0 ] || c12_55="$c12_55 [a bare ## Notes heading with no closed-work signal was blocked (exit $rc55)]"
+  [ -z "$e55" ]   || c12_55="$c12_55 [a bare ## Notes heading with no closed-work signal still wrote a report]"
+  [ -z "$c12_55" ] && ok "A12 a bare ## Notes heading with no CLOSED marker or archive/ citation passes clean" \
+                   || bad "A12 a bare ## Notes heading with no CLOSED marker or archive/ citation passes clean:$c12_55"
 fi
