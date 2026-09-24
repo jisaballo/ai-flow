@@ -45,6 +45,10 @@
         },
         {
           "type": "command",
+          "command": "bash $HOME/.claude/hooks/context-surface-size-note.sh"
+        },
+        {
+          "type": "command",
           "command": "python3 $HOME/.claude/hooks/diff-size-guard.py"
         },
         {
@@ -60,6 +64,10 @@
         {
           "type": "command",
           "command": "bash $HOME/.claude/hooks/check-state-size.sh"
+        },
+        {
+          "type": "command",
+          "command": "bash $HOME/.claude/hooks/context-surface-size-note.sh"
         },
         {
           "type": "command",
