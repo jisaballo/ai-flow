@@ -576,7 +576,10 @@ entry is placed, delete `## Notes` — its replacement already lives in the epic
 to — never overwrite it. For a row still written as an essay: split it on the rule Task Entry Format
 already states, below — the bold lead sentence becomes `brief.md`'s own first line, the remainder becomes
 its technical annex, and the `BACKLOG.md` row is regenerated as the pointer Task Entry Format defines,
-never authored beside the file it now points to.
+never authored beside the file it now points to. Where the row carries no bold lead sentence at all —
+prose from before that convention — state that rather than guessing at a split: the gap is closed in
+Understand, on the same terms Task Entry Format already gives a capture that cannot state its business
+line yet.
 
 **An open epic's inline Scope Contract and Execution Order.** Where `BACKLOG.md`'s `## Epics` section
 still carries a Goal/Planned Tasks/Non-Goals block and a numbered Execution Order inline, move both into
