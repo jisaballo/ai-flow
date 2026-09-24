@@ -4,8 +4,8 @@
 # payload, escaping free text into a JSON string with no parser to help, building the one object both
 # audiences read, and reading a prior delivery back out of the transcript so a note speaks once per
 # session per mark. This file is that "one home", named after the same failure _aiflow_state.py's own
-# docstring names: two independent copies of this machinery already drifted once (T-170) before this
-# extraction closed the gap.
+# docstring names: two independent copies of this machinery had already drifted before this extraction
+# closed the gap.
 #
 # Never sourced blind: a caller that needs `spoken_already` sets `$TRANSCRIPT` itself, and a caller
 # that needs `emit_note` sets `$NOTE_EVENT` itself -- this file declares neither, since the value each
