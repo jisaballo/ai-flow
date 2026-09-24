@@ -20,6 +20,15 @@ if [ -f "$SJ" ] && command -v python3 >/dev/null 2>&1; then
   python3 -c "import json; json.load(open('$SJ'))" 2>/dev/null && ok "settings.json is valid JSON" || bad "settings.json invalid JSON"
   cnt="$(grep -c "git-safety.py" "$SJ" 2>/dev/null || echo 0)"
   [ "$cnt" = "1" ] && ok "hook merge idempotent (1 git-safety entry)" || bad "hook merge not idempotent ($cnt git-safety entries)"
+  # Every command settings.hooks.json references must have actually been fetched: a file wired into a
+  # matcher but missing from install.sh's own HOOKS= list ships uninstalled, and the first real Edit/Write
+  # after install then runs `python3 <missing file>`, which exits 2 -- read by PreToolUse as a refusal.
+  missing=""
+  for hf in $(grep -oE '\$HOME/\.claude/hooks/[A-Za-z0-9_.-]+' "$SJ" | sed 's#.*/##' | sort -u); do
+    [ -f "$TH/.claude/hooks/$hf" ] || missing="$missing $hf"
+  done
+  [ -z "$missing" ] && ok "every hook settings.json references was actually fetched" \
+                     || bad "every hook settings.json references was actually fetched: missing$missing"
 else
   bad "update did not create settings.json (expected hook auto-merge)"
 fi
