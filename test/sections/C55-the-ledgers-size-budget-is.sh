@@ -404,7 +404,9 @@ sys.exit(0 if isinstance(d, dict) else 1)' 2>/dev/null \
     # malformed document and the note reaches neither audience. The function is extracted and fed the three
     # characters that break the literal, which is the honest way to test a thing whose caller cannot yet
     # produce them.
-    JE55="$(awk '/^json_escape\(\) \{/{f=1} f{print} f&&/^\}$/{exit}' "$GRD55")"
+    # json_escape now lives in _note-lib.sh (sourced by check-state-size.sh, the shared note-delivery
+    # mechanics' one home) rather than in the guard's own source.
+    JE55="$(awk '/^json_escape\(\) \{/{f=1} f{print} f&&/^\}$/{exit}' "$HK/_note-lib.sh")"
     if [ -z "$JE55" ]; then
       c8_55="$c8_55 [the parser-less path's escaper could not be located, so nothing proves it escapes]"
     else
@@ -480,4 +482,70 @@ assert chr(34) in t and chr(92) in t and chr(10) in t, "the escaper dropped what
   [ -z "$e55" ]   || c12_55="$c12_55 [a bare ## Notes heading with no closed-work signal still wrote a report]"
   [ -z "$c12_55" ] && ok "A12 a bare ## Notes heading with no CLOSED marker or archive/ citation passes clean" \
                    || bad "A12 a bare ## Notes heading with no CLOSED marker or archive/ citation passes clean:$c12_55"
+
+  # --- A13/A14 — the two new coordinator-scoped debt notes ---------------------------------------------
+  # Neither note exists in this file yet: the plan's own second step adds both, reusing
+  # `add_note`/`spoken_already` unchanged (per this task's Decision D5) rather than inventing a second
+  # mechanism. Red today for that
+  # reason — the guard has nothing to say about either subject — and green once Step 2 writes the checks,
+  # which is this task's own mutation proof for both rows: a fixture with debt against one without it.
+
+  # N over-25-word Icebox lines and otherwise nothing: "- IB-%03d (found in T-100)" is 5 tokens, 25 more
+  # (nwords 25) makes each line 30 words — comfortably over the ceiling without approaching the boundary
+  # C102 already owns.
+  iover55() { local n="$1" i=0
+    printf '## Icebox\n\n'
+    while [ "$i" -lt "$n" ]; do
+      printf -- '- IB-%03d (found in T-100) %s\n' "$i" "$(nwords 25 | tr -d '\n')"
+      i=$((i+1))
+    done
+  }
+  mk55c() {  # $1=dir $2=roster fn $3=count of over-budget Icebox lines -> a ledger short enough that the
+             # whole-file size note (A1-A3 above) never fires and this row's own verdict is isolated
+    mkproj "$1" main
+    mkdir -p "$1/.ai-flow"
+    "$2" > "$1/.ai-flow/STATE.md"
+    { printf '# Backlog\n\n'; iover55 "$3"; } > "$1/.ai-flow/BACKLOG.md"
+  }
+
+  P55O="$T55/o"; mk55c "$P55O" ros55 3
+  o55="$(run55 "$P55O" "$UPS55")"; rc55=$?
+  c13_55=""
+  [ "$rc55" = 0 ] || c13_55="$c13_55 [a ledger carrying index-line debt did not let the turn close (exit $rc55)]"
+  case "$o55" in *systemMessage*) : ;; *) c13_55="$c13_55 [no systemMessage on stdout, so the note reaches nobody]" ;; esac
+  case "$o55" in *"3 index line"*) : ;; *) c13_55="$c13_55 [the note does not state the measured count]" ;; esac
+  case "$o55" in *"25-word ceiling"*) : ;; *) c13_55="$c13_55 [the note does not name the 25-word ceiling]" ;; esac
+  P55P="$T55/p"; mk55c "$P55P" ros55 0
+  o55="$(run55 "$P55P" "$UPS55")"
+  case "$o55" in *"index line"*) c13_55="$c13_55 [a ledger with no debt still spoke about index-line debt]" ;; esac
+  [ -z "$c13_55" ] && ok "A13 a coordinator checkout with pre-existing index-line debt is noted, not refused, naming the count" \
+                    || bad "A13 a coordinator checkout with pre-existing index-line debt is noted, not refused, naming the count:$c13_55"
+
+  P55Q="$T55/q"; mk55c "$P55Q" oknotes55 0
+  o55="$(run55 "$P55Q" "$UPS55")"; rc55=$?
+  c14_55=""
+  [ "$rc55" = 0 ] || c14_55="$c14_55 [a pre-existing ## Notes section did not let the turn close (exit $rc55)]"
+  case "$o55" in *systemMessage*) : ;; *) c14_55="$c14_55 [no systemMessage on stdout, so the note reaches nobody]" ;; esac
+  case "$o55" in *"## Workstreams"*) : ;; *) c14_55="$c14_55 [the note does not name the sanctioned Workstreams section]" ;; esac
+  case "$o55" in *"## Quick Tasks Completed"*) : ;; *) c14_55="$c14_55 [the note does not name the sanctioned Quick Tasks section]" ;; esac
+  P55R="$T55/r"; mk55c "$P55R" ros55 0
+  o55="$(run55 "$P55R" "$UPS55")"
+  case "$o55" in *"## Workstreams"*"## Quick Tasks"*) c14_55="$c14_55 [a ledger with no unsanctioned section still spoke about STATE.md's shape]" ;; esac
+  [ -z "$c14_55" ] && ok "A14 a coordinator checkout with a pre-existing unsanctioned STATE.md section is noted, not refused" \
+                    || bad "A14 a coordinator checkout with a pre-existing unsanctioned STATE.md section is noted, not refused:$c14_55"
+
+  # Once per session, on the SAME terms A6 already proves generically for `spoken_already` — this leg
+  # exists only to catch the new notes reusing A1's own mark by mistake, which A6 cannot see because it
+  # never drives this note's subject. BOTH directions are driven, because a row that only checked
+  # silence-after-hearing would be satisfied by a mechanism that never speaks at all — exactly the state
+  # this section is red from today, and the trap the harness nano names as "the green that means nothing".
+  TR55T="$T55/spoken-t170.jsonl"
+  printf '%s\n' '{"attachment":{"type":"hook_system_message","content":"ai-flow index line debt note — 3 index line(s) already over the 25-word ceiling from before this session"}}' > "$TR55T"
+  c15_55=""
+  o55="$(run55 "$P55O" "$UPS55")"
+  case "$o55" in *"index line"*) : ;; *) c15_55="$c15_55 [with no prior transcript the note did not speak at all]" ;; esac
+  o55="$(run55 "$P55O" "{\"hook_event_name\":\"UserPromptSubmit\",\"transcript_path\":\"$TR55T\"}")"
+  case "$o55" in *"index line"*) c15_55="$c15_55 [the index-line debt note was spoken twice in one session]" ;; esac
+  [ -z "$c15_55" ] && ok "A15 the index-line debt note speaks once and is not repeated once this session has heard it" \
+                    || bad "A15 the index-line debt note speaks once and is not repeated once this session has heard it:$c15_55"
 fi

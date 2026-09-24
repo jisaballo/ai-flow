@@ -138,7 +138,10 @@ printf '%s' "$(model65 "$OUTA65")" | grep -qF "$M65" \
 # satisfied by the explanation of the fix rather than by the fix, and stayed green with the whole
 # dual-audience object reverted in either hook. The quote-and-colon form appears only where the object is
 # actually built: four sites in the ledger guard, one in the diff guardrail, none in any comment.
-grep -q '"additionalContext":' "$LED65" \
+# check-state-size.sh's own emit_note now lives in _note-lib.sh (sourced by it and by
+# context-surface-size-note.sh, the shared note-delivery mechanics' one home), so the class this row
+# names -- the JSON key actually built -- is looked for in either file.
+grep -q '"additionalContext":' "$LED65" || grep -q '"additionalContext":' "$HK/_note-lib.sh" \
   || a1_65="$a1_65 [the ledger guard's note half emits no additionalContext]"
 grep -q '"additionalContext":' "$BRK65" \
   || a1_65="$a1_65 [the diff guardrail's note half emits no additionalContext]"
@@ -239,7 +242,9 @@ printf '%s' "$OUTB65" | grep -qF "$M65" \
 # because both the guarded and the unguarded reader answer 1 -- *not yet spoken* is the direction every
 # failure here takes on purpose -- so the two are indistinguishable from outside, and what this row is
 # actually about is the unbounded read behind that identical answer.
-SPK65="$(awk '/^spoken_already\(\)/{f=1} f{print} f&&/^}$/{exit}' "$LED65")"
+# spoken_already now lives in _note-lib.sh (sourced by check-state-size.sh) rather than in its own
+# source, so its body is read from there.
+SPK65="$(awk '/^spoken_already\(\)/{f=1} f{print} f&&/^}$/{exit}' "$HK/_note-lib.sh")"
 a5_65=""
 [ -n "$SPK65" ] || a5_65=" [the mark reader's body could not be located, so its guards prove nothing]"
 if [ -n "$SPK65" ]; then

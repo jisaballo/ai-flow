@@ -92,7 +92,7 @@ fetch_file() {
 
 PROTOCOLS="understand plan execute verify quick-path backlog discover lifecycle context"
 SKILLS="understand plan execute verify discover"
-HOOKS="_aiflow_state.py check-state-size.sh diff-size-guard.py git-safety.py understand-write-guard.py artifact-write-guard.py context-structure-guard.py drift-check.sh context-cost-note.py"
+HOOKS="_aiflow_state.py _note-lib.sh check-state-size.sh diff-size-guard.py git-safety.py understand-write-guard.py artifact-write-guard.py context-structure-guard.py drift-check.sh context-cost-note.py index-line-budget-guard.py context-surface-size-note.sh"
 # Git's own hooks, which carry the two Never rules. They live under a subdirectory because that is
 # what core.hooksPath is pointed at, and because the drift guard's prefix map already covers the
 # path with no change to the guard.

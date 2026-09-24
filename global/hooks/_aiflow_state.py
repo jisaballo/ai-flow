@@ -22,6 +22,33 @@ from pathlib import Path
 PHASE_RE = re.compile(r'(?i)^\s*(?:fase actual|current phase|phase)\s*:\s*\*{0,2}\s*([A-Za-z]+)')
 BRANCH_RE = re.compile(r'(?i)^\s*branch\s*:\s*(\S+)\s*$')
 
+# Index-surface line shapes, and STATE.md's own sanctioned headings: read by BOTH
+# index-line-budget-guard.py (new/changed lines this session writes) and check-state-size.sh (every line,
+# via a python3 -c call that imports this module), so which shape counts as a surface's own index line --
+# and which STATE.md heading is sanctioned -- is stated exactly once. Born duplicated across a Python
+# regex and a hand-translated awk pattern in the same diff that introduced both consumers, and already
+# drifted before either consumer next changed: the awk `ICEBOX_RE` equivalent matched a literal trailing
+# space (`^- IB-[0-9]+ `) where the Python one matched a word boundary (`^- IB-\d+\b`), so a line like
+# `- IB-042,` was judged differently by the two. This module is what that table's single definition
+# looks like; a hand-translated second copy is not written again beside either consumer.
+ICEBOX_RE = re.compile(r'^- IB-\d+\b')
+TABLE_ROW_RE = re.compile(r'^\|.*\|\s*$')
+CHANGELOG_RE = re.compile(r'^> \d{4}-\d{2}-\d{2}\b')
+EXEC_ORDER_RE = re.compile(r'^\d+\.\s')
+HEADING_RE = re.compile(r'^(#{2,3})\s+(.*?)\s*$')
+
+# Which shapes count as THIS surface's own index line, keyed by the surface name both consumers share. A
+# line shaped like another surface's own convention -- an Execution Order item typed into BACKLOG.md by
+# hand -- is not what that surface's rule was written for, so each surface is judged only by its own
+# shapes and never by the union of all of them.
+SURFACE_SHAPES = {
+    'backlog': (ICEBOX_RE, TABLE_ROW_RE, CHANGELOG_RE),
+    'table': (TABLE_ROW_RE,),
+    'exec': (EXEC_ORDER_RE,),
+}
+
+SANCTIONED_HEADINGS = ('Workstreams', 'Quick Tasks Completed')
+
 
 def git(cwd: Path, *args) -> str:
     try:
