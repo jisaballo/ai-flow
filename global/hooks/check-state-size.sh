@@ -225,7 +225,13 @@ $1"; else notes="$1"; fi; }
 # seek lands inside is discarded, and the cost of the bound is the honest one: a mark older than the
 # tail reads as unspoken and the note is repeated once. That is the direction every other failure here
 # already takes.
-spoken_already() {  # $1 = threshold
+# $1 = the exact mark text to look for. The template that turned a threshold into "ai-flow ledger size
+# note [N]" used to live inside the python heredoc below, which was fine while this was the only note in
+# the file; T-170's two new notes have their own mark prefixes entirely, not just a different bracket
+# value, so the template moved to each call site and this function became "was this exact text
+# delivered" -- a generalisation, not a new contract: the one existing call site below is updated to
+# build the same string it always searched for.
+spoken_already() {  # $1 = the exact mark text
   [ -f "$TRANSCRIPT" ] || return 1
   command -v python3 >/dev/null 2>&1 || return 1
   # stderr silenced for the reason the sibling parse above silences it: this runs BEFORE the note is
@@ -234,7 +240,7 @@ spoken_already() {  # $1 = threshold
   python3 - "$TRANSCRIPT" "$1" 2>/dev/null <<'MARKPY'
 import json, os, sys
 
-path, mark = sys.argv[1], "ai-flow ledger size note [%s]" % sys.argv[2]
+path, mark = sys.argv[1], sys.argv[2]
 # Three records now, not two: the model half of a delivery is written back as `hook_additional_context`,
 # and its `content` is a LIST, so it is joined below rather than matched by accidental stringification.
 DELIVERY = ("hook_system_message", "hook_success", "hook_additional_context")
@@ -403,7 +409,7 @@ elif [ -f "$BACKLOG" ]; then
   if [ "$words" -gt 15000 ]; then crossed=15000
   elif [ "$words" -gt 8000 ]; then crossed=8000
   fi
-  if [ -n "$crossed" ] && ! spoken_already "$crossed"; then
+  if [ -n "$crossed" ] && ! spoken_already "ai-flow ledger size note [$crossed]"; then
     if [ "$crossed" = 15000 ]; then
       firmer="This is the firm threshold and not the soft one: at this size the ledger costs a session more to carry than it returns, and the parked ledger-split decision has become the action rather than an option. "
     else
@@ -419,6 +425,57 @@ elif [ -f "$BACKLOG" ]; then
   entries=$(grep -cE '^> 20[0-9]{2}-' "$BACKLOG")
   if [ "$entries" -gt 3 ]; then
     add_blocker "BACKLOG.md holds $entries session-close changelog entries (max 3). Rotate the oldest into archive/CHANGELOG.md (newest first)."
+  fi
+fi
+
+# --- index-line debt and STATE.md-shape debt: both non-blocking, both once per session -----------------
+# What index-line-budget-guard.py only ever refuses is a NEW write crossing the 25-word ceiling; what was
+# already over it before this session is this file's own report, on the same terms the size budget above
+# already reports rather than refuses. Each surface is counted by its OWN shape -- a line matching
+# another surface's convention is not this file's to judge, exactly as that guard reads it.
+# $2 = backlog|table|exec, never a raw ERE handed to `awk -v`: that value undergoes the SAME
+# escape-sequence processing awk gives a string constant before it is compiled as a dynamic regex, so a
+# literal pipe written `\|` to escape it is instead read as an unrecognised escape and the backslash is
+# dropped -- turning an intended literal into a bare alternation operator that then matches almost any
+# line. Regex LITERALS in the program text below are parsed as ERE directly, with no such second pass.
+over25() {  # $1 = file, $2 = backlog|table|exec -> count of that shape's lines over 25 whitespace-split
+            # fields; 0 for a missing, unreadable or unmeasurable file -- the noisy direction
+            # (undercounting a non-blocking debt note) costs a report, never a verdict.
+  [ -f "$1" ] && [ -r "$1" ] || { printf '0'; return; }
+  case "$2" in
+    backlog) n="$(awk '/^- IB-[0-9]+ / || /^\|.*\|[ \t]*$/ || /^> [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ { if (NF > 25) c++ } END { print c+0 }' "$1" 2>/dev/null)" ;;
+    table)   n="$(awk '/^\|.*\|[ \t]*$/ { if (NF > 25) c++ } END { print c+0 }' "$1" 2>/dev/null)" ;;
+    exec)    n="$(awk '/^[0-9]+\. / { if (NF > 25) c++ } END { print c+0 }' "$1" 2>/dev/null)" ;;
+    *)       n=0 ;;
+  esac
+  case "$n" in ''|*[!0-9]*) printf '0' ;; *) printf '%s' "$n" ;; esac
+}
+EPICS="$root/.ai-flow/archive/EPICS.md"
+
+n_over=0
+n_over=$((n_over + $(over25 "$BACKLOG" backlog)))
+n_over=$((n_over + $(over25 "$STATE" table)))
+n_over=$((n_over + $(over25 "$EPICS" table)))
+for epicmd in "$root"/.ai-flow/artifacts/E-*/epic.md; do
+  [ -f "$epicmd" ] || continue
+  n_over=$((n_over + $(over25 "$epicmd" exec)))
+done
+
+if [ "$n_over" -gt 0 ] && ! spoken_already "ai-flow index line debt note"; then
+  add_note "ai-flow index line debt note — $n_over index line(s) across BACKLOG.md/STATE.md/archive/EPICS.md/epic.md already exceed the 25-word ceiling, from before this session. Nothing is blocked by this. See protocols/backlog.md > Size Budget."
+fi
+
+if [ -f "$STATE" ] && [ -r "$STATE" ]; then
+  # The heading only, never the closed-work signal the roster-narrative check above already owns: this
+  # is a SHAPE question -- a section that should not exist at all -- and a bare `## Notes` with no
+  # CLOSED marker or archive/ citation is deliberately left passing that other check (Option A), so this
+  # note is the only place its existence is ever surfaced.
+  shape_debt=$(awk '/^##[#]? / {
+    h=$0; sub(/^##[#]? /,"",h); sub(/[ \t]+$/,"",h)
+    if (h != "Workstreams" && h != "Quick Tasks Completed") { print "1"; exit }
+  }' "$STATE" 2>/dev/null)
+  if [ -n "$shape_debt" ] && ! spoken_already "ai-flow state shape debt note"; then
+    add_note "ai-flow state shape debt note — STATE.md carries a section other than ## Workstreams or ## Quick Tasks Completed from before this session. Nothing is blocked by this. See protocols/backlog.md > Size Budget."
   fi
 fi
 
