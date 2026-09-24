@@ -586,6 +586,21 @@ own `archive/T-XXX/summary.md` where one exists, and holding every regenerated l
 ceiling `index-line-budget-guard.py` already enforces. `BACKLOG.md`'s own Epics table row stays the
 pointer it already is (ID, Name, Tasks, Status) once the inline block is gone.
 
+**An Icebox line.** Over the 25-word ceiling: trim the index line itself — the detail already lives in
+the entry's own body file, untouched (see `### Icebox (discoveries)` below). Missing an `IB-XXX` id or
+body file: mint both, on that same section's own convention — a number never reused, the body carrying
+the entry's statement and an empty `## Sightings` log — then regenerate the index line from it. Both
+parts of the recipe apply where one entry is both over budget and unidentified.
+
+**A `BACKLOG.md` changelog copy.** Where a copy under the changelog heading is a condensed retelling of
+its own close rather than the short pointer `## BACKLOG.md Size Budget (CRITICAL)` below already
+requires, replace it with that pointer: one line naming the entry, pointing at its own
+`archive/CHANGELOG.md` record, never a retelling of it.
+
+**Exit check.** The migration is done once every one of the five counts taken at the start reads zero: no
+row without a brief, no open epic with an inline block, no `STATE.md` `## Notes` section, no Icebox line
+over budget or unidentified, no changelog copy that retells instead of pointing.
+
 ## Task Entry Format (business-first)
 
 A task's entry leads with behavior, in product language; technical detail is an annex — and both are
