@@ -19,92 +19,47 @@ root="$(git rev-parse --show-toplevel 2>/dev/null || true)"
 AIFLOW="$root/.ai-flow"
 [ -d "$AIFLOW" ] || exit 0
 
-# The transcript this note reads its own prior delivery out of, read exactly as check-state-size.sh's own
-# payload is: bounded, because a hook waiting on stdin it never receives is a hung session, and the
-# `-t 0` gate keeps a hand run from blocking on a terminal that will never speak.
-PAYLOAD=""
-stop_line=""
-if [ ! -t 0 ]; then
-  while IFS= read -r -t 2 stop_line || [ -n "$stop_line" ]; do
-    PAYLOAD="$PAYLOAD$stop_line"
-    stop_line=""
-  done
-fi
+# The shared note-delivery mechanics -- read_payload, json_escape, emit_note, spoken_already -- live in
+# one file this guard and check-state-size.sh both source. See _note-lib.sh's own header. Pure parameter
+# expansion, never `dirname`: this guard is exercised under a PATH holding nothing but the tools it
+# names as its own dependencies, and `dirname` would be an undeclared one.
+. "${BASH_SOURCE[0]%/*}/_note-lib.sh"
+
+# The payload this note reads its own prior delivery, and its own confirmed event, out of.
+PAYLOAD="$(read_payload)"
+
+# The confirmed event, read the same way check-state-size.sh reads it and gated the same way (its own
+# `if [ "$EVENT_NAME" = "$NOTE_EVENT" ]` at the note's own event): `additionalContext` reaches the model
+# only when this hook is actually invoked at `UserPromptSubmit` (global/hooks/README.md > "Which channel
+# reaches whom") -- registered at `Stop` too only so a straight glob never has to special-case that event,
+# never so a Stop-time firing should try to speak to the model. Firing there anyway costs more than a
+# missed report: `spoken_already()` below reads its own `systemMessage` back out of the transcript, so a
+# Stop-time note would mark itself delivered and then permanently silence the one firing that could
+# actually have reached the model. An unparseable or absent event is read the same as check-state-size.sh
+# reads it -- NEITHER half -- so this note never fires on a payload it cannot place.
+NOTE_EVENT="UserPromptSubmit"
+EVENT_NAME=""
 TRANSCRIPT=""
 if [ -n "$PAYLOAD" ] && command -v python3 >/dev/null 2>&1; then
-  TRANSCRIPT="$(printf '%s' "$PAYLOAD" | python3 -c 'import json, sys
+  PARSED="$(printf '%s' "$PAYLOAD" | python3 -c 'import json, sys
 try:
     d = json.load(sys.stdin)
 except Exception:
     d = {}
-v = d.get("transcript_path") if isinstance(d, dict) else None
-print(v if isinstance(v, str) else "")' 2>/dev/null || true)"
+if not isinstance(d, dict):
+    d = {}
+for key in ("hook_event_name", "transcript_path"):
+    v = d.get(key)
+    print(v if isinstance(v, str) else "")' 2>/dev/null || true)"
+  EVENT_NAME="$(printf '%s\n' "$PARSED" | sed -n 1p)"
+  TRANSCRIPT="$(printf '%s\n' "$PARSED" | sed -n 2p)"
 fi
-
-# Escaping for the path with no parser to serialise with -- the same three characters
-# check-state-size.sh's own json_escape guards, for the same reason: `printf` splices this text into a
-# JSON string literal, and the accumulator below joins reports with a raw newline.
-json_escape() {  # $1 = raw text -> the same text safe inside a JSON string literal
-  printf '%s' "$1" \
-    | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' \
-    | awk 'NR>1 { printf "\\n" } { printf "%s", $0 }'
-}
-
-emit_note() {  # $1 = the text both audiences receive
-  if command -v python3 >/dev/null 2>&1; then
-    python3 -c 'import json, sys
-print(json.dumps({"systemMessage": sys.argv[1],
-                  "hookSpecificOutput": {"hookEventName": "UserPromptSubmit",
-                                         "additionalContext": sys.argv[1]}}))' "$1"
-  else
-    esc="$(json_escape "$1")"
-    printf '{"systemMessage": "%s", "hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext": "%s"}}\n' \
-      "$esc" "$esc"
-  fi
-}
-
-# $1 = the exact mark text. Keyed on the FILE (Decision D5), never on the threshold alone: two different
-# oversized files must each be heard once, so a mark shared between them would silence the second file's
-# own note the moment the first one had been delivered.
-spoken_already() {
-  [ -f "$TRANSCRIPT" ] || return 1
-  command -v python3 >/dev/null 2>&1 || return 1
-  python3 - "$TRANSCRIPT" "$1" 2>/dev/null <<'MARKPY'
-import json, os, sys
-
-path, mark = sys.argv[1], sys.argv[2]
-DELIVERY = ("hook_system_message", "hook_success", "hook_additional_context")
-TAIL_BYTES = 4 * 1024 * 1024
-try:
-    fh = open(path, errors="replace")
-except Exception:
-    sys.exit(1)
-with fh:
-    try:
-        size = os.fstat(fh.fileno()).st_size
-        if size > TAIL_BYTES:
-            fh.seek(size - TAIL_BYTES)
-            fh.readline()
-    except Exception:
-        pass
-    for line in fh:
-        try:
-            rec = json.loads(line)
-        except Exception:
-            continue
-        if not isinstance(rec, dict):
-            continue
-        att = rec.get("attachment")
-        if not isinstance(att, dict) or att.get("type") not in DELIVERY:
-            continue
-        content = att.get("content")
-        if isinstance(content, list):
-            content = " ".join(str(x) for x in content)
-        if mark in "%s%s" % (content or "", att.get("stdout") or ""):
-            sys.exit(0)
-sys.exit(1)
-MARKPY
-}
+if [ -z "$EVENT_NAME" ] && [ -n "$PAYLOAD" ] && ! command -v python3 >/dev/null 2>&1; then
+  case "$PAYLOAD" in
+    *'"hook_event_name"'*"$NOTE_EVENT"*) EVENT_NAME="$NOTE_EVENT" ;;
+  esac
+fi
+[ "$EVENT_NAME" = "$NOTE_EVENT" ] || exit 0
 
 report=""
 add_report() { if [ -n "$report" ]; then report="$report
@@ -113,12 +68,20 @@ $1"; else report="$1"; fi; }
 # Every context file reachable from this checkout: a task's own brief/state/phase artifacts, an epic's
 # own contract, an Icebox body, an archived summary. Globbed by where these classes conventionally live
 # rather than enumerated by name, so a task or epic this session has never opened is still measured.
-for f in "$AIFLOW"/artifacts/*/*.md "$AIFLOW"/icebox/*.md "$AIFLOW"/archive/*/*.md "$AIFLOW"/archive/*.md; do
+# `archive/E-*.md` and never the bare `archive/*.md`: the top level of `archive/` also holds
+# `CHANGELOG.md` and `EPICS.md`, the six-index-surfaces mechanism's own subjects (Size Budget / the
+# 25-word ceiling) and never this note's -- CHANGELOG.md in particular is a permanent, append-only ledger
+# with no rule anywhere asking it to shrink, so sweeping it in here would be a false, unfixable note on
+# every future session.
+for f in "$AIFLOW"/artifacts/*/*.md "$AIFLOW"/icebox/*.md "$AIFLOW"/archive/*/*.md "$AIFLOW"/archive/E-*.md; do
   [ -f "$f" ] && [ -r "$f" ] || continue
   words="$(wc -w < "$f" 2>/dev/null | tr -d ' ')"
   case "$words" in ''|*[!0-9]*) continue ;; esac
   [ "$words" -gt 8000 ] || continue
   rel="${f#"$root"/}"
+  # Keyed on the FILE (Decision D5), never on the threshold alone: two different oversized files must
+  # each be heard once, so a mark shared between them would silence the second file's own note the
+  # moment the first one had been delivered.
   mark="ai-flow context file size note [$rel]"
   spoken_already "$mark" && continue
   add_report "$mark — $words words (budget 8000), which every session that opens it re-reads. Nothing is blocked by this. See protocols/backlog.md > Size Budget."

@@ -404,7 +404,9 @@ sys.exit(0 if isinstance(d, dict) else 1)' 2>/dev/null \
     # malformed document and the note reaches neither audience. The function is extracted and fed the three
     # characters that break the literal, which is the honest way to test a thing whose caller cannot yet
     # produce them.
-    JE55="$(awk '/^json_escape\(\) \{/{f=1} f{print} f&&/^\}$/{exit}' "$GRD55")"
+    # json_escape now lives in _note-lib.sh (sourced by check-state-size.sh, the shared note-delivery
+    # mechanics' one home) rather than in the guard's own source.
+    JE55="$(awk '/^json_escape\(\) \{/{f=1} f{print} f&&/^\}$/{exit}' "$HK/_note-lib.sh")"
     if [ -z "$JE55" ]; then
       c8_55="$c8_55 [the parser-less path's escaper could not be located, so nothing proves it escapes]"
     else
@@ -481,9 +483,10 @@ assert chr(34) in t and chr(92) in t and chr(10) in t, "the escaper dropped what
   [ -z "$c12_55" ] && ok "A12 a bare ## Notes heading with no CLOSED marker or archive/ citation passes clean" \
                    || bad "A12 a bare ## Notes heading with no CLOSED marker or archive/ citation passes clean:$c12_55"
 
-  # --- A13/A14 (T-170) — the two new coordinator-scoped debt notes -------------------------------------
-  # Neither note exists in this file yet: T-170's Step 2 adds both, reusing `add_note`/`spoken_already`
-  # unchanged (per this task's Decision D5) rather than inventing a second mechanism. Red today for that
+  # --- A13/A14 — the two new coordinator-scoped debt notes ---------------------------------------------
+  # Neither note exists in this file yet: the plan's own second step adds both, reusing
+  # `add_note`/`spoken_already` unchanged (per this task's Decision D5) rather than inventing a second
+  # mechanism. Red today for that
   # reason — the guard has nothing to say about either subject — and green once Step 2 writes the checks,
   # which is this task's own mutation proof for both rows: a fixture with debt against one without it.
 

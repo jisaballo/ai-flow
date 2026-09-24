@@ -33,6 +33,14 @@ if [ -n "$gitdir" ] && [ -n "$common" ] && [ "$(canon_dir "$gitdir")" != "$(cano
   exit 0
 fi
 
+# The shared note-delivery mechanics -- read_payload, json_escape, emit_note, spoken_already -- live in
+# one file both this guard and context-surface-size-note.sh source, so a fix to any of them (or a fourth
+# DELIVERY record type) reaches both without a second edit. See _note-lib.sh's own header.
+# `${BASH_SOURCE[0]%/*}` and never `dirname`: this guard is deliberately exercised under a PATH holding
+# nothing but the tools it names as its own dependencies (C55 > A8), and pure parameter expansion adds
+# none.
+. "${BASH_SOURCE[0]%/*}/_note-lib.sh"
+
 # The Stop payload, read once, before any check runs. This guard was the only one at this event that did
 # not read it — measured when that was true of three siblings; `context-cost-note.py` has since left
 # `Stop` altogether and resolves the event rather than this field, and `diff-size-guard.py` resolves it on
@@ -42,20 +50,10 @@ fi
 # again, and again, for as long as the condition holds. Reported from the field as the guard firing
 # "mid-requirement" — which is what a loop looks like from the outside, since every turn close meets it.
 #
-# The read is BOUNDED and accumulates line-wise. A Stop hook waiting for input it never receives is a
-# hung session, strictly worse than anything this guard is protecting; and a read that waits for a
-# delimiter loses on bash 3.2 whatever it had already taken. The `|| [ -n "$stop_line" ]` arm is what
-# keeps a payload with no trailing newline, which is the ordinary shape: at EOF the read reports failure
-# and still assigns what it took. The `-t 0` gate keeps a hand run — or a conformance row that feeds
-# nothing — from waiting on a terminal that will never speak.
-STOP_PAYLOAD=""
-stop_line=""
-if [ ! -t 0 ]; then
-  while IFS= read -r -t 2 stop_line || [ -n "$stop_line" ]; do
-    STOP_PAYLOAD="$STOP_PAYLOAD$stop_line"
-    stop_line=""
-  done
-fi
+# The read is BOUNDED and accumulates line-wise -- `read_payload` in _note-lib.sh, whose own header
+# states the reasons (a hung session on unread stdin, a lost trailing-newline payload on bash 3.2, a
+# hand run that must never wait on a terminal that will never speak).
+STOP_PAYLOAD="$(read_payload)"
 
 # Parsed, never matched as text, and for the reason this repository already states about this very field:
 # a guard reading the characters of a mechanism cannot tell the field from the same characters appearing
@@ -123,43 +121,11 @@ if [ -z "$EVENT_NAME" ] && [ -n "$STOP_PAYLOAD" ] && ! command -v python3 >/dev/
   esac
 fi
 
-# Escaping for the path that has no parser to serialise with. `printf` splices this text into a JSON
-# string literal, and until now its validity rested on a comment asking nobody in particular to keep
-# quotes, backslashes and newlines out of every report this file can produce. That is not a contract, it
-# is a hope: the accumulator joins reports with a raw newline, which is already illegal inside a JSON
-# string, so the first run carrying two reports emitted a malformed document. The failure is silent and
-# total — the harness drops it and the note reaches neither audience, on exactly the sessions the note
-# exists for.
-#
-# Three characters is the whole job here: backslash first, so it cannot double-escape what the next
-# substitution adds, then the quote, then real newlines folded to their escape. Every report this file
-# builds is ASCII prose and counts, so nothing else can appear.
-json_escape() {  # $1 = raw text -> the same text safe inside a JSON string literal
-  printf '%s' "$1" \
-    | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' \
-    | awk 'NR>1 { printf "\\n" } { printf "%s", $0 }'
-}
-
-# ONE object, two audiences, built in ONE place. Both exits below deliver this same shape -- the note at
-# its own event, and everything found at an event this guard could not place -- and it was written out
-# longhand at each of them, in two languages each: four independent guesses at one harness contract.
-# `systemMessage` is what the operator has always seen; `additionalContext` is the only field measured to
-# enter the model's context. The SAME text goes in both, so the mark `spoken_already` reads back is found
-# whichever record the harness writes for this delivery.
-emit_note() {  # $1 = the text both audiences receive
-  if command -v python3 >/dev/null 2>&1; then
-    python3 -c 'import json, sys
-print(json.dumps({"systemMessage": sys.argv[1],
-                  "hookSpecificOutput": {"hookEventName": sys.argv[2],
-                                         "additionalContext": sys.argv[1]}}))' "$1" "$NOTE_EVENT"
-  else
-    # Hand-built only where there is no parser to serialise with, and escaped because `printf` splices
-    # this text straight into two JSON string literals with nothing else checking it.
-    esc="$(json_escape "$1")"
-    printf '{"systemMessage": "%s", "hookSpecificOutput": {"hookEventName": "%s", "additionalContext": "%s"}}\n' \
-      "$esc" "$NOTE_EVENT" "$esc"
-  fi
-}
+# json_escape and emit_note now live in _note-lib.sh (sourced above): ONE object, two audiences, built
+# in ONE place both this guard and context-surface-size-note.sh read from, rather than two independent
+# guesses at the same harness contract. `systemMessage` is what the operator has always seen;
+# `additionalContext` is the only field measured to enter the model's context, and only at the event
+# `$NOTE_EVENT` names -- both are set below before either function is ever called.
 
 # TWO BUCKETS, and the split is the whole of what this guard now decides. A report goes to `blockers`
 # when its remedy is bounded and doable in the turn it is raised: trim the narrative, delete one
@@ -188,96 +154,15 @@ $1"; else blockers="$1"; fi; }
 add_note() { if [ -n "$notes" ]; then notes="$notes
 $1"; else notes="$1"; fi; }
 
-# Whether this session has already been told about a given threshold. The note's own text is the mark, so
-# there is no sentinel file: no path to choose, no session-versus-checkout scope to decide between, and
-# nothing left behind to clean up. What makes that possible is that the harness records a delivered
-# message back into the session's own transcript, in three independent records — the
-# `hook_system_message` the operator half becomes, the `hook_additional_context` the model half becomes,
-# and the verbatim `stdout` kept beside the hook's exit status.
-# Measured on this project's real transcripts before this was written: 73 of the first and 45,821 of the
-# third, and one of them read back verbatim as the sibling note's own JSON. The second arrived with the
-# split, and its `content` is a LIST, which is why the reader joins it rather than matching by accident.
-#
-# The mark is read ONLY out of those records, and that restriction is the whole of what makes it mean
-# anything. An unanchored search of the file counts every other way the text can arrive — a user naming
-# it, an assistant quoting it, a tool result grepping it — and this engine's own conformance suite holds
-# marks verbatim while being the Verify command of every step of every task here. Under a plain text
-# search the first session to run the suite would mark both thresholds as spoken and the note would never
-# fire again, in the one repository the thresholds were measured on. The sibling reproduced exactly that,
-# on a 248-turn session silenced by one line of its own tool output.
-#
-# EVERY failure returns 1, which means "not yet spoken", which means the note speaks. A missed
-# suppression costs a repeated line; a false suppression costs the note entirely, on a session that never
-# heard it. Absent transcript, unreadable file, half-flushed last line, no python3 — all of them land on
-# the side that talks. The two guards below are that same direction made cheap rather than made safe:
-# they change no verdict, they only stop the guard doing expensive work to reach one it already knows.
-#
-# `-f` and not `-n`, and in the SHELL rather than in the parser: the criterion is that a path naming
-# anything but a regular file is answered WITHOUT being opened, and a directory handed to `open()` is
-# an exception raised after the interpreter has started. A named pipe is the case that costs more than a
-# wasted process — `open()` on one blocks until a writer appears, and a guard that hangs takes the
-# session's whole turn with it.
-#
-# And the read is BOUNDED to the tail. The transcripts this parses are the long ones by construction —
-# the note fires on sessions that have been going a while — and every line was parsed from the start of
-# the file, on every close, for a mark that is either in the file or is not. The bound is bytes and not
-# lines because bytes are what the seek can address without reading what it skips; the partial line the
-# seek lands inside is discarded, and the cost of the bound is the honest one: a mark older than the
-# tail reads as unspoken and the note is repeated once. That is the direction every other failure here
-# already takes.
-# $1 = the exact mark text to look for. The template that turned a threshold into "ai-flow ledger size
-# note [N]" used to live inside the python heredoc below, which was fine while this was the only note in
-# the file; T-170's two new notes have their own mark prefixes entirely, not just a different bracket
-# value, so the template moved to each call site and this function became "was this exact text
-# delivered" -- a generalisation, not a new contract: the one existing call site below is updated to
-# build the same string it always searched for.
-spoken_already() {  # $1 = the exact mark text
-  [ -f "$TRANSCRIPT" ] || return 1
-  command -v python3 >/dev/null 2>&1 || return 1
-  # stderr silenced for the reason the sibling parse above silences it: this runs BEFORE the note is
-  # printed, and on the blocking path stderr is what the operator reads, so a stray byte from here either
-  # prefixes the note or lands in the middle of a refusal.
-  python3 - "$TRANSCRIPT" "$1" 2>/dev/null <<'MARKPY'
-import json, os, sys
-
-path, mark = sys.argv[1], sys.argv[2]
-# Three records now, not two: the model half of a delivery is written back as `hook_additional_context`,
-# and its `content` is a LIST, so it is joined below rather than matched by accidental stringification.
-DELIVERY = ("hook_system_message", "hook_success", "hook_additional_context")
-TAIL_BYTES = 4 * 1024 * 1024
-try:
-    fh = open(path, errors="replace")
-except Exception:
-    sys.exit(1)
-with fh:
-    try:
-        size = os.fstat(fh.fileno()).st_size
-        if size > TAIL_BYTES:
-            fh.seek(size - TAIL_BYTES)
-            fh.readline()  # the seek lands mid-line; that fragment is not a record
-    except Exception:
-        pass
-    for line in fh:
-        # A transcript is written while it is being read, so its last line can be half-flushed. A hook
-        # that raised there would go silent for the rest of the session -- silent on a session that is,
-        # by construction, a long one.
-        try:
-            rec = json.loads(line)
-        except Exception:
-            continue
-        if not isinstance(rec, dict):
-            continue
-        att = rec.get("attachment")
-        if not isinstance(att, dict) or att.get("type") not in DELIVERY:
-            continue
-        content = att.get("content")
-        if isinstance(content, list):
-            content = " ".join(str(x) for x in content)
-        if mark in "%s%s" % (content or "", att.get("stdout") or ""):
-            sys.exit(0)
-sys.exit(1)
-MARKPY
-}
+# spoken_already (also from _note-lib.sh): whether this session has already been told about a given
+# mark, read out of the transcript's own delivery records rather than a sentinel file -- see the
+# library's own header for the full account (the three delivery record types, why an unanchored text
+# search is unsafe, why every failure reads as "not yet spoken", why the read is bounded to the tail).
+# The template that turned a threshold into "ai-flow ledger size note [N]" used to live inside this
+# function's own heredoc; it now lives at each call site below, so this generalised function is "was
+# this exact text delivered" rather than "was this threshold delivered" -- the change the two newer
+# notes below needed, since they have their own mark prefixes entirely and not just a different bracket
+# value.
 
 # Resolve the ledger from the checkout root, not from the cwd: a session sitting in a
 # subdirectory would otherwise silently find no ledger and pass.

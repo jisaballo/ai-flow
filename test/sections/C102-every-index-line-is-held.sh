@@ -1,8 +1,8 @@
 # C102 — every index line written or changed this session is held to its 25-word ceiling, and a new
 # STATE.md section outside the two sanctioned ones is refused the same way. Generated in the Conform
-# phase from understand.md's Verifiable Criteria (T-170), against a guard this row does not yet find:
-# global/hooks/index-line-budget-guard.py does not exist until Step 1 of T-170's plan writes it, so every
-# row below is bound to that absence today. That is the correct red — the assertions key on the refusal's
+# phase from understand.md's Verifiable Criteria, against a guard this row does not yet find:
+# global/hooks/index-line-budget-guard.py does not exist until the plan's own first step writes it, so
+# every row below is bound to that absence today. That is the correct red — the assertions key on the refusal's
 # own words, never on the exit code alone, because a python3 "no such file" failure also exits 2 and would
 # satisfy an exit-code-only leg for the wrong reason (harness nano: "a leg satisfied by something other
 # than the fact it names").
@@ -13,6 +13,9 @@ IGRD102="$HK/index-line-budget-guard.py"
 # output, hook exit code. `old_string` is a fixed placeholder: this guard reads the new text directly
 # (per Unknown #4's ruling) and never diffs against what the edit replaces.
 iguard102() { hookcall "$IGRD102" "$T102" "$1" Edit ",\"old_string\":\"anchor\",\"new_string\":\"$2\""; }
+# $1 = file_path, $2 = the content this session is writing via a fresh Write (never an Edit) -> combined
+# output, hook exit code. The guard's other branch: `content` for a Write, never `new_string`.
+iguard102w() { hookcall "$IGRD102" "$T102" "$1" Write ",\"content\":\"$2\""; }
 
 T102=""
 if ! T102="$(mkbox)" || [ ! -d "$T102" ]; then
@@ -83,4 +86,59 @@ else
   [ -z "$o102" ]   || c5_102="$c5_102 [a file outside the watched surfaces produced output]"
   [ -z "$c5_102" ] && ok "A5 a file outside the four watched surfaces passes clean, whatever it contains" \
                     || bad "A5 a file outside the four watched surfaces passes clean, whatever it contains:${c5_102}"
+
+  # --- A6/A7: archive/EPICS.md's own TABLE_ROW_RE ceiling — the two other watched surfaces (this file and
+  # epic.md below) were, until now, unexercised: only ICEBOX_RE and STATE.md's own TABLE_ROW_RE use had a
+  # row, so a regression in either jurisdiction branch or its regex would have shipped silently green ---
+  ROW_OVER="| E-050 | $(nwords 22 | tr -d '\n') |"
+  ROW_AT="| E-050 | $(nwords 21 | tr -d '\n') |"
+  o102="$(iguard102 ".ai-flow/archive/EPICS.md" "| ID | Name | Tasks | Status |\\n${ROW_OVER}\\n")"; rc102=$?
+  c6_102=""
+  [ "$rc102" = 2 ] || c6_102="$c6_102 [a 26-word new archive/EPICS.md row was not refused (exit ${rc102})]"
+  case "$o102" in *"26 words"*) : ;; *) c6_102="$c6_102 [the refusal does not state the measured word count]" ;; esac
+  [ -z "$c6_102" ] && ok "A6 a 26-word new archive/EPICS.md row is refused" \
+                    || bad "A6 a 26-word new archive/EPICS.md row is refused:${c6_102}"
+
+  o102="$(iguard102 ".ai-flow/archive/EPICS.md" "| ID | Name | Tasks | Status |\\n${ROW_AT}\\n")"; rc102=$?
+  c7_102=""
+  [ "$rc102" = 0 ] || c7_102="$c7_102 [a 25-word new archive/EPICS.md row was refused (exit ${rc102}, said: ${o102})]"
+  [ -z "$o102" ]   || c7_102="$c7_102 [a 25-word row produced output, so something over the ceiling was still found]"
+  [ -z "$c7_102" ] && ok "A7 the same archive/EPICS.md row trimmed to 25 words is allowed" \
+                    || bad "A7 the same archive/EPICS.md row trimmed to 25 words is allowed:${c7_102}"
+
+  # --- A8/A9: an epic's own epic.md — EXEC_ORDER_RE and the artifacts/E-*/epic.md jurisdiction branch ----
+  mkdir -p "$T102/.ai-flow/artifacts/E-009"
+  EXEC_OVER="1. T-100 — $(nwords 23 | tr -d '\n')"
+  EXEC_AT="1. T-100 — $(nwords 22 | tr -d '\n')"
+  o102="$(iguard102 ".ai-flow/artifacts/E-009/epic.md" "## Execution Order\\n\\n${EXEC_OVER}\\n")"; rc102=$?
+  c8_102=""
+  [ "$rc102" = 2 ] || c8_102="$c8_102 [a 26-word new epic.md Execution Order line was not refused (exit ${rc102})]"
+  case "$o102" in *"26 words"*) : ;; *) c8_102="$c8_102 [the refusal does not state the measured word count]" ;; esac
+  [ -z "$c8_102" ] && ok "A8 a 26-word new epic.md Execution Order line is refused" \
+                    || bad "A8 a 26-word new epic.md Execution Order line is refused:${c8_102}"
+
+  o102="$(iguard102 ".ai-flow/artifacts/E-009/epic.md" "## Execution Order\\n\\n${EXEC_AT}\\n")"; rc102=$?
+  c9_102=""
+  [ "$rc102" = 0 ] || c9_102="$c9_102 [a 25-word new epic.md Execution Order line was refused (exit ${rc102}, said: ${o102})]"
+  [ -z "$o102" ]   || c9_102="$c9_102 [a 25-word line produced output, so something over the ceiling was still found]"
+  [ -z "$c9_102" ] && ok "A9 the same epic.md Execution Order line trimmed to 25 words is allowed" \
+                    || bad "A9 the same epic.md Execution Order line trimmed to 25 words is allowed:${c9_102}"
+
+  # --- A10: CHANGELOG_RE on BACKLOG.md — the third of BACKLOG.md's own three shapes, previously untested -
+  CHLOG_OVER="> 2026-09-24 — $(nwords 23 | tr -d '\n')"
+  o102="$(iguard102 ".ai-flow/BACKLOG.md" "## Changelog\\n\\n${CHLOG_OVER}\\n")"; rc102=$?
+  c10_102=""
+  [ "$rc102" = 2 ] || c10_102="$c10_102 [a 26-word new changelog line was not refused (exit ${rc102})]"
+  case "$o102" in *"26 words"*) : ;; *) c10_102="$c10_102 [the refusal does not state the measured word count]" ;; esac
+  [ -z "$c10_102" ] && ok "A10 a 26-word new BACKLOG.md changelog line is refused" \
+                    || bad "A10 a 26-word new BACKLOG.md changelog line is refused:${c10_102}"
+
+  # --- A11: the Write branch of new_text() — every row above hardcodes Edit; a fresh epic.md created via
+  # Write (the real shape a brand-new file takes) must be judged the same way -------------------------
+  o102="$(iguard102w ".ai-flow/artifacts/E-010/epic.md" "## Execution Order\\n\\n${EXEC_OVER}\\n")"; rc102=$?
+  c11_102=""
+  [ "$rc102" = 2 ] || c11_102="$c11_102 [a fresh Write carrying a 26-word Execution Order line was not refused (exit ${rc102})]"
+  case "$o102" in *"26 words"*) : ;; *) c11_102="$c11_102 [the refusal does not state the measured word count]" ;; esac
+  [ -z "$c11_102" ] && ok "A11 a fresh epic.md created via Write with a 26-word Execution Order line is refused" \
+                    || bad "A11 a fresh epic.md created via Write with a 26-word Execution Order line is refused:${c11_102}"
 fi
