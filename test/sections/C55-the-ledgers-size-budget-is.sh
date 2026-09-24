@@ -38,8 +38,8 @@ ros55() {
 }
 # The one thing the roster invariant forbids, placed in the notes.
 vio55() { ros55; printf '\n## Notes\n\n**Epic E-007 CLOSED 2026-07-30.** Sealed: `archive/E-007.md`.\n'; }
-# A ## Notes heading carrying neither vio55's CLOSED marker nor an archive/ citation — T-169 retires the
-# heading from the SHIPPED template, but a hand-written one is not newly refused (Option A: this guard's
+# A ## Notes heading carrying neither vio55's CLOSED marker nor an archive/ citation — the heading is
+# retired from the SHIPPED template, but a hand-written one is not newly refused (Option A: this guard's
 # own code stays untouched).
 oknotes55() { ros55; printf '\n## Notes\n\nCross-workstream context only — nothing that belongs to a single task.\n'; }
 log55() { i=0; while [ "$i" -lt "$1" ]; do printf '> 2026-0%s-01 session close\n' "$((i+1))"; i=$((i+1)); done; }
@@ -467,8 +467,8 @@ assert chr(34) in t and chr(92) in t and chr(10) in t, "the escaper dropped what
   [ -z "$c11_55" ] && ok "A11 the hook's own note text drops the retired EXECUTION-ORDERS destination" \
                    || bad "A11 the hook's own note text drops the retired EXECUTION-ORDERS destination:$c11_55"
 
-  # --- A12 — a bare ## Notes heading passes clean, unchanged guard code (T-169, Option A) -------------
-  # T-169 retires ## Notes from the SHIPPED template; the operator's ruling (Option A) is that this
+  # --- A12 — a bare ## Notes heading passes clean, unchanged guard code (Option A) --------------------
+  # The heading is retired from the SHIPPED template; the operator's ruling (Option A) is that this
   # guard's own code stays untouched, so a ## Notes heading someone still writes by hand keeps passing
   # exactly as it does today. oknotes55 is vio55 with its closed-work signal removed — the same shape,
   # missing the one thing the count in the guard's own extraction (n above) keys on.
