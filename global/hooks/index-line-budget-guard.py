@@ -12,7 +12,7 @@ through untouched is never this guard's business; debt that already existed is c
 report, never a refusal.
 
 Reads the hook JSON on stdin; exit 2 blocks the tool call and feeds the message back to Claude."""
-import sys, json, re
+import sys, json
 from pathlib import Path
 
 # No bytecode: a hook is a one-shot process that gains nothing from a cache, and the cache is a directory
@@ -21,34 +21,27 @@ from pathlib import Path
 # would write one.
 sys.dont_write_bytecode = True
 
-from _aiflow_state import ledger_root
+from _aiflow_state import ledger_root, SURFACE_SHAPES, SANCTIONED_HEADINGS, HEADING_RE
 
 # The 25-word ceiling every surface shares, stated once in protocols/backlog.md's own prose (Size
 # Budget) and cited here rather than shared as code: no constants file exists anywhere in this engine,
 # and check-state-size.sh's own 8,000/15,000 thresholds are themselves undeclared inline literals.
 CEILING = 25
 
-ICEBOX_RE = re.compile(r'^- IB-\d+\b')
-TABLE_ROW_RE = re.compile(r'^\|.*\|\s*$')
-CHANGELOG_RE = re.compile(r'^> \d{4}-\d{2}-\d{2}\b')
-EXEC_ORDER_RE = re.compile(r'^\d+\.\s')
-HEADING_RE = re.compile(r'^(#{2,3})\s+(.*?)\s*$')
-SANCTIONED_HEADINGS = ('Workstreams', 'Quick Tasks Completed')
-
 
 def line_shapes(rel: str):
     """The shapes THIS file's own index lines take, or None when the path is not one of the four the
-    guard has jurisdiction over. A line shaped like another surface's own convention -- an Execution
-    Order item typed into BACKLOG.md by hand -- is not what that file's rule was written for, so each
-    surface is judged only by its own shapes and never by the union of all of them."""
+    guard has jurisdiction over. The shapes themselves are _aiflow_state.py's SURFACE_SHAPES -- the same
+    table check-state-size.sh reads -- so only the path-to-surface mapping lives here; see that module's
+    own header for why the shapes are not hand-translated a second time."""
     if rel == '.ai-flow/BACKLOG.md':
-        return (ICEBOX_RE, TABLE_ROW_RE, CHANGELOG_RE)
+        return SURFACE_SHAPES['backlog']
     if rel == '.ai-flow/STATE.md':
-        return (TABLE_ROW_RE,)
+        return SURFACE_SHAPES['table']
     if rel == '.ai-flow/archive/EPICS.md':
-        return (TABLE_ROW_RE,)
+        return SURFACE_SHAPES['table']
     if rel.startswith('.ai-flow/artifacts/E-') and rel.endswith('/epic.md'):
-        return (EXEC_ORDER_RE,)
+        return SURFACE_SHAPES['exec']
     return None
 
 

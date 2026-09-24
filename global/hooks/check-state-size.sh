@@ -318,21 +318,33 @@ fi
 # already over it before this session is this file's own report, on the same terms the size budget above
 # already reports rather than refuses. Each surface is counted by its OWN shape -- a line matching
 # another surface's convention is not this file's to judge, exactly as that guard reads it.
-# $2 = backlog|table|exec, never a raw ERE handed to `awk -v`: that value undergoes the SAME
-# escape-sequence processing awk gives a string constant before it is compiled as a dynamic regex, so a
-# literal pipe written `\|` to escape it is instead read as an unrecognised escape and the backslash is
-# dropped -- turning an intended literal into a bare alternation operator that then matches almost any
-# line. Regex LITERALS in the program text below are parsed as ERE directly, with no such second pass.
+#
+# The shapes are read from _aiflow_state.py's SURFACE_SHAPES -- the same table that guard imports --
+# rather than hand-translated into awk a second time. That second copy is what this block used to be, and
+# it had already drifted from the Python original before either ever changed again (see
+# _aiflow_state.py's own header for the exact case). python3 is not optional here: with none reachable
+# there is no second classifier to fall back to, on purpose, so an unmeasurable surface reads 0 -- the
+# same noisy-but-safe direction a missing or unreadable file already takes below (undercounting a
+# non-blocking debt note costs a report, never a verdict).
 over25() {  # $1 = file, $2 = backlog|table|exec -> count of that shape's lines over 25 whitespace-split
-            # fields; 0 for a missing, unreadable or unmeasurable file -- the noisy direction
-            # (undercounting a non-blocking debt note) costs a report, never a verdict.
+            # fields; 0 for a missing, unreadable, unmeasurable, or python3-less file.
   [ -f "$1" ] && [ -r "$1" ] || { printf '0'; return; }
-  case "$2" in
-    backlog) n="$(awk '/^- IB-[0-9]+ / || /^\|.*\|[ \t]*$/ || /^> [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]/ { if (NF > 25) c++ } END { print c+0 }' "$1" 2>/dev/null)" ;;
-    table)   n="$(awk '/^\|.*\|[ \t]*$/ { if (NF > 25) c++ } END { print c+0 }' "$1" 2>/dev/null)" ;;
-    exec)    n="$(awk '/^[0-9]+\. / { if (NF > 25) c++ } END { print c+0 }' "$1" 2>/dev/null)" ;;
-    *)       n=0 ;;
-  esac
+  command -v python3 >/dev/null 2>&1 || { printf '0'; return; }
+  # -B: no bytecode. This process imports _aiflow_state.py from disk, unlike the two json-only python3
+  # calls above -- a .pyc written here lands inside whichever checkout runs this guard, including this
+  # repository's own working tree, and is exactly the untracked file the packaging check exists to catch.
+  n="$(python3 -B -c '
+import sys
+sys.path.insert(0, sys.argv[3])
+from _aiflow_state import SURFACE_SHAPES
+shapes = SURFACE_SHAPES.get(sys.argv[2], ())
+try:
+    text = open(sys.argv[1], encoding="utf-8").read()
+except Exception:
+    text = ""
+print(sum(1 for line in text.splitlines()
+          if any(p.match(line) for p in shapes) and len(line.split()) > 25))
+' "$1" "$2" "${BASH_SOURCE[0]%/*}" 2>/dev/null)"
   case "$n" in ''|*[!0-9]*) printf '0' ;; *) printf '%s' "$n" ;; esac
 }
 EPICS="$root/.ai-flow/archive/EPICS.md"
@@ -355,10 +367,31 @@ if [ -f "$STATE" ] && [ -r "$STATE" ]; then
   # is a SHAPE question -- a section that should not exist at all -- and a bare `## Notes` with no
   # CLOSED marker or archive/ citation is deliberately left passing that other check (Option A), so this
   # note is the only place its existence is ever surfaced.
-  shape_debt=$(awk '/^##[#]? / {
-    h=$0; sub(/^##[#]? /,"",h); sub(/[ \t]+$/,"",h)
-    if (h != "Workstreams" && h != "Quick Tasks Completed") { print "1"; exit }
-  }' "$STATE" 2>/dev/null)
+  #
+  # HEADING_RE and SANCTIONED_HEADINGS are read from _aiflow_state.py -- the same table
+  # index-line-budget-guard.py reads for this same question -- rather than hand-translated into awk a
+  # second time; see over25()'s own comment above and _aiflow_state.py's header for why. python3 is not
+  # optional here, on the same terms: with none reachable this reads no shape debt at all, which is the
+  # same noisy-but-safe direction a missing STATE.md already takes.
+  shape_debt=""
+  if command -v python3 >/dev/null 2>&1; then
+    # -B: no bytecode, for the same reason over25() takes it -- this process also imports
+    # _aiflow_state.py from disk.
+    shape_debt="$(python3 -B -c '
+import sys
+sys.path.insert(0, sys.argv[2])
+from _aiflow_state import HEADING_RE, SANCTIONED_HEADINGS
+try:
+    text = open(sys.argv[1], encoding="utf-8").read()
+except Exception:
+    text = ""
+for line in text.splitlines():
+    m = HEADING_RE.match(line)
+    if m and m.group(2) not in SANCTIONED_HEADINGS:
+        print(1)
+        break
+' "$STATE" "${BASH_SOURCE[0]%/*}" 2>/dev/null)"
+  fi
   if [ -n "$shape_debt" ] && ! spoken_already "ai-flow state shape debt note"; then
     add_note "ai-flow state shape debt note — STATE.md carries a section other than ## Workstreams or ## Quick Tasks Completed from before this session. Nothing is blocked by this. See protocols/backlog.md > Size Budget."
   fi
