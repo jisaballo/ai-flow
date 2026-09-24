@@ -550,6 +550,28 @@ front's branch from the checkout it has just located, never from the roster, so 
 nobody keeps current and nobody asks for. Dropping it costs one edit; leaving it costs a field that is
 wrong from each front's second task onward, for whoever reads the roster rather than the ceremony.
 
+**Non-Goal: already-closed epics' archives.** `archive/E-XXX-slug.md` and `archive/EXECUTION-ORDERS.md`
+are left as legacy and never converted to the new `archive/E-XXX/` shape — nothing reads a closed epic
+through this layout, so converting one buys nothing this migration is for.
+
+**Beyond the roster, five more surfaces migrate**: a `BACKLOG.md` row carrying no
+`artifacts/T-XXX/brief.md`, an open epic's Scope Contract and Execution Order still inline in
+`BACKLOG.md`'s `## Epics` section, `STATE.md`'s own `## Notes`, an Icebox line over its 25-word ceiling
+or missing an `IB-XXX` id, and a `BACKLOG.md` changelog copy that retells instead of pointing. **Start by
+counting**: how many rows carry no brief; how many open epics still carry an inline block; whether `##
+Notes` still exists; how many Icebox lines are over budget or unidentified; how many changelog copies
+retell rather than point. Five counts, taken once, before the first edit — and restated as the exit check
+below, once every recipe here has run.
+
+**`STATE.md` Notes → the driven epic's `epic.md > ## Resume from here`.** Apply exactly one of four
+outcomes to every entry in `## Notes`, never a fifth: a lesson that already has a home elsewhere
+(`decisions-global.md`, an Icebox entry, an `archive/T-XXX/summary.md`) is dropped as a duplicate rather
+than copied twice; a lesson with no other home is written to one through the ordinary context write-back;
+position and open debts move into the driven epic's own `epic.md > ## Resume from here` — a single `-
+next action: ...` line rewritten at every task close of that epic (see `artifacts/E-XXX/epic.md` above),
+never an accreting essay; a closed-front recap that carries no lesson is discarded outright. Once every
+entry is placed, delete `## Notes` — its replacement already lives in the epic's own papers.
+
 ## Task Entry Format (business-first)
 
 A task's entry leads with behavior, in product language; technical detail is an annex — and both are
