@@ -27,6 +27,7 @@ flowchart LR
   hooks["guardrail hooks"]
 
   ceremonies -->|requires| install
+  ceremonies -->|enriches| hooks
   understand -->|requires| ceremonies
   plan -->|requires| ceremonies
   verify -->|requires| ceremonies
@@ -83,5 +84,6 @@ this directory, and a rule about a document type they will never write is weight
 | Capability | Card |
 |---|---|
 | verify | [verify.md](verify.md) |
+| ceremonies | [ceremonies.md](ceremonies.md) |
 
 **This table is the register**. A card that is not listed here is not a card.
