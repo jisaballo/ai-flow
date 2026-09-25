@@ -592,8 +592,14 @@ still carries a Goal/Planned Tasks/Non-Goals block and a numbered Execution Orde
 `artifacts/E-XXX/epic.md` verbatim — `## Scope Contract`, and `## Execution Order` as the same numbered
 list (see `artifacts/E-XXX/epic.md` above) — pointing each regenerated Execution Order line at the task's
 own `archive/T-XXX/summary.md` where one exists, and holding every regenerated line to the same 25-word
-ceiling `index-line-budget-guard.py` already enforces. `BACKLOG.md`'s own Epics table row stays the
-pointer it already is (ID, Name, Tasks, Status) once the inline block is gone.
+ceiling `index-line-budget-guard.py` already enforces. An open item — no `summary.md` yet — whose original
+line itself overruns that ceiling is trimmed to fit rather than left over budget: the detail it drops
+already survives verbatim in the Scope Contract's own Planned Tasks bullet, on the same terms the done
+item's line survives in its `summary.md`. The epic also gets `artifacts/E-XXX/brief.md`, minted on the
+same mandatory and unconditional terms a natively-created epic already carries (see
+`artifacts/E-XXX/brief.md` above) — business statement as its own first line, empty `## Sightings` log —
+and `BACKLOG.md`'s own Epics table row is regenerated from that first line (its Name), never left standing
+as the pointer it already happened to be.
 
 **An Icebox line.** Over the 25-word ceiling: trim the index line itself — the detail already lives in
 the entry's own body file, untouched (see `### Icebox (discoveries)` below). Missing an `IB-XXX` id or
