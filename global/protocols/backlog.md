@@ -28,14 +28,14 @@ wrongly — an earlier form of it exempted from the quick-task heading to the ne
 section is last here, the exemption ran to end of file and a narrative appended at the bottom was
 invisible.
 
-**Checkout** names where that front's working copy lives, and it is what locates the front. **Four**
-sites match it against the repository's own worktree listing, and all four are moves of the closing
-ceremony: its collection move, its deletion move, its dismantling move and its last move.
-Front-scoped and decided once, like Areas and Tool — and unlike a branch, which a front
-changes with every task in its chain, so a branch could never key this row: it would name the front's
+**Checkout** names where that workstream's working copy lives, and it is what locates the workstream.
+**Four** sites match it against the repository's own worktree listing, and all four are moves of the
+closing ceremony: its collection move, its deletion move, its dismantling move and its last move.
+Workstream-scoped and decided once, like Areas and Tool — and unlike a branch, which a workstream
+changes with every task in its chain, so a branch could never key this row: it would name the workstream's
 first task forever. The coordinator's own row names its own checkout and none of the four looks for it —
 a task worked there has its papers there already, nothing of it is dismantled, and its row is not a
-front's.
+workstream's.
 
 **How the column is compared — stated here once, for all four readers**, because a rule each site
 restates is a rule they can come to disagree about. Both sides are resolved before they are compared:
@@ -50,23 +50,24 @@ gone. `~/.claude/ai-flow/scripts/seed-front.sh` performs this same comparison fo
 move, so a reader wanting it in code has one; the rule above is the protocol's own and does not depend on
 that script keeping its present shape.
 
-**Areas** names the parts of the codebase a front declared when it opened, in the project's own
+**Areas** names the parts of the codebase a workstream declared when it opened, in the project's own
 `area_kind`. It is what the next opening weighs its own declaration against (see Opening a
-Workstream) — front-scoped, decided once, never a running account of what the task turned out to
+Workstream) — workstream-scoped, decided once, never a running account of what the task turned out to
 touch.
 
-**Tool** names what created that front's checkout. Front-scoped and decided once, like Areas, and read by
-**two** sites — the count is the fact, for the reason **Checkout** above gives about its own four. The
-closing ceremony's **dismantling** move: the ownership condition says the checkout is removed by whatever
-created it, and this column is the only thing that says what that was. And the archive checklist's
-**step 8**, whose label rewrite has first to ask whether that tool offers a mutable label at all; it runs
-in the coordinator, which has nothing else to learn the front's tool from. The coordinator's own row has
-nothing to name — nothing created it.
+**Tool** names what created that workstream's checkout. Workstream-scoped and decided once, like Areas,
+and read by **two** sites — the count is the fact, for the reason **Checkout** above gives about its own
+four. The closing ceremony's **dismantling** move: the ownership condition says the checkout is removed by
+whatever created it, and this column is the only thing that says what that was. And the archive
+checklist's **step 8**, whose label rewrite has first to ask whether that tool offers a mutable label at
+all; it runs in the coordinator, which has nothing else to learn the workstream's tool from. The
+coordinator's own row has nothing to name — nothing created it.
 
 **Epic**, on the coordinator's own row, names the epic it is actively driving — every other open epic is
 paused by definition, and pausing one costs nothing to declare: no second row, no separate flag, nothing
-elsewhere in this file to keep in step with it. No new column: the table already carries one, and a front's
-own row already uses it to name the epic its own task belongs to — the coordinator's row is the same
+elsewhere in this file to keep in step with it. No new column: the table already carries one, and a
+workstream's own row already uses it to name the epic its own task belongs to — the coordinator's row is
+the same
 column read for the same fact, one epic at a time. Activating a task of a different epic switches the
 column, as the same write that advances the Task field (step 8 of the After ARCHIVE checklist, below) —
 never a step of its own. What makes pausing an epic costless is `epic.md`'s own `## Resume from here`,
@@ -267,7 +268,7 @@ investigation never moves into it.
 
 Written once investigation produces the epic, whose three required fields are Epic Scope Contract's own
 below and are not restated here. It holds what an inline BACKLOG.md block held until now: the frozen
-Scope Contract and the Execution Order, as a numbered list. A front in a linked worktree reads it
+Scope Contract and the Execution Order, as a numbered list. A workstream in a linked worktree reads it
 read-only from the main checkout, exactly as it read BACKLOG.md's own block before this file existed (see
 Understand protocol > Epic-Scoped Understanding). **`## Resume from here`** is the epic's own cross-session
 handoff: rewritten at every task close of this epic, in the same edit that already strikes that task's
@@ -299,10 +300,10 @@ Tasks and Non-Goals, never an order — still gets an `epic.md`, with an empty `
 ### Resolving the task
 
 **The `branch:` line is how a checkout recognises its own task.** A working copy can hold several
-sheets — the coordinator holds every open task's by construction, and a front takes on its next task
+sheets — the coordinator holds every open task's by construction, and a workstream takes on its next task
 while the paused one keeps its papers — so whoever opens a workstream writes that line, and every
 reader that needs to know which task a checkout is on follows the same four rungs, in order. What a
-front receives when it is created is pruned by the ceremony that created it; neither of those two
+worktree receives when it is created is pruned by the ceremony that created it; neither of those two
 producers is, so the situation the ladder answers to is the one no ceremony removes.
 
 Two readers follow them. The read-only rail wants a phase, and `phase_source` in
@@ -328,7 +329,7 @@ contradict it. Two or more sheets and this case falls straight to rung 3.
 3. **Failing that, `STATE.md` — and only where it names exactly one task.** For the rail that is where
    a migrated roster carries no phase, so it stays silent by design. For a phase command the file is
    the task identifier itself, which is what makes the condition load-bearing: a roster holding
-   several open fronts names several tasks, and a pre-migration ledger names the one task it was
+   several open workstreams names several tasks, and a pre-migration ledger names the one task it was
    built around.
 4. **Failing all of it, stop and name what was looked for.** A reader that cannot resolve a task does
    not choose one — ambiguity resolved by choice is indistinguishable from a correct answer, and for a
@@ -339,7 +340,7 @@ contradict it. Two or more sheets and this case falls straight to rung 3.
    that checkout. Two ceremonies carry it — the one that opens a workstream prunes the papers a new
    checkout does not own, and the one that closes a task deletes what it archived from every checkout
    that holds it. A rung crediting the opening alone reads as though the situation could only be born
-   at creation, and the one that actually produces it is a front taking on its next task.
+   at creation, and the one that actually produces it is a workstream taking on its next task.
 
 #### Resuming a paused epic
 
@@ -524,7 +525,7 @@ three come from the task's own sheet and its papers, never from what the session
 
 | Moment | Roster (`STATE.md`) | Sheet (`artifacts/T-XXX/state.md`) |
 |---|---|---|
-| **Activation** | the coordinator adds the workstream row, with the front's declared areas | created, with branch, the first position, step and autonomy — plus any collision acknowledged at the opening (see Opening a Workstream) |
+| **Activation** | the coordinator adds the workstream row, with the workstream's declared areas | created, with branch, the first position, step and autonomy — plus any collision acknowledged at the opening (see Opening a Workstream) |
 | **During the phases** | untouched | the phase command writes the phase when it enters one, and the `next action:` line with it wherever that write ends the session (see The phase precondition above); `structure: context` at Conform's close where the plan carries that marker; step, decisions and the rest of the resume block kept current by whoever works the task |
 | **Pause** | untouched | carries everything needed to resume — it IS the handoff |
 | **Archive** | the coordinator removes the row, last | collected into the coordinator first, then deleted with the rest of `artifacts/T-XXX/` — in every checkout that holds it, not only the coordinator's |
@@ -537,18 +538,19 @@ overwrites project data — so the move is manual and takes one edit: replace th
 with the `## Workstreams` table, move the active task's phase, step, autonomy and decisions into its
 sheet, and keep only the notes that are genuinely cross-task. Nothing else in `.ai-flow/` changes.
 
-A roster that predates the **Tool** column is not broken either: a front that names no tool reads as one
-whose creator is unknown, and the dismantling move falls back to `git worktree remove` — the removal git
-itself can always perform. Naming it is what lets the move reach for the tool's own means instead.
+A roster that predates the **Tool** column is not broken either: a workstream that names no tool reads as
+one whose creator is unknown, and the dismantling move falls back to `git worktree remove` — the removal
+git itself can always perform. Naming it is what lets the move reach for the tool's own means instead.
 
-A roster that predates the **Areas** column is not broken: a front that declares no areas simply
+A roster that predates the **Areas** column is not broken: a workstream that declares no areas simply
 reads as *cannot compare* at the next opening, which is exactly the verdict the ceremony defines for
 it. Adding the column costs one edit and turns that verdict into a real comparison.
 
 A roster that still carries a **Branch** column is not broken: nothing consults it. The close reads a
-front's branch from the checkout it has just located, never from the roster, so the column is a value
-nobody keeps current and nobody asks for. Dropping it costs one edit; leaving it costs a field that is
-wrong from each front's second task onward, for whoever reads the roster rather than the ceremony.
+workstream's branch from the checkout it has just located, never from the roster, so the column is a
+value nobody keeps current and nobody asks for. Dropping it costs one edit; leaving it costs a field that
+is wrong from each workstream's second task onward, for whoever reads the roster rather than the
+ceremony.
 
 **Non-Goal: already-closed epics' archives.** `archive/E-XXX-slug.md` and `archive/EXECUTION-ORDERS.md`
 are left as legacy and never converted to the new `archive/E-XXX/` shape — nothing reads a closed epic
@@ -571,7 +573,7 @@ position and open debts move into the epic they actually belong to, not only the
 Notes` was written — a Notes section may carry positions for several open epics at once, and each moves
 into its own epic's `epic.md > ## Resume from here` — a single `- next action: ...` line rewritten at
 every task close of that epic (see `artifacts/E-XXX/epic.md` above), never an accreting essay; a
-closed-front recap that carries no lesson is discarded outright. Once every entry is placed, delete `##
+closed-workstream recap that carries no lesson is discarded outright. Once every entry is placed, delete `##
 Notes` — its replacement already lives in each named epic's own papers.
 
 **A `BACKLOG.md` row with no `artifacts/T-XXX/brief.md`.** Skip a row a close has already given a brief
@@ -829,39 +831,39 @@ When activating a task ("work on T-XXX"), the Understanding phase automatically 
 
 ## Opening a Workstream
 
-A second front does not begin by creating a checkout — it begins here, and this ceremony ends in a
+A second workstream does not begin by creating a checkout — it begins here, and this ceremony ends in a
 verdict. Only the coordinator runs it. It is the symmetric half of `## Closing a Workstream` below: what
 is decided and seeded here is what gets collected and removed there.
 
-With a single front open — the ordinary case — steps 3 to 6 have nothing to do: there is no other
-front to weigh, and the checkout the task is worked in already exists. The ceremony then reduces to
+With a single workstream open — the ordinary case — steps 3 to 6 have nothing to do: there is no other
+workstream to weigh, and the checkout the task is worked in already exists. The ceremony then reduces to
 what activation has always been, plus the declaration in step 2.
 
 1. **Mint the ID** and write the task's entry. The ledger lives with the coordinator and only the
    coordinator hands out IDs: the same number issued twice is the one race no later ceremony repairs.
 
-2. **Declare the front's areas** — the parts of the codebase this front expects to touch, named in the
-   project's own `area_kind` (see `project.yml`). The declaration is made before the task is
+2. **Declare the workstream's areas** — the parts of the codebase this workstream expects to touch, named
+   in the project's own `area_kind` (see `project.yml`). The declaration is made before the task is
    understood, so it is coarse by construction: name the units, never the files. It is recorded on the
-   front's line in the roster, where every later opening reads it.
+   workstream's line in the roster, where every later opening reads it.
 
-3. **Weigh the declaration against every open front.** Read the roster and compare this declaration
-   with the one each open front made — the coordinator is a front and is weighed like any other.
-   Exactly one verdict comes out:
-   - **clear** — no open front declared any of these units. Continue.
-   - **collision** — an open front declared one of them. Stop. The opening resumes only once the
-     collision is acknowledged in writing on the task's own sheet, naming the front it meets and why
+3. **Weigh the declaration against every open workstream.** Read the roster and compare this declaration
+   with the one each open workstream made — the coordinator is a workstream and is weighed like any
+   other. Exactly one verdict comes out:
+   - **clear** — no open workstream declared any of these units. Continue.
+   - **collision** — an open workstream declared one of them. Stop. The opening resumes only once the
+     collision is acknowledged in writing on the task's own sheet, naming the workstream it meets and why
      proceeding anyway is acceptable. The acknowledgement is the protection; there is no silent path
-     past it, and no refusal either — two fronts of one epic touching one file is ordinary, and a rule
-     people route around protects nothing.
-   - **cannot compare** — an open front declares nothing, and that is never reported as clear:
-     silence is not an all-clear, it is a front that cannot be weighed. Name it, say the comparison
+     past it, and no refusal either — two workstreams of one epic touching one file is ordinary, and a
+     rule people route around protects nothing.
+   - **cannot compare** — an open workstream declares nothing, and that is never reported as clear:
+     silence is not an all-clear, it is a workstream that cannot be weighed. Name it, say the comparison
      could not be made, and let the acknowledgement above carry the decision.
 
-4. **Check the default branch is published.** A front cut `fresh` starts from the published default
+4. **Check the default branch is published.** A worktree cut `fresh` starts from the published default
    branch, so anything committed and unpushed does not exist for it: if the default branch holds
    commits the remote has not seen, stop and name them before anything is created. Publishing is part
-   of opening a front, not an afterthought.
+   of opening a workstream, not an afterthought.
 
 5. **Create the linked worktree.** It opens with a question asked before anything is created: **what
    tool is this project managed in?** The answer is read from the project layer (`front_tool` in
@@ -871,7 +873,7 @@ what activation has always been, plus the declaration in step 2.
    know the project layer could have settled it already: they do not form an intention and go looking for
    permission, they look first. The reason is the shape of everything below: the conditions are facts the repository can
    answer, and the surface a person works in is not one of them — so a checkout can satisfy every one of
-   them and still be a front its operator never sees.
+   them and still be a worktree its operator never sees.
 
    The tool the project declares is the default. It is preferred wherever it can satisfy the conditions,
    and what it does not bring is **completed** rather than traded away. Where the project **declares
@@ -879,7 +881,7 @@ what activation has always been, plus the declaration in step 2.
    silence and a declaration read identically in a report, and this is the one that used to be assumed
    for free.
 
-   What a front needs, whatever produced it, is not a particular brand but a checkout that satisfies
+   What a worktree needs, whatever produced it, is not a particular brand but a checkout that satisfies
    four conditions, each of them read from the repository rather than taken on trust:
 
    They are not symmetric across tools, and the move says which ones a tool is taking on **by hand** —
@@ -890,26 +892,26 @@ what activation has always been, plus the declaration in step 2.
    from; the checkout is what says whether it arrived.
 
    - **base** — the branch starts from the **published default branch**, which is what step 4 above
-     checks: work committed and unpushed does not exist for a front cut from it. The native path gets it
-     from `worktree.baseRef`; every other tool takes it on by hand, by naming the base ref explicitly at
-     creation.
+     checks: work committed and unpushed does not exist for a worktree cut from it. The native path gets
+     it from `worktree.baseRef`; every other tool takes it on by hand, by naming the base ref explicitly
+     at creation.
    - **data** — the checkout holds what the project's pattern file declares travels, and **only the
      papers** of the task it owns. Move 6 below is what makes that true. The native path gets the
      arriving half from `.worktreeinclude`; whether any other tool does is **per-tool and per-version**
      and is settled by looking — one measured case transferred exactly what that file selects while its
      own help never mentioned the file at all. So look first and take on by hand only what the checkout
      does not already hold. The prune is move 6's on every path regardless: a copy taken at creation is a
-     snapshot, and a snapshot can arrive holding papers of tasks this front does not own.
+     snapshot, and a snapshot can arrive holding papers of tasks this workstream does not own.
    - **visibility** — the checkout is not visible to the coordinator's own **audit**. Outside the
      primary's tree that holds by construction; a checkout nested inside it holds only where the
-     project's ignore rules cover that path. Left uncovered, a nested front is untracked content in the
+     project's ignore rules cover that path. Left uncovered, a nested worktree is untracked content in the
      coordinator: the audit copies the whole of it into its snapshot and then requires the tree to be
      byte-exact against a working copy another session is writing. This one is **per-tool**: which of
      those two cases applies is decided by where the tool puts the checkout.
    - **ownership** — whatever created the checkout is what removes it, which is what the closing
      ceremony's dismantling move spends. A tool keeping a registry of its own is left pointing at a
      checkout something else deleted. This one holds on **every path** and is free on none: the tool
-     that created the front is the one obliged to take it down, whichever tool that was.
+     that created the worktree is the one obliged to take it down, whichever tool that was.
 
    The native path — `EnterWorktree` in a session, `claude -w` from the shell, `isolation: worktree` for
    an agent — is **the floor**: the yardstick the rest are measured against and what the ceremony falls
@@ -926,61 +928,63 @@ what activation has always been, plus the declaration in step 2.
 
    Where the declared tool cannot satisfy a condition and nothing completes it, the ceremony falls back
    to the floor — and that fallback costs something the four conditions cannot express: the operator
-   loses their own view of the front. **Stop.** The opening resumes only once that is **acknowledged in
+   loses their own view of the worktree. **Stop.** The opening resumes only once that is **acknowledged in
    writing on the task's sheet**, naming the condition that could not be satisfied and why proceeding
    without that view is acceptable. It is the same acknowledgement — and the same halt — that move 3
    above requires of a collision, for the same reason: a loss the ceremony chooses is a loss somebody
    decided, and there is no silent path past a decision. What is
    never acceptable is a checkout nobody checked.
 
-   **What the front is called** is settled here, and it is the last thing this move does because nothing
-   later settles it cheaply. Of the fields a creation-time name touches, two are **chosen once and never
-   rewritten** — the checkout's own path, and the front's name on its roster row — and those two carry the
-   front's **subject**, with **no task identifier** in either. Its granularity is *inherited* from the
-   front rather than chosen: what the front is about where it is one task, its epic or its grouping
-   concept where it is broader. There is no discriminator to apply, which is the point — a classification
-   made at every opening yields inconsistent names, and inconsistency reads worse at a glance than a
-   boring uniform scheme. The **current task** goes on whatever **mutable label** the tool offers, and is
-   rewritten there by the act that already advances the roster's task field (`### After ARCHIVE (single
-   task)`, step 8) rather than by an act of its own. Where the tool **offers no** such label, nothing is
-   added and the **roster is the glance** — said out loud, because a silence here reads as a step somebody
-   forgot rather than as the floor it is. And a creation-time name that seeds several fields at once names
-   the **path**, **never the branch**: a front's branch is **task-scoped** for the reason `## State Files`
-   above already gives, and a durable name would be wrong on it from that front's second task onward.
+   **What the workstream is called** is settled here, and it is the last thing this move does because
+   nothing later settles it cheaply. Of the fields a creation-time name touches, two are **chosen once and
+   never rewritten** — the checkout's own path, and the workstream's name on its roster row — and those
+   two carry the workstream's **subject**, with **no task identifier** in either. Its granularity is
+   *inherited* from the workstream rather than chosen: what the workstream is about where it is one task,
+   its epic or its grouping concept where it is broader. There is no discriminator to apply, which is the
+   point — a classification made at every opening yields inconsistent names, and inconsistency reads worse
+   at a glance than a boring uniform scheme. The **current task** goes on whatever **mutable label** the
+   tool offers, and is rewritten there by the act that already advances the roster's task field
+   (`### After ARCHIVE (single task)`, step 8) rather than by an act of its own. Where the tool **offers
+   no** such label, nothing is added and the **roster is the glance** — said out loud, because a silence
+   here reads as a step somebody forgot rather than as the floor it is. And a creation-time name that seeds
+   several fields at once names the **path**, **never the branch**: a workstream's branch is
+   **task-scoped** for the reason `## State Files` above already gives, and a durable name would be wrong
+   on it from that workstream's second task onward.
 
 6. **Seed the task's artifacts and prune the rest.** The new checkout arrives holding the papers of
    every open task, and the read-only rail cannot tell which task is its own from a pile: the checkout
-   must hold only the artifacts of the task it owns, so prune every folder this front does not own — on
-   **either** layout, because what put the pile there differs and the prune does not. Where the project
+   must hold only the artifacts of the task it owns, so prune every folder this workstream does not own —
+   on **either** layout, because what put the pile there differs and the prune does not. Where the project
    **ignores** its data directory the pattern file carries `artifacts/` wholesale and the copy is what
    brings it; where the project **commits** it, git carried the whole directory in with the checkout and
    the pattern file selects nothing among the ignored paths, so there the prune is the only work left. A
    data directory neither ignored nor tracked is not a third layout but the documented precondition
-   failing, which the mechanism below names rather than seeding a front with no project data. What is
+   failing, which the mechanism below names rather than seeding a worktree with no project data. What is
    deleted there are copies — the coordinator keeps the originals. The engine ships the mechanism —
    `~/.claude/ai-flow/scripts/seed-front.sh <checkout> <T-XXX>` — which is what satisfies the data
    condition for a front-end that does not: it selects by the project's own pattern file, copies what
-   that selects, and prunes what this front does not own. On the native path the copy has already
+   that selects, and prunes what this workstream does not own. On the native path the copy has already
    happened and running it is what prunes. It leaves alone every file the checkout already holds, with
    one exception: **the papers of the task it is seeded for are replaced from the coordinator's**. That
    is the collection's sanctioned exception (`## Closing a Workstream`) read from the other side — the
-   authoritative copy is the one from the checkout where the task was worked, and a front that has not
-   worked it yet has none. What it repairs is a checkout born holding papers that have since
+   authoritative copy is the one from the checkout where the task was worked, and a workstream that has
+   not worked it yet has none. What it repairs is a checkout born holding papers that have since
    moved on: what created it took a snapshot, and the coordinator writes to those papers both before
-   that moment and after it. It is not how move 7's sheet reaches the front — that move writes the
+   that moment and after it. It is not how move 7's sheet reaches the workstream — that move writes the
    sheet there — and this move runs before it, so at an ordinary opening the replacement carries what
    the coordinator holds at that moment and nothing later.
-   Where those papers were written *after* the coordinator's, the front is already working that task and
-   its copy is the authoritative one: the move replaces none of them and **stops**, naming both copies,
-   because no mechanism can choose there and choosing wrong destroys the only account of work in
+   Where those papers were written *after* the coordinator's, the workstream is already working that task
+   and its copy is the authoritative one: the move replaces none of them and **stops**, naming both
+   copies, because no mechanism can choose there and choosing wrong destroys the only account of work in
    progress. The
    papers that stay are the ones **named on the command line** — the task it is seeded for, plus any
-   further task this front is also working, paused or not. Naming them is the point: a front taking on its
-   next task runs this move over papers that are live work, and inferring which those are from what is
-   already present cannot tell them from the ones a creation-time copy dropped there a moment earlier —
-   which on the native path is all of them, so nothing would ever be pruned. The ledger stays with the coordinator: BACKLOG.md, STATE.md, the
-   decision log and the archive are never copied in. What the front must read there but must not own —
-   its epic's Scope Contract — it reads from the coordinator, read-only (see the Understand protocol).
+   further task this workstream is also working, paused or not. Naming them is the point: a workstream
+   taking on its next task runs this move over papers that are live work, and inferring which those are
+   from what is already present cannot tell them from the ones a creation-time copy dropped there a moment
+   earlier — which on the native path is all of them, so nothing would ever be pruned. The ledger stays
+   with the coordinator: BACKLOG.md, STATE.md, the decision log and the archive are never copied in. What
+   the workstream must read there but must not own — its epic's Scope Contract — it reads from the
+   coordinator, read-only (see the Understand protocol).
 
 7. **Write the roster row and the task's sheet.** The row carries workstream, checkout, task, epic,
    the declared areas, **what created the checkout** — the tool identified in move 5, which is
@@ -989,35 +993,35 @@ what activation has always been, plus the declaration in step 2.
    named in `## State Files` and is not chosen here: this move writes a task that is open and in no
    phase, and the phase commands record every position after it. The row is the coordinator's; the
    sheet is written **in the checkout where the task is worked** — the coordinator's when the task stays
-   there, the front's when this ceremony created one — which is the rule the sheet already lives by
+   there, the workstream's when this ceremony created one — which is the rule the sheet already lives by
    (`## State Files`). It is written there rather than copied across afterwards because the seeding move
-   ran before this one: a sheet written only in the coordinator is one the front has no way to receive. The `branch:` line is what makes
-   the sheet findable in a checkout that holds several: without it, the front the ceremony just opened
-   has no state anything can read. Writing it is writing a claim, so this move carries the obligation
-   that comes with one: **release every other claim to that branch in this checkout**, in the same act
-   (see `## State Files`). Ordinarily there is nothing to release — the move before this one pruned the
-   checkout — but a front taking on its next task runs this move over a checkout it has been working,
-   and that is the case the release exists for.
+   ran before this one: a sheet written only in the coordinator is one the workstream has no way to
+   receive. The `branch:` line is what makes the sheet findable in a checkout that holds several: without
+   it, the workstream the ceremony just opened has no state anything can read. Writing it is writing a
+   claim, so this move carries the obligation that comes with one: **release every other claim to that
+   branch in this checkout**, in the same act (see `## State Files`). Ordinarily there is nothing to
+   release — the move before this one pruned the checkout — but a workstream taking on its next task runs
+   this move over a checkout it has been working, and that is the case the release exists for.
 
 ## Closing a Workstream
 
-A front's work does not reach the coordinator by merging — it reaches it by this ceremony, of which the
-merge is one move. Only the coordinator runs it, and it runs one front at a time. It is the symmetric
-half of `## Opening a Workstream` above: what that ceremony declared, created and seeded is what this
-one validates, collects and takes down.
+A workstream's work does not reach the coordinator by merging — it reaches it by this ceremony, of which
+the merge is one move. Only the coordinator runs it, and it runs one workstream at a time. It is the
+symmetric half of `## Opening a Workstream` above: what that ceremony declared, created and seeded is what
+this one validates, collects and takes down.
 
-It runs at **every task close**, not once per front: moves 8 and 9 are its tail and run only when the
-front has no next task, because a worktree holds a workstream — an epic with its serial chain inside —
+It runs at **every task close**, not once per workstream: moves 8 and 9 are its tail and run only when the
+workstream has no next task, because a worktree holds a workstream — an epic with its serial chain inside —
 and lives across the tasks in it.
 
-With a single front open — the ordinary case — moves 2, 3 and 8 have nothing to do: the task was worked in
+With a single workstream open — the ordinary case — moves 2, 3 and 8 have nothing to do: the task was worked in
 the coordinator, so its papers are already there, there is no branch to merge, and there is no second
 checkout to take down. The ceremony then reduces to what closing has always been. Naming only the two that
 need no second checkout reads as though the merge always has work, which turns the ordinary close into a
 ritual with a dead move in it.
 
 **Commits are free per step, in every checkout.** A step that passes its Verify command is committed
-where it stands — the front's disposable branch and the coordinator's trunk alike — and nothing is asked
+where it stands — the workstream's disposable branch and the coordinator's trunk alike — and nothing is asked
 between steps. What the operator approves is the task's *work*, once, at move 1, and one approval is all
 the ceremony has. The approval can sit there because the publishing move is where the work stops being
 undoable by hand: until it is published a commit is local history, and a `reset` reaches it. The rule is
@@ -1039,34 +1043,34 @@ record: the ceremony has grown two stops past the merge, and the deletion's own 
 was written when the merge was the last thing that could fail.
 
 1. **The user validates the work.** Commits are free per step in every checkout (see above), so what is
-   approved here is the task's work as a whole and never each commit: the front's branch where the task
-   was worked in one, the task's own commits on the trunk where it was worked in the coordinator.
+   approved here is the task's work as a whole and never each commit: the workstream's branch where the
+   task was worked in one, the task's own commits on the trunk where it was worked in the coordinator.
    Nothing merges without it and nothing is published without it. This is the ceremony's only approval,
    and it is the same approval either way — a second gated move would force a reader to work out which
-   of the two was theirs, in the coordinator as much as in a front. **A task closing absorbed** (Understand
+   of the two was theirs, in the coordinator as much as in a workstream. **A task closing absorbed** (Understand
    protocol > the brief-reading step) has no diff for this move to cover: the approval instead covers the
    decision to absorb it — that its own brief's Sightings log narrowed it to nothing, or falsified it — and
    nothing else changes about this move.
 
 2. **The coordinator collects the task's papers.** `artifacts/T-XXX/` is written in the checkout where
    the task is worked and lives outside version control, so it does not travel with the branch and the
-   merge carries none of it. The coordinator locates the front's checkout in the repository's own
-   worktree listing, matched by the checkout path on that front's roster row — git is the authority, and
-   that path is the one field on the row no chain of tasks changes: a front takes a new branch with every
-   task in its chain, so a branch could never have keyed this row, while the path was never wrong about
-   where the front lives. How the two sides are compared is the column's own rule, stated with the
-   column (see `## State Files`). If the listing does not name that path, stop: the checkout is gone, so
-   the papers may be gone with it, and no later move reconstructs them. The collection **replaces**
-   whatever the coordinator holds for that task, and it is the one sanctioned exception to never
-   overwriting a task's papers — the copy from the checkout where
+   merge carries none of it. The coordinator locates the workstream's checkout in the repository's own
+   worktree listing, matched by the checkout path on that workstream's roster row — git is the authority,
+   and that path is the one field on the row no chain of tasks changes: a workstream takes a new branch
+   with every task in its chain, so a branch could never have keyed this row, while the path was never
+   wrong about where the workstream lives. How the two sides are compared is the column's own rule, stated
+   with the column (see `## State Files`). If the listing does not name that path, stop: the checkout is
+   gone, so the papers may be gone with it, and no later move reconstructs them. The collection
+   **replaces** whatever the coordinator holds for that task, and it is the one sanctioned exception to
+   never overwriting a task's papers — the copy from the checkout where
    the task was worked is the authoritative one, while the coordinator's is a snapshot from the moment
-   the front opened. The coordinator pulls; a linked worktree still never writes here.
+   the workstream opened. The coordinator pulls; a linked worktree still never writes here.
 
-3. **The merge lands in the coordinator**, one front at a time. The branch to merge is read from the
+3. **The merge lands in the coordinator**, one workstream at a time. The branch to merge is read from the
    checkout move 2 just located, by asking its own git what it is on — never from the roster, which
-   carries no branch at all: a front's branch changes with every task in its chain, and the checkout is
-   the only thing that knows the current one. If it cannot complete, the ceremony stops
-   here: the front stays open and the record is not written, because a task recorded as done that is not
+   carries no branch at all: a workstream's branch changes with every task in its chain, and the checkout
+   is the only thing that knows the current one. If it cannot complete, the ceremony stops
+   here: the workstream stays open and the record is not written, because a task recorded as done that is not
    in the trunk is a lie in the record. The papers are already safe — that is what collecting first
    bought. **A task closing absorbed** has nothing on its branch to merge — the move runs and reports
    nothing to land, rather than being skipped: a merge that never ran and a merge with an empty diff read
@@ -1084,11 +1088,11 @@ was written when the merge was the last thing that could fail.
    project layer (`commands.distribute` in `project.yml`) — this protocol names no project's command. A project
    that declares none has nothing to distribute, and the move **says so**: in a report, silence and a
    distribution that never happened read identically. It runs in the coordinator, on the trunk the
-   merge just landed, and nowhere else — run from a front it would repoint what the installed
+   merge just landed, and nowhere else — run from a worktree it would repoint what the installed
    toolchain calls its source at a checkout the ceremony's dismantling move removes, and the guard that watches for
    exactly this divergence goes quiet for good. The run **shows** the distribution took effect, by
    whatever check the project has; where there is no check it reports the result unproven rather than
-   assuming it. If it cannot be shown to have landed, the ceremony **stops** here with the front's
+   assuming it. If it cannot be shown to have landed, the ceremony **stops** here with the workstream's
    roster row still in place and the task's papers not yet deleted — the record is written by now, so
    the row is what says work remains and the papers are where the halted move is written down. Which is
    why this move sits before the tail, and before the deletion, rather than after either. It runs at **every
@@ -1102,7 +1106,7 @@ was written when the merge was the last thing that could fail.
    never ran. Where there is no remote, or no remote trunk resolves, there is nothing to publish to: the
    move **says so and the ceremony continues**, which is the same answer the audit gives an unresolvable
    remote trunk rather than inventing a zero. If the push itself cannot complete — a diverged trunk, no
-   permission — the ceremony **stops** here with the front's roster row still in place, the shape the
+   permission — the ceremony **stops** here with the workstream's roster row still in place, the shape the
    move above already uses: the ledger is written by now, so the row is what says work remains and the
    papers, which the move below has not reached, are where the halted move is written down. It runs at
    **every task close**, a quick task's included, and carries none of the condition the two moves below
@@ -1110,34 +1114,34 @@ was written when the merge was the last thing that could fail.
 
 7. **The task's papers are deleted.** `artifacts/T-XXX/` goes, in **every checkout that holds it** and
    not only the coordinator's. A task worked in a linked worktree leaves a copy there, and the tail below
-   takes that checkout down only where the front's chain ends: a front continuing its chain keeps the
-   copy, the next task's sheet claims the same branch, and the checkout is left with two claims and no
-   way to say which task it is on. Locate the front's checkout the way move 2 does, which is the one
-   place that rule is written. What makes this safe is that the record is already written: the archive
-   checklist's summary step ran inside move 4, so what is deleted is a copy of what the archive holds.
-   Which is why it happens **here and not earlier — never before the collection, and never at collection
-   time**: what can still fail is not the merge alone but the merge, the distribution and the publish,
-   and a front stopped at any of the three is a front still working that task, with the papers it needs
-   gone and git unable to restore what it never tracked. It runs at **every task close** and carries
-   none of the condition the two moves below it do — a quick task keeps no papers, so it has nothing
-   here to delete, and the move **says so** rather than reading as a step somebody skipped.
+   takes that checkout down only where the workstream's chain ends: a workstream continuing its chain
+   keeps the copy, the next task's sheet claims the same branch, and the checkout is left with two claims
+   and no way to say which task it is on. Locate the workstream's checkout the way move 2 does, which is
+   the one place that rule is written. What makes this safe is that the record is already written: the
+   archive checklist's summary step ran inside move 4, so what is deleted is a copy of what the archive
+   holds. Which is why it happens **here and not earlier — never before the collection, and never at
+   collection time**: what can still fail is not the merge alone but the merge, the distribution and the
+   publish, and a workstream stopped at any of the three is a workstream still working that task, with the
+   papers it needs gone and git unable to restore what it never tracked. It runs at **every task close**
+   and carries none of the condition the two moves below it do — a quick task keeps no papers, so it has
+   nothing here to delete, and the move **says so** rather than reading as a step somebody skipped.
    The two moves below it are conditional; this one never is.
 
-8. **The front's working copy is dismantled by whatever created it** — the counterpart of the ownership
-   condition in step 5 of the opening, and what created it is read from that front's **roster row**,
-   where move 7 of the opening wrote it. Claude Code's `ExitWorktree` removes only what `EnterWorktree`
-   created **in this session** and is a declared no-op for anything else, so it takes down a front opened
-   in this session and nothing more: a front lives across the tasks in it, and one opened earlier — or by
-   another front-end — is removed by that tool's own means, or by `git worktree remove`, which is also
-   what a row naming no tool leaves the move with. What says the
+8. **The workstream's working copy is dismantled by whatever created it** — the counterpart of the
+   ownership condition in step 5 of the opening, and what created it is read from that workstream's
+   **roster row**, where move 7 of the opening wrote it. Claude Code's `ExitWorktree` removes only what
+   `EnterWorktree` created **in this session** and is a declared no-op for anything else, so it takes down
+   a worktree opened in this session and nothing more: a worktree lives across the tasks in it, and one
+   opened earlier — or by another front-end — is removed by that tool's own means, or by `git worktree
+   remove`, which is also what a row naming no tool leaves the move with. What says the
    move happened is the repository's own answer, not the tool's: the checkout no longer appears in
    `git worktree list`. Never before move 2: removing the checkout destroys the task's papers before the
-   coordinator holds them, and git cannot restore what it never tracked. Runs only when the front has no
-   next task.
+   coordinator holds them, and git cannot restore what it never tracked. Runs only when the workstream has
+   no next task.
 
-9. **The front's roster row is removed** — the coordinator's last write, and the roster's own proof that
-   the front is closed. Not while `git worktree list` still names that front's checkout: the row is then
-   the only thing left saying work remains. Runs only when the front has no next task.
+9. **The workstream's roster row is removed** — the coordinator's last write, and the roster's own proof
+   that the workstream is closed. Not while `git worktree list` still names that workstream's checkout: the
+   row is then the only thing left saying work remains. Runs only when the workstream has no next task.
 
 ## Directory Hygiene
 
@@ -1161,7 +1165,8 @@ structural act is refused unless the task has declared it. That position is the 
 on a task carrying a global decision. The qualifier is load-bearing and it is the delivered hole, not a
 caveat: the rail resolves the task by rungs 1 and 2 only, so it is silent wherever **no per-task sheet
 claims the branch this checkout is on** — a project that has not migrated its ledger, and a coordinator
-running worktree fronts, whose own branch each front's sheet declines to claim. That second case is this
+running worktree-based workstreams, whose own branch each workstream's sheet declines to claim. That
+second case is this
 very checklist, which runs in the coordinator, so in a worktree topology the close is never refused and
 never asks for a key. The writes are made regardless: they cost a line each, and they are what makes the
 ceremony correct in the topology where the rail *is* watching rather than correct by luck.
@@ -1216,7 +1221,7 @@ someone noticed.
    from the thing it indexes.
 
    **The identifier is minted here, in the coordinator**, where the ledger already has a single writer —
-   so the race the opening ceremony spends a whole move avoiding cannot occur here, and no front ever
+   so the race the opening ceremony spends a whole move avoiding cannot occur here, and no workstream ever
    issues a number. The highest ever issued is the highest in `icebox/` and `archive/icebox/` taken
    together, which is what makes the other half safe: **retirement moves the body to `archive/icebox/`**
    and the **number is never reused**, so a citation written a year ago still names one thing. **Where
@@ -1258,11 +1263,12 @@ someone noticed.
    for the row, the order line and the epic's status together.
 7. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
 8. Leave the workstream row to move 9 of `## Closing a Workstream`, its sole owner: the row is removed
-   only when the front has no next task, and a front continuing its chain keeps its row with the task
-   field advanced (coordinator only — other open fronts keep theirs). **The same act rewrites the front's
-   mutable label** where its tool offers one, to the task the row now names — this is the only statement
-   of the continuing case, so a label left to an act of its own is a label nobody would ever rewrite, and
-   the front would go on announcing a task that closed here. **On the coordinator's own row, the same write
+   only when the workstream has no next task, and a workstream continuing its chain keeps its row with
+   the task field advanced (coordinator only — other open workstreams keep theirs). **The same act
+   rewrites the workstream's mutable label** where its tool offers one, to the task the row now names —
+   this is the only statement of the continuing case, so a label left to an act of its own is a label
+   nobody would ever rewrite, and the workstream would go on announcing a task that closed here. **On the
+   coordinator's own row, the same write
    also updates the Epic column** where the task it now names belongs to a different epic than the one
    just closed — switching epics is this act, never a step of its own (see `Epic` under `STATE.md — the
    roster` above). Where the tool offers none there is nothing to rewrite and the row is the whole of it
@@ -1287,8 +1293,8 @@ When a shipped task turns out to violate business intent (the code was right; th
 2. Generate `archive/E-XXX-[slug].md` (see Epic archive template) — surviving Icebox promotions go under "What Was NOT Done"
 3. **Verify** that `artifacts/` retains no folder of a task of this epic — deleting is move 7 of
    `## Closing a Workstream`, which runs after the publish and knows what it archived. If a folder is
-   still there, name it and stop: it belongs to a task closed without its checklist, to a front that is
-   still open, or to a **close halted after the record** — the deletion is the ceremony's last
+   still there, name it and stop: it belongs to a task closed without its checklist, to a workstream that
+   is still open, or to a **close halted after the record** — the deletion is the ceremony's last
    unconditional move, running after every move that can stop it, so a close stopped at the distribution
    or the publish leaves exactly this folder behind, and a sweep cannot tell the three apart. Naming all three is the whole of the move: a diagnosis offering
    two sends the operator to re-run a checklist that already ran.
@@ -1298,16 +1304,17 @@ When a shipped task turns out to violate business intent (the code was right; th
    `epic.md` travel together, exactly as `artifacts/T-XXX/` moves to `archive/T-XXX/` at move 7 of
    `## Closing a Workstream`. **Verify** afterward that no `artifacts/E-XXX/` folder of this epic remains,
    the same check the sweep above runs over a task's own folder, now over the epic's.
-7. **Verify** the roster holds no row for a front of this epic — move 9 of `## Closing a Workstream` is
-   the only remover, and by now it has run for each of them. A row still there names a front that is
-   still open: name it and stop, rather than removing it here (rows of fronts outside the epic stay).
+7. **Verify** the roster holds no row for a workstream of this epic — move 9 of `## Closing a Workstream`
+   is the only remover, and by now it has run for each of them. A row still there names a workstream that
+   is still open: name it and stop, rather than removing it here (rows of workstreams outside the epic
+   stay).
 
 ### Invariants (always true)
 
 - `artifacts/` contains **only** `T-XXX/` folders for **active, in-progress, or captured-but-not-yet-active**
   tasks, and `E-XXX/` folders for **open** epics — never completed ones, and this holds in **every
-  checkout**, not only the coordinator's. A copy left behind in a front is what puts two claims on one
-  branch (see State Files). **A task whose close halted is in flight**, and its folder is the invariant
+  checkout**, not only the coordinator's. A copy left behind in a worktree is what puts two claims on
+  one branch (see State Files). **A task whose close halted is in flight**, and its folder is the invariant
   holding rather than breaking: the deletion is the ceremony's move 7, so a close stopped at the
   distribution or the publish leaves the papers standing on purpose — they are where the halt is written
   down, and what they say is that this task is not finished. **A folder holding only `brief.md`, with no
@@ -1318,7 +1325,7 @@ When a shipped task turns out to violate business intent (the code was right; th
 - No empty directories anywhere in `.ai-flow/`
 - BACKLOG.md Done section is **transient** — tasks stay there only until archived, not permanently
 - BACKLOG.md stays under 8,000 words and contains only pending work (see Size Budget)
-- STATE.md is an index of open workstreams — one row per front, no per-task context, and **no historical
+- STATE.md is an index of open workstreams — one row per workstream, no per-task context, and **no historical
   narrative outside its two sanctioned records**: the roster table and `## Quick Tasks Completed`. Closed
   work's narrative belongs in `archive/` wherever in the file it is written (see State Files)
 
