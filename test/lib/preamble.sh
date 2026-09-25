@@ -786,6 +786,27 @@ marker89() {
           && grep -qE '\bLOW\b' "$ROOT/$f89" 2>/dev/null \
           && printf '%s\n' "$f89"
       done | sort -u ;;
+    "Task-resolution ladder")
+      # The heading anchors the rulebook; the `def` line anchors the code home. Both are DEFINITIONS, not
+      # mentions — the phrase "Resolving the task" alone is quoted or pointed to from a dozen protocol and
+      # skill files that route to this section rather than restate it, so the marker keys on the heading's
+      # own line, not the words.
+      sweep89 s '^### Resolving the task$|^def resolve_task_sheet\(' ;;
+    "Task-papers shapes")
+      # Four homes, four anchors: the skeleton's own sentence (quoted verbatim in both the rulebook and
+      # the template it describes), the phase-form constant, and the guarded-file tuple's own assignment.
+      sweep89 s "Per-task phase, step, autonomy and decisions live in|^GUARDED = |^PHASE_RE = re\\.compile" ;;
+    "Opening ceremony's seeding move")
+      sweep89 s '^## Opening a Workstream$|the seed-and-prune move of the opening ceremony' ;;
+    "Closing ceremony / archive checklist")
+      sweep89 s "^### After ARCHIVE|step 1 for steering|== 'ARCHIVE'" ;;
+    "Icebox mechanism")
+      sweep89 s '^### Icebox|ICEBOX_RE|^CEILING ?= ?25' ;;
+    "BACKLOG/STATE size budget")
+      # `EXEC_ORDER_RE` picks the shared shapes module out from its Icebox-mechanism neighbour above
+      # (which keys on `ICEBOX_RE` instead) — the two constants live in the same file and the rows must
+      # not collide on it.
+      sweep89 s '^## BACKLOG\.md Size Budget|EXEC_ORDER_RE = re\.compile|-gt 15000' ;;
     *) return 1 ;;
   esac
   return 0
