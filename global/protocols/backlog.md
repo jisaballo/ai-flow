@@ -303,7 +303,7 @@ Tasks and Non-Goals, never an order — still gets an `epic.md`, with an empty `
 sheets — the coordinator holds every open task's by construction, and a workstream takes on its next task
 while the paused one keeps its papers — so whoever opens a workstream writes that line, and every
 reader that needs to know which task a checkout is on follows the same four rungs, in order. What a
-workstream receives when it is created is pruned by the ceremony that created it; neither of those two
+worktree receives when it is created is pruned by the ceremony that created it; neither of those two
 producers is, so the situation the ladder answers to is the one no ceremony removes.
 
 Two readers follow them. The read-only rail wants a phase, and `phase_source` in
@@ -928,7 +928,7 @@ what activation has always been, plus the declaration in step 2.
 
    Where the declared tool cannot satisfy a condition and nothing completes it, the ceremony falls back
    to the floor — and that fallback costs something the four conditions cannot express: the operator
-   loses their own view of the workstream. **Stop.** The opening resumes only once that is **acknowledged in
+   loses their own view of the worktree. **Stop.** The opening resumes only once that is **acknowledged in
    writing on the task's sheet**, naming the condition that could not be satisfied and why proceeding
    without that view is acceptable. It is the same acknowledgement — and the same halt — that move 3
    above requires of a collision, for the same reason: a loss the ceremony chooses is a loss somebody
@@ -959,7 +959,7 @@ what activation has always been, plus the declaration in step 2.
    brings it; where the project **commits** it, git carried the whole directory in with the checkout and
    the pattern file selects nothing among the ignored paths, so there the prune is the only work left. A
    data directory neither ignored nor tracked is not a third layout but the documented precondition
-   failing, which the mechanism below names rather than seeding a workstream with no project data. What is
+   failing, which the mechanism below names rather than seeding a worktree with no project data. What is
    deleted there are copies — the coordinator keeps the originals. The engine ships the mechanism —
    `~/.claude/ai-flow/scripts/seed-front.sh <checkout> <T-XXX>` — which is what satisfies the data
    condition for a front-end that does not: it selects by the project's own pattern file, copies what
@@ -1088,7 +1088,7 @@ was written when the merge was the last thing that could fail.
    project layer (`commands.distribute` in `project.yml`) — this protocol names no project's command. A project
    that declares none has nothing to distribute, and the move **says so**: in a report, silence and a
    distribution that never happened read identically. It runs in the coordinator, on the trunk the
-   merge just landed, and nowhere else — run from a workstream it would repoint what the installed
+   merge just landed, and nowhere else — run from a worktree it would repoint what the installed
    toolchain calls its source at a checkout the ceremony's dismantling move removes, and the guard that watches for
    exactly this divergence goes quiet for good. The run **shows** the distribution took effect, by
    whatever check the project has; where there is no check it reports the result unproven rather than
@@ -1313,7 +1313,7 @@ When a shipped task turns out to violate business intent (the code was right; th
 
 - `artifacts/` contains **only** `T-XXX/` folders for **active, in-progress, or captured-but-not-yet-active**
   tasks, and `E-XXX/` folders for **open** epics — never completed ones, and this holds in **every
-  checkout**, not only the coordinator's. A copy left behind in a workstream is what puts two claims on
+  checkout**, not only the coordinator's. A copy left behind in a worktree is what puts two claims on
   one branch (see State Files). **A task whose close halted is in flight**, and its folder is the invariant
   holding rather than breaking: the deletion is the ceremony's move 7, so a close stopped at the
   distribution or the publish leaves the papers standing on purpose — they are where the halt is written
