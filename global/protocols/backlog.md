@@ -563,20 +563,28 @@ Notes` still exists; how many Icebox lines are over budget or unidentified; how 
 retell rather than point. Five counts, taken once, before the first edit — and restated as the exit check
 below, once every recipe here has run.
 
-**`STATE.md` Notes → the driven epic's `epic.md > ## Resume from here`.** Apply exactly one of four
-outcomes to every entry in `## Notes`, never a fifth: a lesson that already has a home elsewhere
+**`STATE.md` Notes → each position's own epic's `epic.md > ## Resume from here`.** Apply exactly one of
+four outcomes to every entry in `## Notes`, never a fifth: a lesson that already has a home elsewhere
 (`decisions-global.md`, an Icebox entry, an `archive/T-XXX/summary.md`) is dropped as a duplicate rather
 than copied twice; a lesson with no other home is written to one through the ordinary context write-back;
-position and open debts move into the driven epic's own `epic.md > ## Resume from here` — a single `-
-next action: ...` line rewritten at every task close of that epic (see `artifacts/E-XXX/epic.md` above),
-never an accreting essay; a closed-front recap that carries no lesson is discarded outright. Once every
-entry is placed, delete `## Notes` — its replacement already lives in the epic's own papers.
+position and open debts move into the epic they actually belong to, not only the one driven when `##
+Notes` was written — a Notes section may carry positions for several open epics at once, and each moves
+into its own epic's `epic.md > ## Resume from here` — a single `- next action: ...` line rewritten at
+every task close of that epic (see `artifacts/E-XXX/epic.md` above), never an accreting essay; a
+closed-front recap that carries no lesson is discarded outright. Once every entry is placed, delete `##
+Notes` — its replacement already lives in each named epic's own papers.
 
 **A `BACKLOG.md` row with no `artifacts/T-XXX/brief.md`.** Skip a row a close has already given a brief
 to — never overwrite it. For a row still written as an essay: split it on the rule Task Entry Format
 already states, below — the bold lead sentence becomes `brief.md`'s own first line, the remainder becomes
 its technical annex, and the `BACKLOG.md` row is regenerated as the pointer Task Entry Format defines,
-never authored beside the file it now points to. Where the row carries no bold lead sentence at all —
+never authored beside the file it now points to. The first line's own budget is derived, not copied: the
+shared 25-word ceiling `index-line-budget-guard.py` enforces, minus the regenerated row's own fixed
+overhead (5 pipes + ID + priority + epic-or-dash, 8 tokens) — so a bold lead sentence that alone would
+overrun the row is rewritten to a shorter business statement that fits, never widened past it. Whatever
+happens to the first line, the row's original text — the bold lead sentence exactly as captured — moves
+into the annex verbatim regardless of the authored statement's own length: rewritten for the row or not,
+nothing captured is lost. Where the row carries no bold lead sentence at all —
 prose from before that convention — state that rather than guessing at a split: the gap is closed in
 Understand, on the same terms Task Entry Format already gives a capture that cannot state its business
 line yet.
@@ -586,8 +594,14 @@ still carries a Goal/Planned Tasks/Non-Goals block and a numbered Execution Orde
 `artifacts/E-XXX/epic.md` verbatim — `## Scope Contract`, and `## Execution Order` as the same numbered
 list (see `artifacts/E-XXX/epic.md` above) — pointing each regenerated Execution Order line at the task's
 own `archive/T-XXX/summary.md` where one exists, and holding every regenerated line to the same 25-word
-ceiling `index-line-budget-guard.py` already enforces. `BACKLOG.md`'s own Epics table row stays the
-pointer it already is (ID, Name, Tasks, Status) once the inline block is gone.
+ceiling `index-line-budget-guard.py` already enforces. An open item — no `summary.md` yet — whose original
+line itself overruns that ceiling is trimmed to fit rather than left over budget: the detail it drops
+already survives verbatim in the Scope Contract's own Planned Tasks bullet, on the same terms the done
+item's line survives in its `summary.md`. The epic also gets `artifacts/E-XXX/brief.md`, minted on the
+same mandatory and unconditional terms a natively-created epic already carries (see
+`artifacts/E-XXX/brief.md` above) — business statement as its own first line, empty `## Sightings` log —
+and `BACKLOG.md`'s own Epics table row is regenerated from that first line (its Name), never left standing
+as the pointer it already happened to be.
 
 **An Icebox line.** Over the 25-word ceiling: trim the index line itself — the detail already lives in
 the entry's own body file, untouched (see `### Icebox (discoveries)` below). Missing an `IB-XXX` id or
