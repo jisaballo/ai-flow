@@ -563,14 +563,16 @@ Notes` still exists; how many Icebox lines are over budget or unidentified; how 
 retell rather than point. Five counts, taken once, before the first edit — and restated as the exit check
 below, once every recipe here has run.
 
-**`STATE.md` Notes → the driven epic's `epic.md > ## Resume from here`.** Apply exactly one of four
-outcomes to every entry in `## Notes`, never a fifth: a lesson that already has a home elsewhere
+**`STATE.md` Notes → each position's own epic's `epic.md > ## Resume from here`.** Apply exactly one of
+four outcomes to every entry in `## Notes`, never a fifth: a lesson that already has a home elsewhere
 (`decisions-global.md`, an Icebox entry, an `archive/T-XXX/summary.md`) is dropped as a duplicate rather
 than copied twice; a lesson with no other home is written to one through the ordinary context write-back;
-position and open debts move into the driven epic's own `epic.md > ## Resume from here` — a single `-
-next action: ...` line rewritten at every task close of that epic (see `artifacts/E-XXX/epic.md` above),
-never an accreting essay; a closed-front recap that carries no lesson is discarded outright. Once every
-entry is placed, delete `## Notes` — its replacement already lives in the epic's own papers.
+position and open debts move into the epic they actually belong to, not only the one driven when `##
+Notes` was written — a Notes section may carry positions for several open epics at once, and each moves
+into its own epic's `epic.md > ## Resume from here` — a single `- next action: ...` line rewritten at
+every task close of that epic (see `artifacts/E-XXX/epic.md` above), never an accreting essay; a
+closed-front recap that carries no lesson is discarded outright. Once every entry is placed, delete `##
+Notes` — its replacement already lives in each named epic's own papers.
 
 **A `BACKLOG.md` row with no `artifacts/T-XXX/brief.md`.** Skip a row a close has already given a brief
 to — never overwrite it. For a row still written as an essay: split it on the rule Task Entry Format
