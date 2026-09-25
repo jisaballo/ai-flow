@@ -55,10 +55,8 @@ Every concept backlog ceremonies are made of, against every file that carries it
 | Icebox mechanism | `global/protocols/backlog.md` (### Icebox), `global/hooks/_aiflow_state.py`, `global/hooks/index-line-budget-guard.py` |
 | BACKLOG/STATE size budget | `global/protocols/backlog.md` (## BACKLOG.md Size Budget), `global/hooks/_aiflow_state.py`, `global/hooks/check-state-size.sh` |
 
-Every row is **computed**, on the same terms `verify.md`'s own table states: the suite declares one marker
-per concept and holds the row to set equality against what that marker selects across everything the
-repository tracks. The judgment is not "which files carry this," which no one can keep true by hand — it
-moved to "what marks this," one rule per row, reviewed once.
+Every row is **computed**, the same way `verify.md`'s own table is — see that card's own closing
+paragraph under **The homes table** for the mechanism.
 
 ## External dependencies
 
