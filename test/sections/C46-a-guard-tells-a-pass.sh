@@ -85,7 +85,7 @@ else
   # edit that hollows it.
   MUT46C="$(printf '%s' "$M1_46" \
     | sed "s/, the task's own commits on the trunk where it was worked in the coordinator//" \
-    | sed 's/in the coordinator as much as in a front\./in the coordinator as much as in a front. The trunk is no different./')"
+    | sed 's/in the coordinator as much as in a workstream\./in the coordinator as much as in a workstream. The trunk is no different./')"
   if ! printf '%s' "$M1_46" | grep -qiE "$PAT46C"; then
     bad "closing move 1 names the coordinator's commits as what the approval covers there (absent from the protocol)"
   elif [ "$MUT46C" = "$M1_46" ] || ! printf '%s' "$MUT46C" | grep -q 'no different'; then

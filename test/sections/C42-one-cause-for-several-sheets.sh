@@ -54,7 +54,7 @@ if [ -n "$OPEN42" ] && [ "$DUP42" = 0 ]; then
   # The opening is corrected TO AGREE with rung 4, so the sentence it agrees with has to still be there:
   # delete the anchor and the opening states a cause nothing in the section corroborates, which is the
   # single-statement property this criterion is really about.
-  printf '%s' "$RUNG4_42" | grep -qiE 'front taking on its next task|takes on its next task' \
+  printf '%s' "$RUNG4_42" | grep -qiE 'workstream taking on its next task|takes on its next task' \
     || m42a="$m42a rung-4-anchor-gone"
   [ -z "$m42a" ] && ok "the ladder credits the producer that survives a correct ceremony" \
                  || bad "the ladder credits the producer that survives a correct ceremony (:$m42a)"
