@@ -576,7 +576,13 @@ entry is placed, delete `## Notes` — its replacement already lives in the epic
 to — never overwrite it. For a row still written as an essay: split it on the rule Task Entry Format
 already states, below — the bold lead sentence becomes `brief.md`'s own first line, the remainder becomes
 its technical annex, and the `BACKLOG.md` row is regenerated as the pointer Task Entry Format defines,
-never authored beside the file it now points to. Where the row carries no bold lead sentence at all —
+never authored beside the file it now points to. The first line's own budget is derived, not copied: the
+shared 25-word ceiling `index-line-budget-guard.py` enforces, minus the regenerated row's own fixed
+overhead (5 pipes + ID + priority + epic-or-dash, 8 tokens) — so a bold lead sentence that alone would
+overrun the row is rewritten to a shorter business statement that fits, never widened past it. Whatever
+happens to the first line, the row's original text — the bold lead sentence exactly as captured — moves
+into the annex verbatim regardless of the authored statement's own length: rewritten for the row or not,
+nothing captured is lost. Where the row carries no bold lead sentence at all —
 prose from before that convention — state that rather than guessing at a split: the gap is closed in
 Understand, on the same terms Task Entry Format already gives a capture that cannot state its business
 line yet.
