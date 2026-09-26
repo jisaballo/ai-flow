@@ -87,7 +87,7 @@ Every plan.md ends with a `Criteria Coverage` table mapping each Verifiable Crit
 - **Criterion without a step** -> replan, or mark it `deferred` with a written justification.
 - **Step without a criterion** -> justify it in the table as a technical necessity (scaffolding, migration, tooling).
 - **VERIFY inherits this mapping** — the Verify phase audits against this table instead of reconstructing criterion->evidence from scratch.
-- **A step's own `Changes:` text is never written asking for a new or extended assertion over a criterion currently recorded `observed: read`** — `protocols/criteria.md` states why, and Conform's own refusal (step 2 above) is not the only moment this matters: a step drafted before Conform runs can still propose the leg in prose, which is what this line closes.
+- **A step's own `Changes:` text is never written asking for a new or extended assertion over a criterion currently recorded `observed: read`** — `protocols/criteria.md` states why, and Conform's own refusal (`## Conformance Tests` > `### How it works`, step 2, below) is not the only moment this matters: a step drafted before Conform runs can still propose the leg in prose, which is what this line closes.
 
 ## Verify vs Done
 

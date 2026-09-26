@@ -293,4 +293,20 @@ EOF82
     || b3_82="$b3_82 [the rule is keyed on key presence rather than on what resolved]"
   [ -z "$b3_82" ] && ok "B3 the rule is keyed on what resolved, never on which keys are present" \
                   || bad "B3 the rule is keyed on what resolved, never on which keys are present:$b3_82"
+
+  # ---- A10: the coverage prompt cites criteria.md and accepts a read/gap criterion (T-182) -----------
+  # The oracle is the module's own assembled prompt string, read from the same DIM82 extraction every
+  # other axis check above already uses — not a second read of engine prose describing the rule, but the
+  # program output the coverage auditor actually receives. Falsifier: the citation or the acceptance
+  # instruction is removed from verify-review.js's coverage prompt.
+  a10_82=""
+  [ -n "$COV82" ] || a10_82="$a10_82 [coverage region absent]"
+  [ "$(n82 'protocols/criteria\.md' "$COV82")" -ge 1 ] \
+    || a10_82="$a10_82 [the coverage prompt does not cite criteria.md]"
+  [ "$(n82 'observed: read' "$COV82")" -ge 1 ] \
+    || a10_82="$a10_82 [the coverage prompt does not name the observed: read value]"
+  [ "$(n82 'never raise' "$COV82")" -ge 1 ] \
+    || a10_82="$a10_82 [the coverage prompt does not instruct the auditor to never raise it]"
+  [ -z "$a10_82" ] && ok "A10 the coverage prompt cites criteria.md and accepts a read/gap criterion" \
+                   || bad "A10 the coverage prompt cites criteria.md and accepts a read/gap criterion:$a10_82"
 fi
