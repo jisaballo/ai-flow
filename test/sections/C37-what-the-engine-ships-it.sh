@@ -42,7 +42,7 @@ if [ -r "$MAN37" ] && [ -s "$MAN37" ] && [ -r "$INS37" ] && [ -s "$INS37" ] \
   # reported a protocol that was EXTRA and was blind to one that was MISSING, so a deletion — including
   # this task's own — passed it green. Read before being retired: everything it covered is the `extra`
   # leg below, and the `missing` leg is what it never had.
-  EXPECT37="backlog.md context.md discover.md execute.md lifecycle.md plan.md quick-path.md understand.md verify.md"
+  EXPECT37="backlog.md context.md criteria.md discover.md execute.md lifecycle.md plan.md quick-path.md understand.md verify.md"
   ACTUAL37="$(ls global/protocols 2>/dev/null | sort | tr '\n' ' ')"
   c1_37=""
   # The extractor proves it found the class before any verdict is drawn from it: an empty listing would

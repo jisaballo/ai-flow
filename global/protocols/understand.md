@@ -318,26 +318,19 @@ Every **Automated** and **Behavioral** criterion in understand.md is written in 
 
 **Every criterion — Automated, Behavioral and Observable alike — also carries two fields, and they are written before any assertion over it exists.** They are what decides which kind it is; the kind is the conclusion, not the input. **In the artifact the same order holds on the page**: the entry states the criterion, then `observed:` and `falsified-by:`, then the kind — writing the kind first is what lets a falsifier be written to fit a bucket already chosen.
 
-`observed:` — how the criterion is observed. One of four:
+**`observed:` and `falsified-by:` are defined once, in `protocols/criteria.md`** — the four values, their
+precedence, and the falsifier's own shape — cited here rather than restated, because a mapping kept in two
+files is the copy that goes stale in whichever one is edited second. `criteria.md` also states which
+values may get a test at each of the four moments a test can be born; this document's own moment is
+Understand, which mints none, so nothing further is this phase's to add.
 
-| Value | The verdict comes from |
-|-------|------------------------|
-| `run` | **executing** the subject and reading what it did or the status it returned — a program the assertion did not write produced the evidence |
-| `compute` | an arithmetic relation between two **derived** quantities: a count against a count, a difference, a set algebra over two extractions. A comparison counts only where both sides are derived |
-| `resolve` | a **referent resolving** — a path exists, a name is bound, a revision names something |
-| `read` | a **pattern matched against the subject's text**. This is the value with no oracle |
-
-**Precedence is `run > compute > resolve > read`, strongest oracle first, and the reason is part of the rule**: a criterion that runs something and *then* reads its output is `run`, because letting the reading speak would file an executed observation under the value that means *no program produced this*.
-
-**`observed:` is what emission is keyed on, and this is what makes the precedence load-bearing rather than taxonomic.** Which values emit, what a row holds, and which causes an absence may carry are all the Plan protocol's (`plan.md` > Conformance Tests), stated there and only there — this line names the key and not the mapping, because a mapping restated here is the copy that goes stale in whichever file is edited second. A precedence violation therefore now costs something a reader can name: a criterion that executed something and then read the output, filed `read`, **silently suppresses a row that should exist** — which is why the gate below refuses it rather than leaving the ordering as advice.
-
-`falsified-by:` — the change **to the subject** that would make the criterion false, stated in the fact's own terms. A falsifier phrased against the assertion (*the check would go red*) is not one: it describes the instrument rather than the thing measured, so the same author supplies both sides — the single-actor failure this field exists to break.
+**`observed:` is what Conform's emission is keyed on.** Which values emit at Conform, what a row holds, and which causes an absence may carry are the Plan protocol's (`plan.md` > Conformance Tests), stated there and only there. A precedence violation costs something a reader can name: a criterion that executed something and then read the output, filed `read`, **silently suppresses a row that should exist** — which is why the gate below refuses it rather than leaving the ordering as advice.
 
 **The criterion's *kind* is keyed on the falsifier, never on the value** — a separate question from emission above, and the two are named apart because one sentence claiming *the* consequence for each is a sentence that denies its neighbour. Where the falsifier names a change only the criterion's own author would make, there is no second source and nothing could disagree: the criterion is **Observable**. Where it names a change some other actor could make, there is a second source and the criterion is **Automated** or **Behavioral** — the reverse direction, and it is stated because a rule that names only the demotion reads as a one-way door. Conform keys the kind on this derivation and not on the bucket an author declares, and what it does where the two disagree is the Plan protocol's (`plan.md` > Conformance Tests), stated there and only there. Where the falsifier cannot be written at all, the gate below is what refuses the criterion — stated there and not here, so the condition has one home.
 
 Two words in this file already carry other senses, one line each. **`read`** here is the value with *no* oracle — the inverse of a fact marked as read from the source, which is the trustworthy case against one taken on assumption. **`observed:`** is this field alone: not *Observable success*, which is the Business Frame's user-visible scenario, and not *Observable*, which is a criterion kind.
 
-**Gate (before Plan):** a criterion that does not parse as one of the 5 patterns, or whose response/THEN is not observable (nothing to point at — no test, no file:line, no visible behavior), or whose `falsified-by:` cannot be written — or is phrased against the assertion rather than against the subject, which is the same condition and not a fourth — or whose `observed:` is absent, carries a value outside the four, or violates the precedence above, must be reformulated before proceeding to Plan. The three `observed:` refusals are one condition and not three: each of them decides emission wrongly, and a criterion that decides emission wrongly loses its row in silence.
+**Gate (before Plan):** a criterion that does not parse as one of the 5 patterns, or whose response/THEN is not observable (nothing to point at — no test, no file:line, no visible behavior), or whose `falsified-by:` cannot be written — or is phrased against the assertion rather than against the subject, which is the same condition and not a fourth — or whose `observed:` is absent, carries a value outside the four, or violates the precedence `protocols/criteria.md` defines, must be reformulated before proceeding to Plan. The three `observed:` refusals are one condition and not three: each of them decides emission wrongly, and a criterion that decides emission wrongly loses its row in silence.
 
 GIVEN/WHEN/THEN is no longer the criterion format — it moves down to CONFORM as the **test format** (see Plan protocol): each EARS criterion becomes one or more GWT test stubs.
 

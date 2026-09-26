@@ -35,7 +35,16 @@
 #
 # THE POPULATION THIS GUARD LOOKS AT, recomputed from the tree on every run and held by ROW 7:
 #
-#   REACH (this tree): read=197 md_only=118 mixed=20 source_only=18 blind=41 depth=4
+#   REACH (this tree): read=198 md_only=118 mixed=20 source_only=18 blind=42 depth=4
+#
+#   T-182 moved this by one (read, blind): C57's new A10 leg reads the coverage-auditor prompt's own
+#   source text (COV82, a shell variable extracted by dim_region()) as its haystack, the same shape every
+#   other check already in this count uses (C57's own A1-A9/B1-B3) -- not a new kind of blind spot, one
+#   more member of the family already here. ROW 5 and ROW 6 both stay green over it: it reads no engine
+#   `.md` as its subject and spends no text copied from the corpus as a matcher's pattern (the patterns
+#   are literal strings this test wrote, not values pulled out of verify-review.js). Recall and precision
+#   above are unaffected -- they are frozen measurements at a fixed commit, not a function of population
+#   size.
 #
 # `blind` is the count of sites that read SOMETHING this tool could not resolve to a path at all, so it
 # is the share of the read population these rows cannot even classify. It is not the same number as the
