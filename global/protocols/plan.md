@@ -87,6 +87,7 @@ Every plan.md ends with a `Criteria Coverage` table mapping each Verifiable Crit
 - **Criterion without a step** -> replan, or mark it `deferred` with a written justification.
 - **Step without a criterion** -> justify it in the table as a technical necessity (scaffolding, migration, tooling).
 - **VERIFY inherits this mapping** — the Verify phase audits against this table instead of reconstructing criterion->evidence from scratch.
+- **A step's own `Changes:` text is never written asking for a new or extended assertion over a criterion currently recorded `observed: read`** — `protocols/criteria.md` states why, and Conform's own refusal (step 2 above) is not the only moment this matters: a step drafted before Conform runs can still propose the leg in prose, which is what this line closes.
 
 ## Verify vs Done
 
@@ -113,7 +114,13 @@ defines — the rule owns the set, the cuts and the read-once rule, and this par
 it.
 
 1. **Read** the Verifiable Criteria from `artifacts/T-XXX/understand.md` — they arrive in EARS format (see Understand protocol), each carrying `observed:` and `falsified-by:`. GIVEN/WHEN/THEN is the **test format**: an emitting criterion becomes one or more GWT stubs.
-2. **Emission is keyed on `observed:`, and not on the criterion's kind.** `run`, `compute` and `resolve` emit a row. `read` emits none: it is the value with no oracle, so a stub over it would be written and read by the same actor, and what that detects is a change rather than a fault. **`observed:` decides whether a row is owed; it does not decide that one is written.** A criterion an existing assertion already reaches is owed a row and gets none, because the row exists — that is the `covered` cause below, and it is the only way an emitting value produces no new row. Recording it is what keeps the two apart: a manifest that shows `run` beside `covered` says *asserted elsewhere*, and one that shows `run` beside no row at all is a row someone forgot.
+2. **Emission is keyed on `observed:`, and not on the criterion's kind — which values emit, at this and
+   every other moment a test can be born, is `protocols/criteria.md`'s table, cited here and not restated.**
+   `observed:` decides whether a row is owed; it does not decide that one is written. A criterion an
+   existing assertion already reaches is owed a row and gets none, because the row exists — that is the
+   `covered` cause below, and it is the only way an emitting value produces no new row. Recording it is
+   what keeps the two apart: a manifest that shows `run` beside `covered` says *asserted elsewhere*, and
+   one that shows `run` beside no row at all is a row someone forgot.
 3. **The stub's body is the real assertion from the first minute.** A body that fails by construction is forbidden — it proves the stub runs, never that it reads its subject. Red at Conform therefore means *bound to the subject*, green after Execute means *the change made it true*, and the pair is a mutation the plan gets for nothing under the condition below.
 4. **The kind Conform keys on is the falsifier-derived one** (Understand protocol > the `falsified-by:` rule). Where the author's declared bucket disagrees with it, Conform proceeds on the derived kind and **records the disagreement** in the manifest: a recorded wrong label is a datum a reviewer can challenge, a silent one is the failure. The declared bucket is advisory for exactly as long as the criteria template keeps asking the author for it.
 5. **A row that cannot be born red pays at authorship instead.** A row green from the start — an invariant, a regression guard — runs its `falsified-by` **once, now**, and the manifest records what was mutated, what the suite reported, and that the mutation was reverted. A falsifier written and never run is a falsifier that was believed. **Now** is the moment the row is authored, and Conform is not the only such moment: a row authored later in the task's life pays at its own authorship on the same terms, under the rule the Verify protocol states at `### The acceptance rule for a repair leg`.
