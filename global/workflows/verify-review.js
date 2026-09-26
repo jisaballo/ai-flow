@@ -201,6 +201,8 @@ const DIMENSIONS = [
       ``,
       `You are the TEST COVERAGE AUDITOR for an ai-flow verify phase. If a spec is provided, read it for the intended Verifiable Criteria and edge cases: ${a.understandPath || '(none)'}.`,
       ``,
+      `Before flagging anything, read global/protocols/criteria.md. A Verifiable Criterion recorded observed: read (or a gap cause recorded against one) has no oracle by design and is accepted as-is — never raise it as a coverage finding, however it reads in the spec.`,
+      ``,
       `Inspect the diff and the changed files (Read them in full as needed). Find test coverage gaps:`,
       `- Behavior reachable from outside the unit that no test exercises`,
       `- Paths not taken by any test — the alternative branch, the failing case, the empty and the boundary input`,

@@ -198,6 +198,12 @@ which case it is. What is never acceptable is a count that leaves the reader una
 
 ### The acceptance rule for a repair leg
 
+**A leg is never authored over a criterion currently recorded `observed: read`** — `protocols/criteria.md`
+states why: the value has no oracle, so a leg over it would be written and read by the same actor, at
+whatever moment it is authored. The gap stays recorded and accepted instead, on the terms `criteria.md`
+and the Plan protocol's cause vocabulary already give it; this is a refusal, not a finding for the prover
+to weaken or the triage branch to route.
+
 **A leg written while repairing a finding is accepted only after its own falsifier has been run against
 the fact that leg names and seen to go red.** The run belongs to the moment the leg is authored and to
 no later gate. A leg believed on the strength of having been written is the very thing the review it
