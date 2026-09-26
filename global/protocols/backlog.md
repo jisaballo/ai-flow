@@ -552,6 +552,11 @@ value nobody keeps current and nobody asks for. Dropping it costs one edit; leav
 is wrong from each workstream's second task onward, for whoever reads the roster rather than the
 ceremony.
 
+A `BACKLOG.md` that still carries a `## Done` section is not broken either: nothing reads it, and the
+roster's own row already carries the "being worked" signal a second section would only repeat. Deleting
+it costs one edit at the next convenient touch of the file; leaving it costs nothing either, since no
+mechanism looks for it.
+
 **Non-Goal: already-closed epics' archives.** `archive/E-XXX-slug.md` and `archive/EXECUTION-ORDERS.md`
 are left as legacy and never converted to the new `archive/E-XXX/` shape — nothing reads a closed epic
 through this layout, so converting one buys nothing this migration is for.
