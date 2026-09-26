@@ -988,7 +988,9 @@ what activation has always been, plus the declaration in step 2.
 
 7. **Write the roster row and the task's sheet.** The row carries workstream, checkout, task, epic,
    the declared areas, **what created the checkout** — the tool identified in move 5, which is
-   what the dismantling move reads — and the date. The sheet carries the branch that owns the task, the first
+   what the dismantling move reads — and the date. The same write moves the activated task's BACKLOG.md
+   row from `## Ready` into `## Active` — one edit, several levels, the idiom this document already uses
+   for the row/order-line/epic-status triple elsewhere. The sheet carries the branch that owns the task, the first
    position, the step, the autonomy level, and any acknowledgement from step 3. The position is the one
    named in `## State Files` and is not chosen here: this move writes a task that is open and in no
    phase, and the phase commands record every position after it. The row is the coordinator's; the
@@ -1264,7 +1266,9 @@ someone noticed.
 7. Write the session-close entry to `archive/CHANGELOG.md` (once — this is its permanent home) **and** copy it to the BACKLOG.md top. If BACKLOG.md then holds more than 3, **delete** the oldest from BACKLOG.md — do NOT re-append it to `archive/CHANGELOG.md`, it has been there since its own close (see Size Budget)
 8. Leave the workstream row to move 9 of `## Closing a Workstream`, its sole owner: the row is removed
    only when the workstream has no next task, and a workstream continuing its chain keeps its row with
-   the task field advanced (coordinator only — other open workstreams keep theirs). **The same act
+   the task field advanced (coordinator only — other open workstreams keep theirs). The same act moves
+   the next task's BACKLOG.md row from `## Ready` into `## Active`, on the same terms move 7 of
+   `## Opening a Workstream` establishes for first activation. **The same act
    rewrites the workstream's mutable label** where its tool offers one, to the task the row now names —
    this is the only statement of the continuing case, so a label left to an act of its own is a label
    nobody would ever rewrite, and the workstream would go on announcing a task that closed here. **On the
