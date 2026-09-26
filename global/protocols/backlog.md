@@ -523,13 +523,13 @@ three come from the task's own sheet and its papers, never from what the session
 
 ### Who writes what, when
 
-| Moment | Roster (`STATE.md`) | Sheet (`artifacts/T-XXX/state.md`) |
-|---|---|---|
-| **Activation** | the coordinator adds the workstream row, with the workstream's declared areas | created, with branch, the first position, step and autonomy — plus any collision acknowledged at the opening (see Opening a Workstream) |
-| **During the phases** | untouched | the phase command writes the phase when it enters one, and the `next action:` line with it wherever that write ends the session (see The phase precondition above); `structure: context` at Conform's close where the plan carries that marker; step, decisions and the rest of the resume block kept current by whoever works the task |
-| **Pause** | untouched | carries everything needed to resume — it IS the handoff |
-| **Archive** | the coordinator removes the row, last | collected into the coordinator first, then deleted with the rest of `artifacts/T-XXX/` — in every checkout that holds it, not only the coordinator's |
-| **Quick task** | its row in Quick Tasks Completed, at close | none — a quick task writes no sheet, and states its 1-2 steps in the conversation |
+| Moment | Roster (`STATE.md`) | Sheet (`artifacts/T-XXX/state.md`) | BACKLOG.md row |
+|---|---|---|---|
+| **Activation** | the coordinator adds the workstream row, with the workstream's declared areas | created, with branch, the first position, step and autonomy — plus any collision acknowledged at the opening (see Opening a Workstream) | moved from `## Ready` to `## Active` (move 7 of Opening a Workstream) |
+| **During the phases** | untouched | the phase command writes the phase when it enters one, and the `next action:` line with it wherever that write ends the session (see The phase precondition above); `structure: context` at Conform's close where the plan carries that marker; step, decisions and the rest of the resume block kept current by whoever works the task | untouched |
+| **Pause** | untouched | carries everything needed to resume — it IS the handoff | untouched |
+| **Archive** | the coordinator removes the row, last | collected into the coordinator first, then deleted with the rest of `artifacts/T-XXX/` — in every checkout that holds it, not only the coordinator's | this task's row removed (step 6); a continuing workstream's next task moved from `## Ready` to `## Active` in the same close (step 8) |
+| **Quick task** | its row in Quick Tasks Completed, at close | none — a quick task writes no sheet, and states its 1-2 steps in the conversation | none — a quick task never touches a BACKLOG.md row |
 
 ### Migrating an existing ledger
 
@@ -1242,7 +1242,7 @@ someone noticed.
    step below it may be allowed to outlive them. That is also why the position is not a preference — any
    position that satisfies it renumbers the steps beneath, and the citations move with them.
 5. Generate `archive/T-XXX/summary.md` (see Archive Summary template)
-6. **Remove task from BACKLOG.md** (move from Done to nowhere — it's in the archive now). **The same act
+6. **Remove task from BACKLOG.md** (move from Active to nowhere — it's in the archive now). **The same act
    strikes the task's line in its epic's Execution Order**, now `epic.md`'s own checklist, and moves the
    epic's status from `backlog` to `active` in BACKLOG.md's Epics table where it still reads the former — one edit, three
    levels, the idiom this checklist already uses for a steering rule and its nano and for an Icebox entry
@@ -1302,13 +1302,12 @@ When a shipped task turns out to violate business intent (the code was right; th
    unconditional move, running after every move that can stop it, so a close stopped at the distribution
    or the publish leaves exactly this folder behind, and a sweep cannot tell the three apart. Naming all three is the whole of the move: a diagnosis offering
    two sends the operator to re-run a checklist that already ran.
-4. Remove all epic tasks from BACKLOG.md Done section
-5. Move the epic row to `archive/EPICS.md` (Size Budget)
-6. **Archive the epic's own folder**: move `artifacts/E-XXX/` to `archive/E-XXX/` verbatim — `brief.md` and
+4. Move the epic row to `archive/EPICS.md` (Size Budget)
+5. **Archive the epic's own folder**: move `artifacts/E-XXX/` to `archive/E-XXX/` verbatim — `brief.md` and
    `epic.md` travel together, exactly as `artifacts/T-XXX/` moves to `archive/T-XXX/` at move 7 of
    `## Closing a Workstream`. **Verify** afterward that no `artifacts/E-XXX/` folder of this epic remains,
    the same check the sweep above runs over a task's own folder, now over the epic's.
-7. **Verify** the roster holds no row for a workstream of this epic — move 9 of `## Closing a Workstream`
+6. **Verify** the roster holds no row for a workstream of this epic — move 9 of `## Closing a Workstream`
    is the only remover, and by now it has run for each of them. A row still there names a workstream that
    is still open: name it and stop, rather than removing it here (rows of workstreams outside the epic
    stay).
@@ -1327,7 +1326,8 @@ When a shipped task turns out to violate business intent (the code was right; th
   same terms as a task's — After Epic completion's own archival step is what clears it.
 - No root-level files in `artifacts/` (no templates, no loose files)
 - No empty directories anywhere in `.ai-flow/`
-- BACKLOG.md Done section is **transient** — tasks stay there only until archived, not permanently
+- BACKLOG.md `## Active` holds every task a workstream is currently working, from activation (or a
+  chain hand-off) until its own close removes the row
 - BACKLOG.md stays under 8,000 words and contains only pending work (see Size Budget)
 - STATE.md is an index of open workstreams — one row per workstream, no per-task context, and **no historical
   narrative outside its two sanctioned records**: the roster table and `## Quick Tasks Completed`. Closed
